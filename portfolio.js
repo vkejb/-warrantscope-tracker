@@ -12,7 +12,12 @@
     session: null,
     transactions: [],
     prices: [],
+    settings: null,
+    cashFlows: [],
+    dailySnapshots: [],
+    tradeEpisodes: [],
     ledger: null,
+    account: null,
     requestId: 0,
   };
 
@@ -31,6 +36,10 @@
   const signedMoney = value => `${Number(value || 0) > 0 ? "+" : ""}${money(value)}`;
   const price = value => Number(value || 0).toLocaleString("zh-TW", {minimumFractionDigits: 2, maximumFractionDigits: 4});
   const pnlClass = value => Number(value || 0) > 0 ? "profit" : Number(value || 0) < 0 ? "loss" : "flat";
+  const percent = value => value === null || value === undefined
+    ? "等待快照"
+    : `${Number(value) > 0 ? "+" : ""}${Number(value).toLocaleString("zh-TW", {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`;
+  const moneyOrWaiting = (value, waiting = "等待快照") => value === null || value === undefined ? waiting : money(value);
 
   function localizedError(error, fallback) {
     const message = String(error?.message || "");
@@ -71,13 +80,28 @@
     state.session = null;
     state.transactions = [];
     state.prices = [];
+    state.settings = null;
+    state.cashFlows = [];
+    state.dailySnapshots = [];
+    state.tradeEpisodes = [];
     state.ledger = null;
+    state.account = null;
     byId("portfolio-auth").hidden = false;
     byId("portfolio-private").hidden = true;
+    byId("portfolio-user-email").textContent = "—";
     byId("portfolio-session-status").textContent = "未登入";
     byId("portfolio-session-status").className = "badge neutral";
     byId("position-list").innerHTML = '<div class="empty">登入後載入持倉</div>';
     byId("transaction-list").innerHTML = '<div class="empty">登入後載入交易</div>';
+    byId("cash-flow-list").innerHTML = '<div class="empty">登入後載入現金流</div>';
+    byId("closed-episode-list").innerHTML = '<div class="empty">登入後載入 Episode</div>';
+    byId("account-overview-grid").innerHTML = "";
+    byId("performance-grid").innerHTML = "";
+    byId("equity-curve").innerHTML = "";
+    byId("account-as-of").textContent = "等待快照";
+    byId("account-formula-note").textContent = "";
+    ["position-count", "transaction-count", "cash-flow-count", "closed-episode-count"].forEach(id => { byId(id).textContent = ""; });
+    byId("transaction-form").reset();
     closeTradeDialog();
     setMessage(byId("auth-message"), message, tone);
   }
@@ -88,23 +112,58 @@
     byId("portfolio-user-email").textContent = session.user.email || "已登入";
     byId("portfolio-session-status").textContent = "已登入";
     byId("portfolio-session-status").className = "badge active-status";
-    byId("portfolio-kpis").innerHTML = ["持倉權證", "含費成本", "已實現損益", "未實現損益"].map(label => `
-      <article class="kpi loading-kpi"><span>${label}</span><div><strong>—</strong></div></article>
+    byId("account-overview-grid").innerHTML = ["起始本金", "銀行現金", "待交割", "交割調整後現金", "持倉淨清算價值", "總資產", "已實現損益", "未實現損益", "累計損益", "累計績效"].map(label => `
+      <article class="account-metric loading-kpi"><span>${label}</span><strong>—</strong></article>
     `).join("");
+    byId("performance-grid").innerHTML = ["本週", "本月", "累計"].map(label => `<article class="performance-card loading-kpi"><span>${label}</span><strong>—</strong></article>`).join("");
     byId("position-list").innerHTML = '<div class="empty">正在載入私人持倉…</div>';
     byId("transaction-list").innerHTML = '<div class="empty">正在載入交易紀錄…</div>';
+    byId("cash-flow-list").innerHTML = '<div class="empty">正在載入現金流與帳務調節…</div>';
+    byId("closed-episode-list").innerHTML = '<div class="empty">正在載入已結束 Episode…</div>';
+    byId("equity-curve").innerHTML = '<div class="equity-placeholder"><span></span><p>正在載入每日資產快照…</p></div>';
+    byId("account-as-of").textContent = "載入中";
+    byId("account-formula-note").textContent = "";
     setMessage(byId("portfolio-message"), "");
   }
 
-  function renderKpis(ledger) {
+  function renderAccountOverview(account) {
     const items = [
-      ["持倉權證", ledger.positions.length, "檔", ""],
-      ["含費成本", money(ledger.feeInclusiveCost), "", ""],
-      ["已實現損益", signedMoney(ledger.realizedPnl), "", pnlClass(ledger.realizedPnl)],
-      ["未實現損益", ledger.unrealizedPnl === null ? "等待市價" : signedMoney(ledger.unrealizedPnl), "", ledger.unrealizedPnl === null ? "waiting" : pnlClass(ledger.unrealizedPnl)],
+      ["起始本金", moneyOrWaiting(account.startingCapital, "尚未設定"), "", ""],
+      ["銀行現金", moneyOrWaiting(account.cashBalance), "", ""],
+      ["待交割", moneyOrWaiting(account.pendingSettlement), account.pendingSettlement === null ? "" : pnlClass(account.pendingSettlement), ""],
+      ["交割調整後現金", moneyOrWaiting(account.adjustedCash), "", ""],
+      ["權證持倉淨清算價值", moneyOrWaiting(account.positionLiquidationValue), "", ""],
+      ["總資產", moneyOrWaiting(account.totalAssets), "", "featured"],
+      ["已實現損益", account.realizedPnl === null ? "等待快照" : signedMoney(account.realizedPnl), account.realizedPnl === null ? "waiting" : pnlClass(account.realizedPnl), ""],
+      ["未實現損益", account.unrealizedPnl === null ? "等待市價" : signedMoney(account.unrealizedPnl), account.unrealizedPnl === null ? "waiting" : pnlClass(account.unrealizedPnl), ""],
+      ["累計損益", account.cumulativePnl === null ? "等待資料" : signedMoney(account.cumulativePnl), account.cumulativePnl === null ? "waiting" : pnlClass(account.cumulativePnl), "featured"],
+      ["累計績效", percent(account.cumulativePerformance), account.cumulativePerformance === null ? "waiting" : pnlClass(account.cumulativePerformance), "featured"],
     ];
-    byId("portfolio-kpis").innerHTML = items.map(([label, value, unit, className]) => `
-      <article class="kpi"><span>${label}</span><div><strong class="${className}">${escapeHtml(value)}</strong>${unit ? `<small>${unit}</small>` : ""}</div></article>
+    byId("account-overview-grid").innerHTML = items.map(([label, value, valueClass, cardClass]) => `
+      <article class="account-metric ${cardClass}"><span>${label}</span><strong class="${valueClass}">${escapeHtml(value)}</strong></article>
+    `).join("");
+    const latest = account.latestSnapshot;
+    byId("account-as-of").textContent = account.asOf ? `${account.asOf}${latest?.is_complete === false ? " · 未完成" : ""}` : "等待快照";
+    byId("account-as-of").className = `badge ${latest?.is_complete === false ? "warn" : account.asOf ? "active-status" : "neutral"}`;
+    byId("account-formula-note").textContent = account.cumulativePnl === null
+      ? "需要起始本金與每日快照，才能依交割調整後現金計算累計策略損益。"
+      : `淨外部現金流 ${signedMoney(account.externalCashFlow)}；累計損益已扣除 DEPOSIT 並加回 WITHDRAWAL。`;
+  }
+
+  function renderPerformance(account) {
+    const performance = core.calculatePerformance(state.dailySnapshots, account);
+    const items = [
+      ["本週", performance.week],
+      ["本月", performance.month],
+      ["累計", performance.cumulative],
+    ];
+    byId("performance-grid").innerHTML = items.map(([label, item]) => `
+      <article class="performance-card">
+        <div><span>${label}</span><small>${item.start && item.end ? `${escapeHtml(item.start)} — ${escapeHtml(item.end)}` : "等待每日快照"}</small></div>
+        <strong class="${item.performance === null ? "waiting" : pnlClass(item.performance)}">${percent(item.performance)}</strong>
+        <p>策略損益 <b class="${item.pnl === null ? "waiting" : pnlClass(item.pnl)}">${item.pnl === null ? "等待快照" : signedMoney(item.pnl)}</b></p>
+        <small>${item.snapshotCount} 個快照</small>
+      </article>
     `).join("");
   }
 
@@ -147,60 +206,191 @@
     }
     byId("transaction-list").innerHTML = rows.map(transaction => {
       const side = String(transaction.side || "").toUpperCase();
+      const status = String(transaction.status || "CONFIRMED").toUpperCase();
       const value = Number(transaction.lots || 0) * 1000 * Number(transaction.price || 0);
       return `
         <article class="transaction-card">
           <div class="card-title-row">
             <div><span class="stock-code">${escapeHtml(transaction.warrant_code)}</span><h3>${escapeHtml(transaction.warrant_name)}</h3></div>
-            <span class="badge ${side === "BUY" ? "buy" : "sell"}">${escapeHtml(side)}</span>
+            <div class="transaction-badges"><span class="badge ${side === "BUY" ? "buy" : "sell"}">${escapeHtml(side)}</span><span class="badge ${status === "VOID" ? "sell" : status === "CORRECTED" ? "warn" : "neutral"}">${escapeHtml(status)}</span></div>
           </div>
-          <div class="transaction-meta"><span>${escapeHtml(displayDateTime(transaction.traded_at))}</span><span>${escapeHtml(transaction.underlying_code)} ${escapeHtml(transaction.underlying_name)}</span><span>${escapeHtml(transaction.issuer)}</span></div>
+          <div class="transaction-meta"><span>${escapeHtml(displayDateTime(transaction.traded_at))}</span><span>${escapeHtml(transaction.underlying_code)} ${escapeHtml(transaction.underlying_name)}</span><span>${escapeHtml(transaction.issuer)}</span>${transaction.settlement_date ? `<span>交割 ${escapeHtml(transaction.settlement_date)}</span>` : ""}</div>
           <dl class="transaction-metrics">
             <div><dt>張數</dt><dd>${number(transaction.lots)} 張</dd></div>
             <div><dt>成交價</dt><dd>${price(transaction.price)}</dd></div>
             <div><dt>成交金額</dt><dd>${money(value)}</dd></div>
             <div><dt>手續費 / 稅</dt><dd>${money(Number(transaction.commission || 0) + Number(transaction.transaction_tax || 0))}</dd></div>
+            <div><dt>淨現金金額</dt><dd>${transaction.net_cash_amount === null || transaction.net_cash_amount === undefined ? "—" : signedMoney(transaction.net_cash_amount)}</dd></div>
+            <div><dt>來源</dt><dd>${escapeHtml(transaction.source || "MANUAL")}</dd></div>
           </dl>
           ${transaction.notes ? `<p class="transaction-note">${escapeHtml(transaction.notes)}</p>` : ""}
         </article>`;
     }).join("");
   }
 
+  function renderCashFlows(cashFlows) {
+    const rows = [...cashFlows].sort((a, b) => new Date(b.occurred_at || 0) - new Date(a.occurred_at || 0));
+    byId("cash-flow-count").textContent = `${rows.length} 筆`;
+    if (!rows.length) {
+      byId("cash-flow-list").innerHTML = '<div class="empty">目前沒有現金流或帳務調節紀錄。</div>';
+      return;
+    }
+    byId("cash-flow-list").innerHTML = rows.map(flow => {
+      const type = String(flow.flow_type || "").toUpperCase();
+      const signedAmount = type === "WITHDRAWAL" ? -Math.abs(Number(flow.amount || 0)) : Math.abs(Number(flow.amount || 0));
+      return `
+        <article class="cash-flow-card">
+          <div class="card-title-row">
+            <div><span class="stock-code">${escapeHtml(flow.source || "MANUAL")}</span><h3>${type === "DEPOSIT" ? "資金流入" : type === "WITHDRAWAL" ? "資金流出" : escapeHtml(type)}</h3></div>
+            <strong class="cash-flow-amount ${pnlClass(signedAmount)}">${signedMoney(signedAmount)}</strong>
+          </div>
+          <div class="transaction-meta"><span>${escapeHtml(displayDateTime(flow.occurred_at))}</span><span>${escapeHtml(type)}</span></div>
+          ${flow.notes ? `<p class="transaction-note">${escapeHtml(flow.notes)}</p>` : ""}
+        </article>`;
+    }).join("");
+  }
+
+  function renderClosedEpisodes(episodes) {
+    const rows = episodes
+      .filter(episode => String(episode.status || "").toUpperCase() === "CLOSED" || episode.ended_at)
+      .sort((a, b) => new Date(b.ended_at || b.started_at || 0) - new Date(a.ended_at || a.started_at || 0));
+    byId("closed-episode-count").textContent = `${rows.length} 段`;
+    if (!rows.length) {
+      byId("closed-episode-list").innerHTML = '<div class="empty">目前沒有已結束的 Trade Episode。</div>';
+      return;
+    }
+    byId("closed-episode-list").innerHTML = rows.map(episode => `
+      <article class="closed-episode-card">
+        <div class="card-title-row">
+          <div><span class="stock-code">${escapeHtml(episode.warrant_code)}</span><h3>${escapeHtml(episode.warrant_name || "未命名權證")}</h3></div>
+          <strong class="episode-pnl ${episode.realized_pnl === null || episode.realized_pnl === undefined ? "waiting" : pnlClass(episode.realized_pnl)}">${episode.realized_pnl === null || episode.realized_pnl === undefined ? "待結算" : signedMoney(episode.realized_pnl)}</strong>
+        </div>
+        <div class="position-context"><span>${escapeHtml(episode.underlying_code)} ${escapeHtml(episode.underlying_name)}</span><span>${escapeHtml(episode.issuer)}</span>${episode.signal_tag ? `<span>${escapeHtml(episode.signal_tag)}</span>` : ""}</div>
+        <dl class="episode-dates"><div><dt>開始</dt><dd>${escapeHtml(displayDateTime(episode.started_at))}</dd></div><div><dt>結束</dt><dd>${escapeHtml(displayDateTime(episode.ended_at))}</dd></div></dl>
+        ${episode.notes ? `<p class="transaction-note">${escapeHtml(episode.notes)}</p>` : ""}
+      </article>
+    `).join("");
+  }
+
+  function renderEquityCurve(snapshots) {
+    const rows = [...snapshots]
+      .map(snapshot => ({snapshot, value: core.snapshotTotalAssets(snapshot)}))
+      .filter(item => item.value !== null)
+      .sort((a, b) => String(a.snapshot.snapshot_date).localeCompare(String(b.snapshot.snapshot_date)));
+    if (rows.length < 2) {
+      byId("equity-curve").innerHTML = `<div class="equity-placeholder"><span></span><p>${rows.length ? "已取得第一個資產快照；累積至少兩日後顯示資產曲線。" : "等待每日快照，後續將在這裡顯示資產曲線。"}</p></div>`;
+      return;
+    }
+    const width = 600;
+    const height = 180;
+    const padding = 12;
+    const values = rows.map(item => item.value);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const points = rows.map((item, index) => {
+      const x = padding + index / (rows.length - 1) * (width - padding * 2);
+      const y = height - padding - (item.value - min) / range * (height - padding * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    const first = rows[0];
+    const last = rows[rows.length - 1];
+    byId("equity-curve").innerHTML = `
+      <div class="equity-chart-wrap">
+        <svg class="equity-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(first.snapshot.snapshot_date)} 到 ${escapeHtml(last.snapshot.snapshot_date)} 的總資產曲線">
+          <defs><linearGradient id="equity-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6aa8ff" stop-opacity=".28"/><stop offset="100%" stop-color="#6aa8ff" stop-opacity="0"/></linearGradient></defs>
+          <polygon points="${padding},${height - padding} ${points} ${width - padding},${height - padding}" fill="url(#equity-fill)"/>
+          <polyline points="${points}" fill="none" stroke="#6aa8ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="equity-chart-meta"><span>${escapeHtml(first.snapshot.snapshot_date)}<b>${money(first.value)}</b></span><span>${escapeHtml(last.snapshot.snapshot_date)}<b>${money(last.value)}</b></span></div>
+      </div>`;
+  }
+
   function renderLedger() {
+    let ledgerError = null;
     try {
       state.ledger = core.calculatePortfolio(state.transactions, state.prices);
-      renderKpis(state.ledger);
-      renderPositions(state.ledger);
-      renderTransactions(state.transactions);
     } catch (error) {
-      setMessage(byId("portfolio-message"), localizedError(error, "無法計算持倉。"), "error");
+      ledgerError = error;
+      state.ledger = core.calculatePortfolio([], state.prices);
       byId("position-list").innerHTML = '<div class="empty error-empty">交易資料需要檢查，暫時無法計算持倉。</div>';
-      renderTransactions(state.transactions);
     }
+    state.account = core.calculateAccountOverview({
+      settings: state.settings,
+      cashFlows: state.cashFlows,
+      dailySnapshots: state.dailySnapshots,
+      ledger: state.ledger,
+    });
+    renderAccountOverview(state.account);
+    renderPerformance(state.account);
+    if (!ledgerError) renderPositions(state.ledger);
+    renderCashFlows(state.cashFlows);
+    renderTransactions(state.transactions);
+    renderClosedEpisodes(state.tradeEpisodes);
+    renderEquityCurve(state.dailySnapshots);
+    if (ledgerError) setMessage(byId("portfolio-message"), localizedError(ledgerError, "無法計算持倉。"), "error");
+    return ledgerError;
   }
 
   async function loadPrivateData(session, requestedMessage = "") {
     const requestId = ++state.requestId;
     renderLoading(session);
     const userId = session.user.id;
-    const [transactionsResult, pricesResult] = await Promise.all([
-      client.from("transactions").select("*").eq("user_id", userId).order("traded_at", {ascending: true}),
-      client.from("price_snapshots").select("*").eq("user_id", userId).order("captured_at", {ascending: false}),
+    const [transactionsResult, pricesResult, settingsResult, cashFlowsResult, dailySnapshotsResult, episodesResult] = await Promise.all([
+      client.from("transactions")
+        .select("id,user_id,episode_id,traded_at,warrant_code,warrant_name,underlying_code,underlying_name,issuer,side,lots,price,commission,transaction_tax,fee_status,source,status,supersedes_transaction_id,notes,settlement_date,net_cash_amount,created_at")
+        .eq("user_id", userId)
+        .order("traded_at", {ascending: true}),
+      client.from("price_snapshots")
+        .select("warrant_code,price,price_type,market_date,captured_at,source,created_at")
+        .eq("user_id", userId)
+        .order("captured_at", {ascending: false}),
+      client.from("user_settings")
+        .select("starting_capital,timezone,default_commission,warrant_sell_tax_rate")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      client.from("cash_flows")
+        .select("id,occurred_at,flow_type,amount,source,notes,created_at")
+        .eq("user_id", userId)
+        .order("occurred_at", {ascending: true}),
+      client.from("daily_snapshots")
+        .select("snapshot_date,cash_balance,pending_settlement,position_liquidation_value,realized_pnl,unrealized_pnl,total_pnl,day_pnl,twr_daily,is_complete,notes,created_at")
+        .eq("user_id", userId)
+        .order("snapshot_date", {ascending: true}),
+      client.from("trade_episodes")
+        .select("id,warrant_code,warrant_name,underlying_code,underlying_name,issuer,started_at,ended_at,status,signal_tag,realized_pnl,notes,created_at")
+        .eq("user_id", userId)
+        .order("started_at", {ascending: false}),
     ]);
     if (requestId !== state.requestId || state.session?.user?.id !== userId) return;
     if (transactionsResult.error) {
       setMessage(byId("portfolio-message"), localizedError(transactionsResult.error, "讀取交易失敗。"), "error");
-      byId("portfolio-kpis").innerHTML = "";
+      byId("account-overview-grid").innerHTML = "";
+      byId("performance-grid").innerHTML = "";
       byId("position-list").innerHTML = '<div class="empty error-empty">無法讀取私人交易資料，請確認 RLS 的 authenticated SELECT policy。</div>';
       byId("transaction-list").innerHTML = "";
       return;
     }
     state.transactions = transactionsResult.data || [];
     state.prices = pricesResult.error ? [] : (pricesResult.data || []);
-    renderLedger();
-    if (requestedMessage) setMessage(byId("portfolio-message"), requestedMessage, "success");
-    else if (pricesResult.error) setMessage(byId("portfolio-message"), "交易已載入；目前無法讀取市價，因此未實現損益顯示「等待市價」。", "warning");
-    else setMessage(byId("portfolio-message"), `已安全載入 ${state.transactions.length} 筆私人交易。`, "success");
+    state.settings = settingsResult.error ? null : settingsResult.data;
+    state.cashFlows = cashFlowsResult.error ? [] : (cashFlowsResult.data || []);
+    state.dailySnapshots = dailySnapshotsResult.error ? [] : (dailySnapshotsResult.data || []);
+    state.tradeEpisodes = episodesResult.error ? [] : (episodesResult.data || []);
+    const ledgerError = renderLedger();
+    if (ledgerError) return;
+
+    const optionalFailures = [
+      [pricesResult.error, "市價"],
+      [settingsResult.error, "帳戶設定"],
+      [cashFlowsResult.error, "現金流"],
+      [dailySnapshotsResult.error, "每日快照"],
+      [episodesResult.error, "Episode"],
+    ].filter(([error]) => error).map(([, label]) => label);
+    if (optionalFailures.length) {
+      setMessage(byId("portfolio-message"), `交易已載入；${optionalFailures.join("、")}暫時無法讀取，相關欄位會顯示等待狀態。`, "warning");
+    } else if (requestedMessage) setMessage(byId("portfolio-message"), requestedMessage, "success");
+    else setMessage(byId("portfolio-message"), `已安全載入 ${state.transactions.length} 筆交易、${state.cashFlows.length} 筆現金流與 ${state.tradeEpisodes.length} 個 Episode。`, "success");
   }
 
   async function applySession(session, message = "") {
@@ -263,6 +453,7 @@
       setMessage(byId("portfolio-message"), localizedError(error, "登出失敗。"), "error");
       return;
     }
+    byId("portfolio-auth-form").reset();
     await applySession(null, "已登出；私人資料已從畫面移除。");
   }
 
@@ -285,6 +476,7 @@
     const form = byId("transaction-form");
     form.reset();
     byId("transaction-datetime").value = localDateTimeValue();
+    form.elements.commission.value = state.settings?.default_commission ?? 0;
     selectTradeSide("BUY");
     setMessage(byId("transaction-message"), "");
     const dialog = byId("transaction-dialog");

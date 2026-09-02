@@ -37,6 +37,15 @@
       || String(a.id || "").localeCompare(String(b.id || ""));
   }
 
+  function effectiveTransactions(transactions) {
+    const rows = [...(transactions || [])];
+    const supersededIds = new Set(rows.map(row => row.supersedes_transaction_id).filter(Boolean).map(String));
+    return rows.filter(row => {
+      const status = String(row.status || "CONFIRMED").toUpperCase();
+      return status !== "VOID" && !supersededIds.has(String(row.id || ""));
+    });
+  }
+
   function priceIndex(priceSnapshots) {
     const latest = new Map();
     [...(priceSnapshots || [])]
@@ -71,7 +80,7 @@
   function calculatePortfolio(transactions, priceSnapshots = []) {
     const states = new Map();
     const closedEpisodes = [];
-    const sorted = [...(transactions || [])].sort(transactionOrder);
+    const sorted = effectiveTransactions(transactions).sort(transactionOrder);
 
     sorted.forEach(transaction => {
       const code = String(transaction.warrant_code || "").trim();
@@ -198,11 +207,152 @@
     return true;
   }
 
+  function nullableNumeric(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function snapshotDate(row) {
+    return String(row?.snapshot_date || "").slice(0, 10);
+  }
+
+  function snapshotTotalAssets(row) {
+    if (!row) return null;
+    const cashBalance = nullableNumeric(row.cash_balance);
+    const pendingSettlement = nullableNumeric(row.pending_settlement) ?? 0;
+    const liquidationValue = nullableNumeric(row.position_liquidation_value);
+    if (cashBalance === null || liquidationValue === null) return null;
+    return cashBalance + pendingSettlement + liquidationValue;
+  }
+
+  function dateKeyInTimezone(value, timezone = "Asia/Taipei") {
+    if (!value) return "";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return String(value).slice(0, 10);
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(parsed).reduce((values, part) => ({...values, [part.type]: part.value}), {});
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  }
+
+  function netExternalCashFlow(cashFlows, asOf = "", timezone = "Asia/Taipei") {
+    return (cashFlows || []).filter(flow => !asOf || dateKeyInTimezone(flow.occurred_at, timezone) <= asOf).reduce((sum, flow) => {
+      const amount = Math.abs(numeric(flow.amount));
+      const type = String(flow.flow_type || "").toUpperCase();
+      if (type === "DEPOSIT") return sum + amount;
+      if (type === "WITHDRAWAL") return sum - amount;
+      return sum;
+    }, 0);
+  }
+
+  function calculateAccountOverview({settings, cashFlows, dailySnapshots, ledger}) {
+    const snapshots = [...(dailySnapshots || [])].sort((a, b) => snapshotDate(a).localeCompare(snapshotDate(b)));
+    const latestSnapshot = snapshots[snapshots.length - 1] || null;
+    const startingCapital = nullableNumeric(settings?.starting_capital);
+    const cashBalance = nullableNumeric(latestSnapshot?.cash_balance);
+    const pendingSettlement = latestSnapshot ? (nullableNumeric(latestSnapshot.pending_settlement) ?? 0) : null;
+    const adjustedCash = cashBalance === null ? null : cashBalance + pendingSettlement;
+    const positionLiquidationValue = nullableNumeric(latestSnapshot?.position_liquidation_value);
+    const totalAssets = adjustedCash === null || positionLiquidationValue === null
+      ? null
+      : adjustedCash + positionLiquidationValue;
+    const externalCashFlow = netExternalCashFlow(cashFlows, snapshotDate(latestSnapshot), settings?.timezone || "Asia/Taipei");
+    const cumulativePnl = totalAssets === null || startingCapital === null
+      ? null
+      : totalAssets - startingCapital - externalCashFlow;
+    const cumulativePerformance = cumulativePnl === null || !startingCapital
+      ? null
+      : cumulativePnl / startingCapital * 100;
+    const realizedPnl = nullableNumeric(latestSnapshot?.realized_pnl) ?? nullableNumeric(ledger?.realizedPnl);
+    const unrealizedPnl = nullableNumeric(latestSnapshot?.unrealized_pnl) ?? nullableNumeric(ledger?.unrealizedPnl);
+
+    return {
+      latestSnapshot,
+      asOf: snapshotDate(latestSnapshot),
+      startingCapital,
+      cashBalance,
+      pendingSettlement,
+      adjustedCash,
+      positionLiquidationValue,
+      totalAssets,
+      realizedPnl,
+      unrealizedPnl,
+      externalCashFlow,
+      cumulativePnl,
+      cumulativePerformance,
+    };
+  }
+
+  function dateFromKey(key) {
+    const parsed = new Date(`${key}T00:00:00.000Z`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  function keyFromDate(date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  function startOfWeek(key) {
+    const date = dateFromKey(key);
+    if (!date) return "";
+    const daysSinceMonday = (date.getUTCDay() + 6) % 7;
+    date.setUTCDate(date.getUTCDate() - daysSinceMonday);
+    return keyFromDate(date);
+  }
+
+  function periodSummary(rows, start, end) {
+    const withinPeriod = rows.filter(row => {
+      const key = snapshotDate(row);
+      return key && key >= start && key <= end;
+    });
+    const completeRows = withinPeriod.filter(row => row.is_complete !== false);
+    const dayPnls = completeRows.map(row => nullableNumeric(row.day_pnl));
+    const dailyReturns = completeRows.map(row => nullableNumeric(row.twr_daily));
+    return {
+      start,
+      end,
+      snapshotCount: completeRows.length,
+      pnl: dayPnls.length && dayPnls.every(value => value !== null) ? dayPnls.reduce((sum, value) => sum + value, 0) : null,
+      performance: dailyReturns.length && dailyReturns.every(value => value !== null) ? (dailyReturns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100 : null,
+    };
+  }
+
+  function calculatePerformance(dailySnapshots, account) {
+    const rows = [...(dailySnapshots || [])].sort((a, b) => snapshotDate(a).localeCompare(snapshotDate(b)));
+    const asOf = account?.asOf || snapshotDate(rows[rows.length - 1]);
+    if (!asOf) {
+      const empty = {start: "", end: "", snapshotCount: 0, pnl: null, performance: null};
+      return {week: {...empty}, month: {...empty}, cumulative: {...empty}};
+    }
+    const week = periodSummary(rows, startOfWeek(asOf), asOf);
+    const month = periodSummary(rows, `${asOf.slice(0, 7)}-01`, asOf);
+    return {
+      week,
+      month,
+      cumulative: {
+        start: snapshotDate(rows[0]),
+        end: asOf,
+        snapshotCount: rows.length,
+        pnl: account?.cumulativePnl ?? null,
+        performance: account?.cumulativePerformance ?? null,
+      },
+    };
+  }
+
   return {
     UNITS_PER_LOT,
     PortfolioError,
     calculatePortfolio,
+    calculateAccountOverview,
+    calculatePerformance,
     currentPosition,
+    effectiveTransactions,
+    netExternalCashFlow,
+    snapshotTotalAssets,
     validateSale,
   };
 });

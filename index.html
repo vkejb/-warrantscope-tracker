@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>WarrantScope Tracker</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <header class="topbar">
@@ -158,7 +158,20 @@
           </div>
         </div>
         <p id="portfolio-message" class="form-message" role="status" aria-live="polite"></p>
-        <section id="portfolio-kpis" class="kpis portfolio-kpis" aria-label="損益摘要"></section>
+
+        <section class="panel account-overview" aria-labelledby="account-overview-title">
+          <div class="section-head account-overview-head">
+            <div><div class="eyebrow">ACCOUNT OVERVIEW</div><h3 id="account-overview-title">帳戶總覽</h3></div>
+            <span id="account-as-of" class="badge neutral">等待快照</span>
+          </div>
+          <div id="account-overview-grid" class="account-overview-grid"></div>
+          <p id="account-formula-note" class="account-formula-note"></p>
+        </section>
+
+        <div class="portfolio-section-head">
+          <div><div class="eyebrow">PERFORMANCE</div><h3>本週／本月／累計績效</h3></div>
+        </div>
+        <section id="performance-grid" class="performance-grid" aria-label="期間績效"></section>
 
         <div class="portfolio-section-head">
           <div><div class="eyebrow">OPEN POSITIONS</div><h3>目前持倉</h3></div>
@@ -166,11 +179,29 @@
         </div>
         <div id="position-list" class="position-list"><div class="empty">登入後載入持倉</div></div>
 
+        <div class="portfolio-section-head cash-flow-heading">
+          <div><div class="eyebrow">CASH LEDGER</div><h3>現金流與帳務調節</h3></div>
+          <span id="cash-flow-count" class="page-date"></span>
+        </div>
+        <div id="cash-flow-list" class="cash-flow-list"><div class="empty">登入後載入現金流</div></div>
+
         <div class="portfolio-section-head transaction-heading">
           <div><div class="eyebrow">TRANSACTIONS</div><h3>交易紀錄</h3></div>
           <span id="transaction-count" class="page-date"></span>
         </div>
         <div id="transaction-list" class="transaction-list"><div class="empty">登入後載入交易</div></div>
+
+        <div class="portfolio-section-head episode-heading">
+          <div><div class="eyebrow">CLOSED EPISODES</div><h3>已結束 Episode</h3></div>
+          <span id="closed-episode-count" class="page-date"></span>
+        </div>
+        <div id="closed-episode-list" class="closed-episode-list"><div class="empty">登入後載入 Episode</div></div>
+
+        <div class="portfolio-section-head equity-heading">
+          <div><div class="eyebrow">EQUITY CURVE</div><h3>資產曲線</h3></div>
+          <span class="badge neutral">持續累積</span>
+        </div>
+        <section id="equity-curve" class="panel equity-curve" aria-label="資產曲線預留區"></section>
       </section>
 
       <dialog id="transaction-dialog" class="trade-dialog" aria-labelledby="transaction-dialog-title">
@@ -211,7 +242,7 @@
   <script src="data.js"></script>
   <script src="app.js?v=3"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-  <script src="portfolio-core.js?v=1"></script>
-  <script src="portfolio.js?v=1"></script>
+  <script src="portfolio-core.js?v=2"></script>
+  <script src="portfolio.js?v=2"></script>
 </body>
 </html>

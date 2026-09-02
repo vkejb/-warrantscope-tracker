@@ -21,7 +21,9 @@
 - Episode 資料庫
 - 股票搜尋與事件時間線
 - Supabase Email / Password 私人損益帳本
-- 交易新增、目前持倉、移動加權平均成本與 Trade Episode
+- 帳戶總覽：起始本金、現金、待交割、持倉淨清算價值、總資產與累計績效
+- 交易新增、完整交易紀錄、目前持倉、移動加權平均成本與已結束 Trade Episode
+- 現金流／帳務調節、本週／本月／累計績效與每日資產曲線
 - 手機版響應式排版
 
 ## 資料狀態
@@ -48,14 +50,15 @@
 - `index.html`：首頁
 - `style.css`：畫面樣式
 - `app.js`：月份 / 日期 / 搜尋 / 顯示邏輯
-- `portfolio.js`：Supabase Auth、私人交易讀寫與損益介面
-- `portfolio-core.js`：持倉、成本、損益與 Episode 計算
+- `portfolio.js`：Supabase Auth、六張私人資料表讀取、交易寫入與損益介面
+- `portfolio-core.js`：持倉、交割現金、外部現金流、績效與 Episode 計算
 - `data.js`：目前所有研究資料
 - `tests/portfolio-core.test.js`：損益計算與超賣防護測試
+- `tests/portfolio-integration.test.js`：登入邊界、私人資料表與損益介面接線測試
 - `README.md`：這份說明
 
 之後每日更新時，主要會更新 `data.js`，網站網址本身不用改。
 
-損益計算測試：`node --test tests/portfolio-core.test.js`
+損益與私人資料整合測試：`node --test tests/*.test.js`
 
 Codex push test

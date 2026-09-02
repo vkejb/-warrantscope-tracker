@@ -2,7 +2,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   calculatePortfolio,
+  calculateAccountOverview,
+  calculatePerformance,
   currentPosition,
+  effectiveTransactions,
+  netExternalCashFlow,
   validateSale,
   PortfolioError,
 } = require("../portfolio-core.js");
@@ -71,4 +75,63 @@ test("使用最新市價計算未實現損益，無市價則等待", () => {
   ]);
   assert.equal(withPrice.positions[0].marketPrice, 1.7);
   assert.equal(withPrice.positions[0].unrealizedPnl, 390);
+});
+
+test("排除作廢與已被更正取代的交易，但保留更正後交易", () => {
+  const rows = [
+    trade({id: "original", lots: 2, status: "CONFIRMED"}),
+    trade({id: "replacement", lots: 3, status: "CORRECTED", supersedes_transaction_id: "original"}),
+    trade({id: "void", lots: 9, status: "VOID"}),
+  ];
+  const effective = effectiveTransactions(rows);
+  const ledger = calculatePortfolio(rows);
+
+  assert.deepEqual(effective.map(row => row.id), ["replacement"]);
+  assert.equal(ledger.positions[0].lots, 3);
+});
+
+test("帳戶總覽依交割與外部現金流公式計算", () => {
+  const cashFlows = [
+    {flow_type: "DEPOSIT", amount: 100000},
+    {flow_type: "WITHDRAWAL", amount: 20000},
+  ];
+  const account = calculateAccountOverview({
+    settings: {starting_capital: 1000000},
+    cashFlows,
+    dailySnapshots: [{
+      snapshot_date: "2026-09-02",
+      cash_balance: 200000,
+      pending_settlement: -50000,
+      position_liquidation_value: 900000,
+      realized_pnl: 12000,
+      unrealized_pnl: -3000,
+    }],
+    ledger: null,
+  });
+
+  assert.equal(netExternalCashFlow(cashFlows), 80000);
+  assert.equal(account.adjustedCash, 150000);
+  assert.equal(account.totalAssets, 1050000);
+  assert.equal(account.cumulativePnl, -30000);
+  assert.equal(account.cumulativePerformance, -3);
+  assert.equal(account.realizedPnl, 12000);
+  assert.equal(account.unrealizedPnl, -3000);
+});
+
+test("本週與本月績效以每日損益及 TWR 日報酬串接", () => {
+  const snapshots = [
+    {snapshot_date: "2026-08-31", day_pnl: 100, twr_daily: 0.01},
+    {snapshot_date: "2026-09-01", day_pnl: -20, twr_daily: -0.002},
+    {snapshot_date: "2026-09-02", day_pnl: 50, twr_daily: 0.005},
+  ];
+  const performance = calculatePerformance(snapshots, {
+    asOf: "2026-09-02",
+    cumulativePnl: 130,
+    cumulativePerformance: 0.013,
+  });
+
+  assert.equal(performance.week.pnl, 130);
+  assert.equal(performance.month.pnl, 30);
+  assert.ok(Math.abs(performance.week.performance - 1.30199) < 1e-8);
+  assert.equal(performance.cumulative.performance, 0.013);
 });
