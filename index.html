@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>WarrantScope Tracker</title>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <header class="topbar">
@@ -25,6 +25,7 @@
       <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-observation" data-tab="observation">觀察中</button>
       <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-history" data-tab="history">歷史</button>
       <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-stock" data-tab="stock">股票</button>
+      <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-portfolio" data-tab="portfolio">損益</button>
     </div>
   </nav>
 
@@ -56,6 +57,7 @@
             <button type="button" class="quick-link" data-go-tab="mainforce"><span>主力</span><strong>切換買賣排行</strong></button>
             <button type="button" class="quick-link" data-go-tab="observation"><span>觀察中</span><strong>檢視名單快照</strong></button>
             <button type="button" class="quick-link" data-go-tab="stock"><span>股票</span><strong>搜尋完整時間線</strong></button>
+            <button type="button" class="quick-link" data-go-tab="portfolio"><span>私人資料</span><strong>查看持倉與損益</strong></button>
           </div>
         </article>
       </section>
@@ -123,10 +125,93 @@
       </section>
       <section id="stock-result" class="stock-result"><div class="empty search-empty">輸入股票代號或名稱，查看完整 Episode timeline</div></section>
     </section>
+
+    <section id="panel-portfolio" class="tab-panel portfolio-page" role="tabpanel" data-panel="portfolio" hidden>
+      <div class="page-heading portfolio-heading">
+        <div><div class="eyebrow">PRIVATE PORTFOLIO</div><h2>損益</h2></div>
+        <span id="portfolio-session-status" class="badge neutral">未登入</span>
+      </div>
+
+      <section id="portfolio-auth" class="panel auth-panel" aria-labelledby="auth-title">
+        <div class="auth-intro">
+          <div class="auth-lock" aria-hidden="true">🔒</div>
+          <div><h3 id="auth-title">登入私人損益帳本</h3><p>交易與持倉只會從你的 Supabase 帳號讀取，不會寫入公開市場資料。</p></div>
+        </div>
+        <div class="segmented auth-segments" role="tablist" aria-label="帳號操作">
+          <button type="button" class="segment active" role="tab" aria-selected="true" data-auth-mode="login">登入</button>
+          <button type="button" class="segment" role="tab" aria-selected="false" data-auth-mode="signup">註冊</button>
+        </div>
+        <form id="portfolio-auth-form" class="auth-form">
+          <label><span>Email</span><input id="auth-email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="you@example.com"></label>
+          <label><span>密碼</span><input id="auth-password" name="password" type="password" minlength="6" autocomplete="current-password" required placeholder="至少 6 個字元"></label>
+          <button id="auth-submit" class="primary-button" type="submit">登入</button>
+        </form>
+        <p id="auth-message" class="form-message" role="status" aria-live="polite">請先登入才能讀取私人交易資料。</p>
+      </section>
+
+      <section id="portfolio-private" hidden>
+        <div class="portfolio-account panel">
+          <div><span>目前帳號</span><strong id="portfolio-user-email">—</strong></div>
+          <div class="account-actions">
+            <button id="open-transaction" class="primary-button" type="button">＋ 新增交易</button>
+            <button id="portfolio-logout" class="secondary-button" type="button">登出</button>
+          </div>
+        </div>
+        <p id="portfolio-message" class="form-message" role="status" aria-live="polite"></p>
+        <section id="portfolio-kpis" class="kpis portfolio-kpis" aria-label="損益摘要"></section>
+
+        <div class="portfolio-section-head">
+          <div><div class="eyebrow">OPEN POSITIONS</div><h3>目前持倉</h3></div>
+          <span id="position-count" class="page-date"></span>
+        </div>
+        <div id="position-list" class="position-list"><div class="empty">登入後載入持倉</div></div>
+
+        <div class="portfolio-section-head transaction-heading">
+          <div><div class="eyebrow">TRANSACTIONS</div><h3>交易紀錄</h3></div>
+          <span id="transaction-count" class="page-date"></span>
+        </div>
+        <div id="transaction-list" class="transaction-list"><div class="empty">登入後載入交易</div></div>
+      </section>
+
+      <dialog id="transaction-dialog" class="trade-dialog" aria-labelledby="transaction-dialog-title">
+        <form id="transaction-form" class="transaction-form">
+          <div class="dialog-head">
+            <div><div class="eyebrow">PRIVATE TRANSACTION</div><h3 id="transaction-dialog-title">新增交易</h3></div>
+            <button id="close-transaction" class="icon-button" type="button" aria-label="關閉新增交易">×</button>
+          </div>
+          <div class="trade-side segmented" role="group" aria-label="交易方向">
+            <button type="button" class="segment buy active" data-trade-side="BUY" aria-pressed="true">BUY 買進</button>
+            <button type="button" class="segment sell" data-trade-side="SELL" aria-pressed="false">SELL 賣出</button>
+          </div>
+          <input id="transaction-side" name="side" type="hidden" value="BUY">
+          <div class="transaction-fields">
+            <label class="field-wide"><span>日期時間</span><input id="transaction-datetime" name="traded_at" type="datetime-local" required></label>
+            <label><span>權證代號</span><input name="warrant_code" inputmode="numeric" autocomplete="off" required></label>
+            <label><span>權證名稱</span><input name="warrant_name" autocomplete="off" required></label>
+            <label><span>母股代號</span><input name="underlying_code" inputmode="numeric" autocomplete="off" required></label>
+            <label><span>母股名稱</span><input name="underlying_name" autocomplete="off" required></label>
+            <label class="field-wide"><span>發行券商</span><input name="issuer" autocomplete="organization" required></label>
+            <label><span>張數</span><input name="lots" type="number" min="1" step="1" inputmode="numeric" required></label>
+            <label><span>成交價</span><input name="price" type="number" min="0.001" step="0.001" inputmode="decimal" required></label>
+            <label><span>手續費</span><input name="commission" type="number" min="0" step="0.01" inputmode="decimal" value="0" required></label>
+            <label><span>交易稅</span><input name="transaction_tax" type="number" min="0" step="0.01" inputmode="decimal" value="0" required></label>
+            <label class="field-wide"><span>備註</span><textarea name="notes" rows="3" placeholder="選填"></textarea></label>
+          </div>
+          <p id="transaction-message" class="form-message" role="alert" aria-live="assertive"></p>
+          <div class="dialog-actions">
+            <button id="cancel-transaction" class="secondary-button" type="button">取消</button>
+            <button id="save-transaction" class="primary-button" type="submit">儲存交易</button>
+          </div>
+        </form>
+      </dialog>
+    </section>
   </main>
 
   <footer><p>研究用途。Raw = 重要事件，不等於買進訊號；方向、主力排行與 Episode 狀態需一起判讀。</p></footer>
   <script src="data.js"></script>
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script src="portfolio-core.js?v=1"></script>
+  <script src="portfolio.js?v=1"></script>
 </body>
 </html>

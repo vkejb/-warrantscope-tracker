@@ -20,6 +20,8 @@
 - 觀察中快照
 - Episode 資料庫
 - 股票搜尋與事件時間線
+- Supabase Email / Password 私人損益帳本
+- 交易新增、目前持倉、移動加權平均成本與 Trade Episode
 - 手機版響應式排版
 
 ## 資料狀態
@@ -39,16 +41,21 @@
 5. Branch 選 `main` / `(root)`
 6. 儲存後等一下，就會得到固定網址
 
-重要：GitHub Pages 預設是公開網站。這一版只建議放市場研究資料，不要放你的私人持倉、成本、資金或個資。
+重要：GitHub Pages 預設是公開網站。市場研究資料仍放在 `data.js`；私人交易、持倉與損益只透過登入後的 Supabase RLS API 讀寫，不得放進 `data.js` 或公開 JSON。前端只使用可公開的 Supabase publishable key，不得加入 service role key、secret key 或資料庫密碼。
 
 ## 檔案說明
 
 - `index.html`：首頁
 - `style.css`：畫面樣式
 - `app.js`：月份 / 日期 / 搜尋 / 顯示邏輯
+- `portfolio.js`：Supabase Auth、私人交易讀寫與損益介面
+- `portfolio-core.js`：持倉、成本、損益與 Episode 計算
 - `data.js`：目前所有研究資料
+- `tests/portfolio-core.test.js`：損益計算與超賣防護測試
 - `README.md`：這份說明
 
 之後每日更新時，主要會更新 `data.js`，網站網址本身不用改。
+
+損益計算測試：`node --test tests/portfolio-core.test.js`
 
 Codex push test
