@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>WarrantScope Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">WARRANT ACTIVITY RESEARCH</div>
+      <h1>WarrantScope Tracker</h1>
+      <p class="subtitle">Raw 爆量 × 買賣排行 × 觀察中 × Episode</p>
+    </div>
+    <div class="status-pill" id="data-status">資料已載入</div>
+  </header>
+
+  <main class="shell">
+    <section class="controls panel">
+      <div class="control-grid">
+        <label>
+          <span>月份</span>
+          <select id="month-select"></select>
+        </label>
+        <label>
+          <span>日期</span>
+          <select id="date-select"></select>
+        </label>
+        <label class="search-box">
+          <span>股票搜尋</span>
+          <input id="stock-search" type="search" placeholder="例：奇鋐、3017、緯穎">
+        </label>
+      </div>
+      <div id="date-pills" class="date-pills"></div>
+      <div id="date-note" class="date-note"></div>
+    </section>
+
+    <section id="stock-result" class="panel hidden"></section>
+
+    <section class="kpis" id="kpis"></section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">RAW ALERTS</div>
+          <h2>爆量權證</h2>
+        </div>
+        <div id="raw-summary" class="muted"></div>
+      </div>
+      <div id="underlying-cards" class="underlying-grid"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>母股</th><th>權證</th><th>Issuer</th><th>30分量</th><th>流通</th><th>倍數</th><th>方向</th><th>Episode</th><th>備註</th>
+            </tr>
+          </thead>
+          <tbody id="raw-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="rank-grid">
+      <section class="panel">
+        <div class="section-head">
+          <div><div class="eyebrow buy-text">BUY SIDE</div><h2>買方主力排行</h2></div>
+          <span id="buy-completeness" class="badge neutral"></span>
+        </div>
+        <div id="buy-rank"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div><div class="eyebrow sell-text">SELL SIDE</div><h2>賣方主力排行</h2></div>
+          <span id="sell-completeness" class="badge neutral"></span>
+        </div>
+        <div id="sell-rank"></div>
+      </section>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><div class="eyebrow">OBSERVATION</div><h2>觀察中快照</h2></div>
+        <div id="obs-summary" class="muted"></div>
+      </div>
+      <div id="observation-list" class="observation-list"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><div class="eyebrow">EPISODES</div><h2>Episode 資料庫</h2></div>
+        <div class="muted">點股票搜尋可以快速串起歷史事件</div>
+      </div>
+      <div id="episode-list" class="episode-list"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>研究用途。Raw = 重要事件，不等於買進訊號；方向、主力排行與 Episode 狀態需一起判讀。</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
