@@ -112,7 +112,7 @@
     byId("portfolio-user-email").textContent = session.user.email || "已登入";
     byId("portfolio-session-status").textContent = "已登入";
     byId("portfolio-session-status").className = "badge active-status";
-    byId("account-overview-grid").innerHTML = ["起始本金", "銀行現金", "待交割", "交割調整後現金", "持倉淨清算價值", "總資產", "已實現損益", "未實現損益", "累計損益", "累計績效"].map(label => `
+    byId("account-overview-grid").innerHTML = ["起始本金", "銀行現金", "待交割", "交割調整後現金", "持倉市值", "持倉淨值", "總資產", "已實現損益", "未實現損益", "累計損益", "累計績效"].map(label => `
       <article class="account-metric loading-kpi"><span>${label}</span><strong>—</strong></article>
     `).join("");
     byId("performance-grid").innerHTML = ["本週", "本月", "累計"].map(label => `<article class="performance-card loading-kpi"><span>${label}</span><strong>—</strong></article>`).join("");
@@ -132,7 +132,8 @@
       ["銀行現金", moneyOrWaiting(account.cashBalance), "", ""],
       ["待交割", moneyOrWaiting(account.pendingSettlement), account.pendingSettlement === null ? "" : pnlClass(account.pendingSettlement), ""],
       ["交割調整後現金", moneyOrWaiting(account.adjustedCash), "", ""],
-      ["權證持倉淨清算價值", moneyOrWaiting(account.positionLiquidationValue), "", ""],
+      ["持倉市值", moneyOrWaiting(account.positionMarketValue), "", ""],
+      ["持倉淨值", moneyOrWaiting(account.positionLiquidationValue), "", ""],
       ["總資產", moneyOrWaiting(account.totalAssets), "", "featured"],
       ["已實現損益", account.realizedPnl === null ? "等待快照" : signedMoney(account.realizedPnl), account.realizedPnl === null ? "waiting" : pnlClass(account.realizedPnl), ""],
       ["未實現損益", account.unrealizedPnl === null ? "等待市價" : signedMoney(account.unrealizedPnl), account.unrealizedPnl === null ? "waiting" : pnlClass(account.unrealizedPnl), ""],
@@ -146,8 +147,8 @@
     byId("account-as-of").textContent = account.asOf ? `${account.asOf}${latest?.is_complete === false ? " · 未完成" : ""}` : "等待快照";
     byId("account-as-of").className = `badge ${latest?.is_complete === false ? "warn" : account.asOf ? "active-status" : "neutral"}`;
     byId("account-formula-note").textContent = account.cumulativePnl === null
-      ? "需要起始本金與每日快照，才能依交割調整後現金計算累計策略損益。"
-      : `淨外部現金流 ${signedMoney(account.externalCashFlow)}；累計損益已扣除 DEPOSIT 並加回 WITHDRAWAL。`;
+      ? "需要最新每日快照與起始本金，才能顯示累計績效。"
+      : `交割調整後現金＝銀行現金＋待交割；累計績效＝累計損益÷起始本金。淨外部現金流 ${signedMoney(account.externalCashFlow)}。`;
   }
 
   function renderPerformance(account) {
@@ -237,11 +238,16 @@
     }
     byId("cash-flow-list").innerHTML = rows.map(flow => {
       const type = String(flow.flow_type || "").toUpperCase();
-      const signedAmount = type === "WITHDRAWAL" ? -Math.abs(Number(flow.amount || 0)) : Math.abs(Number(flow.amount || 0));
+      const signedAmount = core.signedCashFlowAmount(flow);
+      const flowLabel = type === "DEPOSIT" ? "資金流入"
+        : type === "WITHDRAWAL" ? "資金流出"
+        : type === "DIVIDEND" ? "股息調節"
+        : type === "INTEREST_EXPENSE" ? "利息支出"
+        : escapeHtml(type);
       return `
         <article class="cash-flow-card">
           <div class="card-title-row">
-            <div><span class="stock-code">${escapeHtml(flow.source || "MANUAL")}</span><h3>${type === "DEPOSIT" ? "資金流入" : type === "WITHDRAWAL" ? "資金流出" : escapeHtml(type)}</h3></div>
+            <div><span class="stock-code">${escapeHtml(flow.source || "MANUAL")}</span><h3>${flowLabel}</h3></div>
             <strong class="cash-flow-amount ${pnlClass(signedAmount)}">${signedMoney(signedAmount)}</strong>
           </div>
           <div class="transaction-meta"><span>${escapeHtml(displayDateTime(flow.occurred_at))}</span><span>${escapeHtml(type)}</span></div>
@@ -354,7 +360,7 @@
         .eq("user_id", userId)
         .order("occurred_at", {ascending: true}),
       client.from("daily_snapshots")
-        .select("snapshot_date,cash_balance,pending_settlement,position_liquidation_value,realized_pnl,unrealized_pnl,total_pnl,day_pnl,twr_daily,is_complete,notes,created_at")
+        .select("snapshot_date,cash_balance,pending_settlement,position_market_value,position_liquidation_value,net_asset_value,realized_pnl,unrealized_pnl,total_pnl,day_pnl,twr_daily,is_complete,notes,created_at")
         .eq("user_id", userId)
         .order("snapshot_date", {ascending: true}),
       client.from("trade_episodes")

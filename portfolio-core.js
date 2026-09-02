@@ -219,6 +219,8 @@
 
   function snapshotTotalAssets(row) {
     if (!row) return null;
+    const netAssetValue = nullableNumeric(row.net_asset_value);
+    if (netAssetValue !== null) return netAssetValue;
     const cashBalance = nullableNumeric(row.cash_balance);
     const pendingSettlement = nullableNumeric(row.pending_settlement) ?? 0;
     const liquidationValue = nullableNumeric(row.position_liquidation_value);
@@ -249,6 +251,12 @@
     }, 0);
   }
 
+  function signedCashFlowAmount(flow) {
+    const amount = Math.abs(numeric(flow?.amount));
+    const type = String(flow?.flow_type || "").toUpperCase();
+    return type === "WITHDRAWAL" || type === "INTEREST_EXPENSE" ? -amount : amount;
+  }
+
   function calculateAccountOverview({settings, cashFlows, dailySnapshots, ledger}) {
     const snapshots = [...(dailySnapshots || [])].sort((a, b) => snapshotDate(a).localeCompare(snapshotDate(b)));
     const latestSnapshot = snapshots[snapshots.length - 1] || null;
@@ -256,14 +264,18 @@
     const cashBalance = nullableNumeric(latestSnapshot?.cash_balance);
     const pendingSettlement = latestSnapshot ? (nullableNumeric(latestSnapshot.pending_settlement) ?? 0) : null;
     const adjustedCash = cashBalance === null ? null : cashBalance + pendingSettlement;
+    const positionMarketValue = nullableNumeric(latestSnapshot?.position_market_value);
     const positionLiquidationValue = nullableNumeric(latestSnapshot?.position_liquidation_value);
-    const totalAssets = adjustedCash === null || positionLiquidationValue === null
+    const snapshotNetAssetValue = nullableNumeric(latestSnapshot?.net_asset_value);
+    const calculatedTotalAssets = adjustedCash === null || positionLiquidationValue === null
       ? null
       : adjustedCash + positionLiquidationValue;
+    const totalAssets = snapshotNetAssetValue ?? calculatedTotalAssets;
     const externalCashFlow = netExternalCashFlow(cashFlows, snapshotDate(latestSnapshot), settings?.timezone || "Asia/Taipei");
-    const cumulativePnl = totalAssets === null || startingCapital === null
+    const snapshotTotalPnl = nullableNumeric(latestSnapshot?.total_pnl);
+    const cumulativePnl = snapshotTotalPnl ?? (totalAssets === null || startingCapital === null
       ? null
-      : totalAssets - startingCapital - externalCashFlow;
+      : totalAssets - startingCapital - externalCashFlow);
     const cumulativePerformance = cumulativePnl === null || !startingCapital
       ? null
       : cumulativePnl / startingCapital * 100;
@@ -277,6 +289,7 @@
       cashBalance,
       pendingSettlement,
       adjustedCash,
+      positionMarketValue,
       positionLiquidationValue,
       totalAssets,
       realizedPnl,
@@ -352,6 +365,7 @@
     currentPosition,
     effectiveTransactions,
     netExternalCashFlow,
+    signedCashFlowAmount,
     snapshotTotalAssets,
     validateSale,
   };

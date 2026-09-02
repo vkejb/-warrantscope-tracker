@@ -30,7 +30,8 @@
 
 - 8/24～8/28：依目前可回收的資料整理；部分賣方資料仍標 Partial / Missing
 - 8/31：Raw + 買方 Top20 + 賣方 Top20 已收錄
-- 9/1：Raw 15 張 + 完整 23 檔觀察中已收錄；買賣排行尚待盤後補入
+- 9/1：Raw 15 張 + 完整 23 檔觀察中 + 買賣 Top20 已收錄
+- 9/2：Raw 6 張 + 買方 Top20 + 賣方 Top20 已收錄；排行金額為兩個可見分點加總的近似值
 
 ## 之後放到 GitHub Pages
 
@@ -55,6 +56,7 @@
 - `data.js`：目前所有研究資料
 - `tests/portfolio-core.test.js`：損益計算與超賣防護測試
 - `tests/portfolio-integration.test.js`：登入邊界、私人資料表與損益介面接線測試
+- `tests/market-data.test.js`：日期、Raw 與買賣 Top20 完整性測試
 - `README.md`：這份說明
 
 之後每日更新時，主要會更新 `data.js`，網站網址本身不用改。

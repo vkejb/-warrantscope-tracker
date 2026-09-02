@@ -140,7 +140,7 @@
     const [topCode, topName] = topRaw ? topRaw[0].split("|") : ["—", "沒有 Raw"];
     const focus = [
       ["Raw 最集中", topRaw ? `${topCode} ${topName}` : "沒有 Raw", topRaw ? `${topRaw[1]} 張權證同時觸發` : "所選日期無 Raw Trigger", "raw"],
-      ["最高倍數", maxRaw ? `${maxRaw.Displayed_Multiple}x` : "—", maxRaw ? `${maxRaw.Underlying_Code} ${maxRaw.Underlying_Name} · ${maxRaw.Warrant_Code}` : "尚無可計算資料", "raw"],
+      ["最高倍數", maxRaw ? `${maxRaw.Displayed_Multiple}x` : "—", maxRaw ? `${maxRaw.Underlying_Code} ${maxRaw.Underlying_Name} · ${maxRaw.Warrant_Code}${Number(maxRaw.Circulation) <= 1 ? " · 小分母放大" : ""}` : "尚無可計算資料", "raw"],
       ["買方焦點", topBuy ? `${topBuy["母股代號"]} ${topBuy["母股名稱"]}` : "尚未收錄", topBuy ? `BUY #${topBuy["排名"]}` : "所選日期無買方排行", "mainforce"],
       ["賣方焦點", topSell ? `${topSell["母股代號"]} ${topSell["母股名稱"]}` : "尚未收錄", topSell ? `SELL #${topSell["排名"]}` : "所選日期無賣方排行", "mainforce"],
     ];

@@ -79,6 +79,7 @@
         <button type="button" class="segment buy active" role="tab" data-side="BUY" aria-selected="true">BUY 買方</button>
         <button type="button" class="segment sell" role="tab" data-side="SELL" aria-selected="false">SELL 賣方</button>
       </div>
+      <p class="date-note">金額欄為畫面中可見分點加總，僅供近似，不代表完整主力淨額。</p>
       <section class="panel rank-panel buy-side" id="buy-panel">
         <div class="section-head"><div><div class="eyebrow buy-text">BUY SIDE</div><h3>買方主力排行</h3></div><span id="buy-completeness" class="badge neutral"></span></div>
         <div id="buy-rank"></div>
@@ -239,10 +240,10 @@
   </main>
 
   <footer><p>研究用途。Raw = 重要事件，不等於買進訊號；方向、主力排行與 Episode 狀態需一起判讀。</p></footer>
-  <script src="data.js"></script>
-  <script src="app.js?v=3"></script>
+  <script src="data.js?v=2"></script>
+  <script src="app.js?v=5"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-  <script src="portfolio-core.js?v=2"></script>
-  <script src="portfolio.js?v=2"></script>
+  <script src="portfolio-core.js?v=3"></script>
+  <script src="portfolio.js?v=3"></script>
 </body>
 </html>

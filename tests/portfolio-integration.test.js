@@ -14,6 +14,7 @@ test("六張私人資料表都由登入後的 Supabase client 讀取", () => {
   }
   assert.match(portfolioSource, /if \(!session\?\.user\)/);
   assert.match(portfolioSource, /await loadPrivateData\(session, message\)/);
+  assert.match(portfolioSource, /position_market_value,position_liquidation_value,net_asset_value/);
 });
 
 test("損益頁包含帳戶、績效、持倉、現金流、交易、Episode 與資產曲線區塊", () => {

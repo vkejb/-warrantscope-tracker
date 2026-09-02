@@ -7,6 +7,8 @@ const {
   currentPosition,
   effectiveTransactions,
   netExternalCashFlow,
+  signedCashFlowAmount,
+  snapshotTotalAssets,
   validateSale,
   PortfolioError,
 } = require("../portfolio-core.js");
@@ -90,7 +92,7 @@ test("排除作廢與已被更正取代的交易，但保留更正後交易", ()
   assert.equal(ledger.positions[0].lots, 3);
 });
 
-test("帳戶總覽依交割與外部現金流公式計算", () => {
+test("帳戶總覽使用最新 snapshot 的總資產、損益與起始本金績效", () => {
   const cashFlows = [
     {flow_type: "DEPOSIT", amount: 100000},
     {flow_type: "WITHDRAWAL", amount: 20000},
@@ -102,20 +104,31 @@ test("帳戶總覽依交割與外部現金流公式計算", () => {
       snapshot_date: "2026-09-02",
       cash_balance: 200000,
       pending_settlement: -50000,
+      position_market_value: 910000,
       position_liquidation_value: 900000,
+      net_asset_value: 1060000,
       realized_pnl: 12000,
       unrealized_pnl: -3000,
+      total_pnl: 60000,
     }],
     ledger: null,
   });
 
   assert.equal(netExternalCashFlow(cashFlows), 80000);
   assert.equal(account.adjustedCash, 150000);
-  assert.equal(account.totalAssets, 1050000);
-  assert.equal(account.cumulativePnl, -30000);
-  assert.equal(account.cumulativePerformance, -3);
+  assert.equal(account.positionMarketValue, 910000);
+  assert.equal(account.positionLiquidationValue, 900000);
+  assert.equal(account.totalAssets, 1060000);
+  assert.equal(snapshotTotalAssets(account.latestSnapshot), 1060000);
+  assert.equal(account.cumulativePnl, 60000);
+  assert.equal(account.cumulativePerformance, 6);
   assert.equal(account.realizedPnl, 12000);
   assert.equal(account.unrealizedPnl, -3000);
+});
+
+test("利息支出以負值顯示，但資料庫維持正數金額", () => {
+  assert.equal(signedCashFlowAmount({flow_type: "INTEREST_EXPENSE", amount: 197}), -197);
+  assert.equal(signedCashFlowAmount({flow_type: "DIVIDEND", amount: 1250}), 1250);
 });
 
 test("本週與本月績效以每日損益及 TWR 日報酬串接", () => {
