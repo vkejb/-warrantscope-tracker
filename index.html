@@ -5,103 +5,128 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>WarrantScope Tracker</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <header class="topbar">
     <div>
       <div class="eyebrow">WARRANT ACTIVITY RESEARCH</div>
-      <h1>WarrantScope Tracker</h1>
-      <p class="subtitle">Raw 爆量 × 買賣排行 × 觀察中 × Episode</p>
+      <h1>WarrantScope</h1>
+      <p class="subtitle">從 Raw 到 Episode 的市場活動追蹤</p>
     </div>
     <div class="status-pill" id="data-status">資料已載入</div>
   </header>
 
+  <nav class="tab-nav" aria-label="主要功能" role="tablist">
+    <div class="tab-track">
+      <button class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="panel-overview" data-tab="overview">總覽</button>
+      <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-raw" data-tab="raw">爆量</button>
+      <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-mainforce" data-tab="mainforce">主力</button>
+      <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-observation" data-tab="observation">觀察中</button>
+      <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-history" data-tab="history">歷史</button>
+      <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-stock" data-tab="stock">股票</button>
+    </div>
+  </nav>
+
   <main class="shell">
-    <section class="controls panel">
+    <section class="date-controls panel" aria-label="資料日期">
       <div class="control-grid">
-        <label>
-          <span>月份</span>
-          <select id="month-select"></select>
-        </label>
-        <label>
-          <span>日期</span>
-          <select id="date-select"></select>
-        </label>
-        <label class="search-box">
-          <span>股票搜尋</span>
-          <input id="stock-search" type="search" placeholder="例：奇鋐、3017、緯穎">
-        </label>
+        <label><span>月份</span><select id="month-select"></select></label>
+        <label><span>交易日期</span><select id="date-select"></select></label>
       </div>
       <div id="date-pills" class="date-pills"></div>
       <div id="date-note" class="date-note"></div>
     </section>
 
-    <section id="stock-result" class="panel hidden"></section>
-
-    <section class="kpis" id="kpis"></section>
-
-    <section class="panel">
-      <div class="section-head">
-        <div>
-          <div class="eyebrow">RAW ALERTS</div>
-          <h2>爆量權證</h2>
-        </div>
-        <div id="raw-summary" class="muted"></div>
+    <section id="panel-overview" class="tab-panel active" role="tabpanel" data-panel="overview">
+      <div class="page-heading">
+        <div><div class="eyebrow">DAILY BRIEF</div><h2>今日總覽</h2></div>
+        <div id="overview-date" class="page-date"></div>
       </div>
-      <div id="underlying-cards" class="underlying-grid"></div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>母股</th><th>權證</th><th>Issuer</th><th>30分量</th><th>流通</th><th>倍數</th><th>方向</th><th>Episode</th><th>備註</th>
-            </tr>
-          </thead>
-          <tbody id="raw-body"></tbody>
-        </table>
-      </div>
+      <section class="kpis" id="kpis"></section>
+      <section class="overview-grid">
+        <article class="panel focus-panel">
+          <div class="section-head compact"><div><div class="eyebrow">TODAY'S FOCUS</div><h3>今日重點</h3></div></div>
+          <div id="overview-focus" class="focus-list"><div class="empty">依所選日期整理重點</div></div>
+        </article>
+        <article class="panel">
+          <div class="section-head compact"><div><div class="eyebrow">QUICK ACCESS</div><h3>快速入口</h3></div></div>
+          <div class="quick-grid">
+            <button type="button" class="quick-link" data-go-tab="raw"><span>爆量</span><strong>查看全部 Raw</strong></button>
+            <button type="button" class="quick-link" data-go-tab="mainforce"><span>主力</span><strong>切換買賣排行</strong></button>
+            <button type="button" class="quick-link" data-go-tab="observation"><span>觀察中</span><strong>檢視名單快照</strong></button>
+            <button type="button" class="quick-link" data-go-tab="stock"><span>股票</span><strong>搜尋完整時間線</strong></button>
+          </div>
+        </article>
+      </section>
     </section>
 
-    <section class="rank-grid">
-      <section class="panel">
-        <div class="section-head">
-          <div><div class="eyebrow buy-text">BUY SIDE</div><h2>買方主力排行</h2></div>
-          <span id="buy-completeness" class="badge neutral"></span>
-        </div>
+    <section id="panel-raw" class="tab-panel" role="tabpanel" data-panel="raw" hidden>
+      <div class="page-heading">
+        <div><div class="eyebrow">RAW ALERTS</div><h2>爆量權證</h2></div>
+        <div id="raw-summary" class="page-date"></div>
+      </div>
+      <div id="underlying-cards" class="underlying-grid"></div>
+      <div id="raw-list" class="raw-list"></div>
+      <div class="table-wrap legacy-table" aria-hidden="true"><table><tbody id="raw-body"></tbody></table></div>
+    </section>
+
+    <section id="panel-mainforce" class="tab-panel" role="tabpanel" data-panel="mainforce" hidden>
+      <div class="page-heading"><div><div class="eyebrow">MAJOR PLAYERS</div><h2>主力排行</h2></div></div>
+      <div class="segmented" role="tablist" aria-label="主力方向">
+        <button type="button" class="segment buy active" role="tab" data-side="BUY" aria-selected="true">BUY 買方</button>
+        <button type="button" class="segment sell" role="tab" data-side="SELL" aria-selected="false">SELL 賣方</button>
+      </div>
+      <section class="panel rank-panel buy-side" id="buy-panel">
+        <div class="section-head"><div><div class="eyebrow buy-text">BUY SIDE</div><h3>買方主力排行</h3></div><span id="buy-completeness" class="badge neutral"></span></div>
         <div id="buy-rank"></div>
       </section>
-
-      <section class="panel">
-        <div class="section-head">
-          <div><div class="eyebrow sell-text">SELL SIDE</div><h2>賣方主力排行</h2></div>
-          <span id="sell-completeness" class="badge neutral"></span>
-        </div>
+      <section class="panel rank-panel sell-side hidden" id="sell-panel">
+        <div class="section-head"><div><div class="eyebrow sell-text">SELL SIDE</div><h3>賣方主力排行</h3></div><span id="sell-completeness" class="badge neutral"></span></div>
         <div id="sell-rank"></div>
       </section>
     </section>
 
-    <section class="panel">
-      <div class="section-head">
-        <div><div class="eyebrow">OBSERVATION</div><h2>觀察中快照</h2></div>
-        <div id="obs-summary" class="muted"></div>
+    <section id="panel-observation" class="tab-panel" role="tabpanel" data-panel="observation" hidden>
+      <div class="page-heading">
+        <div><div class="eyebrow">OBSERVATION</div><h2>觀察中</h2></div>
+        <div id="obs-summary" class="page-date"></div>
+      </div>
+      <div class="toolbar panel">
+        <div class="segmented compact-segments" role="group" aria-label="觀察資料模式">
+          <button type="button" class="segment active" data-observation-mode="current">目前</button>
+          <button type="button" class="segment" data-observation-mode="snapshot">日期快照</button>
+        </div>
+        <label class="toolbar-search"><span>搜尋觀察標的</span><input id="observation-search" type="search" placeholder="股票代號或名稱"></label>
+        <label><span>排序</span><select id="observation-sort"><option value="recent">最近進觀察</option><option value="oldest">最早進觀察</option><option value="raw">Raw 張數高到低</option><option value="code">股票代號</option></select></label>
       </div>
       <div id="observation-list" class="observation-list"></div>
     </section>
 
-    <section class="panel">
-      <div class="section-head">
-        <div><div class="eyebrow">EPISODES</div><h2>Episode 資料庫</h2></div>
-        <div class="muted">點股票搜尋可以快速串起歷史事件</div>
+    <section id="panel-history" class="tab-panel" role="tabpanel" data-panel="history" hidden>
+      <div class="page-heading"><div><div class="eyebrow">EPISODE DATABASE</div><h2>歷史 Episode</h2></div></div>
+      <section id="history-kpis" class="kpis history-kpis"></section>
+      <div class="toolbar panel history-toolbar">
+        <label class="toolbar-search"><span>搜尋 Episode</span><input id="history-search" type="search" placeholder="股票代號或名稱"></label>
+        <label><span>結果</span><select id="history-outcome"><option value="all">全部</option><option value="win">勝</option><option value="loss">敗</option><option value="flat">持平</option></select></label>
+        <label><span>排序</span><select id="history-sort"><option value="entry-desc">最近進場</option><option value="exit-desc">最近退出</option><option value="return-desc">報酬高到低</option><option value="return-asc">報酬低到高</option></select></label>
       </div>
       <div id="episode-list" class="episode-list"></div>
+      <nav id="history-pagination" class="pagination" aria-label="歷史資料分頁"></nav>
+    </section>
+
+    <section id="panel-stock" class="tab-panel" role="tabpanel" data-panel="stock" hidden>
+      <div class="page-heading"><div><div class="eyebrow">STOCK TIMELINE</div><h2>股票時間線</h2></div></div>
+      <section class="panel stock-search-panel">
+        <label class="search-box"><span>輸入股票代號或名稱</span><input id="stock-search" type="search" placeholder="例：3017、奇鋐、緯穎" autocomplete="off"></label>
+        <p class="input-hint">整合 Raw、主力、進觀察、退出與再次進場事件。</p>
+      </section>
+      <section id="stock-result" class="stock-result"><div class="empty search-empty">輸入股票代號或名稱，查看完整 Episode timeline</div></section>
     </section>
   </main>
 
-  <footer>
-    <p>研究用途。Raw = 重要事件，不等於買進訊號；方向、主力排行與 Episode 狀態需一起判讀。</p>
-  </footer>
-
+  <footer><p>研究用途。Raw = 重要事件，不等於買進訊號；方向、主力排行與 Episode 狀態需一起判讀。</p></footer>
   <script src="data.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
