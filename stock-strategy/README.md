@@ -24,6 +24,7 @@
 python3 scripts/run_backtest.py /path/yearly_2019.zip /path/yearly_2020.zip /path/yearly_2021.zip /path/yearly_2022.zip /path/yearly_2023.zip /path/yearly_2024.zip /path/yearly_2025.zip --output backtest-result.json
 python3 scripts/run_backtest_v2.py /path/yearly_2019.zip /path/yearly_2020.zip /path/yearly_2021.zip /path/yearly_2022.zip /path/yearly_2023.zip /path/yearly_2024.zip /path/yearly_2025.zip --output backtest-result-v2.json
 python3 scripts/research_event_driven.py /path/yearly_2019.zip /path/yearly_2020.zip /path/yearly_2021.zip /path/yearly_2022.zip /path/yearly_2023.zip /path/yearly_2024.zip /path/yearly_2025.zip --output research-event-driven.json
+python3 scripts/research_daily_strength.py /path/yearly_2019.zip /path/yearly_2020.zip /path/yearly_2021.zip /path/yearly_2022.zip /path/yearly_2023.zip /path/yearly_2024.zip /path/yearly_2025.zip --output research-daily-strength.json
 ```
 
 V2 在執行前固定加入 0050 多頭濾網、6-to-1 月動能、波動上限、三檔持股及排名緩衝以降低換手。2020–2022 為設計期、2023–2024 為驗證期、2025 為鎖定規則後的樣本外測試。V2 仍未通過，結果保留而不以 2025 重新調參。
@@ -31,3 +32,5 @@ V2 在執行前固定加入 0050 多頭濾網、6-to-1 月動能、波動上限�
 後續歸因研究一次固定測試五個經濟邏輯不同的版本，不作參數網格搜尋。最佳版本是「低波動趨勢10檔／季換股＋大盤濾網」：總報酬 +23.97%、2024驗證 +9.37%、2025壓力測試 -9.88%，仍顯著落後0050。研究結果指出增加分散、降低換手與保留大盤濾網是有效方向，但純價量選股不適合取代ETF核心。
 
 事件驅動研究將「找新股票」與「賣出持股」分離：每月只更新候選名單及補足空缺，原持股不因月底到期而賣出；只有大盤轉空、固定停損、趨勢破壞或獲利後移動停利才在下一交易日開盤退出。三組退出規則在執行前固定。100日趨勢加10%移動停利的總報酬為 +19.61%、最大回撤 20.31%，2024 +7.04%、2025 +16.20%；顯示事件退出可改善回撤及續抱，但尚未形成超越0050的獨立策略。
+
+每日強勢研究使用每日收盤橫斷面排名並於隔日開盤交易。只補空缺版本總報酬 +9.54%，跌出30名才替換為 -37.54%，每日機械持有前10名為 -54.46%。零成本敏感度顯示三者分別約 +39.59%、-0.41%、+25.94%，證明高頻排名的毛優勢不足以負擔真實交易摩擦。首次結果後追加的連續3日／5日確認僅屬探索性診斷，不得用來宣稱樣本外最佳；兩者2024均為負報酬，未通過驗證。

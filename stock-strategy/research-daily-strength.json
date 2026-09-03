@@ -1,0 +1,116 @@
+{
+  "method": "Daily close ranking and next-open execution. Three initial variants plus exploratory 3/5-day persistence checks; persistence checks are not eligible for model selection because they were added after the first result.",
+  "benchmark": {
+    "name": "0050 價格報酬（不含股息）",
+    "total_return_pct": 166.41,
+    "cagr_pct": 17.74,
+    "max_drawdown_pct": 36.38
+  },
+  "variants": [
+    {
+      "id": "daily_fill",
+      "name": "每日掃描／只補空缺",
+      "summary": {
+        "final_equity": 32862.23,
+        "total_return_pct": 9.54,
+        "cagr_pct": 1.53,
+        "max_drawdown_pct": 40.2,
+        "trades": 566,
+        "win_rate_pct": 35.69,
+        "total_costs": 5424
+      },
+      "annual": {
+        "2020": -19.42,
+        "2021": -9.63,
+        "2022": -2.76,
+        "2023": 10.84,
+        "2024": -7.57,
+        "2025": 53.46
+      }
+    },
+    {
+      "id": "daily_confirm3",
+      "name": "連續強勢3日／只補空缺",
+      "summary": {
+        "final_equity": 30094.2,
+        "total_return_pct": 0.31,
+        "cagr_pct": 0.05,
+        "max_drawdown_pct": 40.11,
+        "trades": 557,
+        "win_rate_pct": 35.19,
+        "total_costs": 5812
+      },
+      "annual": {
+        "2020": -13.52,
+        "2021": -10.49,
+        "2022": -2.92,
+        "2023": 23.08,
+        "2024": -12.1,
+        "2025": 25.84
+      }
+    },
+    {
+      "id": "daily_confirm5",
+      "name": "連續強勢5日／只補空缺",
+      "summary": {
+        "final_equity": 35178.54,
+        "total_return_pct": 17.26,
+        "cagr_pct": 2.69,
+        "max_drawdown_pct": 39.26,
+        "trades": 527,
+        "win_rate_pct": 34.72,
+        "total_costs": 5496
+      },
+      "annual": {
+        "2020": -12.12,
+        "2021": -15.41,
+        "2022": -1.63,
+        "2023": 25.15,
+        "2024": -4.32,
+        "2025": 34.18
+      }
+    },
+    {
+      "id": "daily_buffer30",
+      "name": "每日掃描／跌出30名才替換",
+      "summary": {
+        "final_equity": 18738.23,
+        "total_return_pct": -37.54,
+        "cagr_pct": -7.54,
+        "max_drawdown_pct": 53.73,
+        "trades": 1056,
+        "win_rate_pct": 34.56,
+        "total_costs": 9261
+      },
+      "annual": {
+        "2020": -17.57,
+        "2021": -10.18,
+        "2022": -7.06,
+        "2023": -1.25,
+        "2024": -14.29,
+        "2025": 12.35
+      }
+    },
+    {
+      "id": "daily_top10",
+      "name": "每日機械持有前10名",
+      "summary": {
+        "final_equity": 13662.92,
+        "total_return_pct": -54.46,
+        "cagr_pct": -12.29,
+        "max_drawdown_pct": 58.4,
+        "trades": 2232,
+        "win_rate_pct": 41.89,
+        "total_costs": 18591
+      },
+      "annual": {
+        "2020": -17.13,
+        "2021": -5.87,
+        "2022": -8.6,
+        "2023": -8.67,
+        "2024": -20.43,
+        "2025": -10.56
+      }
+    }
+  ]
+}

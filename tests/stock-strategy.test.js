@@ -10,6 +10,7 @@ const result = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "bac
 const resultV2 = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "backtest-result-v2.json"), "utf8"));
 const research = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-variants.json"), "utf8"));
 const eventResearch = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-event-driven.json"), "utf8"));
+const dailyResearch = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-daily-strength.json"), "utf8"));
 
 test("現股策略與 WarrantScope UI 完全分離", () => {
   assert.doesNotMatch(mainHtml, /panel-strategy|backtest-core|backtest-ui/);
@@ -58,4 +59,14 @@ test("事件退出不因月份到期強制賣股且保留預先定義的三組�
   assert.ok(balanced.summary.max_drawdown_pct < 25);
   assert.ok(balanced.annual["2024"] > 0);
   assert.ok(balanced.annual["2025"] > 0);
+});
+
+test("每日強勢研究保留真實成本並標示事後追加診斷不得選模", () => {
+  assert.equal(dailyResearch.variants.length, 5);
+  assert.match(dailyResearch.method, /not eligible for model selection/);
+  const fill = dailyResearch.variants.find(row => row.id === "daily_fill");
+  const mechanical = dailyResearch.variants.find(row => row.id === "daily_top10");
+  assert.ok(fill.summary.total_costs > 0);
+  assert.ok(mechanical.summary.trades > fill.summary.trades);
+  assert.ok(mechanical.summary.total_return_pct < fill.summary.total_return_pct);
 });
