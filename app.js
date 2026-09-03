@@ -44,7 +44,7 @@
 
   function selectTab(tab, {focus = false, scroll = true} = {}) {
     state.activeTab = tab;
-    $(".date-controls").classList.toggle("hidden", tab === "portfolio");
+    $(".date-controls").classList.toggle("hidden", ["portfolio", "strategy"].includes(tab));
     $$(".tab-button").forEach(button => {
       const selected = button.dataset.tab === tab;
       button.classList.toggle("active", selected);
