@@ -9,6 +9,7 @@ const stockHtml = fs.readFileSync(path.join(root, "stock-strategy", "index.html"
 const result = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "backtest-result.json"), "utf8"));
 const resultV2 = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "backtest-result-v2.json"), "utf8"));
 const research = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-variants.json"), "utf8"));
+const eventResearch = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-event-driven.json"), "utf8"));
 
 test("現股策略與 WarrantScope UI 完全分離", () => {
   assert.doesNotMatch(mainHtml, /panel-strategy|backtest-core|backtest-ui/);
@@ -47,4 +48,14 @@ test("歸因研究只含預先定義版本並找出較佳但仍落後0050的方�
   assert.ok(best.summary.total_return_pct > 0);
   assert.ok(best.phase.validation_2024 > 0);
   assert.ok(best.summary.total_return_pct < resultV2.benchmark.total_return_pct);
+});
+
+test("事件退出不因月份到期強制賣股且保留預先定義的三組規則", () => {
+  assert.match(eventResearch.method, /no calendar-forced liquidation/);
+  assert.equal(eventResearch.variants.length, 3);
+  const balanced = eventResearch.variants.find(row => row.id === "trend100_trail10");
+  assert.ok(balanced.summary.total_return_pct > 0);
+  assert.ok(balanced.summary.max_drawdown_pct < 25);
+  assert.ok(balanced.annual["2024"] > 0);
+  assert.ok(balanced.annual["2025"] > 0);
 });
