@@ -33,7 +33,8 @@
     fetch("research-variants.json").then(response => response.json()),
     fetch("research-event-driven.json").then(response => response.json()),
     fetch("research-daily-strength.json").then(response => response.json()),
-  ]).then(([v1, data, research, eventResearch, dailyResearch]) => {
+    fetch("research-short-surge.json").then(response => response.json()),
+  ]).then(([v1, data, research, eventResearch, dailyResearch, surgeResearch]) => {
     const s = data.summary, b = data.benchmark;
     $("#verdict").textContent = s.total_return_pct > 0 && s.cagr_pct > b.cagr_pct ? "通過基準" : "策略未通過";
     $("#verdict").classList.add(s.total_return_pct > 0 && s.cagr_pct > b.cagr_pct ? "pass" : "fail");
@@ -41,7 +42,8 @@
     const best = research.variants.find(row => row.id === "low_vol_10_q");
     const bestEvent = eventResearch.variants.find(row => row.id === "trend100_trail10");
     const daily = dailyResearch.variants.find(row => row.id === "daily_fill");
-    $("#conclusion").textContent = `固定季換股最佳為「${best.name}」：總報酬 ${pct(best.summary.total_return_pct)}。事件退出的平衡版「${bestEvent.name}」總報酬 ${pct(bestEvent.summary.total_return_pct)}、最大回撤 ${bestEvent.summary.max_drawdown_pct.toFixed(2)}%。每日強勢掃描但只補空缺為 ${pct(daily.summary.total_return_pct)}；每日機械輪動則為 ${pct(dailyResearch.variants.find(row=>row.id==="daily_top10").summary.total_return_pct)}。每日觀察可用，但依短期排名頻繁替換沒有穩健優勢。`;
+    const surge = surgeResearch.variants.find(row => row.id === "surge_raw");
+    $("#conclusion").textContent = `事件退出的平衡版「${bestEvent.name}」總報酬 ${pct(bestEvent.summary.total_return_pct)}、最大回撤 ${bestEvent.summary.max_drawdown_pct.toFixed(2)}%。每日強勢只補空缺為 ${pct(daily.summary.total_return_pct)}。專攻10日內先漲8%的價量突破則為 ${pct(surge.summary.total_return_pct)}，零成本仍為 ${pct(surgeResearch.zero_cost_sensitivity.surge_raw.total_return_pct)}；短線追突破本身沒有正期望，不只是成本問題。`;
     $("#period").textContent = data.meta.period;
     const items = [
       ["期末資產", money(s.final_equity), `起始 ${money(s.initial_capital)}`],
@@ -58,6 +60,7 @@
       ...research.variants.map(row => [row.name, row.summary]),
       ...eventResearch.variants.map(row => [`事件退出：${row.name}`, row.summary]),
       ...dailyResearch.variants.map(row => [`每日強勢：${row.name}`, row.summary]),
+      ...surgeResearch.variants.map(row => [`短線急漲：${row.name}`, row.summary]),
       ["0050 價格報酬", {total_return_pct:b.total_return_pct,cagr_pct:b.cagr_pct,max_drawdown_pct:b.max_drawdown_pct,trades:"—"}],
     ];
     $("#comparison").innerHTML = `<div class="comparison-row header"><span>版本</span><span>總報酬</span><span>年化</span><span>最大回撤</span><span>交易數</span></div>${comparison.map(([name,row])=>`<div class="comparison-row"><strong>${name}</strong><span class="${row.total_return_pct>=0?"positive":"negative"}">${pct(row.total_return_pct)}</span><span>${pct(row.cagr_pct)}</span><span>${Number(row.max_drawdown_pct).toFixed(2)}%</span><span>${row.trades}</span></div>`).join("")}`;

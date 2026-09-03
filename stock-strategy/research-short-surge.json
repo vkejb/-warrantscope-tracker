@@ -1,0 +1,202 @@
+{
+  "method": "Three short-surge variants fixed before first execution. A compression-breakout diagnostic was added only after all three failed and is exploratory, not eligible for model selection. Signal at close, entry next open; +8% target, -5% stop, 10-day maximum; same-bar ambiguity resolves to stop.",
+  "limitations": "Theoretical regular-lot daily OHLC execution, not historical odd-lot first trades. Corporate actions use heuristic normalization; no locked-limit order-book simulation.",
+  "benchmark": {
+    "name": "0050 價格報酬（不含股息）",
+    "total_return_pct": 166.41,
+    "cagr_pct": 17.74,
+    "max_drawdown_pct": 36.38
+  },
+  "variants": [
+    {
+      "id": "surge_raw",
+      "name": "價量突破",
+      "summary": {
+        "final_equity": 6303.03,
+        "total_return_pct": -78.99,
+        "cagr_pct": -22.9,
+        "max_drawdown_pct": 81.61,
+        "trades": 1377,
+        "win_rate_pct": 38.93,
+        "target_hit_rate_pct": 32.46,
+        "average_holding_days": 3.76,
+        "ambiguous_same_bar_count": 2,
+        "ambiguous_same_bar_pct": 0.15,
+        "total_costs": 15023
+      },
+      "annual": {
+        "2020": -23.78,
+        "2021": -40.77,
+        "2022": -14.8,
+        "2023": -17.74,
+        "2024": -8.36,
+        "2025": -26.55
+      },
+      "exit_reasons": {
+        "end": 4,
+        "market": 43,
+        "stop": 698,
+        "stop_gap": 53,
+        "target": 399,
+        "target_gap": 48,
+        "time": 132
+      }
+    },
+    {
+      "id": "surge_confirm3",
+      "name": "價量突破＋連續3日轉強",
+      "summary": {
+        "final_equity": 6679.56,
+        "total_return_pct": -77.73,
+        "cagr_pct": -22.15,
+        "max_drawdown_pct": 81.14,
+        "trades": 1250,
+        "win_rate_pct": 38.96,
+        "target_hit_rate_pct": 31.92,
+        "average_holding_days": 3.98,
+        "ambiguous_same_bar_count": 1,
+        "ambiguous_same_bar_pct": 0.08,
+        "total_costs": 13722
+      },
+      "annual": {
+        "2020": -21.89,
+        "2021": -48.03,
+        "2022": -10.0,
+        "2023": 13.19,
+        "2024": -27.1,
+        "2025": -26.16
+      },
+      "exit_reasons": {
+        "end": 4,
+        "market": 37,
+        "stop": 629,
+        "stop_gap": 47,
+        "target": 356,
+        "target_gap": 43,
+        "time": 134
+      }
+    },
+    {
+      "id": "surge_cool",
+      "name": "價量突破＋過熱排除",
+      "summary": {
+        "final_equity": 11251.49,
+        "total_return_pct": -62.5,
+        "cagr_pct": -15.08,
+        "max_drawdown_pct": 65.06,
+        "trades": 963,
+        "win_rate_pct": 39.46,
+        "target_hit_rate_pct": 27.73,
+        "average_holding_days": 5.11,
+        "ambiguous_same_bar_count": 0,
+        "ambiguous_same_bar_pct": 0.0,
+        "total_costs": 13473
+      },
+      "annual": {
+        "2020": -23.54,
+        "2021": -7.53,
+        "2022": -7.57,
+        "2023": -21.86,
+        "2024": -21.05,
+        "2025": -8.95
+      },
+      "exit_reasons": {
+        "end": 5,
+        "market": 40,
+        "stop": 404,
+        "stop_gap": 43,
+        "target": 237,
+        "target_gap": 30,
+        "time": 204
+      }
+    },
+    {
+      "id": "surge_compression",
+      "name": "量縮盤整後突破（探索）",
+      "summary": {
+        "final_equity": 12855.25,
+        "total_return_pct": -57.15,
+        "cagr_pct": -13.17,
+        "max_drawdown_pct": 58.9,
+        "trades": 668,
+        "win_rate_pct": 39.07,
+        "target_hit_rate_pct": 25.6,
+        "average_holding_days": 5.34,
+        "ambiguous_same_bar_count": 0,
+        "ambiguous_same_bar_pct": 0.0,
+        "total_costs": 10415
+      },
+      "annual": {
+        "2020": -29.78,
+        "2021": -5.98,
+        "2022": -1.93,
+        "2023": 2.35,
+        "2024": -22.89,
+        "2025": -18.36
+      },
+      "exit_reasons": {
+        "end": 2,
+        "market": 16,
+        "stop": 302,
+        "stop_gap": 25,
+        "target": 148,
+        "target_gap": 23,
+        "time": 152
+      }
+    }
+  ],
+  "zero_cost_sensitivity": {
+    "surge_raw": {
+      "final_equity": 16868.8,
+      "total_return_pct": -43.77,
+      "cagr_pct": -9.15,
+      "max_drawdown_pct": 54.73,
+      "trades": 1372,
+      "win_rate_pct": 40.01,
+      "target_hit_rate_pct": 32.14,
+      "average_holding_days": 3.78,
+      "ambiguous_same_bar_count": 2,
+      "ambiguous_same_bar_pct": 0.15,
+      "total_costs": 0
+    },
+    "surge_confirm3": {
+      "final_equity": 19615.78,
+      "total_return_pct": -34.61,
+      "cagr_pct": -6.84,
+      "max_drawdown_pct": 51.16,
+      "trades": 1245,
+      "win_rate_pct": 39.84,
+      "target_hit_rate_pct": 31.97,
+      "average_holding_days": 4.0,
+      "ambiguous_same_bar_count": 1,
+      "ambiguous_same_bar_pct": 0.08,
+      "total_costs": 0
+    },
+    "surge_cool": {
+      "final_equity": 24233.59,
+      "total_return_pct": -19.22,
+      "cagr_pct": -3.5,
+      "max_drawdown_pct": 33.45,
+      "trades": 968,
+      "win_rate_pct": 41.74,
+      "target_hit_rate_pct": 27.89,
+      "average_holding_days": 5.09,
+      "ambiguous_same_bar_count": 0,
+      "ambiguous_same_bar_pct": 0.0,
+      "total_costs": 0
+    },
+    "surge_compression": {
+      "final_equity": 22284.38,
+      "total_return_pct": -25.72,
+      "cagr_pct": -4.83,
+      "max_drawdown_pct": 32.98,
+      "trades": 671,
+      "win_rate_pct": 40.54,
+      "target_hit_rate_pct": 26.08,
+      "average_holding_days": 5.33,
+      "ambiguous_same_bar_count": 0,
+      "ambiguous_same_bar_pct": 0.0,
+      "total_costs": 0
+    }
+  }
+}

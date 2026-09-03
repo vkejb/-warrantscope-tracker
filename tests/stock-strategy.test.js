@@ -11,6 +11,7 @@ const resultV2 = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "b
 const research = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-variants.json"), "utf8"));
 const eventResearch = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-event-driven.json"), "utf8"));
 const dailyResearch = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-daily-strength.json"), "utf8"));
+const surgeResearch = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-short-surge.json"), "utf8"));
 
 test("現股策略與 WarrantScope UI 完全分離", () => {
   assert.doesNotMatch(mainHtml, /panel-strategy|backtest-core|backtest-ui/);
@@ -69,4 +70,15 @@ test("每日強勢研究保留真實成本並標示事後追加診斷不得選�
   assert.ok(fill.summary.total_costs > 0);
   assert.ok(mechanical.summary.trades > fill.summary.trades);
   assert.ok(mechanical.summary.total_return_pct < fill.summary.total_return_pct);
+});
+
+test("短線急漲研究採保守觸價順序且零成本仍未通過", () => {
+  assert.match(surgeResearch.method, /same-bar ambiguity resolves to stop/);
+  assert.match(surgeResearch.limitations, /not historical odd-lot/);
+  assert.equal(surgeResearch.variants.length, 4);
+  for (const row of surgeResearch.variants) {
+    assert.ok(row.summary.total_return_pct < 0);
+    assert.ok(surgeResearch.zero_cost_sensitivity[row.id].total_return_pct < 0);
+    assert.ok("ambiguous_same_bar_count" in row.summary);
+  }
 });
