@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071510">
+  <title>台股零股策略研究室</title>
+  <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+  <header class="hero">
+    <div><span class="eyebrow">INDEPENDENT STOCK LAB</span><h1>台股零股策略研究室</h1><p>只使用現股價量資料，與 WarrantScope、權證爆量及 Episode 完全分離。</p></div>
+    <span id="verdict" class="verdict">載入中</span>
+  </header>
+
+  <main>
+    <section class="notice"><strong>回測結論</strong><p id="conclusion">讀取結果中…</p></section>
+
+    <section class="kpis" id="kpis"></section>
+
+    <section class="grid two">
+      <article class="panel"><div class="section-head"><div><span class="eyebrow">EQUITY</span><h2>資產曲線</h2></div><span id="period"></span></div><div id="equity-chart" class="chart"></div></article>
+      <article class="panel"><div class="section-head"><div><span class="eyebrow">ANNUAL</span><h2>年度績效</h2></div></div><div id="annual-bars" class="annual-bars"></div></article>
+    </section>
+
+    <section class="grid two">
+      <article class="panel"><span class="eyebrow">RULES</span><h2>事前定義策略</h2><ol id="rules" class="rules"></ol></article>
+      <article class="panel"><span class="eyebrow">DATA QUALITY</span><h2>資料與限制</h2><dl id="data-notes" class="data-notes"></dl></article>
+    </section>
+
+    <section class="panel table-panel">
+      <div class="section-head"><div><span class="eyebrow">TRADES</span><h2>交易明細</h2></div><label>年度<select id="year-filter"><option value="all">全部</option></select></label></div>
+      <div class="table-wrap"><table><thead><tr><th>股票</th><th>進場</th><th>出場</th><th>股數</th><th>成本</th><th>淨損益</th><th>報酬</th></tr></thead><tbody id="trade-body"></tbody></table></div>
+    </section>
+  </main>
+
+  <footer>研究用途，不構成投資建議。失敗的回測同樣是有價值的結果。</footer>
+  <script src="app.js?v=1"></script>
+</body>
+</html>

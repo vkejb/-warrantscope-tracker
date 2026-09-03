@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>WarrantScope Tracker</title>
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <header class="topbar">
@@ -25,7 +25,6 @@
       <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-observation" data-tab="observation">觀察中</button>
       <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-history" data-tab="history">歷史</button>
       <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-stock" data-tab="stock">股票</button>
-      <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-strategy" data-tab="strategy">策略</button>
       <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="panel-portfolio" data-tab="portfolio">損益</button>
     </div>
   </nav>
@@ -126,40 +125,6 @@
         <p class="input-hint">整合 Raw、主力、進觀察、退出與再次進場事件。</p>
       </section>
       <section id="stock-result" class="stock-result"><div class="empty search-empty">輸入股票代號或名稱，查看完整 Episode timeline</div></section>
-    </section>
-
-    <section id="panel-strategy" class="tab-panel strategy-page" role="tabpanel" data-panel="strategy" hidden>
-      <div class="page-heading">
-        <div><div class="eyebrow">ODD-LOT STRATEGY LAB</div><h2>三萬元零股策略</h2></div>
-        <span class="badge warn">紙上交易</span>
-      </div>
-
-      <section class="panel strategy-summary">
-        <div class="section-head compact"><div><div class="eyebrow">RULE SET</div><h3>權證異常量 → 現股短波段</h3></div></div>
-        <ol class="strategy-rules">
-          <li>同一母股出現至少 2 張 Raw，或單張顯示倍數達 3 倍以上。</li>
-          <li>排除方向為 SELL、Exchange-like、資料缺漏或只有小分母放大的事件。</li>
-          <li>下一交易日以現股零股建立部位；單一部位不超過本金 20%，同時最多 3 檔。</li>
-          <li>預定持有 2～10 個交易日；正式行情接入後加入量價突破、停損 4% 與移動停利。</li>
-          <li>回測計入買賣手續費、最低手續費與股票賣出交易稅；零股不做當沖。</li>
-        </ol>
-      </section>
-
-      <section class="panel backtest-controls" aria-labelledby="backtest-settings-title">
-        <div class="section-head compact"><div><div class="eyebrow">SETTINGS</div><h3 id="backtest-settings-title">資金與成本假設</h3></div></div>
-        <div class="control-grid strategy-control-grid">
-          <label><span>起始本金</span><input id="bt-capital" type="number" min="1000" step="1000" value="30000"></label>
-          <label><span>單檔上限</span><select id="bt-position-pct"><option value="10">10%</option><option value="15">15%</option><option value="20" selected>20%</option><option value="25">25%</option></select></label>
-          <label><span>同時持倉</span><select id="bt-max-positions"><option value="1">1 檔</option><option value="2">2 檔</option><option value="3" selected>3 檔</option></select></label>
-          <label><span>最低手續費</span><input id="bt-min-fee" type="number" min="0" step="1" value="1"></label>
-        </div>
-        <button id="run-backtest" class="primary-button" type="button">重新試算</button>
-      </section>
-
-      <section id="backtest-kpis" class="kpis backtest-kpis" aria-label="回測指標"></section>
-      <p id="backtest-warning" class="strategy-warning"></p>
-      <div class="portfolio-section-head"><div><div class="eyebrow">TRADES</div><h3>完成交易明細</h3></div><span id="backtest-count" class="page-date"></span></div>
-      <div id="backtest-trades" class="backtest-trades"></div>
     </section>
 
     <section id="panel-portfolio" class="tab-panel portfolio-page" role="tabpanel" data-panel="portfolio" hidden>
@@ -276,10 +241,8 @@
 
   <footer><p>研究用途。Raw = 重要事件，不等於買進訊號；方向、主力排行與 Episode 狀態需一起判讀。</p></footer>
   <script src="data.js?v=2"></script>
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=5"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-  <script src="backtest-core.js?v=1"></script>
-  <script src="backtest-ui.js?v=1"></script>
   <script src="portfolio-core.js?v=3"></script>
   <script src="portfolio.js?v=3"></script>
 </body>
