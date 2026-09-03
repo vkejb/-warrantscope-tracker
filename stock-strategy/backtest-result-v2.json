@@ -1,0 +1,4454 @@
+{
+  "meta": {
+    "generated_at": "2026-09-03T19:09:29+08:00",
+    "period": "2020-01-01 ~ 2025-12-31",
+    "phases": {
+      "design": "2020-2022",
+      "validation": "2023-2024",
+      "out_of_sample": "2025"
+    },
+    "universe_count": 1958,
+    "source": "TWSE MI_INDEX + TPEX daily close; packaged by tw-stock-data-release",
+    "source_url": "https://github.com/yukishirotsubasa/tw-stock-data-release/releases/tag/daily-close-csv",
+    "dividends_included": false
+  },
+  "strategy": {
+    "name": "V2 大盤濾網＋品質動能低換手策略",
+    "rules": [
+      "0050 高於 200 日均線且 50 日均線高於 200 日均線才持股",
+      "四碼普通股，股價至少 20 元，60 日平均成交金額至少 5,000 萬元",
+      "股價高於 60 日均線，60 日均線高於 200 日均線且持續上升",
+      "使用 6 個月至 1 個月前的動能，排除最近 20 日避免追高",
+      "60 日年化波動不得超過 60%，依動能／波動排序",
+      "最多持有 3 檔；持股仍在前 30 名就續抱，降低換手",
+      "月底收盤決策、下一交易日開盤執行，三萬元零股配置並計入成本"
+    ]
+  },
+  "summary": {
+    "initial_capital": 30000,
+    "final_equity": 15077.1,
+    "total_return_pct": -49.74,
+    "cagr_pct": -10.84,
+    "max_drawdown_pct": 58.74,
+    "trades": 104,
+    "wins": 40,
+    "win_rate_pct": 38.46,
+    "profit_factor": 0.73,
+    "total_costs": 3256
+  },
+  "benchmark": {
+    "name": "0050 價格報酬（不含股息）",
+    "total_return_pct": 166.41,
+    "cagr_pct": 17.74,
+    "max_drawdown_pct": 36.38
+  },
+  "annual": [
+    {
+      "year": "2020",
+      "phase": "design",
+      "return_pct": -1.75,
+      "end_equity": 29474.95
+    },
+    {
+      "year": "2021",
+      "phase": "design",
+      "return_pct": -0.38,
+      "end_equity": 29471.6
+    },
+    {
+      "year": "2022",
+      "phase": "design",
+      "return_pct": -11.25,
+      "end_equity": 26078.6
+    },
+    {
+      "year": "2023",
+      "phase": "validation",
+      "return_pct": -0.62,
+      "end_equity": 25916.45
+    },
+    {
+      "year": "2024",
+      "phase": "validation",
+      "return_pct": -23.28,
+      "end_equity": 19510.4
+    },
+    {
+      "year": "2025",
+      "phase": "out_of_sample",
+      "return_pct": -20.86,
+      "end_equity": 15077.1
+    }
+  ],
+  "trades": [
+    {
+      "code": "6196",
+      "name": "帆宣",
+      "entry_date": "20200203",
+      "exit_date": "20200302",
+      "entry_price": 78.0,
+      "exit_price": 75.5,
+      "shares": 128,
+      "pnl": -357.0,
+      "return_pct": -3.57,
+      "costs": 37
+    },
+    {
+      "code": "6669",
+      "name": "緯穎",
+      "entry_date": "20200203",
+      "exit_date": "20200401",
+      "entry_price": 685.0,
+      "exit_price": 702.0,
+      "shares": 14,
+      "pnl": 201.0,
+      "return_pct": 2.1,
+      "costs": 37
+    },
+    {
+      "code": "3218",
+      "name": "大學光",
+      "entry_date": "20200203",
+      "exit_date": "20200401",
+      "entry_price": 88.0,
+      "exit_price": 64.1,
+      "shares": 113,
+      "pnl": -2729.7,
+      "return_pct": -27.44,
+      "costs": 29
+    },
+    {
+      "code": "3546",
+      "name": "宇峻",
+      "entry_date": "20200302",
+      "exit_date": "20200401",
+      "entry_price": 113.0,
+      "exit_price": 81.0,
+      "shares": 89,
+      "pnl": -2877.0,
+      "return_pct": -28.6,
+      "costs": 29
+    },
+    {
+      "code": "1598",
+      "name": "岱宇",
+      "entry_date": "20200803",
+      "exit_date": "20200901",
+      "entry_price": 75.8,
+      "exit_price": 139.0,
+      "shares": 106,
+      "pnl": 6646.2,
+      "return_pct": 82.69,
+      "costs": 53
+    },
+    {
+      "code": "3217",
+      "name": "優群",
+      "entry_date": "20200803",
+      "exit_date": "20200901",
+      "entry_price": 125.0,
+      "exit_price": 117.5,
+      "shares": 64,
+      "pnl": -509.0,
+      "return_pct": -6.36,
+      "costs": 29
+    },
+    {
+      "code": "2102",
+      "name": "泰豐",
+      "entry_date": "20200901",
+      "exit_date": "20201005",
+      "entry_price": 23.25,
+      "exit_price": 19.95,
+      "shares": 481,
+      "pnl": -1624.3,
+      "return_pct": -14.52,
+      "costs": 37
+    },
+    {
+      "code": "9921",
+      "name": "巨大",
+      "entry_date": "20200901",
+      "exit_date": "20201005",
+      "entry_price": 310.0,
+      "exit_price": 280.0,
+      "shares": 36,
+      "pnl": -1118.0,
+      "return_pct": -10.01,
+      "costs": 38
+    },
+    {
+      "code": "4735",
+      "name": "豪展",
+      "entry_date": "20200803",
+      "exit_date": "20201102",
+      "entry_price": 95.1,
+      "exit_price": 143.5,
+      "shares": 84,
+      "pnl": 4021.6,
+      "return_pct": 50.32,
+      "costs": 44
+    },
+    {
+      "code": "2348",
+      "name": "海悅",
+      "entry_date": "20201005",
+      "exit_date": "20201102",
+      "entry_price": 91.0,
+      "exit_price": 88.0,
+      "shares": 107,
+      "pnl": -357.0,
+      "return_pct": -3.66,
+      "costs": 36
+    },
+    {
+      "code": "6126",
+      "name": "信音",
+      "entry_date": "20201005",
+      "exit_date": "20201102",
+      "entry_price": 24.9,
+      "exit_price": 23.15,
+      "shares": 394,
+      "pnl": -724.5,
+      "return_pct": -7.38,
+      "costs": 35
+    },
+    {
+      "code": "5306",
+      "name": "桂盟",
+      "entry_date": "20201102",
+      "exit_date": "20201201",
+      "entry_price": 210.0,
+      "exit_price": 190.5,
+      "shares": 48,
+      "pnl": -971.0,
+      "return_pct": -9.63,
+      "costs": 35
+    },
+    {
+      "code": "1587",
+      "name": "吉茂",
+      "entry_date": "20201102",
+      "exit_date": "20201201",
+      "entry_price": 25.15,
+      "exit_price": 27.4,
+      "shares": 405,
+      "pnl": 870.25,
+      "return_pct": 8.54,
+      "costs": 41
+    },
+    {
+      "code": "5223",
+      "name": "安力-KY",
+      "entry_date": "20201201",
+      "exit_date": "20210104",
+      "entry_price": 73.9,
+      "exit_price": 72.2,
+      "shares": 137,
+      "pnl": -270.9,
+      "return_pct": -2.67,
+      "costs": 38
+    },
+    {
+      "code": "1519",
+      "name": "華城",
+      "entry_date": "20201201",
+      "exit_date": "20210104",
+      "entry_price": 53.5,
+      "exit_price": 49.6,
+      "shares": 190,
+      "pnl": -777.0,
+      "return_pct": -7.64,
+      "costs": 36
+    },
+    {
+      "code": "5264",
+      "name": "鎧勝-KY",
+      "entry_date": "20201102",
+      "exit_date": "20210201",
+      "entry_price": 86.5,
+      "exit_price": 87.2,
+      "shares": 117,
+      "pnl": 42.9,
+      "return_pct": 0.42,
+      "costs": 39
+    },
+    {
+      "code": "5609",
+      "name": "中菲行",
+      "entry_date": "20210104",
+      "exit_date": "20210201",
+      "entry_price": 66.7,
+      "exit_price": 58.9,
+      "shares": 144,
+      "pnl": -1155.2,
+      "return_pct": -12.02,
+      "costs": 32
+    },
+    {
+      "code": "2330",
+      "name": "台積電",
+      "entry_date": "20210104",
+      "exit_date": "20210201",
+      "entry_price": 530.0,
+      "exit_price": 595.0,
+      "shares": 18,
+      "pnl": 1130.0,
+      "return_pct": 11.84,
+      "costs": 40
+    },
+    {
+      "code": "2371",
+      "name": "大同",
+      "entry_date": "20210201",
+      "exit_date": "20210302",
+      "entry_price": 25.25,
+      "exit_price": 28.9,
+      "shares": 388,
+      "pnl": 1374.2,
+      "return_pct": 14.02,
+      "costs": 42
+    },
+    {
+      "code": "3484",
+      "name": "崧騰",
+      "entry_date": "20210201",
+      "exit_date": "20210401",
+      "entry_price": 68.3,
+      "exit_price": 81.8,
+      "shares": 143,
+      "pnl": 1886.5,
+      "return_pct": 19.31,
+      "costs": 44
+    },
+    {
+      "code": "2327",
+      "name": "國巨",
+      "entry_date": "20210302",
+      "exit_date": "20210401",
+      "entry_price": 606.0,
+      "exit_price": 556.0,
+      "shares": 18,
+      "pnl": -938.0,
+      "return_pct": -8.6,
+      "costs": 38
+    },
+    {
+      "code": "2371",
+      "name": "大同",
+      "entry_date": "20210401",
+      "exit_date": "20210503",
+      "entry_price": 27.25,
+      "exit_price": 26.8,
+      "shares": 403,
+      "pnl": -221.35,
+      "return_pct": -2.01,
+      "costs": 40
+    },
+    {
+      "code": "2428",
+      "name": "興勤",
+      "entry_date": "20210401",
+      "exit_date": "20210503",
+      "entry_price": 193.0,
+      "exit_price": 183.0,
+      "shares": 56,
+      "pnl": -599.0,
+      "return_pct": -5.54,
+      "costs": 39
+    },
+    {
+      "code": "2352",
+      "name": "佳世達",
+      "entry_date": "20210201",
+      "exit_date": "20210601",
+      "entry_price": 28.3,
+      "exit_price": 31.1,
+      "shares": 346,
+      "pnl": 928.8,
+      "return_pct": 9.48,
+      "costs": 40
+    },
+    {
+      "code": "6026",
+      "name": "福邦證",
+      "entry_date": "20210503",
+      "exit_date": "20210601",
+      "entry_price": 20.8,
+      "exit_price": 17.25,
+      "shares": 508,
+      "pnl": -1836.4,
+      "return_pct": -17.37,
+      "costs": 33
+    },
+    {
+      "code": "2855",
+      "name": "統一證",
+      "entry_date": "20210503",
+      "exit_date": "20210701",
+      "entry_price": 29.9,
+      "exit_price": 26.85,
+      "shares": 353,
+      "pnl": -1112.65,
+      "return_pct": -10.54,
+      "costs": 36
+    },
+    {
+      "code": "2458",
+      "name": "義隆",
+      "entry_date": "20210601",
+      "exit_date": "20210701",
+      "entry_price": 212.0,
+      "exit_price": 194.0,
+      "shares": 45,
+      "pnl": -843.0,
+      "return_pct": -8.83,
+      "costs": 33
+    },
+    {
+      "code": "5371",
+      "name": "中光電",
+      "entry_date": "20210601",
+      "exit_date": "20210802",
+      "entry_price": 57.8,
+      "exit_price": 55.4,
+      "shares": 168,
+      "pnl": -439.2,
+      "return_pct": -4.52,
+      "costs": 36
+    },
+    {
+      "code": "2204",
+      "name": "中華",
+      "entry_date": "20210701",
+      "exit_date": "20210802",
+      "entry_price": 77.4,
+      "exit_price": 66.5,
+      "shares": 118,
+      "pnl": -1317.2,
+      "return_pct": -14.42,
+      "costs": 31
+    },
+    {
+      "code": "3526",
+      "name": "凡甲",
+      "entry_date": "20210701",
+      "exit_date": "20210901",
+      "entry_price": 153.5,
+      "exit_price": 189.0,
+      "shares": 59,
+      "pnl": 2053.5,
+      "return_pct": 22.66,
+      "costs": 41
+    },
+    {
+      "code": "1102",
+      "name": "亞泥",
+      "entry_date": "20210802",
+      "exit_date": "20210901",
+      "entry_price": 51.5,
+      "exit_price": 44.9,
+      "shares": 167,
+      "pnl": -1130.2,
+      "return_pct": -13.14,
+      "costs": 28
+    },
+    {
+      "code": "9941",
+      "name": "裕融",
+      "entry_date": "20210802",
+      "exit_date": "20211001",
+      "entry_price": 167.0,
+      "exit_price": 162.5,
+      "shares": 51,
+      "pnl": -260.5,
+      "return_pct": -3.06,
+      "costs": 31
+    },
+    {
+      "code": "3048",
+      "name": "益登",
+      "entry_date": "20210901",
+      "exit_date": "20211001",
+      "entry_price": 37.9,
+      "exit_price": 29.75,
+      "shares": 247,
+      "pnl": -2042.05,
+      "return_pct": -21.8,
+      "costs": 29
+    },
+    {
+      "code": "1231",
+      "name": "聯華食",
+      "entry_date": "20210901",
+      "exit_date": "20211001",
+      "entry_price": 71.5,
+      "exit_price": 67.9,
+      "shares": 130,
+      "pnl": -502.0,
+      "return_pct": -5.4,
+      "costs": 34
+    },
+    {
+      "code": "3529",
+      "name": "力旺",
+      "entry_date": "20211001",
+      "exit_date": "20211101",
+      "entry_price": 1930.0,
+      "exit_price": 2345.0,
+      "shares": 4,
+      "pnl": 1625.0,
+      "return_pct": 21.04,
+      "costs": 35
+    },
+    {
+      "code": "2430",
+      "name": "燦坤",
+      "entry_date": "20211001",
+      "exit_date": "20211101",
+      "entry_price": 45.9,
+      "exit_price": 43.1,
+      "shares": 177,
+      "pnl": -524.6,
+      "return_pct": -6.45,
+      "costs": 29
+    },
+    {
+      "code": "6415",
+      "name": "矽力*-KY",
+      "entry_date": "20211001",
+      "exit_date": "20211101",
+      "entry_price": 4135.0,
+      "exit_price": 4560.0,
+      "shares": 1,
+      "pnl": 407.0,
+      "return_pct": 9.84,
+      "costs": 18
+    },
+    {
+      "code": "6548",
+      "name": "長科*",
+      "entry_date": "20211201",
+      "exit_date": "20220103",
+      "entry_price": 98.5,
+      "exit_price": 105.0,
+      "shares": 87,
+      "pnl": 531.5,
+      "return_pct": 6.2,
+      "costs": 34
+    },
+    {
+      "code": "2476",
+      "name": "鉅祥",
+      "entry_date": "20211201",
+      "exit_date": "20220103",
+      "entry_price": 61.1,
+      "exit_price": 77.1,
+      "shares": 141,
+      "pnl": 2216.0,
+      "return_pct": 25.71,
+      "costs": 40
+    },
+    {
+      "code": "2351",
+      "name": "順德",
+      "entry_date": "20211201",
+      "exit_date": "20220103",
+      "entry_price": 160.0,
+      "exit_price": 172.0,
+      "shares": 54,
+      "pnl": 613.0,
+      "return_pct": 7.09,
+      "costs": 35
+    },
+    {
+      "code": "4721",
+      "name": "美琪瑪",
+      "entry_date": "20220103",
+      "exit_date": "20220207",
+      "entry_price": 158.5,
+      "exit_price": 136.0,
+      "shares": 61,
+      "pnl": -1404.5,
+      "return_pct": -14.52,
+      "costs": 32
+    },
+    {
+      "code": "5607",
+      "name": "遠雄港",
+      "entry_date": "20220103",
+      "exit_date": "20220301",
+      "entry_price": 67.5,
+      "exit_price": 62.1,
+      "shares": 144,
+      "pnl": -812.6,
+      "return_pct": -8.36,
+      "costs": 35
+    },
+    {
+      "code": "3290",
+      "name": "東浦",
+      "entry_date": "20220103",
+      "exit_date": "20220301",
+      "entry_price": 26.0,
+      "exit_price": 23.2,
+      "shares": 375,
+      "pnl": -1083.0,
+      "return_pct": -11.1,
+      "costs": 33
+    },
+    {
+      "code": "2382",
+      "name": "廣達",
+      "entry_date": "20220207",
+      "exit_date": "20220301",
+      "entry_price": 92.9,
+      "exit_price": 94.0,
+      "shares": 90,
+      "pnl": 68.0,
+      "return_pct": 0.81,
+      "costs": 31
+    },
+    {
+      "code": "3454",
+      "name": "晶睿",
+      "entry_date": "20230301",
+      "exit_date": "20230406",
+      "entry_price": 233.5,
+      "exit_price": 259.0,
+      "shares": 37,
+      "pnl": 907.5,
+      "return_pct": 10.5,
+      "costs": 36
+    },
+    {
+      "code": "2201",
+      "name": "裕隆",
+      "entry_date": "20230301",
+      "exit_date": "20230502",
+      "entry_price": 82.6,
+      "exit_price": 80.8,
+      "shares": 105,
+      "pnl": -220.0,
+      "return_pct": -2.54,
+      "costs": 31
+    },
+    {
+      "code": "2327",
+      "name": "國巨",
+      "entry_date": "20230301",
+      "exit_date": "20230502",
+      "entry_price": 532.0,
+      "exit_price": 499.0,
+      "shares": 16,
+      "pnl": -558.0,
+      "return_pct": -6.55,
+      "costs": 30
+    },
+    {
+      "code": "3034",
+      "name": "聯詠",
+      "entry_date": "20230406",
+      "exit_date": "20230601",
+      "entry_price": 433.5,
+      "exit_price": 422.0,
+      "shares": 22,
+      "pnl": -289.0,
+      "return_pct": -3.03,
+      "costs": 36
+    },
+    {
+      "code": "3680",
+      "name": "家登",
+      "entry_date": "20230502",
+      "exit_date": "20230601",
+      "entry_price": 354.0,
+      "exit_price": 361.0,
+      "shares": 23,
+      "pnl": 130.0,
+      "return_pct": 1.6,
+      "costs": 31
+    },
+    {
+      "code": "3594",
+      "name": "磐儀",
+      "entry_date": "20230601",
+      "exit_date": "20230703",
+      "entry_price": 57.9,
+      "exit_price": 55.4,
+      "shares": 154,
+      "pnl": -418.0,
+      "return_pct": -4.69,
+      "costs": 33
+    },
+    {
+      "code": "9941",
+      "name": "裕融",
+      "entry_date": "20230502",
+      "exit_date": "20230801",
+      "entry_price": 185.5,
+      "exit_price": 190.5,
+      "shares": 44,
+      "pnl": 189.0,
+      "return_pct": 2.31,
+      "costs": 31
+    },
+    {
+      "code": "1513",
+      "name": "中興電",
+      "entry_date": "20230601",
+      "exit_date": "20230801",
+      "entry_price": 115.5,
+      "exit_price": 118.0,
+      "shares": 77,
+      "pnl": 157.5,
+      "return_pct": 1.77,
+      "costs": 35
+    },
+    {
+      "code": "2204",
+      "name": "中華",
+      "entry_date": "20230703",
+      "exit_date": "20230801",
+      "entry_price": 93.3,
+      "exit_price": 88.9,
+      "shares": 91,
+      "pnl": -430.4,
+      "return_pct": -5.07,
+      "costs": 30
+    },
+    {
+      "code": "6472",
+      "name": "保瑞",
+      "entry_date": "20230801",
+      "exit_date": "20230901",
+      "entry_price": 907.0,
+      "exit_price": 724.0,
+      "shares": 9,
+      "pnl": -1673.0,
+      "return_pct": -20.49,
+      "costs": 26
+    },
+    {
+      "code": "1504",
+      "name": "東元",
+      "entry_date": "20230801",
+      "exit_date": "20230901",
+      "entry_price": 53.9,
+      "exit_price": 50.0,
+      "shares": 157,
+      "pnl": -642.3,
+      "return_pct": -7.59,
+      "costs": 30
+    },
+    {
+      "code": "8927",
+      "name": "北基",
+      "entry_date": "20230801",
+      "exit_date": "20230901",
+      "entry_price": 49.85,
+      "exit_price": 64.1,
+      "shares": 170,
+      "pnl": 2382.5,
+      "return_pct": 28.1,
+      "costs": 40
+    },
+    {
+      "code": "1618",
+      "name": "合機",
+      "entry_date": "20230901",
+      "exit_date": "20231002",
+      "entry_price": 25.05,
+      "exit_price": 31.5,
+      "shares": 340,
+      "pnl": 2154.0,
+      "return_pct": 25.28,
+      "costs": 39
+    },
+    {
+      "code": "2402",
+      "name": "毅嘉",
+      "entry_date": "20230901",
+      "exit_date": "20231101",
+      "entry_price": 47.0,
+      "exit_price": 33.05,
+      "shares": 181,
+      "pnl": -2547.95,
+      "return_pct": -29.94,
+      "costs": 23
+    },
+    {
+      "code": "6191",
+      "name": "精成科",
+      "entry_date": "20230901",
+      "exit_date": "20231101",
+      "entry_price": 56.6,
+      "exit_price": 65.4,
+      "shares": 150,
+      "pnl": 1284.0,
+      "return_pct": 15.12,
+      "costs": 36
+    },
+    {
+      "code": "8927",
+      "name": "北基",
+      "entry_date": "20231002",
+      "exit_date": "20231101",
+      "entry_price": 58.9,
+      "exit_price": 58.6,
+      "shares": 182,
+      "pnl": -94.6,
+      "return_pct": -0.88,
+      "costs": 40
+    },
+    {
+      "code": "1477",
+      "name": "聚陽",
+      "entry_date": "20231201",
+      "exit_date": "20240102",
+      "entry_price": 361.0,
+      "exit_price": 353.0,
+      "shares": 24,
+      "pnl": -223.0,
+      "return_pct": -2.57,
+      "costs": 31
+    },
+    {
+      "code": "2329",
+      "name": "華泰",
+      "entry_date": "20231201",
+      "exit_date": "20240102",
+      "entry_price": 60.0,
+      "exit_price": 54.7,
+      "shares": 146,
+      "pnl": -803.8,
+      "return_pct": -9.17,
+      "costs": 30
+    },
+    {
+      "code": "3702",
+      "name": "大聯大",
+      "entry_date": "20231201",
+      "exit_date": "20240102",
+      "entry_price": 77.4,
+      "exit_price": 80.8,
+      "shares": 113,
+      "pnl": 350.2,
+      "return_pct": 4.0,
+      "costs": 34
+    },
+    {
+      "code": "3483",
+      "name": "力致",
+      "entry_date": "20240102",
+      "exit_date": "20240201",
+      "entry_price": 163.0,
+      "exit_price": 162.5,
+      "shares": 52,
+      "pnl": -57.0,
+      "return_pct": -0.67,
+      "costs": 31
+    },
+    {
+      "code": "2385",
+      "name": "群光",
+      "entry_date": "20240102",
+      "exit_date": "20240201",
+      "entry_price": 175.5,
+      "exit_price": 165.0,
+      "shares": 48,
+      "pnl": -534.0,
+      "return_pct": -6.34,
+      "costs": 30
+    },
+    {
+      "code": "2230",
+      "name": "泰茂",
+      "entry_date": "20240201",
+      "exit_date": "20240301",
+      "entry_price": 160.0,
+      "exit_price": 165.0,
+      "shares": 51,
+      "pnl": 224.0,
+      "return_pct": 2.74,
+      "costs": 31
+    },
+    {
+      "code": "2313",
+      "name": "華通",
+      "entry_date": "20240102",
+      "exit_date": "20240401",
+      "entry_price": 71.0,
+      "exit_price": 81.2,
+      "shares": 120,
+      "pnl": 1188.0,
+      "return_pct": 13.94,
+      "costs": 36
+    },
+    {
+      "code": "3702",
+      "name": "大聯大",
+      "entry_date": "20240201",
+      "exit_date": "20240401",
+      "entry_price": 87.5,
+      "exit_price": 96.5,
+      "shares": 94,
+      "pnl": 812.0,
+      "return_pct": 9.87,
+      "costs": 34
+    },
+    {
+      "code": "5269",
+      "name": "祥碩",
+      "entry_date": "20240301",
+      "exit_date": "20240401",
+      "entry_price": 2365.0,
+      "exit_price": 2415.0,
+      "shares": 3,
+      "pnl": 122.0,
+      "return_pct": 1.72,
+      "costs": 28
+    },
+    {
+      "code": "3402",
+      "name": "漢科",
+      "entry_date": "20240401",
+      "exit_date": "20240502",
+      "entry_price": 91.2,
+      "exit_price": 108.0,
+      "shares": 100,
+      "pnl": 1640.0,
+      "return_pct": 17.97,
+      "costs": 40
+    },
+    {
+      "code": "3362",
+      "name": "先進光",
+      "entry_date": "20240401",
+      "exit_date": "20240502",
+      "entry_price": 226.0,
+      "exit_price": 206.5,
+      "shares": 40,
+      "pnl": -812.0,
+      "return_pct": -8.98,
+      "costs": 32
+    },
+    {
+      "code": "6691",
+      "name": "洋基工程",
+      "entry_date": "20240401",
+      "exit_date": "20240603",
+      "entry_price": 386.0,
+      "exit_price": 399.0,
+      "shares": 23,
+      "pnl": 263.0,
+      "return_pct": 2.96,
+      "costs": 36
+    },
+    {
+      "code": "6239",
+      "name": "力成",
+      "entry_date": "20240502",
+      "exit_date": "20240603",
+      "entry_price": 176.0,
+      "exit_price": 181.0,
+      "shares": 55,
+      "pnl": 237.0,
+      "return_pct": 2.45,
+      "costs": 38
+    },
+    {
+      "code": "2611",
+      "name": "志信",
+      "entry_date": "20240502",
+      "exit_date": "20240603",
+      "entry_price": 29.8,
+      "exit_price": 32.0,
+      "shares": 326,
+      "pnl": 678.2,
+      "return_pct": 6.98,
+      "costs": 39
+    },
+    {
+      "code": "2528",
+      "name": "皇普",
+      "entry_date": "20240603",
+      "exit_date": "20240701",
+      "entry_price": 49.3,
+      "exit_price": 45.35,
+      "shares": 199,
+      "pnl": -821.05,
+      "return_pct": -8.37,
+      "costs": 35
+    },
+    {
+      "code": "9946",
+      "name": "三發地產",
+      "entry_date": "20240603",
+      "exit_date": "20240701",
+      "entry_price": 45.25,
+      "exit_price": 41.25,
+      "shares": 217,
+      "pnl": -903.0,
+      "return_pct": -9.19,
+      "costs": 35
+    },
+    {
+      "code": "2611",
+      "name": "志信",
+      "entry_date": "20240701",
+      "exit_date": "20240801",
+      "entry_price": 33.0,
+      "exit_price": 26.75,
+      "shares": 272,
+      "pnl": -1729.0,
+      "return_pct": -19.25,
+      "costs": 29
+    },
+    {
+      "code": "6177",
+      "name": "達麗",
+      "entry_date": "20240603",
+      "exit_date": "20240902",
+      "entry_price": 62.0,
+      "exit_price": 62.9,
+      "shares": 158,
+      "pnl": 104.2,
+      "return_pct": 1.06,
+      "costs": 38
+    },
+    {
+      "code": "2539",
+      "name": "櫻花建",
+      "entry_date": "20240701",
+      "exit_date": "20240902",
+      "entry_price": 74.9,
+      "exit_price": 69.6,
+      "shares": 119,
+      "pnl": -662.7,
+      "return_pct": -7.43,
+      "costs": 32
+    },
+    {
+      "code": "6186",
+      "name": "新潤",
+      "entry_date": "20240902",
+      "exit_date": "20241001",
+      "entry_price": 119.0,
+      "exit_price": 71.2,
+      "shares": 76,
+      "pnl": -3654.8,
+      "return_pct": -40.39,
+      "costs": 22
+    },
+    {
+      "code": "6446",
+      "name": "藥華藥",
+      "entry_date": "20240902",
+      "exit_date": "20241001",
+      "entry_price": 707.0,
+      "exit_price": 638.0,
+      "shares": 12,
+      "pnl": -857.0,
+      "return_pct": -10.1,
+      "costs": 29
+    },
+    {
+      "code": "1442",
+      "name": "名軒",
+      "entry_date": "20240801",
+      "exit_date": "20241101",
+      "entry_price": 67.1,
+      "exit_price": 63.9,
+      "shares": 109,
+      "pnl": -375.8,
+      "return_pct": -5.14,
+      "costs": 27
+    },
+    {
+      "code": "3665",
+      "name": "貿聯-KY",
+      "entry_date": "20241001",
+      "exit_date": "20241101",
+      "entry_price": 467.5,
+      "exit_price": 460.5,
+      "shares": 14,
+      "pnl": -123.0,
+      "return_pct": -1.88,
+      "costs": 25
+    },
+    {
+      "code": "8932",
+      "name": "智通*",
+      "entry_date": "20241001",
+      "exit_date": "20241202",
+      "entry_price": 85.7,
+      "exit_price": 87.1,
+      "shares": 79,
+      "pnl": 83.6,
+      "return_pct": 1.23,
+      "costs": 27
+    },
+    {
+      "code": "6223",
+      "name": "旺矽",
+      "entry_date": "20241101",
+      "exit_date": "20241202",
+      "entry_price": 787.0,
+      "exit_price": 775.0,
+      "shares": 8,
+      "pnl": -120.0,
+      "return_pct": -1.91,
+      "costs": 24
+    },
+    {
+      "code": "3293",
+      "name": "鈊象",
+      "entry_date": "20241101",
+      "exit_date": "20250102",
+      "entry_price": 1005.0,
+      "exit_price": 975.0,
+      "shares": 6,
+      "pnl": -202.0,
+      "return_pct": -3.35,
+      "costs": 22
+    },
+    {
+      "code": "6438",
+      "name": "迅得",
+      "entry_date": "20241202",
+      "exit_date": "20250303",
+      "entry_price": 216.5,
+      "exit_price": 190.0,
+      "shares": 33,
+      "pnl": -899.5,
+      "return_pct": -12.58,
+      "costs": 25
+    },
+    {
+      "code": "3665",
+      "name": "貿聯-KY",
+      "entry_date": "20241202",
+      "exit_date": "20250303",
+      "entry_price": 650.0,
+      "exit_price": 590.0,
+      "shares": 11,
+      "pnl": -685.0,
+      "return_pct": -9.58,
+      "costs": 25
+    },
+    {
+      "code": "8114",
+      "name": "振樺電",
+      "entry_date": "20250102",
+      "exit_date": "20250303",
+      "entry_price": 366.0,
+      "exit_price": 294.0,
+      "shares": 16,
+      "pnl": -1170.0,
+      "return_pct": -19.97,
+      "costs": 18
+    },
+    {
+      "code": "5536",
+      "name": "聖暉*",
+      "entry_date": "20250303",
+      "exit_date": "20250401",
+      "entry_price": 421.5,
+      "exit_price": 354.5,
+      "shares": 13,
+      "pnl": -889.0,
+      "return_pct": -16.22,
+      "costs": 18
+    },
+    {
+      "code": "6757",
+      "name": "台灣虎航",
+      "entry_date": "20250303",
+      "exit_date": "20250401",
+      "entry_price": 84.0,
+      "exit_price": 91.5,
+      "shares": 69,
+      "pnl": 493.5,
+      "return_pct": 8.51,
+      "costs": 24
+    },
+    {
+      "code": "6613",
+      "name": "朋億*",
+      "entry_date": "20250303",
+      "exit_date": "20250401",
+      "entry_price": 224.0,
+      "exit_price": 187.0,
+      "shares": 26,
+      "pnl": -981.0,
+      "return_pct": -16.84,
+      "costs": 19
+    },
+    {
+      "code": "3528",
+      "name": "安馳",
+      "entry_date": "20250801",
+      "exit_date": "20250901",
+      "entry_price": 85.1,
+      "exit_price": 70.2,
+      "shares": 63,
+      "pnl": -955.7,
+      "return_pct": -17.82,
+      "costs": 17
+    },
+    {
+      "code": "2812",
+      "name": "台中銀",
+      "entry_date": "20250801",
+      "exit_date": "20250901",
+      "entry_price": 22.05,
+      "exit_price": 21.35,
+      "shares": 243,
+      "pnl": -190.1,
+      "return_pct": -3.55,
+      "costs": 20
+    },
+    {
+      "code": "8210",
+      "name": "勤誠",
+      "entry_date": "20250801",
+      "exit_date": "20251001",
+      "entry_price": 512.0,
+      "exit_price": 594.0,
+      "shares": 10,
+      "pnl": 798.0,
+      "return_pct": 15.58,
+      "costs": 22
+    },
+    {
+      "code": "2404",
+      "name": "漢唐",
+      "entry_date": "20250901",
+      "exit_date": "20251001",
+      "entry_price": 1225.0,
+      "exit_price": 907.0,
+      "shares": 4,
+      "pnl": -1286.0,
+      "return_pct": -26.23,
+      "costs": 14
+    },
+    {
+      "code": "2383",
+      "name": "台光電",
+      "entry_date": "20250901",
+      "exit_date": "20251001",
+      "entry_price": 1210.0,
+      "exit_price": 1255.0,
+      "shares": 4,
+      "pnl": 161.0,
+      "return_pct": 3.33,
+      "costs": 19
+    },
+    {
+      "code": "6139",
+      "name": "亞翔",
+      "entry_date": "20251001",
+      "exit_date": "20251103",
+      "entry_price": 360.0,
+      "exit_price": 486.0,
+      "shares": 13,
+      "pnl": 1614.0,
+      "return_pct": 34.47,
+      "costs": 24
+    },
+    {
+      "code": "1560",
+      "name": "中砂",
+      "entry_date": "20251001",
+      "exit_date": "20251103",
+      "entry_price": 338.0,
+      "exit_price": 315.0,
+      "shares": 14,
+      "pnl": -339.0,
+      "return_pct": -7.16,
+      "costs": 17
+    },
+    {
+      "code": "2317",
+      "name": "鴻海",
+      "entry_date": "20251001",
+      "exit_date": "20251201",
+      "entry_price": 219.0,
+      "exit_price": 225.0,
+      "shares": 22,
+      "pnl": 113.0,
+      "return_pct": 2.34,
+      "costs": 19
+    },
+    {
+      "code": "2360",
+      "name": "致茂",
+      "entry_date": "20251103",
+      "exit_date": "20251201",
+      "entry_price": 809.0,
+      "exit_price": 820.0,
+      "shares": 6,
+      "pnl": 47.0,
+      "return_pct": 0.97,
+      "costs": 19
+    },
+    {
+      "code": "5284",
+      "name": "jpp-KY",
+      "entry_date": "20251103",
+      "exit_date": "20251231",
+      "entry_price": 321.0,
+      "exit_price": 280.0,
+      "shares": 17,
+      "pnl": -715.0,
+      "return_pct": -13.1,
+      "costs": 18
+    },
+    {
+      "code": "2059",
+      "name": "川湖",
+      "entry_date": "20251201",
+      "exit_date": "20251231",
+      "entry_price": 3815.0,
+      "exit_price": 3785.0,
+      "shares": 1,
+      "pnl": -45.0,
+      "return_pct": -1.18,
+      "costs": 15
+    },
+    {
+      "code": "2327",
+      "name": "國巨*",
+      "entry_date": "20251201",
+      "exit_date": "20251231",
+      "entry_price": 235.0,
+      "exit_price": 225.5,
+      "shares": 22,
+      "pnl": -228.0,
+      "return_pct": -4.41,
+      "costs": 19
+    }
+  ],
+  "equity_curve": [
+    {
+      "date": "20200102",
+      "equity": 30000
+    },
+    {
+      "date": "20200109",
+      "equity": 30000
+    },
+    {
+      "date": "20200116",
+      "equity": 30000
+    },
+    {
+      "date": "20200203",
+      "equity": 30024.5
+    },
+    {
+      "date": "20200210",
+      "equity": 30447.6
+    },
+    {
+      "date": "20200217",
+      "equity": 31545.4
+    },
+    {
+      "date": "20200224",
+      "equity": 31040.8
+    },
+    {
+      "date": "20200303",
+      "equity": 29050.6
+    },
+    {
+      "date": "20200310",
+      "equity": 27355.4
+    },
+    {
+      "date": "20200317",
+      "equity": 23003.1
+    },
+    {
+      "date": "20200324",
+      "equity": 22105.7
+    },
+    {
+      "date": "20200331",
+      "equity": 24360.7
+    },
+    {
+      "date": "20200409",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200416",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200423",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200430",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200508",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200515",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200522",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200529",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200605",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200612",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200619",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200630",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200707",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200714",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200721",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200728",
+      "equity": 24237.3
+    },
+    {
+      "date": "20200804",
+      "equity": 24889.3
+    },
+    {
+      "date": "20200811",
+      "equity": 25982.9
+    },
+    {
+      "date": "20200818",
+      "equity": 28001.1
+    },
+    {
+      "date": "20200825",
+      "equity": 29196.1
+    },
+    {
+      "date": "20200901",
+      "equity": 31038.8
+    },
+    {
+      "date": "20200908",
+      "equity": 29898.05
+    },
+    {
+      "date": "20200915",
+      "equity": 29376.05
+    },
+    {
+      "date": "20200922",
+      "equity": 28319.85
+    },
+    {
+      "date": "20200929",
+      "equity": 27344.15
+    },
+    {
+      "date": "20201008",
+      "equity": 29160.1
+    },
+    {
+      "date": "20201016",
+      "equity": 28936.9
+    },
+    {
+      "date": "20201023",
+      "equity": 29778.4
+    },
+    {
+      "date": "20201030",
+      "equity": 30344.6
+    },
+    {
+      "date": "20201106",
+      "equity": 31577.15
+    },
+    {
+      "date": "20201113",
+      "equity": 30556.1
+    },
+    {
+      "date": "20201120",
+      "equity": 30684.35
+    },
+    {
+      "date": "20201127",
+      "equity": 30514.25
+    },
+    {
+      "date": "20201204",
+      "equity": 30139.55
+    },
+    {
+      "date": "20201211",
+      "equity": 29946.85
+    },
+    {
+      "date": "20201218",
+      "equity": 29405.75
+    },
+    {
+      "date": "20201225",
+      "equity": 29384.35
+    },
+    {
+      "date": "20210104",
+      "equity": 29584.45
+    },
+    {
+      "date": "20210111",
+      "equity": 29834.65
+    },
+    {
+      "date": "20210118",
+      "equity": 29586.25
+    },
+    {
+      "date": "20210125",
+      "equity": 30140.65
+    },
+    {
+      "date": "20210201",
+      "equity": 28982.05
+    },
+    {
+      "date": "20210217",
+      "equity": 29997.35
+    },
+    {
+      "date": "20210224",
+      "equity": 31429.85
+    },
+    {
+      "date": "20210304",
+      "equity": 32097.45
+    },
+    {
+      "date": "20210311",
+      "equity": 32008.55
+    },
+    {
+      "date": "20210318",
+      "equity": 31943.45
+    },
+    {
+      "date": "20210325",
+      "equity": 32264.85
+    },
+    {
+      "date": "20210401",
+      "equity": 33176.75
+    },
+    {
+      "date": "20210412",
+      "equity": 33401.7
+    },
+    {
+      "date": "20210419",
+      "equity": 33888.7
+    },
+    {
+      "date": "20210426",
+      "equity": 34064.4
+    },
+    {
+      "date": "20210504",
+      "equity": 30911.15
+    },
+    {
+      "date": "20210511",
+      "equity": 30675.65
+    },
+    {
+      "date": "20210518",
+      "equity": 27357.5
+    },
+    {
+      "date": "20210525",
+      "equity": 28326.0
+    },
+    {
+      "date": "20210601",
+      "equity": 29567.15
+    },
+    {
+      "date": "20210608",
+      "equity": 29757.55
+    },
+    {
+      "date": "20210616",
+      "equity": 29085.9
+    },
+    {
+      "date": "20210623",
+      "equity": 28365.6
+    },
+    {
+      "date": "20210630",
+      "equity": 28712.65
+    },
+    {
+      "date": "20210707",
+      "equity": 28559.65
+    },
+    {
+      "date": "20210714",
+      "equity": 29174.65
+    },
+    {
+      "date": "20210721",
+      "equity": 28850.15
+    },
+    {
+      "date": "20210728",
+      "equity": 29489.65
+    },
+    {
+      "date": "20210804",
+      "equity": 30170.35
+    },
+    {
+      "date": "20210811",
+      "equity": 26572.25
+    },
+    {
+      "date": "20210818",
+      "equity": 26489.25
+    },
+    {
+      "date": "20210825",
+      "equity": 26632.7
+    },
+    {
+      "date": "20210901",
+      "equity": 26941.2
+    },
+    {
+      "date": "20210908",
+      "equity": 24707.2
+    },
+    {
+      "date": "20210915",
+      "equity": 24937.3
+    },
+    {
+      "date": "20210924",
+      "equity": 24594.15
+    },
+    {
+      "date": "20211001",
+      "equity": 23955.1
+    },
+    {
+      "date": "20211008",
+      "equity": 25344.05
+    },
+    {
+      "date": "20211018",
+      "equity": 26271.0
+    },
+    {
+      "date": "20211025",
+      "equity": 25559.4
+    },
+    {
+      "date": "20211101",
+      "equity": 25950.2
+    },
+    {
+      "date": "20211108",
+      "equity": 25950.2
+    },
+    {
+      "date": "20211115",
+      "equity": 25950.2
+    },
+    {
+      "date": "20211122",
+      "equity": 25950.2
+    },
+    {
+      "date": "20211129",
+      "equity": 25950.2
+    },
+    {
+      "date": "20211206",
+      "equity": 26525.0
+    },
+    {
+      "date": "20211213",
+      "equity": 26086.4
+    },
+    {
+      "date": "20211220",
+      "equity": 25953.5
+    },
+    {
+      "date": "20211227",
+      "equity": 28500.5
+    },
+    {
+      "date": "20220104",
+      "equity": 29454.9
+    },
+    {
+      "date": "20220111",
+      "equity": 28720.2
+    },
+    {
+      "date": "20220118",
+      "equity": 27665.65
+    },
+    {
+      "date": "20220125",
+      "equity": 25374.2
+    },
+    {
+      "date": "20220210",
+      "equity": 27311.4
+    },
+    {
+      "date": "20220217",
+      "equity": 26488.35
+    },
+    {
+      "date": "20220224",
+      "equity": 25654.8
+    },
+    {
+      "date": "20220304",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220311",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220318",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220325",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220401",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220412",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220419",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220426",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220504",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220511",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220518",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220525",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220601",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220609",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220616",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220623",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220630",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220707",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220714",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220721",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220728",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220804",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220811",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220818",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220825",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220901",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220908",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220916",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220923",
+      "equity": 26078.6
+    },
+    {
+      "date": "20220930",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221007",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221017",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221024",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221031",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221107",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221114",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221121",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221128",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221205",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221212",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221219",
+      "equity": 26078.6
+    },
+    {
+      "date": "20221226",
+      "equity": 26078.6
+    },
+    {
+      "date": "20230103",
+      "equity": 26078.6
+    },
+    {
+      "date": "20230110",
+      "equity": 26078.6
+    },
+    {
+      "date": "20230117",
+      "equity": 26078.6
+    },
+    {
+      "date": "20230203",
+      "equity": 26078.6
+    },
+    {
+      "date": "20230210",
+      "equity": 26078.6
+    },
+    {
+      "date": "20230217",
+      "equity": 26078.6
+    },
+    {
+      "date": "20230224",
+      "equity": 26078.6
+    },
+    {
+      "date": "20230307",
+      "equity": 28401.6
+    },
+    {
+      "date": "20230314",
+      "equity": 26020.6
+    },
+    {
+      "date": "20230321",
+      "equity": 26246.6
+    },
+    {
+      "date": "20230328",
+      "equity": 25943.1
+    },
+    {
+      "date": "20230407",
+      "equity": 25969.6
+    },
+    {
+      "date": "20230414",
+      "equity": 27505.6
+    },
+    {
+      "date": "20230421",
+      "equity": 26205.6
+    },
+    {
+      "date": "20230428",
+      "equity": 25860.1
+    },
+    {
+      "date": "20230508",
+      "equity": 26165.6
+    },
+    {
+      "date": "20230515",
+      "equity": 25063.6
+    },
+    {
+      "date": "20230522",
+      "equity": 26431.6
+    },
+    {
+      "date": "20230529",
+      "equity": 26786.1
+    },
+    {
+      "date": "20230605",
+      "equity": 26613.4
+    },
+    {
+      "date": "20230612",
+      "equity": 26202.0
+    },
+    {
+      "date": "20230619",
+      "equity": 27021.5
+    },
+    {
+      "date": "20230628",
+      "equity": 27203.0
+    },
+    {
+      "date": "20230705",
+      "equity": 28145.3
+    },
+    {
+      "date": "20230712",
+      "equity": 28240.8
+    },
+    {
+      "date": "20230719",
+      "equity": 26670.2
+    },
+    {
+      "date": "20230726",
+      "equity": 24726.8
+    },
+    {
+      "date": "20230802",
+      "equity": 25047.1
+    },
+    {
+      "date": "20230810",
+      "equity": 23308.3
+    },
+    {
+      "date": "20230817",
+      "equity": 23489.8
+    },
+    {
+      "date": "20230824",
+      "equity": 24019.1
+    },
+    {
+      "date": "20230831",
+      "equity": 25519.7
+    },
+    {
+      "date": "20230907",
+      "equity": 27104.7
+    },
+    {
+      "date": "20230914",
+      "equity": 26658.05
+    },
+    {
+      "date": "20230921",
+      "equity": 24995.1
+    },
+    {
+      "date": "20230928",
+      "equity": 27080.65
+    },
+    {
+      "date": "20231006",
+      "equity": 26381.7
+    },
+    {
+      "date": "20231017",
+      "equity": 25378.15
+    },
+    {
+      "date": "20231024",
+      "equity": 25450.9
+    },
+    {
+      "date": "20231031",
+      "equity": 25811.0
+    },
+    {
+      "date": "20231107",
+      "equity": 26409.85
+    },
+    {
+      "date": "20231114",
+      "equity": 26409.85
+    },
+    {
+      "date": "20231121",
+      "equity": 26409.85
+    },
+    {
+      "date": "20231128",
+      "equity": 26409.85
+    },
+    {
+      "date": "20231205",
+      "equity": 26475.85
+    },
+    {
+      "date": "20231212",
+      "equity": 26664.75
+    },
+    {
+      "date": "20231219",
+      "equity": 26040.65
+    },
+    {
+      "date": "20231226",
+      "equity": 26155.55
+    },
+    {
+      "date": "20240103",
+      "equity": 25534.25
+    },
+    {
+      "date": "20240110",
+      "equity": 25222.25
+    },
+    {
+      "date": "20240117",
+      "equity": 25416.25
+    },
+    {
+      "date": "20240124",
+      "equity": 25372.25
+    },
+    {
+      "date": "20240131",
+      "equity": 25016.25
+    },
+    {
+      "date": "20240216",
+      "equity": 24819.85
+    },
+    {
+      "date": "20240223",
+      "equity": 26057.85
+    },
+    {
+      "date": "20240304",
+      "equity": 26077.05
+    },
+    {
+      "date": "20240311",
+      "equity": 27016.25
+    },
+    {
+      "date": "20240318",
+      "equity": 26964.25
+    },
+    {
+      "date": "20240325",
+      "equity": 26505.25
+    },
+    {
+      "date": "20240401",
+      "equity": 27732.25
+    },
+    {
+      "date": "20240410",
+      "equity": 28038.25
+    },
+    {
+      "date": "20240417",
+      "equity": 30101.75
+    },
+    {
+      "date": "20240424",
+      "equity": 28292.25
+    },
+    {
+      "date": "20240502",
+      "equity": 27865.65
+    },
+    {
+      "date": "20240509",
+      "equity": 27600.35
+    },
+    {
+      "date": "20240516",
+      "equity": 28026.35
+    },
+    {
+      "date": "20240523",
+      "equity": 27832.55
+    },
+    {
+      "date": "20240530",
+      "equity": 29331.45
+    },
+    {
+      "date": "20240606",
+      "equity": 29083.25
+    },
+    {
+      "date": "20240614",
+      "equity": 28174.35
+    },
+    {
+      "date": "20240621",
+      "equity": 28084.9
+    },
+    {
+      "date": "20240628",
+      "equity": 27369.25
+    },
+    {
+      "date": "20240705",
+      "equity": 26721.8
+    },
+    {
+      "date": "20240712",
+      "equity": 26487.3
+    },
+    {
+      "date": "20240719",
+      "equity": 26912.3
+    },
+    {
+      "date": "20240730",
+      "equity": 26915.6
+    },
+    {
+      "date": "20240806",
+      "equity": 23495.9
+    },
+    {
+      "date": "20240813",
+      "equity": 26462.3
+    },
+    {
+      "date": "20240820",
+      "equity": 26753.4
+    },
+    {
+      "date": "20240827",
+      "equity": 24760.3
+    },
+    {
+      "date": "20240903",
+      "equity": 24263.6
+    },
+    {
+      "date": "20240910",
+      "equity": 22215.3
+    },
+    {
+      "date": "20240918",
+      "equity": 23438.7
+    },
+    {
+      "date": "20240925",
+      "equity": 21070.3
+    },
+    {
+      "date": "20241004",
+      "equity": 20301.4
+    },
+    {
+      "date": "20241014",
+      "equity": 20741.7
+    },
+    {
+      "date": "20241021",
+      "equity": 21507.0
+    },
+    {
+      "date": "20241028",
+      "equity": 21713.5
+    },
+    {
+      "date": "20241105",
+      "equity": 21693.7
+    },
+    {
+      "date": "20241112",
+      "equity": 20957.8
+    },
+    {
+      "date": "20241119",
+      "equity": 20235.5
+    },
+    {
+      "date": "20241126",
+      "equity": 19928.1
+    },
+    {
+      "date": "20241203",
+      "equity": 20193.4
+    },
+    {
+      "date": "20241210",
+      "equity": 19917.4
+    },
+    {
+      "date": "20241217",
+      "equity": 20073.4
+    },
+    {
+      "date": "20241224",
+      "equity": 19573.9
+    },
+    {
+      "date": "20241231",
+      "equity": 19510.4
+    },
+    {
+      "date": "20250108",
+      "equity": 19711.4
+    },
+    {
+      "date": "20250115",
+      "equity": 17766.9
+    },
+    {
+      "date": "20250122",
+      "equity": 19858.4
+    },
+    {
+      "date": "20250207",
+      "equity": 20190.4
+    },
+    {
+      "date": "20250214",
+      "equity": 19874.9
+    },
+    {
+      "date": "20250221",
+      "equity": 20141.4
+    },
+    {
+      "date": "20250303",
+      "equity": 16721.9
+    },
+    {
+      "date": "20250310",
+      "equity": 16887.6
+    },
+    {
+      "date": "20250317",
+      "equity": 16758.6
+    },
+    {
+      "date": "20250324",
+      "equity": 17292.1
+    },
+    {
+      "date": "20250331",
+      "equity": 16036.9
+    },
+    {
+      "date": "20250409",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250416",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250423",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250430",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250508",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250515",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250522",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250529",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250606",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250613",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250620",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250627",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250704",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250711",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250718",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250725",
+      "equity": 16102.9
+    },
+    {
+      "date": "20250801",
+      "equity": 16593.6
+    },
+    {
+      "date": "20250808",
+      "equity": 17170.5
+    },
+    {
+      "date": "20250815",
+      "equity": 16293.75
+    },
+    {
+      "date": "20250822",
+      "equity": 15998.3
+    },
+    {
+      "date": "20250829",
+      "equity": 16179.05
+    },
+    {
+      "date": "20250905",
+      "equity": 14951.1
+    },
+    {
+      "date": "20250912",
+      "equity": 15881.1
+    },
+    {
+      "date": "20250919",
+      "equity": 15231.1
+    },
+    {
+      "date": "20250926",
+      "equity": 14365.1
+    },
+    {
+      "date": "20251007",
+      "equity": 15194.6
+    },
+    {
+      "date": "20251015",
+      "equity": 15476.1
+    },
+    {
+      "date": "20251022",
+      "equity": 15799.1
+    },
+    {
+      "date": "20251030",
+      "equity": 16503.1
+    },
+    {
+      "date": "20251106",
+      "equity": 15810.1
+    },
+    {
+      "date": "20251113",
+      "equity": 16281.6
+    },
+    {
+      "date": "20251120",
+      "equity": 15615.1
+    },
+    {
+      "date": "20251127",
+      "equity": 15537.6
+    },
+    {
+      "date": "20251204",
+      "equity": 15535.1
+    },
+    {
+      "date": "20251211",
+      "equity": 15844.6
+    },
+    {
+      "date": "20251218",
+      "equity": 14718.6
+    },
+    {
+      "date": "20251226",
+      "equity": 15114.1
+    },
+    {
+      "date": "20251231",
+      "equity": 15077.1
+    }
+  ],
+  "decisions": [
+    {
+      "signal_date": "20200131",
+      "execution_date": "20200203",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "6669",
+          "name": "緯穎",
+          "signal_date": "20200131",
+          "signal_close": 702.0,
+          "momentum_6_1": 0.6456692913385795,
+          "volatility_60": 0.4366024662571001,
+          "average_value_60": 1058934807.7,
+          "score": 1.4788493910118392
+        },
+        {
+          "code": "3218",
+          "name": "大學光",
+          "signal_date": "20200131",
+          "signal_close": 86.0,
+          "momentum_6_1": 0.7247706422018347,
+          "volatility_60": 0.5041783148567219,
+          "average_value_60": 210065051.66666666,
+          "score": 1.4375283919297501
+        },
+        {
+          "code": "6196",
+          "name": "帆宣",
+          "signal_date": "20200131",
+          "signal_close": 80.2,
+          "momentum_6_1": 0.6564299424184263,
+          "volatility_60": 0.48621541453992795,
+          "average_value_60": 452121126.59833336,
+          "score": 1.3500804844691332
+        }
+      ]
+    },
+    {
+      "signal_date": "20200227",
+      "execution_date": "20200302",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "6669",
+          "name": "緯穎",
+          "signal_date": "20200227",
+          "signal_close": 724.0,
+          "momentum_6_1": 0.6108490566037712,
+          "volatility_60": 0.3940752963258317,
+          "average_value_60": 1024842623.95,
+          "score": 1.550082084056102
+        },
+        {
+          "code": "3218",
+          "name": "大學光",
+          "signal_date": "20200227",
+          "signal_close": 80.1,
+          "momentum_6_1": 0.9119804400977993,
+          "volatility_60": 0.4692643948795045,
+          "average_value_60": 257323066.66666666,
+          "score": 1.9434256040924933
+        },
+        {
+          "code": "3546",
+          "name": "宇峻",
+          "signal_date": "20200227",
+          "signal_close": 115.0,
+          "momentum_6_1": 0.8152350081037272,
+          "volatility_60": 0.5442224150342501,
+          "average_value_60": 246291720.0,
+          "score": 1.4979813134900393
+        }
+      ]
+    },
+    {
+      "signal_date": "20200331",
+      "execution_date": "20200401",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20200430",
+      "execution_date": "20200504",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20200529",
+      "execution_date": "20200601",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20200630",
+      "execution_date": "20200701",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20200731",
+      "execution_date": "20200803",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "4735",
+          "name": "豪展",
+          "signal_date": "20200731",
+          "signal_close": 94.1,
+          "momentum_6_1": 0.940726577437859,
+          "volatility_60": 0.47740932784479734,
+          "average_value_60": 214673386.66666666,
+          "score": 1.9704821891198638
+        },
+        {
+          "code": "1598",
+          "name": "岱宇",
+          "signal_date": "20200731",
+          "signal_close": 75.2,
+          "momentum_6_1": 0.7408906882591102,
+          "volatility_60": 0.4301332616403598,
+          "average_value_60": 208248012.95,
+          "score": 1.7224677892466238
+        },
+        {
+          "code": "3217",
+          "name": "優群",
+          "signal_date": "20200731",
+          "signal_close": 124.5,
+          "momentum_6_1": 0.8383518225039623,
+          "volatility_60": 0.5817920083029894,
+          "average_value_60": 343124331.6666667,
+          "score": 1.4409820185556075
+        }
+      ]
+    },
+    {
+      "signal_date": "20200831",
+      "execution_date": "20200901",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "4735",
+          "name": "豪展",
+          "signal_date": "20200831",
+          "signal_close": 108.0,
+          "momentum_6_1": 0.6390728476821177,
+          "volatility_60": 0.42866983537417486,
+          "average_value_60": 197796273.33333334,
+          "score": 1.4908276602301336
+        },
+        {
+          "code": "2102",
+          "name": "泰豐",
+          "signal_date": "20200831",
+          "signal_close": 23.4,
+          "momentum_6_1": 0.9115044247787605,
+          "volatility_60": 0.4656361586455778,
+          "average_value_60": 136044104.3425,
+          "score": 1.9575464831384766
+        },
+        {
+          "code": "9921",
+          "name": "巨大",
+          "signal_date": "20200831",
+          "signal_close": 305.0,
+          "momentum_6_1": 0.7855072463768118,
+          "volatility_60": 0.41066562055893385,
+          "average_value_60": 592898543.3666667,
+          "score": 1.912766024357486
+        }
+      ]
+    },
+    {
+      "signal_date": "20200930",
+      "execution_date": "20201005",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "4735",
+          "name": "豪展",
+          "signal_date": "20200930",
+          "signal_close": 105.0,
+          "momentum_6_1": 0.8298969072164935,
+          "volatility_60": 0.3994963255327678,
+          "average_value_60": 115645891.66666667,
+          "score": 2.0773580485621337
+        },
+        {
+          "code": "2348",
+          "name": "海悅",
+          "signal_date": "20200930",
+          "signal_close": 90.9,
+          "momentum_6_1": 0.8274509803921573,
+          "volatility_60": 0.2945676344446997,
+          "average_value_60": 65622395.44833334,
+          "score": 2.809035629294493
+        },
+        {
+          "code": "6126",
+          "name": "信音",
+          "signal_date": "20200930",
+          "signal_close": 24.6,
+          "momentum_6_1": 0.8410852713178285,
+          "volatility_60": 0.4128119093516279,
+          "average_value_60": 58367305.833333336,
+          "score": 2.037453988764173
+        }
+      ]
+    },
+    {
+      "signal_date": "20201030",
+      "execution_date": "20201102",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "5264",
+          "name": "鎧勝-KY",
+          "signal_date": "20201030",
+          "signal_close": 86.4,
+          "momentum_6_1": 0.961187214611871,
+          "volatility_60": 0.340428064636345,
+          "average_value_60": 314452809.19,
+          "score": 2.823466436701212
+        },
+        {
+          "code": "5306",
+          "name": "桂盟",
+          "signal_date": "20201030",
+          "signal_close": 207.5,
+          "momentum_6_1": 0.9782608695652157,
+          "volatility_60": 0.41948407695072665,
+          "average_value_60": 250826683.33333334,
+          "score": 2.332057218181667
+        },
+        {
+          "code": "1587",
+          "name": "吉茂",
+          "signal_date": "20201030",
+          "signal_close": 25.05,
+          "momentum_6_1": 0.8838951310861403,
+          "volatility_60": 0.5112506645744112,
+          "average_value_60": 55195194.858333334,
+          "score": 1.7288879845700262
+        }
+      ]
+    },
+    {
+      "signal_date": "20201130",
+      "execution_date": "20201201",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "5264",
+          "name": "鎧勝-KY",
+          "signal_date": "20201130",
+          "signal_close": 86.4,
+          "momentum_6_1": 0.678988326848248,
+          "volatility_60": 0.016866216427022417,
+          "average_value_60": 79224786.14666668,
+          "score": 40.257299542320496
+        },
+        {
+          "code": "5223",
+          "name": "安力-KY",
+          "signal_date": "20201130",
+          "signal_close": 73.2,
+          "momentum_6_1": 0.9444444444444458,
+          "volatility_60": 0.378168401902892,
+          "average_value_60": 65966866.666666664,
+          "score": 2.4974176575624236
+        },
+        {
+          "code": "1519",
+          "name": "華城",
+          "signal_date": "20201130",
+          "signal_close": 53.3,
+          "momentum_6_1": 0.8659217877094967,
+          "volatility_60": 0.38024825031690523,
+          "average_value_60": 379897612.1616667,
+          "score": 2.2772538387430394
+        }
+      ]
+    },
+    {
+      "signal_date": "20201231",
+      "execution_date": "20210104",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "5264",
+          "name": "鎧勝-KY",
+          "signal_date": "20201231",
+          "signal_close": 87.3,
+          "momentum_6_1": 0.21059972105997216,
+          "volatility_60": 0.018835880680492273,
+          "average_value_60": 81150043.26333334,
+          "score": 11.180773791908951
+        },
+        {
+          "code": "5609",
+          "name": "中菲行",
+          "signal_date": "20201231",
+          "signal_close": 66.3,
+          "momentum_6_1": 0.806539509536786,
+          "volatility_60": 0.33534183396469724,
+          "average_value_60": 200215013.33333334,
+          "score": 2.405126434722408
+        },
+        {
+          "code": "2330",
+          "name": "台積電",
+          "signal_date": "20201231",
+          "signal_close": 530.0,
+          "momentum_6_1": 0.4019746121297594,
+          "volatility_60": 0.20797063324072687,
+          "average_value_60": 20090629213.25,
+          "score": 1.9328431416779508
+        }
+      ]
+    },
+    {
+      "signal_date": "20210129",
+      "execution_date": "20210201",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2352",
+          "name": "佳世達",
+          "signal_date": "20210129",
+          "signal_close": 28.65,
+          "momentum_6_1": 0.5863013698630131,
+          "volatility_60": 0.3335397343091393,
+          "average_value_60": 544527783.4875,
+          "score": 1.7578156649834205
+        },
+        {
+          "code": "3484",
+          "name": "崧騰",
+          "signal_date": "20210129",
+          "signal_close": 68.3,
+          "momentum_6_1": 0.9512195121951199,
+          "volatility_60": 0.5432597317228299,
+          "average_value_60": 183563874.16666666,
+          "score": 1.7509479474551415
+        },
+        {
+          "code": "2371",
+          "name": "大同",
+          "signal_date": "20210129",
+          "signal_close": 25.2,
+          "momentum_6_1": 0.8054607508532408,
+          "volatility_60": 0.4775060412758068,
+          "average_value_60": 1095151714.8158333,
+          "score": 1.6868074563019146
+        }
+      ]
+    },
+    {
+      "signal_date": "20210226",
+      "execution_date": "20210302",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2352",
+          "name": "佳世達",
+          "signal_date": "20210226",
+          "signal_close": 30.55,
+          "momentum_6_1": 0.393048128342246,
+          "volatility_60": 0.3473553593039794,
+          "average_value_60": 590483740.9316667,
+          "score": 1.1315447360012652
+        },
+        {
+          "code": "3484",
+          "name": "崧騰",
+          "signal_date": "20210226",
+          "signal_close": 79.5,
+          "momentum_6_1": 0.727395411605938,
+          "volatility_60": 0.5608027465165114,
+          "average_value_60": 197802050.0,
+          "score": 1.2970610720511542
+        },
+        {
+          "code": "2327",
+          "name": "國巨",
+          "signal_date": "20210226",
+          "signal_close": 593.0,
+          "momentum_6_1": 0.7652303120356607,
+          "volatility_60": 0.419825967870589,
+          "average_value_60": 7547277043.666667,
+          "score": 1.8227322047681012
+        }
+      ]
+    },
+    {
+      "signal_date": "20210331",
+      "execution_date": "20210401",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2352",
+          "name": "佳世達",
+          "signal_date": "20210331",
+          "signal_close": 34.25,
+          "momentum_6_1": 0.6368563685636868,
+          "volatility_60": 0.3484761796502426,
+          "average_value_60": 613584740.4058334,
+          "score": 1.8275463453567606
+        },
+        {
+          "code": "2371",
+          "name": "大同",
+          "signal_date": "20210331",
+          "signal_close": 27.05,
+          "momentum_6_1": 0.8935483870967726,
+          "volatility_60": 0.35138613625884557,
+          "average_value_60": 1142706739.3075,
+          "score": 2.54292442100945
+        },
+        {
+          "code": "2428",
+          "name": "興勤",
+          "signal_date": "20210331",
+          "signal_close": 192.0,
+          "momentum_6_1": 0.9748743718592991,
+          "volatility_60": 0.40919604638488954,
+          "average_value_60": 266562809.16666666,
+          "score": 2.382413956517881
+        }
+      ]
+    },
+    {
+      "signal_date": "20210429",
+      "execution_date": "20210503",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2352",
+          "name": "佳世達",
+          "signal_date": "20210429",
+          "signal_close": 36.4,
+          "momentum_6_1": 0.7552083333333357,
+          "volatility_60": 0.36069440077802706,
+          "average_value_60": 680733501.6183333,
+          "score": 2.0937622865903434
+        },
+        {
+          "code": "2855",
+          "name": "統一證",
+          "signal_date": "20210429",
+          "signal_close": 29.9,
+          "momentum_6_1": 0.5384615384615401,
+          "volatility_60": 0.25458027521355103,
+          "average_value_60": 152939767.31583336,
+          "score": 2.115095279906738
+        },
+        {
+          "code": "6026",
+          "name": "福邦證",
+          "signal_date": "20210429",
+          "signal_close": 20.75,
+          "momentum_6_1": 0.7882352941176454,
+          "volatility_60": 0.40628413880336095,
+          "average_value_60": 84353725.83333333,
+          "score": 1.9401084581821355
+        }
+      ]
+    },
+    {
+      "signal_date": "20210531",
+      "execution_date": "20210601",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2855",
+          "name": "統一證",
+          "signal_date": "20210531",
+          "signal_close": 28.6,
+          "momentum_6_1": 0.8507936507936533,
+          "volatility_60": 0.4070938110806127,
+          "average_value_60": 212270812.18333334,
+          "score": 2.0899203761787946
+        },
+        {
+          "code": "5371",
+          "name": "中光電",
+          "signal_date": "20210531",
+          "signal_close": 57.5,
+          "momentum_6_1": 0.7122507122507127,
+          "volatility_60": 0.373077759573396,
+          "average_value_60": 217960862.5,
+          "score": 1.909121339918926
+        },
+        {
+          "code": "2458",
+          "name": "義隆",
+          "signal_date": "20210531",
+          "signal_close": 211.0,
+          "momentum_6_1": 0.5335820895522367,
+          "volatility_60": 0.34356357477467203,
+          "average_value_60": 1002144268.15,
+          "score": 1.5530810852174575
+        }
+      ]
+    },
+    {
+      "signal_date": "20210630",
+      "execution_date": "20210701",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "5371",
+          "name": "中光電",
+          "signal_date": "20210630",
+          "signal_close": 61.3,
+          "momentum_6_1": 0.6262203626220366,
+          "volatility_60": 0.33090391768002614,
+          "average_value_60": 175108720.0,
+          "score": 1.8924537582162213
+        },
+        {
+          "code": "3526",
+          "name": "凡甲",
+          "signal_date": "20210630",
+          "signal_close": 152.0,
+          "momentum_6_1": 0.7803970223325039,
+          "volatility_60": 0.4258874851677633,
+          "average_value_60": 70045133.33333333,
+          "score": 1.832401865542243
+        },
+        {
+          "code": "2204",
+          "name": "中華",
+          "signal_date": "20210630",
+          "signal_close": 76.8,
+          "momentum_6_1": 0.4297352342158869,
+          "volatility_60": 0.25012580366044007,
+          "average_value_60": 166476401.49333334,
+          "score": 1.7180763756756452
+        }
+      ]
+    },
+    {
+      "signal_date": "20210730",
+      "execution_date": "20210802",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "3526",
+          "name": "凡甲",
+          "signal_date": "20210730",
+          "signal_close": 194.5,
+          "momentum_6_1": 0.6868131868131846,
+          "volatility_60": 0.5762308338719956,
+          "average_value_60": 251907825.0,
+          "score": 1.1919063445427391
+        },
+        {
+          "code": "1102",
+          "name": "亞泥",
+          "signal_date": "20210730",
+          "signal_close": 51.8,
+          "momentum_6_1": 0.24691358024691312,
+          "volatility_60": 0.17189402327949438,
+          "average_value_60": 627814225.6841667,
+          "score": 1.436429117988816
+        },
+        {
+          "code": "9941",
+          "name": "裕融",
+          "signal_date": "20210730",
+          "signal_close": 165.0,
+          "momentum_6_1": 0.44278606965174117,
+          "volatility_60": 0.30871222536947385,
+          "average_value_60": 107417001.79166667,
+          "score": 1.4343004042739307
+        }
+      ]
+    },
+    {
+      "signal_date": "20210831",
+      "execution_date": "20210901",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "9941",
+          "name": "裕融",
+          "signal_date": "20210831",
+          "signal_close": 166.5,
+          "momentum_6_1": 0.4911504424778754,
+          "volatility_60": 0.3714817722415606,
+          "average_value_60": 149469797.3,
+          "score": 1.3221387405207565
+        },
+        {
+          "code": "3048",
+          "name": "益登",
+          "signal_date": "20210831",
+          "signal_close": 37.65,
+          "momentum_6_1": 0.45507812500000155,
+          "volatility_60": 0.27128942853719856,
+          "average_value_60": 96433629.27749999,
+          "score": 1.6774635394154414
+        },
+        {
+          "code": "1231",
+          "name": "聯華食",
+          "signal_date": "20210831",
+          "signal_close": 71.1,
+          "momentum_6_1": 0.5265392781316356,
+          "volatility_60": 0.32342516455850856,
+          "average_value_60": 51284155.82166667,
+          "score": 1.6280096165379954
+        }
+      ]
+    },
+    {
+      "signal_date": "20210930",
+      "execution_date": "20211001",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "3529",
+          "name": "力旺",
+          "signal_date": "20210930",
+          "signal_close": 1975.0,
+          "momentum_6_1": 0.906432748538013,
+          "volatility_60": 0.5787645368674144,
+          "average_value_60": 1124181750.0,
+          "score": 1.5661511561232062
+        },
+        {
+          "code": "2430",
+          "name": "燦坤",
+          "signal_date": "20210930",
+          "signal_close": 45.9,
+          "momentum_6_1": 0.6527514231499036,
+          "volatility_60": 0.4345743399366477,
+          "average_value_60": 79508203.36916666,
+          "score": 1.502047781387787
+        },
+        {
+          "code": "6415",
+          "name": "矽力*-KY",
+          "signal_date": "20210930",
+          "signal_close": 4105.0,
+          "momentum_6_1": 0.5762376237623763,
+          "volatility_60": 0.4985169800013187,
+          "average_value_60": 1177337440.4166667,
+          "score": 1.1559037041443443
+        }
+      ]
+    },
+    {
+      "signal_date": "20211029",
+      "execution_date": "20211101",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20211130",
+      "execution_date": "20211201",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "6548",
+          "name": "長科*",
+          "signal_date": "20211130",
+          "signal_close": 99.1,
+          "momentum_6_1": 0.5944272445820431,
+          "volatility_60": 0.30820788143437333,
+          "average_value_60": 192884285.0,
+          "score": 1.9286568591809825
+        },
+        {
+          "code": "2476",
+          "name": "鉅祥",
+          "signal_date": "20211130",
+          "signal_close": 62.0,
+          "momentum_6_1": 0.890370370370372,
+          "volatility_60": 0.5366020400772193,
+          "average_value_60": 569986240.3358333,
+          "score": 1.6592750378702323
+        },
+        {
+          "code": "2351",
+          "name": "順德",
+          "signal_date": "20211130",
+          "signal_close": 163.0,
+          "momentum_6_1": 0.9130434782608694,
+          "volatility_60": 0.5795790618711724,
+          "average_value_60": 892629782.025,
+          "score": 1.5753562168258914
+        }
+      ]
+    },
+    {
+      "signal_date": "20211230",
+      "execution_date": "20220103",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "4721",
+          "name": "美琪瑪",
+          "signal_date": "20211230",
+          "signal_close": 157.5,
+          "momentum_6_1": 0.7861409796893664,
+          "volatility_60": 0.5352833938315306,
+          "average_value_60": 2380811650.0,
+          "score": 1.4686444390927398
+        },
+        {
+          "code": "5607",
+          "name": "遠雄港",
+          "signal_date": "20211230",
+          "signal_close": 67.5,
+          "momentum_6_1": 0.6410256410256414,
+          "volatility_60": 0.43871106261871157,
+          "average_value_60": 119182951.38666667,
+          "score": 1.4611567741175553
+        },
+        {
+          "code": "3290",
+          "name": "東浦",
+          "signal_date": "20211230",
+          "signal_close": 25.95,
+          "momentum_6_1": 0.687022900763359,
+          "volatility_60": 0.5284371605728119,
+          "average_value_60": 57026011.666666664,
+          "score": 1.3001033084400129
+        }
+      ]
+    },
+    {
+      "signal_date": "20220126",
+      "execution_date": "20220207",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "5607",
+          "name": "遠雄港",
+          "signal_date": "20220126",
+          "signal_close": 65.2,
+          "momentum_6_1": 0.7183098591549306,
+          "volatility_60": 0.4203690634624291,
+          "average_value_60": 110815751.61999999,
+          "score": 1.7087600434686372
+        },
+        {
+          "code": "3290",
+          "name": "東浦",
+          "signal_date": "20220126",
+          "signal_close": 21.7,
+          "momentum_6_1": 0.9118773946360157,
+          "volatility_60": 0.596064407187238,
+          "average_value_60": 78852203.33333333,
+          "score": 1.5298303063238825
+        },
+        {
+          "code": "2382",
+          "name": "廣達",
+          "signal_date": "20220126",
+          "signal_close": 92.9,
+          "momentum_6_1": 0.23952879581151798,
+          "volatility_60": 0.1773284910967142,
+          "average_value_60": 701040652.7166667,
+          "score": 1.3507631759009329
+        }
+      ]
+    },
+    {
+      "signal_date": "20220225",
+      "execution_date": "20220301",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20220331",
+      "execution_date": "20220401",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20220429",
+      "execution_date": "20220503",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20220531",
+      "execution_date": "20220601",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20220630",
+      "execution_date": "20220701",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20220729",
+      "execution_date": "20220801",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20220831",
+      "execution_date": "20220901",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20220930",
+      "execution_date": "20221003",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20221031",
+      "execution_date": "20221101",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20221130",
+      "execution_date": "20221201",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20221230",
+      "execution_date": "20230103",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20230131",
+      "execution_date": "20230201",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20230224",
+      "execution_date": "20230301",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2201",
+          "name": "裕隆",
+          "signal_date": "20230224",
+          "signal_close": 81.3,
+          "momentum_6_1": 0.7816813048933506,
+          "volatility_60": 0.45727837951333067,
+          "average_value_60": 2412204747.758333,
+          "score": 1.7094210877087026
+        },
+        {
+          "code": "2327",
+          "name": "國巨",
+          "signal_date": "20230224",
+          "signal_close": 538.0,
+          "momentum_6_1": 0.5609022556390977,
+          "volatility_60": 0.349307016707398,
+          "average_value_60": 1641681376.3666666,
+          "score": 1.6057571958508507
+        },
+        {
+          "code": "3454",
+          "name": "晶睿",
+          "signal_date": "20230224",
+          "signal_close": 232.5,
+          "momentum_6_1": 0.8532110091743128,
+          "volatility_60": 0.5723791499425916,
+          "average_value_60": 2248345767.866667,
+          "score": 1.4906395686493612
+        }
+      ]
+    },
+    {
+      "signal_date": "20230331",
+      "execution_date": "20230406",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2201",
+          "name": "裕隆",
+          "signal_date": "20230331",
+          "signal_close": 75.2,
+          "momentum_6_1": 0.8956310679611637,
+          "volatility_60": 0.41386440674084485,
+          "average_value_60": 1742295847.1783333,
+          "score": 2.164068843257626
+        },
+        {
+          "code": "2327",
+          "name": "國巨",
+          "signal_date": "20230331",
+          "signal_close": 529.0,
+          "momentum_6_1": 0.606557377049181,
+          "volatility_60": 0.3238647243143794,
+          "average_value_60": 1694002294.225,
+          "score": 1.872872627092256
+        },
+        {
+          "code": "3034",
+          "name": "聯詠",
+          "signal_date": "20230331",
+          "signal_close": 431.5,
+          "momentum_6_1": 0.9137529137529115,
+          "volatility_60": 0.3326610764505392,
+          "average_value_60": 2622257859.7166667,
+          "score": 2.7467984036562516
+        }
+      ]
+    },
+    {
+      "signal_date": "20230428",
+      "execution_date": "20230502",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "3034",
+          "name": "聯詠",
+          "signal_date": "20230428",
+          "signal_close": 418.5,
+          "momentum_6_1": 0.7296747967479655,
+          "volatility_60": 0.3390804440865919,
+          "average_value_60": 2511268620.0583334,
+          "score": 2.151922381467763
+        },
+        {
+          "code": "3680",
+          "name": "家登",
+          "signal_date": "20230428",
+          "signal_close": 349.0,
+          "momentum_6_1": 0.8204488778054881,
+          "volatility_60": 0.3629222320813077,
+          "average_value_60": 840506633.3333334,
+          "score": 2.2606740653509427
+        },
+        {
+          "code": "9941",
+          "name": "裕融",
+          "signal_date": "20230428",
+          "signal_close": 184.5,
+          "momentum_6_1": 0.38281249999999756,
+          "volatility_60": 0.17142000025066656,
+          "average_value_60": 177411327.48333332,
+          "score": 2.2331845726298734
+        }
+      ]
+    },
+    {
+      "signal_date": "20230531",
+      "execution_date": "20230601",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "9941",
+          "name": "裕融",
+          "signal_date": "20230531",
+          "signal_close": 195.0,
+          "momentum_6_1": 0.24999999999999778,
+          "volatility_60": 0.17038888127767038,
+          "average_value_60": 185604906.90833333,
+          "score": 1.467231888168753
+        },
+        {
+          "code": "1513",
+          "name": "中興電",
+          "signal_date": "20230531",
+          "signal_close": 114.5,
+          "momentum_6_1": 0.9600725952813047,
+          "volatility_60": 0.44613518226001775,
+          "average_value_60": 2803965580.115,
+          "score": 2.151976874851696
+        },
+        {
+          "code": "3594",
+          "name": "磐儀",
+          "signal_date": "20230531",
+          "signal_close": 58.4,
+          "momentum_6_1": 0.9029126213592236,
+          "volatility_60": 0.4200493466169135,
+          "average_value_60": 177368733.33333334,
+          "score": 2.1495394020519285
+        }
+      ]
+    },
+    {
+      "signal_date": "20230630",
+      "execution_date": "20230703",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "9941",
+          "name": "裕融",
+          "signal_date": "20230630",
+          "signal_close": 198.5,
+          "momentum_6_1": 0.2745098039215663,
+          "volatility_60": 0.16208057870097867,
+          "average_value_60": 158407470.55833334,
+          "score": 1.693662535768752
+        },
+        {
+          "code": "1513",
+          "name": "中興電",
+          "signal_date": "20230630",
+          "signal_close": 137.0,
+          "momentum_6_1": 0.7890624999999984,
+          "volatility_60": 0.482483403593475,
+          "average_value_60": 3444297103.695,
+          "score": 1.6354189473112677
+        },
+        {
+          "code": "2204",
+          "name": "中華",
+          "signal_date": "20230630",
+          "signal_close": 93.0,
+          "momentum_6_1": 0.9373104145601592,
+          "volatility_60": 0.3925856014796797,
+          "average_value_60": 577985860.9566667,
+          "score": 2.3875313078915212
+        }
+      ]
+    },
+    {
+      "signal_date": "20230731",
+      "execution_date": "20230801",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "6472",
+          "name": "保瑞",
+          "signal_date": "20230731",
+          "signal_close": 903.0,
+          "momentum_6_1": 0.9381953028430143,
+          "volatility_60": 0.48784972237240587,
+          "average_value_60": 2513626950.0,
+          "score": 1.923123576417313
+        },
+        {
+          "code": "1504",
+          "name": "東元",
+          "signal_date": "20230731",
+          "signal_close": 53.8,
+          "momentum_6_1": 0.8815331010452965,
+          "volatility_60": 0.4633408103045427,
+          "average_value_60": 1710984152.5716667,
+          "score": 1.9025587244643658
+        },
+        {
+          "code": "8927",
+          "name": "北基",
+          "signal_date": "20230731",
+          "signal_close": 49.85,
+          "momentum_6_1": 0.3716690042075723,
+          "volatility_60": 0.20293660058096005,
+          "average_value_60": 56246200.833333336,
+          "score": 1.8314537798680515
+        }
+      ]
+    },
+    {
+      "signal_date": "20230831",
+      "execution_date": "20230901",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2402",
+          "name": "毅嘉",
+          "signal_date": "20230831",
+          "signal_close": 46.95,
+          "momentum_6_1": 0.8358585858585859,
+          "volatility_60": 0.5489163796878044,
+          "average_value_60": 795246837.1133333,
+          "score": 1.5227430202282897
+        },
+        {
+          "code": "1618",
+          "name": "合機",
+          "signal_date": "20230831",
+          "signal_close": 25.05,
+          "momentum_6_1": 0.8479729729729732,
+          "volatility_60": 0.5642386763863062,
+          "average_value_60": 158181512.22166666,
+          "score": 1.5028621901707573
+        },
+        {
+          "code": "6191",
+          "name": "精成科",
+          "signal_date": "20230831",
+          "signal_close": 56.8,
+          "momentum_6_1": 0.5366242038216578,
+          "volatility_60": 0.3634591699506119,
+          "average_value_60": 346131093.65,
+          "score": 1.4764360021362954
+        }
+      ]
+    },
+    {
+      "signal_date": "20230928",
+      "execution_date": "20231002",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2402",
+          "name": "毅嘉",
+          "signal_date": "20230928",
+          "signal_close": 40.25,
+          "momentum_6_1": 0.7229357798165139,
+          "volatility_60": 0.482579173352647,
+          "average_value_60": 982439042.4083333,
+          "score": 1.4980666794922481
+        },
+        {
+          "code": "6191",
+          "name": "精成科",
+          "signal_date": "20230928",
+          "signal_close": 62.0,
+          "momentum_6_1": 0.7031484257871072,
+          "volatility_60": 0.3842403085747686,
+          "average_value_60": 413472647.85833335,
+          "score": 1.8299704900697136
+        },
+        {
+          "code": "8927",
+          "name": "北基",
+          "signal_date": "20230928",
+          "signal_close": 59.0,
+          "momentum_6_1": 0.5820895522388059,
+          "volatility_60": 0.3130092472969668,
+          "average_value_60": 74719489.16666667,
+          "score": 1.8596560876891595
+        }
+      ]
+    },
+    {
+      "signal_date": "20231031",
+      "execution_date": "20231101",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20231130",
+      "execution_date": "20231201",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "1477",
+          "name": "聚陽",
+          "signal_date": "20231130",
+          "signal_close": 358.0,
+          "momentum_6_1": 0.691629955947137,
+          "volatility_60": 0.2683766875578742,
+          "average_value_60": 697989209.8083333,
+          "score": 2.5770865653075408
+        },
+        {
+          "code": "2329",
+          "name": "華泰",
+          "signal_date": "20231130",
+          "signal_close": 59.3,
+          "momentum_6_1": 0.975056689342404,
+          "volatility_60": 0.4442036915728393,
+          "average_value_60": 1387970140.3208334,
+          "score": 2.195066605344762
+        },
+        {
+          "code": "3702",
+          "name": "大聯大",
+          "signal_date": "20231130",
+          "signal_close": 77.6,
+          "momentum_6_1": 0.3684210526315792,
+          "volatility_60": 0.22891863879350033,
+          "average_value_60": 483641813.33,
+          "score": 1.6093973587005261
+        }
+      ]
+    },
+    {
+      "signal_date": "20231229",
+      "execution_date": "20240102",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "3483",
+          "name": "力致",
+          "signal_date": "20231229",
+          "signal_close": 162.5,
+          "momentum_6_1": 0.8914285714285706,
+          "volatility_60": 0.47956427803017526,
+          "average_value_60": 983305625.0,
+          "score": 1.8588302179014258
+        },
+        {
+          "code": "2313",
+          "name": "華通",
+          "signal_date": "20231229",
+          "signal_close": 70.7,
+          "momentum_6_1": 0.6075808249721297,
+          "volatility_60": 0.34623785268770585,
+          "average_value_60": 2730164615.2716665,
+          "score": 1.7548076279231835
+        },
+        {
+          "code": "2385",
+          "name": "群光",
+          "signal_date": "20231229",
+          "signal_close": 175.0,
+          "momentum_6_1": 0.6198595787362089,
+          "volatility_60": 0.36167698355965544,
+          "average_value_60": 623655849.5416666,
+          "score": 1.7138485635317418
+        }
+      ]
+    },
+    {
+      "signal_date": "20240131",
+      "execution_date": "20240201",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2313",
+          "name": "華通",
+          "signal_date": "20240131",
+          "signal_close": 69.5,
+          "momentum_6_1": 0.5350389321468307,
+          "volatility_60": 0.35896292527789264,
+          "average_value_60": 2773239958.4566665,
+          "score": 1.490513071043836
+        },
+        {
+          "code": "3702",
+          "name": "大聯大",
+          "signal_date": "20240131",
+          "signal_close": 87.2,
+          "momentum_6_1": 0.5631067961165068,
+          "volatility_60": 0.27690240340210426,
+          "average_value_60": 668291403.745,
+          "score": 2.0335930248275615
+        },
+        {
+          "code": "2230",
+          "name": "泰茂",
+          "signal_date": "20240131",
+          "signal_close": 160.0,
+          "momentum_6_1": 0.9833729216152025,
+          "volatility_60": 0.4837590786288123,
+          "average_value_60": 214499983.33333334,
+          "score": 2.0327740916046833
+        }
+      ]
+    },
+    {
+      "signal_date": "20240229",
+      "execution_date": "20240301",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2313",
+          "name": "華通",
+          "signal_date": "20240229",
+          "signal_close": 76.1,
+          "momentum_6_1": 0.5170068027210899,
+          "volatility_60": 0.366375664615658,
+          "average_value_60": 2613884341.1183333,
+          "score": 1.4111384915901815
+        },
+        {
+          "code": "3702",
+          "name": "大聯大",
+          "signal_date": "20240229",
+          "signal_close": 92.8,
+          "momentum_6_1": 0.6654275092936826,
+          "volatility_60": 0.3161505679239837,
+          "average_value_60": 657508918.2,
+          "score": 2.1047803698827456
+        },
+        {
+          "code": "5269",
+          "name": "祥碩",
+          "signal_date": "20240229",
+          "signal_close": 2355.0,
+          "momentum_6_1": 0.9886363636363624,
+          "volatility_60": 0.5190430324158511,
+          "average_value_60": 2624976177.4166665,
+          "score": 1.9047290916030997
+        }
+      ]
+    },
+    {
+      "signal_date": "20240329",
+      "execution_date": "20240401",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "3402",
+          "name": "漢科",
+          "signal_date": "20240329",
+          "signal_close": 91.0,
+          "momentum_6_1": 0.9325153374233153,
+          "volatility_60": 0.4594154719609078,
+          "average_value_60": 112241415.0,
+          "score": 2.0297865316618333
+        },
+        {
+          "code": "6691",
+          "name": "洋基工程",
+          "signal_date": "20240329",
+          "signal_close": 386.5,
+          "momentum_6_1": 0.4833659491193709,
+          "volatility_60": 0.2572239799901714,
+          "average_value_60": 181036055.44166666,
+          "score": 1.8791636345018863
+        },
+        {
+          "code": "3362",
+          "name": "先進光",
+          "signal_date": "20240329",
+          "signal_close": 226.0,
+          "momentum_6_1": 0.9209621993127153,
+          "volatility_60": 0.5170974793743985,
+          "average_value_60": 753015900.0,
+          "score": 1.7810224107588486
+        }
+      ]
+    },
+    {
+      "signal_date": "20240430",
+      "execution_date": "20240502",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "6691",
+          "name": "洋基工程",
+          "signal_date": "20240430",
+          "signal_close": 382.0,
+          "momentum_6_1": 0.4235727440147308,
+          "volatility_60": 0.303638510282086,
+          "average_value_60": 199642869.68333334,
+          "score": 1.3949901928488042
+        },
+        {
+          "code": "6239",
+          "name": "力成",
+          "signal_date": "20240430",
+          "signal_close": 174.5,
+          "momentum_6_1": 0.9004739336492871,
+          "volatility_60": 0.3615533003989556,
+          "average_value_60": 1529814988.6416667,
+          "score": 2.490570360319378
+        },
+        {
+          "code": "2611",
+          "name": "志信",
+          "signal_date": "20240430",
+          "signal_close": 29.75,
+          "momentum_6_1": 0.9065040650406524,
+          "volatility_60": 0.4475680253746772,
+          "average_value_60": 126232856.2925,
+          "score": 2.0253995228586343
+        }
+      ]
+    },
+    {
+      "signal_date": "20240531",
+      "execution_date": "20240603",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2528",
+          "name": "皇普",
+          "signal_date": "20240531",
+          "signal_close": 49.2,
+          "momentum_6_1": 0.8039867109634526,
+          "volatility_60": 0.3553750823209379,
+          "average_value_60": 54377845.6625,
+          "score": 2.2623609559585702
+        },
+        {
+          "code": "9946",
+          "name": "三發地產",
+          "signal_date": "20240531",
+          "signal_close": 45.0,
+          "momentum_6_1": 0.893203883495143,
+          "volatility_60": 0.4095262420710883,
+          "average_value_60": 70051521.09416667,
+          "score": 2.181066294989943
+        },
+        {
+          "code": "6177",
+          "name": "達麗",
+          "signal_date": "20240531",
+          "signal_close": 61.0,
+          "momentum_6_1": 0.9912663755458513,
+          "volatility_60": 0.4801316161287725,
+          "average_value_60": 463728542.1625,
+          "score": 2.0645721761426166
+        }
+      ]
+    },
+    {
+      "signal_date": "20240628",
+      "execution_date": "20240701",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "6177",
+          "name": "達麗",
+          "signal_date": "20240628",
+          "signal_close": 59.3,
+          "momentum_6_1": 0.6604850213980027,
+          "volatility_60": 0.48654442932548486,
+          "average_value_60": 519069340.315,
+          "score": 1.3575019701975795
+        },
+        {
+          "code": "2611",
+          "name": "志信",
+          "signal_date": "20240628",
+          "signal_close": 32.9,
+          "momentum_6_1": 0.8825301204819296,
+          "volatility_60": 0.4215513990473392,
+          "average_value_60": 240564428.18583333,
+          "score": 2.0935290986493054
+        },
+        {
+          "code": "2539",
+          "name": "櫻花建",
+          "signal_date": "20240628",
+          "signal_close": 75.5,
+          "momentum_6_1": 0.47466390899689626,
+          "volatility_60": 0.2651680276918931,
+          "average_value_60": 80927349.98666666,
+          "score": 1.7900495513298564
+        }
+      ]
+    },
+    {
+      "signal_date": "20240731",
+      "execution_date": "20240801",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "6177",
+          "name": "達麗",
+          "signal_date": "20240731",
+          "signal_close": 67.2,
+          "momentum_6_1": 0.8470588235294125,
+          "volatility_60": 0.5246028176219619,
+          "average_value_60": 514868219.39166665,
+          "score": 1.6146669348234766
+        },
+        {
+          "code": "2539",
+          "name": "櫻花建",
+          "signal_date": "20240731",
+          "signal_close": 79.6,
+          "momentum_6_1": 0.6045548654244297,
+          "volatility_60": 0.30307348140009416,
+          "average_value_60": 78985669.08333333,
+          "score": 1.9947468271773443
+        },
+        {
+          "code": "1442",
+          "name": "名軒",
+          "signal_date": "20240731",
+          "signal_close": 67.3,
+          "momentum_6_1": 0.7362637362637359,
+          "volatility_60": 0.37620421900097706,
+          "average_value_60": 170924404.53833333,
+          "score": 1.9570852719804923
+        }
+      ]
+    },
+    {
+      "signal_date": "20240830",
+      "execution_date": "20240902",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "1442",
+          "name": "名軒",
+          "signal_date": "20240830",
+          "signal_close": 64.8,
+          "momentum_6_1": 0.6966580976863757,
+          "volatility_60": 0.45362945442266245,
+          "average_value_60": 139050032.79333335,
+          "score": 1.535742643900885
+        },
+        {
+          "code": "6186",
+          "name": "新潤",
+          "signal_date": "20240830",
+          "signal_close": 117.0,
+          "momentum_6_1": 0.9538188277087027,
+          "volatility_60": 0.525625264390064,
+          "average_value_60": 107561898.33333333,
+          "score": 1.8146365715801636
+        },
+        {
+          "code": "6446",
+          "name": "藥華藥",
+          "signal_date": "20240830",
+          "signal_close": 699.0,
+          "momentum_6_1": 0.9664634146341451,
+          "volatility_60": 0.5517995558238799,
+          "average_value_60": 2713740075.2083335,
+          "score": 1.751475521199251
+        }
+      ]
+    },
+    {
+      "signal_date": "20240930",
+      "execution_date": "20241001",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "1442",
+          "name": "名軒",
+          "signal_date": "20240930",
+          "signal_close": 67.6,
+          "momentum_6_1": 0.4304635761589404,
+          "volatility_60": 0.5664513286309663,
+          "average_value_60": 160220363.35666665,
+          "score": 0.7599303848387304
+        },
+        {
+          "code": "8932",
+          "name": "智通*",
+          "signal_date": "20240930",
+          "signal_close": 86.0,
+          "momentum_6_1": 0.5021459227467795,
+          "volatility_60": 0.35397744958445176,
+          "average_value_60": 66932966.666666664,
+          "score": 1.4185816733135646
+        },
+        {
+          "code": "3665",
+          "name": "貿聯-KY",
+          "signal_date": "20240930",
+          "signal_close": 461.0,
+          "momentum_6_1": 0.7862745098039194,
+          "volatility_60": 0.5671544898237245,
+          "average_value_60": 1772999851.8166666,
+          "score": 1.386349793419248
+        }
+      ]
+    },
+    {
+      "signal_date": "20241030",
+      "execution_date": "20241101",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "8932",
+          "name": "智通*",
+          "signal_date": "20241030",
+          "signal_close": 96.2,
+          "momentum_6_1": 0.556874523264683,
+          "volatility_60": 0.39418574699229564,
+          "average_value_60": 73155011.66666667,
+          "score": 1.4127211029666356
+        },
+        {
+          "code": "3293",
+          "name": "鈊象",
+          "signal_date": "20241030",
+          "signal_close": 1035.0,
+          "momentum_6_1": 0.7971022748851164,
+          "volatility_60": 0.49935964564545726,
+          "average_value_60": 2629994816.6666665,
+          "score": 1.59624887961222
+        },
+        {
+          "code": "6223",
+          "name": "旺矽",
+          "signal_date": "20241030",
+          "signal_close": 805.0,
+          "momentum_6_1": 0.9070351758793989,
+          "volatility_60": 0.5869003704698611,
+          "average_value_60": 2518222675.0,
+          "score": 1.5454670358330904
+        }
+      ]
+    },
+    {
+      "signal_date": "20241129",
+      "execution_date": "20241202",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "3293",
+          "name": "鈊象",
+          "signal_date": "20241129",
+          "signal_close": 960.0,
+          "momentum_6_1": 0.8549921240760943,
+          "volatility_60": 0.4334730301465157,
+          "average_value_60": 3237444233.3333335,
+          "score": 1.9724228835807922
+        },
+        {
+          "code": "6438",
+          "name": "迅得",
+          "signal_date": "20241129",
+          "signal_close": 212.0,
+          "momentum_6_1": 0.7610619469026525,
+          "volatility_60": 0.5847355075975543,
+          "average_value_60": 1035832886.7166667,
+          "score": 1.3015490542545525
+        },
+        {
+          "code": "3665",
+          "name": "貿聯-KY",
+          "signal_date": "20241129",
+          "signal_close": 647.0,
+          "momentum_6_1": 0.6341463414634141,
+          "volatility_60": 0.5283177535856252,
+          "average_value_60": 1848569089.525,
+          "score": 1.2003123823864403
+        }
+      ]
+    },
+    {
+      "signal_date": "20241231",
+      "execution_date": "20250102",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "6438",
+          "name": "迅得",
+          "signal_date": "20241231",
+          "signal_close": 207.0,
+          "momentum_6_1": 0.6046511627906965,
+          "volatility_60": 0.5670241616626147,
+          "average_value_60": 1036434026.2416667,
+          "score": 1.0663587262626566
+        },
+        {
+          "code": "3665",
+          "name": "貿聯-KY",
+          "signal_date": "20241231",
+          "signal_close": 612.0,
+          "momentum_6_1": 0.7480519480519481,
+          "volatility_60": 0.5251679256544909,
+          "average_value_60": 2207695561.1583333,
+          "score": 1.4244052454644633
+        },
+        {
+          "code": "8114",
+          "name": "振樺電",
+          "signal_date": "20241231",
+          "signal_close": 367.5,
+          "momentum_6_1": 0.7074468085106385,
+          "volatility_60": 0.42473727512024384,
+          "average_value_60": 323460014.48333335,
+          "score": 1.6656103665739228
+        }
+      ]
+    },
+    {
+      "signal_date": "20250122",
+      "execution_date": "20250203",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "6438",
+          "name": "迅得",
+          "signal_date": "20250122",
+          "signal_close": 224.0,
+          "momentum_6_1": 0.8311688311688301,
+          "volatility_60": 0.5382237824879693,
+          "average_value_60": 771757377.9583334,
+          "score": 1.5442811302887918
+        },
+        {
+          "code": "3665",
+          "name": "貿聯-KY",
+          "signal_date": "20250122",
+          "signal_close": 637.0,
+          "momentum_6_1": 0.5351213282247773,
+          "volatility_60": 0.5862980614024871,
+          "average_value_60": 2483508320.95,
+          "score": 0.9127120887023068
+        },
+        {
+          "code": "8114",
+          "name": "振樺電",
+          "signal_date": "20250122",
+          "signal_close": 336.5,
+          "momentum_6_1": 0.8941798941798929,
+          "volatility_60": 0.4629557181512352,
+          "average_value_60": 361774156.23333335,
+          "score": 1.9314587964281031
+        }
+      ]
+    },
+    {
+      "signal_date": "20250227",
+      "execution_date": "20250303",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "5536",
+          "name": "聖暉*",
+          "signal_date": "20250227",
+          "signal_close": 424.0,
+          "momentum_6_1": 0.612903225806452,
+          "volatility_60": 0.3653429965728707,
+          "average_value_60": 426996966.6666667,
+          "score": 1.677610441573644
+        },
+        {
+          "code": "6757",
+          "name": "台灣虎航",
+          "signal_date": "20250227",
+          "signal_close": 84.9,
+          "momentum_6_1": 0.6086142322097357,
+          "volatility_60": 0.42899625715287215,
+          "average_value_60": 583260819.5616666,
+          "score": 1.4186935714752795
+        },
+        {
+          "code": "6613",
+          "name": "朋億*",
+          "signal_date": "20250227",
+          "signal_close": 226.0,
+          "momentum_6_1": 0.6066666666666665,
+          "volatility_60": 0.4449507123216242,
+          "average_value_60": 112401725.0,
+          "score": 1.363446893929566
+        }
+      ]
+    },
+    {
+      "signal_date": "20250331",
+      "execution_date": "20250401",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20250430",
+      "execution_date": "20250502",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20250529",
+      "execution_date": "20250602",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20250630",
+      "execution_date": "20250701",
+      "market_on": false,
+      "holdings": []
+    },
+    {
+      "signal_date": "20250731",
+      "execution_date": "20250801",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "8210",
+          "name": "勤誠",
+          "signal_date": "20250731",
+          "signal_close": 513.0,
+          "momentum_6_1": 0.9959266802444005,
+          "volatility_60": 0.44646226225982794,
+          "average_value_60": 1328587661.9,
+          "score": 2.2307074179201294
+        },
+        {
+          "code": "3528",
+          "name": "安馳",
+          "signal_date": "20250731",
+          "signal_close": 86.1,
+          "momentum_6_1": 0.5470588235294132,
+          "volatility_60": 0.360837198044394,
+          "average_value_60": 376605901.12666667,
+          "score": 1.516082118180366
+        },
+        {
+          "code": "2812",
+          "name": "台中銀",
+          "signal_date": "20250731",
+          "signal_close": 22.25,
+          "momentum_6_1": 0.20380434782608825,
+          "volatility_60": 0.13625439122347194,
+          "average_value_60": 136986212.4625,
+          "score": 1.4957635199575114
+        }
+      ]
+    },
+    {
+      "signal_date": "20250829",
+      "execution_date": "20250901",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "8210",
+          "name": "勤誠",
+          "signal_date": "20250829",
+          "signal_close": 609.0,
+          "momentum_6_1": 0.8209982788296046,
+          "volatility_60": 0.5247670664454476,
+          "average_value_60": 1687525303.5583334,
+          "score": 1.5645003875542405
+        },
+        {
+          "code": "2404",
+          "name": "漢唐",
+          "signal_date": "20250829",
+          "signal_close": 1230.0,
+          "momentum_6_1": 0.9091967403958099,
+          "volatility_60": 0.391458728449806,
+          "average_value_60": 2278494969.5333333,
+          "score": 2.322586455017287
+        },
+        {
+          "code": "2383",
+          "name": "台光電",
+          "signal_date": "20250829",
+          "signal_close": 1220.0,
+          "momentum_6_1": 0.9614711033274979,
+          "volatility_60": 0.4703113817752757,
+          "average_value_60": 5144939782.783334,
+          "score": 2.0443288012683225
+        }
+      ]
+    },
+    {
+      "signal_date": "20250930",
+      "execution_date": "20251001",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2317",
+          "name": "鴻海",
+          "signal_date": "20250930",
+          "signal_close": 216.0,
+          "momentum_6_1": 0.7644444444444429,
+          "volatility_60": 0.28939390731227915,
+          "average_value_60": 12233927468.441668,
+          "score": 2.641536069449957
+        },
+        {
+          "code": "6139",
+          "name": "亞翔",
+          "signal_date": "20250930",
+          "signal_close": 359.0,
+          "momentum_6_1": 0.9560723514211866,
+          "volatility_60": 0.39518314517428316,
+          "average_value_60": 2186740096.3083334,
+          "score": 2.419314596525975
+        },
+        {
+          "code": "1560",
+          "name": "中砂",
+          "signal_date": "20250930",
+          "signal_close": 335.5,
+          "momentum_6_1": 0.8898071625344337,
+          "volatility_60": 0.36817962715635016,
+          "average_value_60": 1328678564.4083333,
+          "score": 2.4167745766024438
+        }
+      ]
+    },
+    {
+      "signal_date": "20251031",
+      "execution_date": "20251103",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "2317",
+          "name": "鴻海",
+          "signal_date": "20251031",
+          "signal_close": 257.5,
+          "momentum_6_1": 0.4794520547945189,
+          "volatility_60": 0.35080440811276786,
+          "average_value_60": 16664726409.716667,
+          "score": 1.3667218646819188
+        },
+        {
+          "code": "5284",
+          "name": "jpp-KY",
+          "signal_date": "20251031",
+          "signal_close": 318.5,
+          "momentum_6_1": 0.9292929292929311,
+          "volatility_60": 0.4869833198091242,
+          "average_value_60": 804829744.6916667,
+          "score": 1.90826439323871
+        },
+        {
+          "code": "2360",
+          "name": "致茂",
+          "signal_date": "20251031",
+          "signal_close": 819.0,
+          "momentum_6_1": 0.8207547169811327,
+          "volatility_60": 0.4458943299552997,
+          "average_value_60": 2229678516.425,
+          "score": 1.8406933253971007
+        }
+      ]
+    },
+    {
+      "signal_date": "20251128",
+      "execution_date": "20251201",
+      "market_on": true,
+      "holdings": [
+        {
+          "code": "5284",
+          "name": "jpp-KY",
+          "signal_date": "20251128",
+          "signal_close": 292.0,
+          "momentum_6_1": 0.7169811320754726,
+          "volatility_60": 0.5270500810885242,
+          "average_value_60": 868495212.5583333,
+          "score": 1.3603662304627313
+        },
+        {
+          "code": "2059",
+          "name": "川湖",
+          "signal_date": "20251128",
+          "signal_close": 3815.0,
+          "momentum_6_1": 0.9160839160839163,
+          "volatility_60": 0.46514961381346603,
+          "average_value_60": 3029816148.1666665,
+          "score": 1.969439270460802
+        },
+        {
+          "code": "2327",
+          "name": "國巨*",
+          "signal_date": "20251128",
+          "signal_close": 235.0,
+          "momentum_6_1": 0.9602624179943784,
+          "volatility_60": 0.5287966624207505,
+          "average_value_60": 10451412375.075,
+          "score": 1.815938878279684
+        }
+      ]
+    }
+  ]
+}

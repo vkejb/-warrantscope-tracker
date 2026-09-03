@@ -27,11 +27,15 @@
     $("#trade-body").innerHTML = trades.map(trade => `<tr><td><strong>${esc(trade.code)}</strong> ${esc(trade.name)}</td><td>${trade.entry_date}</td><td>${trade.exit_date}</td><td>${trade.shares}</td><td>${money(trade.costs)}</td><td class="${trade.pnl >= 0 ? "positive" : "negative"}">${trade.pnl >= 0 ? "+" : ""}${money(trade.pnl)}</td><td class="${trade.return_pct >= 0 ? "positive" : "negative"}">${pct(trade.return_pct)}</td></tr>`).join("");
   }
 
-  fetch("backtest-result.json").then(response => response.json()).then(data => {
+  Promise.all([
+    fetch("backtest-result.json").then(response => response.json()),
+    fetch("backtest-result-v2.json").then(response => response.json()),
+  ]).then(([v1, data]) => {
     const s = data.summary, b = data.benchmark;
     $("#verdict").textContent = s.total_return_pct > 0 && s.cagr_pct > b.cagr_pct ? "通過基準" : "策略未通過";
     $("#verdict").classList.add(s.total_return_pct > 0 && s.cagr_pct > b.cagr_pct ? "pass" : "fail");
-    $("#conclusion").textContent = `基準策略把 ${money(s.initial_capital)} 變成 ${money(s.final_equity)}，總報酬 ${pct(s.total_return_pct)}；同期間 0050 價格報酬為 ${pct(b.total_return_pct)}。策略報酬、回撤與交易成本皆未達實盤標準，因此目前不應自動交易。`;
+    const outOfSample = data.annual.find(row => row.year === "2025");
+    $("#conclusion").textContent = `V2 把 ${money(s.initial_capital)} 變成 ${money(s.final_equity)}，總報酬 ${pct(s.total_return_pct)}，2025 樣本外報酬 ${pct(outOfSample.return_pct)}；同期間 0050 價格報酬為 ${pct(b.total_return_pct)}。降低換手與加入大盤濾網仍未產生正期望，因此目前不應自動交易。`;
     $("#period").textContent = data.meta.period;
     const items = [
       ["期末資產", money(s.final_equity), `起始 ${money(s.initial_capital)}`],
@@ -42,6 +46,12 @@
       ["交易成本", money(s.total_costs), `${s.trades} 筆完成交易`],
     ];
     $("#kpis").innerHTML = items.map(([label,value,note], i) => `<article class="kpi"><span>${label}</span><strong class="${i>0&&i<4&&s.total_return_pct<0?"negative":""}">${value}</strong><small>${note}</small></article>`).join("");
+    const comparison = [
+      ["V1 價量動能", v1.summary],
+      ["V2 濾網低換手", s],
+      ["0050 價格報酬", {total_return_pct:b.total_return_pct,cagr_pct:b.cagr_pct,max_drawdown_pct:b.max_drawdown_pct,trades:"—"}],
+    ];
+    $("#comparison").innerHTML = `<div class="comparison-row header"><span>版本</span><span>總報酬</span><span>年化</span><span>最大回撤</span><span>交易數</span></div>${comparison.map(([name,row])=>`<div class="comparison-row"><strong>${name}</strong><span class="${row.total_return_pct>=0?"positive":"negative"}">${pct(row.total_return_pct)}</span><span>${pct(row.cagr_pct)}</span><span>${Number(row.max_drawdown_pct).toFixed(2)}%</span><span>${row.trades}</span></div>`).join("")}`;
     $("#equity-chart").innerHTML = equityChart(data.equity_curve);
     const maxAnnual = Math.max(...data.annual.map(row => Math.abs(row.return_pct)));
     $("#annual-bars").innerHTML = data.annual.map(row => `<div class="annual-row"><span>${row.year}</span><div class="bar-track"><div class="bar ${row.return_pct<0?"loss":""}" style="width:${Math.abs(row.return_pct)/maxAnnual*100}%"></div></div><strong class="${row.return_pct>=0?"positive":"negative"}">${pct(row.return_pct)}</strong></div>`).join("");

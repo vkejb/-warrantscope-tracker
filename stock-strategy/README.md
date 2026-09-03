@@ -22,4 +22,7 @@
 
 ```bash
 python3 scripts/run_backtest.py /path/yearly_2019.zip /path/yearly_2020.zip /path/yearly_2021.zip /path/yearly_2022.zip /path/yearly_2023.zip /path/yearly_2024.zip /path/yearly_2025.zip --output backtest-result.json
+python3 scripts/run_backtest_v2.py /path/yearly_2019.zip /path/yearly_2020.zip /path/yearly_2021.zip /path/yearly_2022.zip /path/yearly_2023.zip /path/yearly_2024.zip /path/yearly_2025.zip --output backtest-result-v2.json
 ```
+
+V2 在執行前固定加入 0050 多頭濾網、6-to-1 月動能、波動上限、三檔持股及排名緩衝以降低換手。2020–2022 為設計期、2023–2024 為驗證期、2025 為鎖定規則後的樣本外測試。V2 仍未通過，結果保留而不以 2025 重新調參。
