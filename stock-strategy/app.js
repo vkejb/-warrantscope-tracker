@@ -30,12 +30,14 @@
   Promise.all([
     fetch("backtest-result.json").then(response => response.json()),
     fetch("backtest-result-v2.json").then(response => response.json()),
-  ]).then(([v1, data]) => {
+    fetch("research-variants.json").then(response => response.json()),
+  ]).then(([v1, data, research]) => {
     const s = data.summary, b = data.benchmark;
     $("#verdict").textContent = s.total_return_pct > 0 && s.cagr_pct > b.cagr_pct ? "通過基準" : "策略未通過";
     $("#verdict").classList.add(s.total_return_pct > 0 && s.cagr_pct > b.cagr_pct ? "pass" : "fail");
     const outOfSample = data.annual.find(row => row.year === "2025");
-    $("#conclusion").textContent = `V2 把 ${money(s.initial_capital)} 變成 ${money(s.final_equity)}，總報酬 ${pct(s.total_return_pct)}，2025 樣本外報酬 ${pct(outOfSample.return_pct)}；同期間 0050 價格報酬為 ${pct(b.total_return_pct)}。降低換手與加入大盤濾網仍未產生正期望，因此目前不應自動交易。`;
+    const best = research.variants.find(row => row.id === "low_vol_10_q");
+    $("#conclusion").textContent = `五個預先定義版本中，最佳為「${best.name}」：總報酬 ${pct(best.summary.total_return_pct)}、2024驗證 ${pct(best.phase.validation_2024)}，但2025壓力測試 ${pct(best.phase.stress_2025)}，仍遠低於0050的 ${pct(b.total_return_pct)}。結論是增加分散、季度換股與大盤濾網確實改善結果，但純價量選股不適合取代ETF核心。`;
     $("#period").textContent = data.meta.period;
     const items = [
       ["期末資產", money(s.final_equity), `起始 ${money(s.initial_capital)}`],
@@ -49,6 +51,7 @@
     const comparison = [
       ["V1 價量動能", v1.summary],
       ["V2 濾網低換手", s],
+      ...research.variants.map(row => [row.name, row.summary]),
       ["0050 價格報酬", {total_return_pct:b.total_return_pct,cagr_pct:b.cagr_pct,max_drawdown_pct:b.max_drawdown_pct,trades:"—"}],
     ];
     $("#comparison").innerHTML = `<div class="comparison-row header"><span>版本</span><span>總報酬</span><span>年化</span><span>最大回撤</span><span>交易數</span></div>${comparison.map(([name,row])=>`<div class="comparison-row"><strong>${name}</strong><span class="${row.total_return_pct>=0?"positive":"negative"}">${pct(row.total_return_pct)}</span><span>${pct(row.cagr_pct)}</span><span>${Number(row.max_drawdown_pct).toFixed(2)}%</span><span>${row.trades}</span></div>`).join("")}`;

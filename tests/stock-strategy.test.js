@@ -8,6 +8,7 @@ const mainHtml = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const stockHtml = fs.readFileSync(path.join(root, "stock-strategy", "index.html"), "utf8");
 const result = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "backtest-result.json"), "utf8"));
 const resultV2 = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "backtest-result-v2.json"), "utf8"));
+const research = JSON.parse(fs.readFileSync(path.join(root, "stock-strategy", "research-variants.json"), "utf8"));
 
 test("現股策略與 WarrantScope UI 完全分離", () => {
   assert.doesNotMatch(mainHtml, /panel-strategy|backtest-core|backtest-ui/);
@@ -38,4 +39,12 @@ test("V2 保留設計、驗證與樣本外分期且未用 2025 回頭調參", ()
   assert.equal(resultV2.annual.find(row => row.year === "2025").phase, "out_of_sample");
   assert.ok(resultV2.summary.trades < result.summary.trades);
   assert.ok(resultV2.summary.total_return_pct < 0);
+});
+
+test("歸因研究只含預先定義版本並找出較佳但仍落後0050的方向", () => {
+  assert.equal(research.variants.length, 5);
+  const best = research.variants.find(row => row.id === "low_vol_10_q");
+  assert.ok(best.summary.total_return_pct > 0);
+  assert.ok(best.phase.validation_2024 > 0);
+  assert.ok(best.summary.total_return_pct < resultV2.benchmark.total_return_pct);
 });

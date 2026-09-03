@@ -1,0 +1,135 @@
+{
+  "method": "Five economically distinct variants fixed before execution; no parameter grid; 2025 not used for selection.",
+  "variants": [
+    {
+      "id": "low_vol_5_q",
+      "name": "低波動趨勢5檔／季換股",
+      "summary": {
+        "final_equity": 28549.65,
+        "total_return_pct": -4.83,
+        "cagr_pct": -0.82,
+        "max_drawdown_pct": 41.47,
+        "trades": 85,
+        "win_rate_pct": 35.29,
+        "total_costs": 1943
+      },
+      "annual": {
+        "2020": -16.4,
+        "2021": 39.58,
+        "2022": -11.46,
+        "2023": -0.17,
+        "2024": 18.89,
+        "2025": -17.73
+      },
+      "phase": {
+        "design_2020_2023": 0.73,
+        "validation_2024": 18.89,
+        "stress_2025": -17.73
+      }
+    },
+    {
+      "id": "low_vol_10_q",
+      "name": "低波動趨勢10檔／季換股",
+      "summary": {
+        "final_equity": 37190.02,
+        "total_return_pct": 23.97,
+        "cagr_pct": 3.65,
+        "max_drawdown_pct": 37.14,
+        "trades": 169,
+        "win_rate_pct": 40.83,
+        "total_costs": 2403
+      },
+      "annual": {
+        "2020": -1.64,
+        "2021": 32.87,
+        "2022": -2.2,
+        "2023": -1.35,
+        "2024": 9.37,
+        "2025": -9.88
+      },
+      "phase": {
+        "design_2020_2023": 30.54,
+        "validation_2024": 9.37,
+        "stress_2025": -9.88
+      }
+    },
+    {
+      "id": "breakout_5_q",
+      "name": "52週新高5檔／季換股",
+      "summary": {
+        "final_equity": 35628.36,
+        "total_return_pct": 18.76,
+        "cagr_pct": 2.91,
+        "max_drawdown_pct": 34.63,
+        "trades": 85,
+        "win_rate_pct": 43.53,
+        "total_costs": 2005
+      },
+      "annual": {
+        "2020": -8.5,
+        "2021": 23.93,
+        "2022": -6.47,
+        "2023": -4.39,
+        "2024": -0.39,
+        "2025": 15.05
+      },
+      "phase": {
+        "design_2020_2023": 2.43,
+        "validation_2024": -0.39,
+        "stress_2025": 15.05
+      }
+    },
+    {
+      "id": "low_vol_5_m",
+      "name": "低波動趨勢5檔／月換股",
+      "summary": {
+        "final_equity": 18616.75,
+        "total_return_pct": -37.94,
+        "cagr_pct": -7.64,
+        "max_drawdown_pct": 49.88,
+        "trades": 257,
+        "win_rate_pct": 40.08,
+        "total_costs": 5087
+      },
+      "annual": {
+        "2020": -15.34,
+        "2021": 33.82,
+        "2022": -13.51,
+        "2023": -14.45,
+        "2024": 3.6,
+        "2025": -24.15
+      },
+      "phase": {
+        "design_2020_2023": -18.18,
+        "validation_2024": 3.6,
+        "stress_2025": -24.15
+      }
+    },
+    {
+      "id": "low_vol_5_q_no_filter",
+      "name": "低波動趨勢5檔／季換股／無大盤濾網",
+      "summary": {
+        "final_equity": 22728.15,
+        "total_return_pct": -24.24,
+        "cagr_pct": -4.52,
+        "max_drawdown_pct": 61.7,
+        "trades": 115,
+        "win_rate_pct": 34.78,
+        "total_costs": 2646
+      },
+      "annual": {
+        "2020": 10.53,
+        "2021": 40.26,
+        "2022": -49.16,
+        "2023": 12.66,
+        "2024": 19.04,
+        "2025": -24.8
+      },
+      "phase": {
+        "design_2020_2023": -12.44,
+        "validation_2024": 19.04,
+        "stress_2025": -24.8
+      }
+    }
+  ]
+}
