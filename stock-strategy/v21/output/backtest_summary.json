@@ -1,0 +1,73 @@
+{
+  "overall": {
+    "Gross": {
+      "trades": 2385,
+      "win_rate": 0.35974842767295595,
+      "average_return": 0.004079820863317421,
+      "median_return": -0.015837104072398245,
+      "average_win": 0.08137134392222121,
+      "average_loss": -0.04016459914856535,
+      "payoff_ratio": 2.025946869810295,
+      "profit_factor": 1.1619401165088445,
+      "expectancy": 0.004079820863317421,
+      "max_win": 0.5238095238095237,
+      "max_loss": -0.2098214285714286,
+      "average_holding_days": 4.691404612159329,
+      "median_holding_days": 5,
+      "average_mfe": 0.06749498701396785,
+      "average_mae": -0.040946150598616005
+    },
+    "Net 0% slippage": {
+      "trades": 2385,
+      "win_rate": 0.3484276729559748,
+      "average_return": 0.00026587538204066446,
+      "median_return": -0.019597222824039993,
+      "average_win": 0.07982277598421171,
+      "average_loss": -0.0422771004225952,
+      "payoff_ratio": 1.8880853981544592,
+      "profit_factor": 1.0096518441868443,
+      "expectancy": 0.00026587538204066446,
+      "max_win": 0.5180343255564495,
+      "max_loss": -0.2128125417836609,
+      "average_holding_days": 4.691404612159329,
+      "median_holding_days": 5,
+      "average_mfe": 0.06749498701396785,
+      "average_mae": -0.040946150598616005
+    },
+    "Net 0.1% one-way slippage": {
+      "trades": 2385,
+      "win_rate": 0.33584905660377357,
+      "average_return": -0.0017326267802338054,
+      "median_return": -0.02152848746811003,
+      "average_win": 0.08061293721266419,
+      "average_loss": -0.043373281299369716,
+      "payoff_ratio": 1.8585851657443224,
+      "profit_factor": 0.9398527258593428,
+      "expectancy": -0.0017326267802338054,
+      "max_win": 0.514996741658747,
+      "max_loss": -0.21438770056833142,
+      "average_holding_days": 4.691404612159329,
+      "median_holding_days": 5,
+      "average_mfe": 0.06749498701396785,
+      "average_mae": -0.040946150598616005
+    }
+  },
+  "cost_assumptions": {
+    "commission_rate": 0.001425,
+    "commission_discount": 0.28,
+    "minimum_commission": 1.0,
+    "stock_transaction_tax": 0.003,
+    "per_trade_notional": 30000.0,
+    "one_way_slippage_scenarios": [
+      0.0,
+      0.001
+    ]
+  },
+  "signal_counts": {
+    "final_signals": 3112,
+    "completed_trades": 2385,
+    "cancelled": 89,
+    "censored": 17,
+    "skipped_existing_position": 621
+  }
+}

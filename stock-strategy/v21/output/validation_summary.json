@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "failure_count": 0,
+  "failure_samples": [],
+  "checks": {
+    "signals_recomputed": 3112,
+    "completed_trades_replayed": 2385,
+    "same_stock_overlap_count": 0,
+    "event_status_counts": {
+      "entered": 2385,
+      "skipped": 621,
+      "censored": 17,
+      "cancelled": 89
+    },
+    "event_reason_counts": {
+      "Existing Position": 621,
+      "Insufficient Future Data": 16,
+      "Gap >5%": 48,
+      "Below Signal Low": 37,
+      "Missing T+1 Open": 4,
+      "Missing D+1 Open After Exit Signal": 1
+    }
+  }
+}
