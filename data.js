@@ -1,7 +1,7 @@
 window.WS_DATA = {
   "meta": {
     "title": "WarrantScope Tracker",
-    "generated": "2026-09-02 22:43 +08:00",
+    "generated": "2026-09-04 11:34 +08:00",
     "dates": [
       "2026-08-24",
       "2026-08-25",
@@ -10,16 +10,18 @@ window.WS_DATA = {
       "2026-08-28",
       "2026-08-31",
       "2026-09-01",
-      "2026-09-02"
+      "2026-09-02",
+      "2026-09-03"
     ],
     "months": [
       "2026-08",
       "2026-09"
     ],
-    "defaultDate": "2026-09-02",
+    "defaultDate": "2026-09-03",
     "notes": {
+      "2026-09-03": "9/3 Raw 7 張（5 檔母股）、買方 Top20、賣方 Top20 均已收錄；觀察中共 27 檔，友達為當日新進。可見金額僅為畫面中兩個分點加總的近似值，不代表完整主力淨額。",
       "2026-09-02": "9/2 Raw 6 張、買方 Top20、賣方 Top20 均已收錄；可見金額僅為畫面中兩個分點加總的近似值，不代表完整主力淨額。",
-      "2026-09-01": "9/1 Raw、完整23檔觀察中、買方Top20、賣方Top20均已收錄。",
+      "2026-09-01": "9/1 Raw、完整 26 檔觀察中、買方 Top20、賣方 Top20 均已收錄。",
       "2026-08-31": "8/31 Raw、買方 Top20、賣方 Top20 已收錄。",
       "2026-08-28": "8/28 緯穎出現 Cross-Warrant Distribution；賣方資料部分仍標 Partial。"
     }
@@ -978,6 +980,132 @@ window.WS_DATA = {
       "Prior_Buy_Rank": 1,
       "Prior_Sell_Rank": 7,
       "Notes": "方向未確認；緯穎 9/2 為 Cross-Warrant / Cross-Issuer，列為 Distribution Raw candidate。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "6669",
+      "Underlying_Name": "緯穎",
+      "Warrant_Code": "065856",
+      "Warrant_Name": "緯穎兆豐65購01",
+      "Issuer": "兆豐",
+      "30m_Volume": 1194,
+      "Circulation": 270,
+      "Displayed_Multiple": 4.4,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "SELL",
+      "Episode_Type": "Mature Episode Retrigger / Distribution",
+      "Prior_Buy_Rank": "—",
+      "Prior_Sell_Rank": "—",
+      "Notes": "9/3 緯穎共 3 張 Cross-Warrant Raw；SELL #2 可見 2,042 萬，約為 BUY #20 511 萬的 4 倍，偏 Distribution。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "6669",
+      "Underlying_Name": "緯穎",
+      "Warrant_Code": "046630",
+      "Warrant_Name": "緯穎兆豐5C購01",
+      "Issuer": "兆豐",
+      "30m_Volume": 1509,
+      "Circulation": 5,
+      "Displayed_Multiple": 301.8,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "SELL",
+      "Episode_Type": "Mature Episode Retrigger / Distribution",
+      "Prior_Buy_Rank": "—",
+      "Prior_Sell_Rank": "—",
+      "Notes": "流通量僅 5 張，301.8x 為小分母放大；9/3 緯穎共 3 張 Cross-Warrant Raw，整體偏 Distribution。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "6669",
+      "Underlying_Name": "緯穎",
+      "Warrant_Code": "040002",
+      "Warrant_Name": "緯穎富邦5A購01",
+      "Issuer": "富邦",
+      "30m_Volume": 1115,
+      "Circulation": 82,
+      "Displayed_Multiple": 13.6,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "SELL",
+      "Episode_Type": "Mature Episode Retrigger / Distribution",
+      "Prior_Buy_Rank": "—",
+      "Prior_Sell_Rank": "—",
+      "Notes": "9/3 緯穎共 3 張 Cross-Warrant Raw；SELL #2 明顯高於 BUY #20，偏 Distribution。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "6147",
+      "Underlying_Name": "頎邦",
+      "Warrant_Code": "712148",
+      "Warrant_Name": "頎邦永豐63購02",
+      "Issuer": "永豐",
+      "30m_Volume": 1643,
+      "Circulation": 1001,
+      "Displayed_Multiple": 1.6,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Active Retrigger",
+      "Prior_Buy_Rank": "—",
+      "Prior_Sell_Rank": "—",
+      "Notes": "BUY #5 可見 860 萬，高於 SELL #16 的 636 萬；既有觀察 Episode 再觸發。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "8261",
+      "Underlying_Name": "富鼎",
+      "Warrant_Code": "069308",
+      "Warrant_Name": "富鼎台新63購01",
+      "Issuer": "台新",
+      "30m_Volume": 2100,
+      "Circulation": 71,
+      "Displayed_Multiple": 29.6,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "Unknown",
+      "Episode_Type": "Fresh Raw candidate",
+      "Prior_Buy_Rank": "—",
+      "Prior_Sell_Rank": "—",
+      "Notes": "未進 9/3 買賣 Top20，方向未確認；僅列 Fresh Raw candidate，未進觀察。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "2409",
+      "Underlying_Name": "友達",
+      "Warrant_Code": "080393",
+      "Warrant_Name": "友達富邦78購01",
+      "Issuer": "富邦",
+      "30m_Volume": 8926,
+      "Circulation": 50,
+      "Displayed_Multiple": 178.5,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Fresh Raw→KEEP",
+      "Prior_Buy_Rank": "—",
+      "Prior_Sell_Rank": "—",
+      "Notes": "流通量僅 50 張，178.5x 有小分母放大；BUY #4 可見 940 萬、SELL 未進 Top20，使用者確認 9/3 新進觀察。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "2454",
+      "Underlying_Name": "聯發科",
+      "Warrant_Code": "064174",
+      "Warrant_Name": "聯發科國票5B購01",
+      "Issuer": "國票",
+      "30m_Volume": 327,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Bullish Raw candidate",
+      "Prior_Buy_Rank": "—",
+      "Prior_Sell_Rank": "—",
+      "Notes": "BUY #3 可見 1,271 萬、SELL 未進 Top20；流通量與倍數未提供，保留空值，不進觀察。"
     }
   ],
   "mainforce": [
@@ -3101,6 +3229,70 @@ window.WS_DATA = {
       "當日Raw": isRaw,
       "資料完整度": "Complete Top20 · 可見金額近似",
       "備註": `9/2 畫面中兩個可見分點加總約 ${visibleAmount.toLocaleString("zh-TW")} 萬；僅供近似，不代表完整主力淨額。`
+    })),
+    ...[
+      [1, "2308", "台達電", 1901, false],
+      [2, "3008", "大立光", 1285, false],
+      [3, "2454", "聯發科", 1271, true],
+      [4, "2409", "友達", 940, true],
+      [5, "6147", "頎邦", 860, true],
+      [6, "3583", "辛耘", 852, false],
+      [7, "3231", "緯創", 851, false],
+      [8, "3406", "玉晶光", 726, false],
+      [9, "2408", "南亞科", 661, false],
+      [10, "2376", "技嘉", 648, false],
+      [11, "4958", "臻鼎-KY", 642, false],
+      [12, "2615", "萬海", 587, false],
+      [13, "3036", "文曄", 556, false],
+      [14, "1402", "遠東新", 549, false],
+      [15, "2303", "聯電", 546, false],
+      [16, "2313", "華通", 543, false],
+      [17, "1326", "台化", 530, false],
+      [18, "2360", "致茂", 528, false],
+      [19, "5536", "聖暉*", 517, false],
+      [20, "6669", "緯穎", 511, true]
+    ].map(([rank, code, name, visibleAmount, isRaw]) => ({
+      "日期": "2026-09-03",
+      "方向": "BUY",
+      "排名": rank,
+      "母股代號": code,
+      "母股名稱": name,
+      "可見金額(萬)": visibleAmount,
+      "當日Raw": isRaw,
+      "資料完整度": "Complete Top20 · 可見金額近似",
+      "備註": `9/3 畫面中兩個可見分點加總約 ${visibleAmount.toLocaleString("zh-TW")} 萬；僅供近似，不代表完整主力淨額。`
+    })),
+    ...[
+      [1, "1815", "富喬", 2603, false],
+      [2, "6669", "緯穎", 2042, true],
+      [3, "3017", "奇鋐", 1649, false],
+      [4, "2324", "仁寶", 1162, false],
+      [5, "2615", "萬海", 914, false],
+      [6, "3131", "弘塑", 787, false],
+      [7, "5371", "中光電", 782, false],
+      [8, "3006", "晶豪科", 760, false],
+      [9, "6531", "愛普*", 751, false],
+      [10, "6442", "光聖", 736, false],
+      [11, "2344", "華邦電", 685, false],
+      [12, "2408", "南亞科", 672, false],
+      [13, "2353", "宏碁", 654, false],
+      [14, "2354", "鴻準", 649, false],
+      [15, "3661", "世芯-KY", 646, false],
+      [16, "6147", "頎邦", 636, true],
+      [17, "1802", "台玻", 576, false],
+      [18, "2356", "英業達", 560, false],
+      [19, "3231", "緯創", 535, false],
+      [20, "2345", "智邦", 473, false]
+    ].map(([rank, code, name, visibleAmount, isRaw]) => ({
+      "日期": "2026-09-03",
+      "方向": "SELL",
+      "排名": rank,
+      "母股代號": code,
+      "母股名稱": name,
+      "可見金額(萬)": visibleAmount,
+      "當日Raw": isRaw,
+      "資料完整度": "Complete Top20 · 可見金額近似",
+      "備註": `9/3 畫面中兩個可見分點加總約 ${visibleAmount.toLocaleString("zh-TW")} 萬；僅供近似，不代表完整主力淨額。`
     }))
   ],
   "observationSnapshots": [
@@ -3380,6 +3572,22 @@ window.WS_DATA = {
       "備註": "—",
       "完整度": "Complete"
     },
+    ...[
+      ["6239", "力成"],
+      ["1301", "台塑"],
+      ["3406", "玉晶光"]
+    ].map(([code, name]) => ({
+      "日期": "2026-09-01",
+      "母股代號": code,
+      "母股名稱": name,
+      "進觀察日期": "2026-09-01",
+      "狀態": "觀察中／新進",
+      "當日Raw張數": code === "6239" ? 1 : 0,
+      "Episode類型": "Fresh / Recent",
+      "確認程度": "使用者補充確認",
+      "備註": "9/1 新進觀察",
+      "完整度": "Complete"
+    })),
     {
       "日期": "2026-08-31",
       "母股代號": "6669",
@@ -3403,7 +3611,86 @@ window.WS_DATA = {
       "確認程度": "KEEP Confirmed",
       "備註": "8/31當日進觀察",
       "完整度": "Partial"
-    }
+    },
+    ...[
+      ["6693", "廣閎科", "2026-08-31", "Fresh / Recent", "8/31 Raw 後新進觀察"],
+      ["3211", "順達", "2026-08-27", "Fresh / Recent", "8/27 Raw 後進觀察"],
+      ["1815", "富喬", "2026-08-26", "Fresh / Recent", "8/26 兩張 Raw 後進觀察"],
+      ["3260", "威剛", "2026-08-24", "Fresh / Recent", "8/24 Raw 後進觀察"],
+      ["4768", "晶呈科技", "2026-08-21", "Developing", "—"],
+      ["6147", "頎邦", "2026-08-20", "Developing", "—"],
+      ["2615", "萬海", "2026-08-18", "Developing", "—"],
+      ["8039", "台虹", "2026-08-18", "Developing", "—"],
+      ["2324", "仁寶", "2026-08-17", "Developing", "—"],
+      ["2356", "英業達", "2026-08-14", "Developing", "—"],
+      ["2345", "智邦", "2026-08-07", "Developing", "—"],
+      ["6451", "訊芯-KY", "2026-08-06", "Developing", "—"],
+      ["6442", "光聖", "2026-08-05", "Developing", "—"],
+      ["1303", "南亞", "2026-07-30", "Mature", "—"],
+      ["3008", "大立光", "2026-07-23", "Mature", "—"],
+      ["7734", "印能科技", "2026-07-23", "Mature", "—"],
+      ["6770", "力積電", "2026-07-16", "Mature", "—"],
+      ["3131", "弘塑", "2026-07-15", "Mature", "—"],
+      ["6753", "龍德造船", "2026-07-15", "Mature", "—"],
+      ["1717", "長興", "2026-07-06", "Mature", "—"],
+      ["7788", "松川", "2026-06-29", "Mature", "—"],
+      ["6669", "緯穎", "2026-06-10", "Mature", "6/10 並非可靠的連續 Active 起點；已知期間曾退出後再進場。"],
+      ["2344", "華邦電", "2026-05-12", "Mature", "—"],
+      ["6239", "力成", "2026-09-01", "Fresh / Recent", "9/1 新進觀察"],
+      ["1301", "台塑", "2026-09-01", "Fresh / Recent", "9/1 新進觀察"],
+      ["3406", "玉晶光", "2026-09-01", "Fresh / Recent", "9/1 新進觀察"]
+    ].map(([code, name, entryDate, episodeType, note]) => ({
+      "日期": "2026-09-02",
+      "母股代號": code,
+      "母股名稱": name,
+      "進觀察日期": entryDate,
+      "狀態": "觀察中",
+      "當日Raw張數": code === "6669" ? 4 : code === "1815" ? 1 : 0,
+      "Episode類型": episodeType,
+      "確認程度": "使用者確認",
+      "備註": note,
+      "完整度": "Complete"
+    })),
+    ...[
+      ["6693", "廣閎科", "2026-08-31", "Fresh / Recent", "8/31 Raw 後新進觀察"],
+      ["3211", "順達", "2026-08-27", "Fresh / Recent", "8/27 Raw 後進觀察"],
+      ["1815", "富喬", "2026-08-26", "Fresh / Recent", "8/26 兩張 Raw 後進觀察"],
+      ["3260", "威剛", "2026-08-24", "Fresh / Recent", "8/24 Raw 後進觀察"],
+      ["4768", "晶呈科技", "2026-08-21", "Developing", "—"],
+      ["6147", "頎邦", "2026-08-20", "Developing", "9/3 Active Retrigger"],
+      ["2615", "萬海", "2026-08-18", "Developing", "—"],
+      ["8039", "台虹", "2026-08-18", "Developing", "—"],
+      ["2324", "仁寶", "2026-08-17", "Developing", "—"],
+      ["2356", "英業達", "2026-08-14", "Developing", "—"],
+      ["2345", "智邦", "2026-08-07", "Developing", "—"],
+      ["6451", "訊芯-KY", "2026-08-06", "Developing", "—"],
+      ["6442", "光聖", "2026-08-05", "Developing", "—"],
+      ["1303", "南亞", "2026-07-30", "Mature", "—"],
+      ["3008", "大立光", "2026-07-23", "Mature", "—"],
+      ["7734", "印能科技", "2026-07-23", "Mature", "—"],
+      ["6770", "力積電", "2026-07-16", "Mature", "—"],
+      ["3131", "弘塑", "2026-07-15", "Mature", "—"],
+      ["6753", "龍德造船", "2026-07-15", "Mature", "—"],
+      ["1717", "長興", "2026-07-06", "Mature", "—"],
+      ["7788", "松川", "2026-06-29", "Mature", "—"],
+      ["6669", "緯穎", "2026-06-10", "Mature", "6/10 並非可靠的連續 Active 起點；9/3 三張 Cross-Warrant Raw，偏 Distribution。"],
+      ["2344", "華邦電", "2026-05-12", "Mature", "—"],
+      ["6239", "力成", "2026-09-01", "Fresh / Recent", "9/1 新進觀察"],
+      ["1301", "台塑", "2026-09-01", "Fresh / Recent", "9/1 新進觀察"],
+      ["3406", "玉晶光", "2026-09-01", "Fresh / Recent", "9/1 新進觀察"],
+      ["2409", "友達", "2026-09-03", "Fresh / Recent", "9/3 Fresh Raw→KEEP，使用者確認新進觀察。"]
+    ].map(([code, name, entryDate, episodeType, note]) => ({
+      "日期": "2026-09-03",
+      "母股代號": code,
+      "母股名稱": name,
+      "進觀察日期": entryDate,
+      "狀態": code === "2409" ? "觀察中／新進" : "觀察中",
+      "當日Raw張數": code === "6669" ? 3 : code === "6147" || code === "2409" ? 1 : 0,
+      "Episode類型": episodeType,
+      "確認程度": "使用者確認",
+      "備註": note,
+      "完整度": "Complete"
+    }))
   ],
   "episodes": [
     {
@@ -3712,7 +3999,7 @@ window.WS_DATA = {
       "歷史報酬%": null,
       "資料用途": "Active Episode",
       "來源日期": "2026-09-01",
-      "備註": "使用者確認6/10進觀察；截至9/1仍在觀察"
+      "備註": "使用者確認6/10曾進觀察；已知 6/10→6/11、8/4→8/6、8/17→8/21 曾退出，故 6/10 並非可靠的連續 Active 起點。"
     },
     {
       "母股代號": "2344",
@@ -3727,6 +4014,38 @@ window.WS_DATA = {
       "資料用途": "Active Episode",
       "來源日期": "2026-09-01",
       "備註": null
+    },
+    ...[
+      ["6239", "力成"],
+      ["1301", "台塑"],
+      ["3406", "玉晶光"]
+    ].map(([code, name]) => ({
+      "母股代號": code,
+      "母股名稱": name,
+      "進觀察日": "2026-09-01",
+      "退出日": null,
+      "目前狀態": "Active",
+      "確認程度": "User confirmed",
+      "進場參考價": null,
+      "退出參考價": null,
+      "歷史報酬%": null,
+      "資料用途": "Active Episode",
+      "來源日期": "2026-09-03",
+      "備註": "使用者補充確認 9/1 新進觀察；無可靠進場參考價。"
+    })),
+    {
+      "母股代號": "2409",
+      "母股名稱": "友達",
+      "進觀察日": "2026-09-03",
+      "退出日": null,
+      "目前狀態": "Active",
+      "確認程度": "User confirmed",
+      "進場參考價": null,
+      "退出參考價": null,
+      "歷史報酬%": null,
+      "資料用途": "Active Episode",
+      "來源日期": "2026-09-03",
+      "備註": "9/3 Fresh Raw→KEEP；使用者確認為新的 Active Episode。"
     },
     {
       "母股代號": "3017",
@@ -3769,6 +4088,20 @@ window.WS_DATA = {
       "資料用途": "Historical Episode",
       "來源日期": "2026-08-29",
       "備註": "歷史頁確認"
+    },
+    {
+      "母股代號": "2409",
+      "母股名稱": "友達",
+      "進觀察日": "2026-08-12",
+      "退出日": "2026-08-20",
+      "目前狀態": "Exited",
+      "確認程度": "User confirmed",
+      "進場參考價": null,
+      "退出參考價": null,
+      "歷史報酬%": -1.7,
+      "資料用途": "Historical Episode",
+      "來源日期": "2026-09-03",
+      "備註": "使用者補充確認 8/12～8/20 已結束 Episode，報酬 -1.7%。"
     }
   ],
   "currentObservation": [
@@ -3990,7 +4323,7 @@ window.WS_DATA = {
       "今日Raw張數": 5,
       "Episode Age": "Mature",
       "資料來源": "使用者9/1觀察中截圖",
-      "備註": "成熟Episode；9/1有5張Raw"
+      "備註": "6/10 並非可靠的連續 Active 起點；9/3 三張 Cross-Warrant Raw，SELL 明顯高於 BUY，偏 Distribution。"
     },
     {
       "母股代號": "2344",
@@ -4001,6 +4334,30 @@ window.WS_DATA = {
       "Episode Age": "Mature",
       "資料來源": "使用者9/1觀察中截圖",
       "備註": "—"
+    },
+    ...[
+      ["6239", "力成"],
+      ["1301", "台塑"],
+      ["3406", "玉晶光"]
+    ].map(([code, name]) => ({
+      "母股代號": code,
+      "母股名稱": name,
+      "列入觀察日": "2026-09-01",
+      "狀態": "觀察中",
+      "今日Raw張數": 0,
+      "Episode Age": "Fresh / Recent",
+      "資料來源": "使用者補充確認",
+      "備註": "9/1 新進觀察"
+    })),
+    {
+      "母股代號": "2409",
+      "母股名稱": "友達",
+      "列入觀察日": "2026-09-03",
+      "狀態": "觀察中／新進",
+      "今日Raw張數": 1,
+      "Episode Age": "Fresh / Recent",
+      "資料來源": "使用者確認",
+      "備註": "9/3 Fresh Raw→KEEP；新的 Active Episode。"
     }
   ]
 };
