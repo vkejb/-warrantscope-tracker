@@ -1,0 +1,136 @@
+{
+  "passed": true,
+  "failure_count": 0,
+  "failure_samples": [],
+  "checks": {
+    "baseline_completed_trades": 2385,
+    "successful_entries_including_censored": 2402,
+    "forward_rows": 2402,
+    "exit_counterfactual_rows": 2385,
+    "year_breakout_rows": 15,
+    "feature_quintile_rows": 45,
+    "baseline_validation_passed": true,
+    "day8_time_stop_count": 557,
+    "forward_available": {
+      "day_1": 2402,
+      "day_3": 2391,
+      "day_5": 2385,
+      "day_8": 2375
+    }
+  },
+  "input_sha256": {
+    "trades.csv": "dc06accf788d6d7a50c2db798fd1e6fe1e5a6de37f5596669cfa020983bed540",
+    "signal_events.csv": "518c806701f940d3907645479dce41d2cf5ac29c97f6d3ac453abd2c1a1d1ddf"
+  },
+  "baseline_output_sha256": {
+    "backtest_report.md": "bb7d25119001ba5e998a3b8bdf9129d99470164a7d0eceb374d51466a5427bb7",
+    "backtest_summary.json": "e1c4f272bcc2e1c1acd70f594329bd2fac23164049ed66c3b67dc744007537e8",
+    "breakout_type_summary.csv": "7a95682d03b895621b4f0f854376029fdd72894d7a8ce0264dbb7b55319c0ee8",
+    "data_audit.json": "35dbddeb3fe00c5558837f93b7f179d46a8d3f081b85d8126a0cd6544ae0fb80",
+    "exit_reason_summary.csv": "0ac8fee1bc00821ca3f09ad6850f201d909ed5a6152d17878c41ecc86f9f99bb",
+    "institutional_needs.json": "9f17332e49248adcf3e5a9cc1c823a9a38bf15d3a26bee6dcf71f33515bf1e88",
+    "signal_events.csv": "518c806701f940d3907645479dce41d2cf5ac29c97f6d3ac453abd2c1a1d1ddf",
+    "trades.csv": "dc06accf788d6d7a50c2db798fd1e6fe1e5a6de37f5596669cfa020983bed540",
+    "validation_summary.json": "6c1f0900825151d4ae247f2592fbb0fa4e799b06711100ca32a45435b57217f1",
+    "yearly_summary.csv": "a0041cde1caf224e70728780bf623ec25b83209d720f69809878c61d087e8074"
+  },
+  "data_audit": {
+    "ohlcv": {
+      "archives_used": [
+        "yearly_2021.zip",
+        "yearly_2022.zip",
+        "yearly_2023.zip",
+        "yearly_2024.zip",
+        "yearly_2025.zip",
+        "weekly_2026_W01.zip",
+        "weekly_2026_W02.zip",
+        "weekly_2026_W03.zip",
+        "weekly_2026_W04.zip",
+        "weekly_2026_W05.zip",
+        "weekly_2026_W06.zip",
+        "weekly_2026_W07.zip",
+        "weekly_2026_W09.zip",
+        "weekly_2026_W10.zip",
+        "weekly_2026_W11.zip",
+        "weekly_2026_W12.zip",
+        "weekly_2026_W13.zip",
+        "weekly_2026_W14.zip",
+        "weekly_2026_W15.zip",
+        "weekly_2026_W16.zip",
+        "weekly_2026_W17.zip",
+        "weekly_2026_W18.zip",
+        "weekly_2026_W19.zip",
+        "weekly_2026_W20.zip",
+        "weekly_2026_W21.zip",
+        "weekly_2026_W22.zip",
+        "weekly_2026_W23.zip",
+        "weekly_2026_W24.zip",
+        "weekly_2026_W25.zip",
+        "weekly_2026_W26.zip",
+        "weekly_2026_W27.zip",
+        "weekly_2026_W28.zip",
+        "weekly_2026_W29.zip",
+        "weekly_2026_W30.zip",
+        "weekly_2026_W31.zip",
+        "weekly_2026_W32.zip",
+        "weekly_2026_W33.zip",
+        "weekly_2026_W34.zip",
+        "weekly_2026_W35.zip",
+        "twse_price_supplement.csv"
+      ],
+      "stock_count": 2027,
+      "row_count": 2460290,
+      "invalid_or_missing_ohlcv_rows": 22839,
+      "invalid_ohlcv_rows_skipped": 22839,
+      "first_date": "20210104",
+      "last_date": "20260828",
+      "trading_date_count": 1372,
+      "minimum_daily_ordinary_stock_rows": {
+        "date": "20210204",
+        "rows": 1692
+      },
+      "csv_supplement_dates": [
+        "20230525",
+        "20250206",
+        "20260528"
+      ],
+      "stocks_ending_before_latest_date": 88,
+      "ohlc_unit": "New Taiwan dollars per share; source values used without synthetic fills",
+      "volume_unit": "shares; divided by 1000 only when compared with the 2000-lot threshold"
+    },
+    "taiex": {
+      "row_count": 1373,
+      "first_date": "20210104",
+      "last_date": "20260831",
+      "duplicate_dates": 0
+    },
+    "industry_availability": {
+      "stock_info_rows": 4319,
+      "stock_info_codes": 3147,
+      "asof_covered_rows": 59,
+      "future_only_rows": 2326,
+      "missing_rows": 0,
+      "asof_coverage_rate": 0.024737945492662474,
+      "codes_with_multiple_category_labels": 978,
+      "decision": "not_computed",
+      "reason": "Historical as-of category coverage is insufficient; current/future labels are not backfilled."
+    }
+  },
+  "bootstrap": {
+    "method": "one-way cluster percentile bootstrap",
+    "cluster_units": [
+      "signal_date",
+      "month"
+    ],
+    "repetitions": 5000,
+    "base_seed": 20260904,
+    "iid_trade_bootstrap_used": false
+  },
+  "limitations": [
+    "Forward returns use unadjusted daily OHLCV and can cross corporate actions.",
+    "General-market daily Open is not the historical intraday odd-lot first execution price.",
+    "Industry concentration is not computed because the available stock master is predominantly a future snapshot for historical signals.",
+    "Exit-reason counterfactuals are path-conditioned descriptive attribution, not causal estimates of a replacement exit strategy.",
+    "Quintile boundaries are full-sample descriptive bins and are not trading rules."
+  ]
+}
