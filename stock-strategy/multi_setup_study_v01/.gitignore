@@ -1,0 +1,6 @@
+signal_observations.csv
+data_audit.json
+analysis_spec.json
+pipeline_validation.json
+__pycache__/
+tests/__pycache__/
