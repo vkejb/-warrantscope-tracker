@@ -1,0 +1,59 @@
+{
+  "strategy_id": "REVERSAL_EVENT_STUDY_V0_1",
+  "run_date": "2026-09-06",
+  "result_status": "PROVISIONAL_CORPORATE_ACTION_UNRESOLVED",
+  "pipeline_integrity": "PASS",
+  "config_hash": "d0c00ee5b733a37ed0093a764a5f679506b455ff7aaf77d14e952ec4280d7be1",
+  "validation_status": "FAIL",
+  "patterns_allowed_into_2025": [],
+  "feature_oos_2025_opened": false,
+  "data": {
+    "ordinary_code_proxy_count": 2024,
+    "ordinary_ohlcv_rows": 3011583,
+    "invalid_rows": 32773,
+    "detected_overnight_discontinuities": 750,
+    "broad_source_gap_dates": 0
+  },
+  "validation": {
+    "V_REVERSAL": {
+      "evaluable_signals": 2073,
+      "success_rate": 0.19922817173178967,
+      "success_rate_ci97_5": [0.17536895297964045, 0.22283953401801765],
+      "average_day10_return": 0.0037178779858012493,
+      "average_day10_return_ci97_5": [-0.008383254813351896, 0.014856310838293505],
+      "gross_close_rule_return": -0.004167228667991036,
+      "gross_close_rule_profit_factor": 0.87023967009977,
+      "baseline_portfolio_return": -0.12247112666665927,
+      "baseline_maximum_drawdown": 0.4095084527093055,
+      "baseline_profit_factor": 0.9488583382208245,
+      "stress_portfolio_return": -0.3990625633333329
+    },
+    "N_RETEST": {
+      "evaluable_signals": 597,
+      "success_rate": 0.24120603015075376,
+      "success_rate_ci97_5": [0.19707373026034997, 0.2848250285924748],
+      "average_day10_return": 0.004909926143216731,
+      "average_day10_return_ci97_5": [-0.009919868032398563, 0.019662399027941792],
+      "gross_close_rule_return": 0.0037507055540196487,
+      "gross_close_rule_profit_factor": 1.1336330393277805,
+      "baseline_portfolio_return": -0.016613603333328508,
+      "baseline_maximum_drawdown": 0.26945370522131235,
+      "baseline_profit_factor": 0.9908193537778551,
+      "stress_portfolio_return": -0.23638360333333386
+    }
+  },
+  "robust_common_features": [],
+  "suggestive_only": {
+    "V_signal_return_1": {
+      "discovery_q5_success_rate": 0.3219814241486068,
+      "discovery_q1_success_rate": 0.16253869969040247,
+      "discovery_lift": 1.980952380952381,
+      "bh_qvalue": 0.03839232153569286,
+      "validation_q5_success_rate": 0.2647058823529412,
+      "validation_q1_success_rate": 0.13876651982378854,
+      "failed_gate": "2020 evaluable count 733 was below the pre-registered 1000 minimum"
+    }
+  },
+  "actual_order": false,
+  "actual_fill": false
+}
