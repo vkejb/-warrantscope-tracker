@@ -1,0 +1,82 @@
+{
+  "strategy_id": "SURGE_EVENT_STUDY_V0_1",
+  "run_status": "COMPLETE",
+  "result_status": "PROVISIONAL_CORPORATE_ACTION_UNRESOLVED",
+  "config_hash": "1e3661497bcf52e9c5c17fd3a6c3bb0d06e729451000a65d2c3f7e472d75b4fe",
+  "rule_hash": "03bf257904806c572f13498b16044eb21f6133e0b5579fb939492c692136aad6",
+  "selected_features": [
+    {
+      "feature": "atr_ratio_14",
+      "direction": "HIGH",
+      "pooled_tail_lift": 13.687490718369194,
+      "minimum_yearly_lift": 11.605033926498763
+    },
+    {
+      "feature": "sma20_slope_5",
+      "direction": "HIGH",
+      "pooled_tail_lift": 1.8760361797466532,
+      "minimum_yearly_lift": 1.4568003731343284
+    },
+    {
+      "feature": "return_20",
+      "direction": "HIGH",
+      "pooled_tail_lift": 1.8807844485361536,
+      "minimum_yearly_lift": 1.4415880233583767
+    },
+    {
+      "feature": "prior_volume_contraction_5_20",
+      "direction": "HIGH",
+      "pooled_tail_lift": 1.313531307958961,
+      "minimum_yearly_lift": 1.1781073464269007
+    }
+  ],
+  "validation": {
+    "status": "FAIL",
+    "selected_evaluable": 14376,
+    "selected_event_rate": 0.19609070673344464,
+    "control_evaluable": 243745,
+    "control_event_rate": 0.07308867874212804,
+    "hit_rate_lift": 2.6829149207265486,
+    "hit_rate_lift_ci95": [
+      2.3994003629249674,
+      2.988162420449809
+    ],
+    "selected_average_day10_close_return": 0.008252029653733351,
+    "control_average_day10_close_return": 0.002185700881974609,
+    "day10_return_increment": 0.006066328771758743,
+    "day10_return_increment_ci95": [
+      -0.002292175734010647,
+      0.014151582630048712
+    ],
+    "failed_gate": "return_increment_ci_lower"
+  },
+  "validation_execution_proxy": {
+    "status": "EXECUTION_PROXY_FAIL",
+    "baseline": {
+      "initial_cash": 30000.0,
+      "final_equity": 26009.224450000373,
+      "total_return": -0.13302585166665426,
+      "maximum_drawdown": 0.7065956905705516,
+      "completed_trades": 222,
+      "win_rate": 0.35585585585585583,
+      "profit_factor": 0.9787621870167118,
+      "median_net_trade_return": -0.055933647357960914,
+      "total_costs": 13773.0
+    },
+    "stress": {
+      "final_equity": 16450.838999999985,
+      "total_return": -0.4516387000000005,
+      "maximum_drawdown": 0.7280402238446434,
+      "completed_trades": 227,
+      "win_rate": 0.32599118942731276,
+      "profit_factor": 0.9041076656173546,
+      "total_costs": 15252.0
+    },
+    "benchmark_0050_price_return": 0.7674943566591419,
+    "is_actual_fill": false
+  },
+  "feature_oos_2025": {
+    "status": "NOT_OPENED",
+    "reason": "2023-2024 validation did not pass every frozen gate"
+  }
+}
