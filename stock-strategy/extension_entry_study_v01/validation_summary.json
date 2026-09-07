@@ -1,0 +1,270 @@
+{
+  "study_id": "EXTENSION_ENTRY_STUDY_V0_1",
+  "status": "COMPLETE_DESCRIPTIVE_EXTENSION_RESEARCH_NOT_A_STRATEGY",
+  "result_status": "PROVISIONAL_CORPORATE_ACTION_UNRESOLVED",
+  "boundary_sha256": "14555cbeecf3cade3c7f0b1e1090834bac4abf07e9a39432ae5995549e1e8e33",
+  "period_discipline": {
+    "2020_2022": "HISTORICAL_DISCOVERY",
+    "2023_2024": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS",
+    "2025": "STRESS_PREVALENCE_SEEN_NOT_BLIND",
+    "prospective_confirmation": "AFTER_2026_09_06_ONLY"
+  },
+  "answers": {
+    "1_bias_information": {
+      "preregistered_measure": "minimum eta-squared across the three fixed periods multiplied by the non-negative minimum discovery-profile Spearman correlation to later periods",
+      "ranking": [
+        {
+          "feature": "bias_20",
+          "stable_information_score": 0.0001870030518657001,
+          "profile_stability_score": 0.24848484848484845
+        },
+        {
+          "feature": "bias_5",
+          "stable_information_score": 0.0,
+          "profile_stability_score": -0.07878787878787878
+        },
+        {
+          "feature": "bias_10",
+          "stable_information_score": 0.0,
+          "profile_stability_score": -0.04242424242424241
+        }
+      ],
+      "most_informative_with_stability_gate": null,
+      "interpretation": "A ranking is descriptive information content, not a trade threshold or strategy filter."
+    },
+    "2_stable_inverted_u": {
+      "features_meeting_fixed_descriptive_criterion": [],
+      "exists_descriptively_for_bias5_10_20": false,
+      "classifier": "Discovery mid D4-D7 must beat both tails with both cluster CIs above zero; the same directions must remain in 2023-2024 and 2025.",
+      "multiplicity_warning": "Shape CIs are unadjusted exploratory diagnostics across preregistered features; they are not feature selection or strategy validation."
+    },
+    "3_high_bias_mae_vs_mfe": {
+      "bias20_mechanism": "MAE_WORSE_WITHOUT_STABLE_MFE_REDUCTION",
+      "high_minus_mid_mfe": {
+        "discovery": 0.021581568771467247,
+        "confirmation": 0.019780890515980448,
+        "stress": 0.018976279494803128
+      },
+      "high_minus_mid_mae": {
+        "discovery": -0.014477190805008401,
+        "confirmation": -0.01849158625718858,
+        "stress": -0.011017255059320462
+      }
+    },
+    "4_atr_adjusted_stability": {
+      "comparisons": [
+        {
+          "raw": "bias_10",
+          "atr_adjusted": "atr_adjusted_bias10",
+          "raw_profile_stability": -0.04242424242424241,
+          "adjusted_profile_stability": -0.4424242424242424,
+          "raw_stable_information_score": 0.0,
+          "adjusted_stable_information_score": 0.0,
+          "adjusted_better_on_both_preregistered_measures": false
+        },
+        {
+          "raw": "bias_20",
+          "atr_adjusted": "atr_adjusted_bias20",
+          "raw_profile_stability": 0.24848484848484845,
+          "adjusted_profile_stability": -0.17575757575757575,
+          "raw_stable_information_score": 0.0001870030518657001,
+          "adjusted_stable_information_score": 0.0,
+          "adjusted_better_on_both_preregistered_measures": false
+        }
+      ],
+      "atr_adjusted_more_stable_in_both_10d_and_20d_pairs": false
+    },
+    "5_momentum_strong_high_vs_mid_bias": {
+      "comparison": "Momentum strength Q5, BIAS20 Q5 minus BIAS20 Q3",
+      "high_bias_worse_in_all_three_periods": false,
+      "cluster_bootstrap_evidence": {
+        "HISTORICAL_DISCOVERY": {
+          "gross_difference": 0.002945487958405245,
+          "signal_date_95ci": [
+            -0.0011683752029508856,
+            0.0071629265264023245
+          ],
+          "calendar_month_95ci": [
+            -0.004829893343043339,
+            0.010158310786468821
+          ]
+        },
+        "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+          "gross_difference": -0.00016590266403770102,
+          "signal_date_95ci": [
+            -0.003753005402682264,
+            0.0032293827471883783
+          ],
+          "calendar_month_95ci": [
+            -0.006511657609269285,
+            0.006055978663118902
+          ]
+        },
+        "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+          "gross_difference": 0.00352656909387988,
+          "signal_date_95ci": [
+            -0.001862076830776011,
+            0.008985280561489445
+          ],
+          "calendar_month_95ci": [
+            -0.007061389943074556,
+            0.0137220991365184
+          ]
+        }
+      }
+    },
+    "6_high_bias_plus_large_gap": {
+      "definitions": {
+        "high_bias": "frozen BIAS20 quintile Q5",
+        "large_gap": "T+1 entry gap >=2%",
+        "reference_gap": "T+1 entry gap 0% to <1%",
+        "did_reference_bias": "frozen BIAS20 quintile Q3"
+      },
+      "direct_penalty_negative_in_all_periods": false,
+      "incremental_penalty_did_negative_in_all_periods": true,
+      "direct_cluster_bootstrap_evidence": {
+        "HISTORICAL_DISCOVERY": {
+          "gross_difference": -0.0030109194162202917,
+          "signal_date_95ci": [
+            -0.006081234540682095,
+            4.588545824670198e-05
+          ],
+          "calendar_month_95ci": [
+            -0.008201236645036662,
+            0.002088739438444204
+          ]
+        },
+        "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+          "gross_difference": -0.0013672870312899077,
+          "signal_date_95ci": [
+            -0.004807767386867678,
+            0.0021511436289642564
+          ],
+          "calendar_month_95ci": [
+            -0.0061519020451852756,
+            0.0032626266414785836
+          ]
+        },
+        "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+          "gross_difference": 0.0014460080122239395,
+          "signal_date_95ci": [
+            -0.003374539444772883,
+            0.0063735322449049465
+          ],
+          "calendar_month_95ci": [
+            -0.0036971326843874106,
+            0.006390953079707456
+          ]
+        }
+      },
+      "difference_in_differences_evidence": {
+        "HISTORICAL_DISCOVERY": {
+          "gross_difference": -0.003224872215915218,
+          "signal_date_95ci": [
+            -0.008464236541485556,
+            0.0021070717486656766
+          ],
+          "calendar_month_95ci": [
+            -0.010770685561586448,
+            0.004324409491933986
+          ]
+        },
+        "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+          "gross_difference": -0.002065056995350972,
+          "signal_date_95ci": [
+            -0.007094010956103107,
+            0.002908109840696215
+          ],
+          "calendar_month_95ci": [
+            -0.006524810110206582,
+            0.0022432706855534945
+          ]
+        },
+        "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+          "gross_difference": -0.00471502347351711,
+          "signal_date_95ci": [
+            -0.012408327508241045,
+            0.003140205933518944
+          ],
+          "calendar_month_95ci": [
+            -0.011171127770499072,
+            0.0023606721841962297
+          ]
+        }
+      }
+    },
+    "7_cross_2020_2025_direction": {
+      "all_market_consistent_high_minus_mid_gross_relationships": [],
+      "all_cohort_consistent_relationship_count": 1,
+      "all_cohort_consistent_relationships": [
+        {
+          "cohort": "MOMENTUM_DIRECTIONAL_FROZEN_CANDIDATE",
+          "feature": "bias_10",
+          "gross_direction": "HIGH_MINUS_MID_POSITIVE"
+        }
+      ],
+      "warning": "Direction consistency alone is descriptive and is not a threshold-selection rule."
+    }
+  },
+  "mother_sample": {
+    "mother_sample_rows": 704327,
+    "observation_sha256": "1fb1100ddf29dc8be7a64b1351e1f049ec6d0b6de4c029cee4c8943f7e7d0b08",
+    "year_signal_counts": {
+      "2020": 96599,
+      "2021": 128800,
+      "2022": 104351,
+      "2023": 119115,
+      "2024": 139580,
+      "2025": 115882
+    },
+    "year_evaluable_counts": {
+      "2020": 96132,
+      "2021": 128392,
+      "2022": 103910,
+      "2023": 118878,
+      "2024": 139243,
+      "2025": 115462
+    },
+    "cohort_signal_counts": {
+      "ALL_ELIGIBLE": 704327,
+      "MOMENTUM_DIRECTIONAL_FROZEN_CANDIDATE": 7634,
+      "NEAR_OR_ABOVE_PRIOR20_CLOSE_HIGH_WITHIN_2PCT": 179679,
+      "N_COMPACT_RETEST_HYPOTHESIS": 236,
+      "N_RETEST": 1786,
+      "RETURN20_TOP20PCT_SAME_DAY": 140868
+    },
+    "raw_candidates_including_2019_warmup": {
+      "MOMENTUM_DIRECTIONAL": 49230,
+      "N_COMPACT_RETEST_HYPOTHESIS": 305,
+      "N_RETEST": 2346
+    },
+    "accepted_candidates_including_2019_warmup": {
+      "MOMENTUM_DIRECTIONAL": 8567,
+      "N_COMPACT_RETEST_HYPOTHESIS": 251,
+      "N_RETEST": 1890
+    },
+    "censored_reasons": {
+      "FORWARD_DISCONTINUITY": 997,
+      "INCOMPLETE_FORWARD_WINDOW": 81,
+      "MISSING_FORWARD_SESSION": 995,
+      "MISSING_T_PLUS_1_BAR": 122,
+      "T_PLUS_1_DISCONTINUITY": 115
+    },
+    "minimum_feature_date": "20200102",
+    "maximum_feature_date": "20251231",
+    "bias20_close_vs_sma20_max_abs_error": 0.0,
+    "momentum_top_set_size_contract": 30,
+    "mother_sample_cooldown": "NONE",
+    "candidate_cohort_cooldown_sessions": 10,
+    "features_read_after_t": false,
+    "actual_orders": 0,
+    "actual_fills": 0
+  },
+  "execution": {
+    "broker_connection": "ABSENT",
+    "portfolio_allocator": "NOT_RUN",
+    "parameter_search": "NONE",
+    "actual_orders": 0,
+    "actual_fills": 0
+  }
+}
