@@ -1,0 +1,23 @@
+{
+  "actual_fills": 0,
+  "actual_orders": 0,
+  "broker_connections": 0,
+  "compact_rule": "pivot_separation_sessions <= 7 and bottom_difference > 0",
+  "completed_outcomes": 0,
+  "config_hash": "75d933218b0d15714279b9f0a0d75fa44412424e9e0f1cd7266ea4b6d0290d43",
+  "execution_mode": "SHADOW_ONLY_NOT_SUBMITTED",
+  "expected_compact_detector_sha256": "a025efcd65422e1651eb468b00cc8ebcb4a753b7bf5250df6a2ae5b31b389ec3",
+  "expected_reversal_study_sha256": "6dc42e7bd4ae3ce44f87a809cf905df20c106eb8d1044180a142728bb0589691",
+  "last_successful_signal_date": null,
+  "latest_outcome_states": 0,
+  "outcome_revision_rows": 0,
+  "outcomes_sha256": "ca8668432c8750a171e8d78f29be38167ec5f0ee3338fb46333a056f40bf5ec8",
+  "prospective_start_date": "20260907",
+  "scans_sha256": "fb38efe02b08422342846c008baff9df8583eb68032c8cc4de2a1ffa1b0757e1",
+  "schema_version": "1",
+  "sealed_scan_dates": 0,
+  "signal_rows": 0,
+  "signals_sha256": "495b1deea4c325787891109a99443c04ddcf2c5a78531419a99a0d00bddef79e",
+  "status_generated_at_utc": "2026-09-07T01:41:40.689419+00:00",
+  "strategy_id": "PROSPECTIVE_N_COMPACT_SHADOW_V0_1"
+}
