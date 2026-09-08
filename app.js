@@ -112,15 +112,18 @@
     render();
   }
 
-  function renderKpis({raw, buy, sell, obs}) {
+  function renderKpis({raw, buy, sell, obs}, date) {
     const rawStocks = new Set(raw.map(row => row.Underlying_Code));
+    const reported = D.meta.reportedCounts?.[date];
+    const resolvedBuy = buy.filter(row => row["母股代號"] && row["母股名稱"]).length;
     const items = [
       ["Raw 權證", raw.length, "張"],
       ["Raw 母股", rawStocks.size, "檔"],
-      ["觀察快照", obs.length, "檔"],
-      ["買方榜", buy.length, "筆"],
+      ["觀察快照", reported?.activeWatch ?? obs.length, reported && reported.activeWatch !== obs.length ? `檔（${obs.length} 筆已辨識）` : "檔"],
+      ["買方榜", buy.length, resolvedBuy !== buy.length ? `排名（${resolvedBuy} 筆已辨識）` : "筆"],
       ["賣方榜", sell.length, "筆"],
     ];
+    if (reported?.history != null) items.push(["歷史計數", reported.history, "筆（截圖）"]);
     $("#kpis").innerHTML = items.map(([label, value, unit]) => `
       <article class="kpi"><span>${label}</span><div><strong>${value}</strong><small>${unit}</small></div></article>
     `).join("");
@@ -206,14 +209,17 @@
       $(target).innerHTML = `<div class="empty">這一天的${side === "BUY" ? "買方" : "賣方"}排行尚未收錄</div>`;
       return;
     }
-    $(target).innerHTML = `<div class="rank-list">${rows.slice().sort((a, b) => Number(a["排名"] || 999) - Number(b["排名"] || 999)).map(row => `
-      <button type="button" class="rank-row ${side === "BUY" ? "buy-row" : "sell-row"}" data-stock="${esc(row["母股代號"])}">
+    $(target).innerHTML = `<div class="rank-list">${rows.slice().sort((a, b) => Number(a["排名"] || 999) - Number(b["排名"] || 999)).map(row => {
+      const hasStock = Boolean(row["母股代號"] && row["母股名稱"]);
+      return `
+      <button type="button" class="rank-row ${side === "BUY" ? "buy-row" : "sell-row"}" ${hasStock ? `data-stock="${esc(row["母股代號"])}"` : 'disabled aria-disabled="true" title="資料未解析"'}>
         <span class="rank-no">#${esc(clean(row["排名"]))}</span>
         <span class="rank-stock"><strong>${esc(clean(row["母股名稱"]))}</strong><small>${esc(clean(row["母股代號"]))}</small></span>
         <span class="rank-amt">${row["可見金額(萬)"] == null ? "—" : `${number(row["可見金額(萬)"])} 萬`}</span>
         ${row["當日Raw"] === true ? '<span class="raw-dot">RAW</span>' : '<span></span>'}
       </button>
-    `).join("")}</div>`;
+    `;
+    }).join("")}</div>`;
     $$(`${target} [data-stock]`).forEach(button => button.addEventListener("click", () => openStock(button.dataset.stock)));
   }
 
@@ -239,10 +245,18 @@
       counts[row.Underlying_Code] = (counts[row.Underlying_Code] || 0) + 1;
       return counts;
     }, {});
-    return D.currentObservation.map(row => ({
-      code: row["母股代號"], name: row["母股名稱"], entry: row["列入觀察日"], status: row["狀態"],
-      raw: rawCount[row["母股代號"]] || 0, episode: row["Episode Age"], source: row["資料來源"], note: row["備註"], completeness: "Current",
-    }));
+    const latestSnapshots = new Map(
+      D.observationSnapshots
+        .filter(row => row["日期"] === D.meta.defaultDate)
+        .map(row => [row["母股代號"], row])
+    );
+    return D.currentObservation.map(row => {
+      const latest = latestSnapshots.get(row["母股代號"]);
+      return {
+        code: row["母股代號"], name: row["母股名稱"], entry: latest?.["進觀察日期"] ?? row["列入觀察日"], status: latest?.["狀態"] ?? row["狀態"],
+        raw: rawCount[row["母股代號"]] || 0, episode: latest?.["Episode類型"] ?? row["Episode Age"], source: latest?.["確認程度"] ?? row["資料來源"], note: latest?.["備註"] ?? row["備註"], completeness: latest?.["完整度"] ?? "Current",
+      };
+    });
   }
 
   function renderObservation(date) {
@@ -256,7 +270,10 @@
       return String(b.entry || "").localeCompare(String(a.entry || ""));
     });
     const modeLabel = state.observationMode === "current" ? "目前名單" : `${date} 快照`;
-    $("#obs-summary").textContent = `${modeLabel} · ${rows.length} 檔`;
+    const reported = D.meta.reportedCounts?.[date];
+    $("#obs-summary").textContent = reported?.activeWatch != null && reported.activeWatch !== rows.length
+      ? `${modeLabel} · 截圖 ${reported.activeWatch} 檔 · 已辨識 ${rows.length} 檔`
+      : `${modeLabel} · ${rows.length} 檔`;
     $("#observation-list").innerHTML = rows.length ? rows.map(row => `
       <button type="button" class="obs-card" data-stock="${esc(row.code)}">
         <div class="obs-title"><span><b>${esc(clean(row.code))}</b> ${esc(clean(row.name))}</span><span class="badge neutral">${esc(clean(row.episode))}</span></div>
@@ -272,8 +289,10 @@
     const completed = D.episodes.filter(row => isNumeric(row["歷史報酬%"]));
     const wins = completed.filter(row => row["歷史報酬%"] > 0);
     const average = completed.length ? completed.reduce((sum, row) => sum + row["歷史報酬%"], 0) / completed.length : null;
+    const reported = D.meta.reportedCounts?.[dateSelect.value];
     const items = [
-      ["全部 Episode", D.episodes.length, "筆"],
+      ...(reported?.history != null ? [["截圖歷史計數", reported.history, "筆"]] : []),
+      [reported?.history != null ? "已收錄 Episode" : "全部 Episode", D.episodes.length, reported?.history != null ? "筆明細" : "筆"],
       ["已完成", completed.length, "筆"],
       ["勝率", completed.length ? `${Math.round(wins.length / completed.length * 100)}%` : "—", `${wins.length} 勝`],
       ["平均報酬", formatReturn(average), "已完成"],
@@ -435,7 +454,7 @@
     dateSelect.dataset.prev = date;
     const rows = dateRows(date);
     $("#date-note").textContent = D.meta.notes?.[date] || "所選日期資料依目前收錄狀態呈現。";
-    renderKpis(rows);
+    renderKpis(rows, date);
     renderOverview(rows, date);
     renderRaw(rows.raw);
     renderRank(rows.buy, "#buy-rank", "#buy-completeness", "BUY");
