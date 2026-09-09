@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -17,7 +20,12 @@ from chip_incremental_study_v01.analysis import incremental_rows  # noqa: E402
 from chip_incremental_study_v01.data import load_frozen_research, protected_hashes  # noqa: E402
 from chip_incremental_study_v01.models import ALL_MODEL_FEATURES, fit_chip_logistic  # noqa: E402
 from chip_incremental_study_v01.pit import build_chip_features, needed_codes, prior_session_map  # noqa: E402
-from chip_incremental_study_v01.sources import phase0_audit_rows  # noqa: E402
+from chip_incremental_study_v01.sources import (  # noqa: E402
+    OfficialRateLimitError,
+    _get,
+    download_official_chip_store,
+    phase0_audit_rows,
+)
 
 
 def meta_fixture(days: int = 8):
@@ -32,6 +40,81 @@ def meta_fixture(days: int = 8):
 
 
 class TestChipIncrementalStudy(unittest.TestCase):
+    @staticmethod
+    def _fake_source(source, date, wanted):
+        market = "TWSE" if source.startswith("TWSE") else "TPEX"
+        family = "INSTITUTIONAL" if source.endswith("INSTITUTIONAL") else "MARGIN_SHORT"
+        if market == "TPEX":
+            rows = []
+        elif family == "INSTITUTIONAL":
+            rows = [{"stock_code": 2330, "foreign": 10, "investment_trust": 2, "dealer": -1}]
+        else:
+            rows = [{"stock_code": 2330, "margin_balance": 100, "short_balance": 5}]
+        raw = json.dumps({"source": source, "date": date}).encode()
+        import hashlib
+        return {
+            "schema_version": 1, "source": source, "market": market,
+            "feature_family": family, "date": date,
+            "source_url": f"https://official.invalid/{source}/{date}",
+            "source_row_count": 100, "wanted_code_count": len(wanted),
+            "matched_row_count": len(rows), "raw_sha256": hashlib.sha256(raw).hexdigest(),
+            "rows": rows,
+        }, raw
+
+    def test_resumable_source_cache_skips_completed_pairs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            dates = np.asarray([20200102], dtype=np.int32)
+            needed = {20200102: {2330}}
+            with patch("chip_incremental_study_v01.sources._fetch_source", side_effect=self._fake_source) as fetch:
+                first = download_official_chip_store(
+                    dates, needed, root / "store.npz", root / "final.json",
+                    root / "cache", request_interval_seconds=0,
+                    max_attempts=1, initial_backoff_seconds=0, max_source_requests=2,
+                )
+                self.assertEqual(first["status"], "PARTIAL")
+                self.assertEqual(first["complete_source_date_pairs"], 2)
+                second = download_official_chip_store(
+                    dates, needed, root / "store.npz", root / "final.json",
+                    root / "cache", request_interval_seconds=0,
+                    max_attempts=1, initial_backoff_seconds=0, max_source_requests=2,
+                )
+                self.assertEqual(second["status"], "COMPLETE")
+                self.assertEqual(fetch.call_count, 4)
+            events = [json.loads(line) for line in (root / "cache/download_manifest.jsonl").read_text().splitlines()]
+            complete = [event for event in events if event["request_status"] == "COMPLETE"]
+            self.assertEqual(len(complete), 4)
+            required = {"source", "market", "date", "request_status", "row_count", "retrieval_timestamp_utc", "raw_file_hash", "parsed_file_hash", "retry_count"}
+            self.assertTrue(all(required.issubset(event) for event in complete))
+            with np.load(root / "store.npz", allow_pickle=False) as payload:
+                self.assertEqual(len(payload["chip_daily"]), 1)
+
+    def test_rate_limit_checkpoints_and_exits_without_final_store(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with patch("chip_incremental_study_v01.sources._fetch_source", side_effect=OfficialRateLimitError("throttled")):
+                result = download_official_chip_store(
+                    np.asarray([20200102], dtype=np.int32), {20200102: {2330}},
+                    root / "store.npz", root / "final.json", root / "cache",
+                    request_interval_seconds=0, max_attempts=2,
+                    initial_backoff_seconds=0, max_source_requests=2,
+                )
+            self.assertEqual(result["status"], "PARTIAL")
+            self.assertIn("RATE_LIMITED", result["stop_reason"])
+            self.assertFalse((root / "store.npz").exists())
+            events = [json.loads(line) for line in (root / "cache/download_manifest.jsonl").read_text().splitlines()]
+            limited = [event for event in events if event["request_status"] == "RATE_LIMITED"]
+            self.assertEqual([event["retry_count"] for event in limited], [0, 1])
+
+    def test_twse_cdn_307_is_rate_limit_not_market_data(self):
+        response = subprocess.CompletedProcess(
+            args=["curl"], returncode=0,
+            stdout=b"<html>blocked</html>\n__CHIP_HTTP_STATUS__=307", stderr=b"",
+        )
+        with patch("chip_incremental_study_v01.sources.subprocess.run", return_value=response):
+            with self.assertRaises(OfficialRateLimitError):
+                _get("https://official.invalid", {"date": "20200102"})
+
     def test_phase0_decisions_are_closed_set(self):
         rows = phase0_audit_rows()
         allowed = {"PIT_USABLE", "PIT_USABLE_WITH_LAG", "NOT_TESTED_DATA_UNAVAILABLE", "REJECTED_PIT_UNSAFE"}
@@ -57,6 +140,18 @@ class TestChipIncrementalStudy(unittest.TestCase):
         pool[-1] = True
         needed = needed_codes(meta["signal_date"], meta["stock_code"], pool, 1)
         self.assertTrue(all(date < int(meta["signal_date"][-1]) for date in needed))
+
+    def test_needed_codes_can_use_2019_warmup_calendar(self):
+        signal_dates = np.asarray([20200102, 20200103], dtype=np.int32)
+        codes = np.asarray([2330, 2317], dtype=np.int32)
+        pool = np.asarray([True, False])
+        calendar = np.asarray([20191227, 20191230, 20191231, 20200102, 20200103], dtype=np.int32)
+        needed = needed_codes(
+            signal_dates, codes, pool, lag_sessions=1, lookback=3,
+            calendar_dates=calendar,
+        )
+        self.assertEqual(set(needed), {20191227, 20191230, 20191231})
+        self.assertTrue(all(2330 in wanted for wanted in needed.values()))
 
     def test_pit_feature_timestamp_and_margin_missingness(self):
         meta = meta_fixture()

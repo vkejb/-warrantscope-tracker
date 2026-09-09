@@ -26,9 +26,13 @@ def needed_codes(
     stage_a_pool: np.ndarray,
     lag_sessions: int = CFG.publication_lag_sessions,
     lookback: int = 6,
+    calendar_dates: np.ndarray | None = None,
 ) -> dict[int, set[int]]:
-    unique = np.unique(signal_dates).astype(np.int64)
-    position = {int(date): index for index, date in enumerate(unique)}
+    calendar = np.unique(signal_dates if calendar_dates is None else calendar_dates).astype(np.int64)
+    position = {int(date): index for index, date in enumerate(calendar)}
+    missing_signal_dates = set(int(value) for value in np.unique(signal_dates)) - set(position)
+    if missing_signal_dates:
+        raise RuntimeError(f"signal dates missing from trading calendar: {sorted(missing_signal_dates)[:5]}")
     result: dict[int, set[int]] = {}
     for index in np.flatnonzero(stage_a_pool):
         signal_date = int(signal_dates[index])
@@ -36,8 +40,23 @@ def needed_codes(
         end = position[signal_date] - lag_sessions
         for source_position in range(end - lookback + 1, end + 1):
             if source_position >= 0:
-                result.setdefault(int(unique[source_position]), set()).add(code)
+                result.setdefault(int(calendar[source_position]), set()).add(code)
     return result
+
+
+def archive_trading_dates(input_dir: Path, start: int, end: int) -> np.ndarray:
+    dates = set()
+    for source in sorted(input_dir.glob("yearly_20*.zip")):
+        for row in _read_csv_rows(source):
+            try:
+                date = int(str(row["date"]).replace("-", ""))
+            except (KeyError, TypeError, ValueError):
+                continue
+            if start <= date <= end:
+                dates.add(date)
+    if not dates:
+        raise FileNotFoundError(f"no archive trading dates under {input_dir}")
+    return np.asarray(sorted(dates), dtype=np.int32)
 
 
 def _read_csv_rows(path: Path):
@@ -207,4 +226,7 @@ def build_chip_features(
     }
 
 
-__all__ = ["needed_codes", "load_needed_volumes", "build_chip_features", "prior_session_map"]
+__all__ = [
+    "archive_trading_dates", "needed_codes", "load_needed_volumes",
+    "build_chip_features", "prior_session_map",
+]

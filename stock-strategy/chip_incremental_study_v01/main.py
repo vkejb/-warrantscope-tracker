@@ -24,7 +24,7 @@ from .analysis import (
 from .config import CFG, CHIP_FEATURES, INSTITUTIONAL_FEATURES, MARGIN_FEATURES
 from .data import array_digest, load_frozen_research, protected_hashes
 from .models import ALL_MODEL_FEATURES, fit_chip_logistic, frozen_ohlcv_feature_matrix
-from .pit import build_chip_features, load_needed_volumes, needed_codes
+from .pit import archive_trading_dates, build_chip_features, load_needed_volumes, needed_codes
 from .sources import download_official_chip_store, phase0_audit_rows
 
 
@@ -74,28 +74,57 @@ def load_context(stock_strategy: Path):
 
 def command_download(args, stock_strategy: Path, package: Path) -> int:
     arrays, _frozen, _audit, pool = load_context(stock_strategy)
-    first = needed_codes(arrays["meta"]["signal_date"], arrays["meta"]["stock_code"], pool, 1)
-    second = needed_codes(arrays["meta"]["signal_date"], arrays["meta"]["stock_code"], pool, 2)
+    input_dir = stock_strategy / "winner_coverage_taxonomy_v01/runtime/input"
+    full_calendar = archive_trading_dates(input_dir, 20190101, 20251231)
+    first = needed_codes(
+        arrays["meta"]["signal_date"], arrays["meta"]["stock_code"], pool, 1,
+        calendar_dates=full_calendar,
+    )
+    second = needed_codes(
+        arrays["meta"]["signal_date"], arrays["meta"]["stock_code"], pool, 2,
+        calendar_dates=full_calendar,
+    )
     needed = {date: set(codes) for date, codes in first.items()}
     for date, codes in second.items():
         needed.setdefault(date, set()).update(codes)
+    formal_dates = np.unique(arrays["meta"]["signal_date"]).astype(np.int32)
+    for date in formal_dates:
+        needed.setdefault(int(date), set())
     runtime = package / "runtime"
     runtime.mkdir(exist_ok=True)
     manifest = download_official_chip_store(
         np.asarray(sorted(needed), dtype=np.int32), needed,
         runtime / "chip_daily_store.npz", runtime / "chip_raw_manifest.json",
-        workers=args.workers,
+        cache_dir=runtime / "official_cache",
+        request_interval_seconds=args.request_interval_seconds,
+        max_attempts=args.max_attempts,
+        initial_backoff_seconds=args.initial_backoff_seconds,
+        max_source_requests=args.max_source_requests,
     )
+    if manifest.get("status") != "COMPLETE":
+        print(json.dumps({
+            "status": "CHECKPOINT_SAVED",
+            "download_progress": manifest,
+            "formal_study_run": False,
+            "model_fit_count": 0,
+        }, ensure_ascii=False))
+        return 0
     volumes, volume_audit = load_needed_volumes(
-        stock_strategy / "winner_coverage_taxonomy_v01/runtime/input", needed
+        input_dir, needed
     )
     keys = np.asarray([(date, code, value) for (date, code), value in sorted(volumes.items())], dtype=np.float64)
-    np.savez_compressed(runtime / "chip_volume_store.npz", keys=keys)
+    volume_path = runtime / "chip_volume_store.npz"
+    if volume_path.exists():
+        with np.load(volume_path, allow_pickle=False) as existing:
+            if not np.array_equal(existing["keys"], keys):
+                raise RuntimeError("immutable chip volume store differs from rebuilt input")
+    else:
+        np.savez_compressed(volume_path, keys=keys)
     write_json(runtime / "chip_download_summary.json", {
         "official_manifest": {key: value for key, value in manifest.items() if key != "date_payloads"},
         "volume_audit": volume_audit,
         "chip_daily_store_sha256": sha256_file(runtime / "chip_daily_store.npz"),
-        "chip_volume_store_sha256": sha256_file(runtime / "chip_volume_store.npz"),
+        "chip_volume_store_sha256": sha256_file(volume_path),
         "chip_raw_manifest_sha256": sha256_file(runtime / "chip_raw_manifest.json"),
     })
     print(json.dumps({"status": "DOWNLOADED", "dates": len(needed), "volume_audit": volume_audit}, ensure_ascii=False))
@@ -423,7 +452,10 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     audit = sub.add_parser("audit-sources")
     download = sub.add_parser("download-official")
-    download.add_argument("--workers", type=int, default=8)
+    download.add_argument("--request-interval-seconds", type=float, default=5.0)
+    download.add_argument("--max-attempts", type=int, default=2)
+    download.add_argument("--initial-backoff-seconds", type=float, default=30.0)
+    download.add_argument("--max-source-requests", type=int, default=20)
     sub.add_parser("publish-phase0-checkpoint")
     publish = sub.add_parser("publish")
     publish.add_argument("--output-dir", type=Path, default=package)

@@ -35,9 +35,38 @@ python -m chip_incremental_study_v01.main download-official
 python -m chip_incremental_study_v01.main publish
 ```
 
-The official download and large observation stores remain local under
-`runtime/`. Published CSV and JSON summaries are immutable: `publish` refuses
-to overwrite them.
+`download-official` is deliberately bounded and sequential. Its defaults fetch
+at most 20 source/date payloads per invocation, wait five seconds between
+successful requests, retry at most twice, and use a 30-second exponential
+backoff. Options may make a batch smaller or slower, but should not be used to
+turn it back into a high-concurrency downloader:
+
+```bash
+python -m chip_incremental_study_v01.main download-official \
+  --max-source-requests 20 \
+  --request-interval-seconds 5 \
+  --max-attempts 2 \
+  --initial-backoff-seconds 30
+```
+
+Every completed `source × date` is immediately stored as an immutable raw and
+parsed pair under `runtime/official_cache/`. Each pair is committed by one
+atomic directory rename, so a process interruption cannot expose a half-written
+date as complete. The append-only
+`download_manifest.jsonl` records request status, official and matched row
+counts, retrieval timestamp, raw/parsed hashes, and retry count. A rerun checks
+and skips completed cache pairs. CDN rejection or a bounded-batch stop writes
+`download_progress.json` and exits without constructing the research store.
+TWSE CDN responses such as a 307/308 without a usable data response are treated
+as rate-limit rejection, not as a valid redirect or an empty market day.
+
+The final `chip_daily_store.npz` is assembled only after all 1,459 formal
+2020–2025 trading dates, plus the small required 2019 year-end feature warm-up,
+have all four official payloads and pass the duplicate, parse, two-market
+coverage, and PIT-lag gates. Warm-up rows are never included in formal
+statistics. The official download and large observation stores remain local
+under `runtime/`. Published CSV and JSON summaries are immutable: `publish`
+refuses to overwrite them.
 
 ## Evidence labels
 
@@ -56,3 +85,9 @@ lag, but a complete 2020–2025 archive was not accepted because the first bulk
 download attempt triggered the official CDN Anti-DDoS controls. Partial dates
 were discarded. Resume only with a rate-safe official acquisition or an
 authorized official bulk file; do not substitute third-party history.
+
+The Phase 1 acquisition engineering checkpoint is recorded at
+`checkpoints/phase1_acquisition/`. Its first bounded live attempt received a
+HiNetCDN HTTP 307 with no usable market payload, so coverage remains zero and
+the study remains unfit. The operational manifest and any future official raw
+payloads stay local under the gitignored `runtime/official_cache/`.

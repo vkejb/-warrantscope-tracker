@@ -1,0 +1,48 @@
+{
+  "status": "CHECKPOINT",
+  "study_id": "CHIP_INCREMENTAL_STUDY_V0_1",
+  "phase": "PHASE_1_OFFICIAL_DATA_ACQUISITION",
+  "source_commit": "27efb54bed658aac13989374b07c4791fd099522",
+  "pipeline_status": "RESUMABLE_LOW_FREQUENCY_READY",
+  "formal_trading_dates": 1459,
+  "warmup_trading_dates": 7,
+  "expected_source_date_pairs": 5864,
+  "complete_source_date_pairs_at_checkpoint": 0,
+  "remaining_source_date_pairs_at_checkpoint": 5864,
+  "last_official_attempt": {
+    "source": "TWSE_INSTITUTIONAL",
+    "date": 20200102,
+    "result": "CDN_REJECTION_HTTP_307",
+    "server": "HiNetCDN",
+    "raw_cache_written": false,
+    "parsed_cache_written": false
+  },
+  "runtime_progress_files": [
+    "runtime/official_cache/download_manifest.jsonl",
+    "runtime/official_cache/download_progress.json"
+  ],
+  "runtime_files_committed": false,
+  "implementation_sha256": {
+    "sources.py": "64e335252c4fbaae1160b6ee7524a42e3923ab7a55de6fd8f54faad55016f1c3",
+    "main.py": "0aa0ef2098ebe65d6a3a2520fd150986f6393604c3641e00122c690692a203e5",
+    "pit.py": "b23bbf3aa4a35e89914b24489f91c4a73033773f3e0b12f6ba42c2d27857ca3a",
+    "test_chip_incremental_study_v01.py": "80f04b71e7cbbaa3b759f528c942994c6f567566b086fd5fa18958bc48b3a94a",
+    "README.md": "8314ede9c4b90d048e92361e2bebc7d7031fdd0f9b6b659b17d9b8c450d91b29"
+  },
+  "tests": {
+    "run": 17,
+    "passed": 16,
+    "skipped": 1,
+    "failed": 0,
+    "skip_reason": "formal publish has not run"
+  },
+  "coverage_gate_passed": false,
+  "formal_study_run": false,
+  "model_fit_count": 0,
+  "later_period_refit_count": 0,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "resume_requirement": "Resume bounded official downloads from the local append-only manifest after the TWSE CDN rejection clears. Do not fit any model until all 5864 source-date pairs pass coverage and integrity gates.",
+  "not_complete": true
+}
