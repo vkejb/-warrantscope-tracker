@@ -1,0 +1,549 @@
+{
+  "study_id": "CONDITIONAL_PATH_QUALITY_RANKING_V0_1",
+  "primary_target": "PATH_SUCCESS_8_BEFORE_5; TIMEOUT_IS_NON_SUCCESS",
+  "stage_a_contract": {
+    "model": {
+      "name": "LINEAR_RIDGE_MFE10",
+      "fit_period": "HISTORICAL_DISCOVERY_2020_2022",
+      "feature_names": [
+        "return_3",
+        "return_5",
+        "return_10",
+        "return_20",
+        "return_60",
+        "close_vs_ma5",
+        "close_vs_ma10",
+        "close_vs_ma20",
+        "close_vs_ma60",
+        "distance_to_prior20_close_high",
+        "distance_to_prior60_close_high",
+        "drawdown_from_20d_high",
+        "drawdown_from_60d_high",
+        "days_since_20d_high",
+        "days_since_60d_high",
+        "ma5_slope",
+        "ma10_slope",
+        "ma20_slope",
+        "ma60_slope",
+        "volume_ratio5",
+        "volume_ratio20",
+        "prior_volume_contraction_5_20",
+        "atr5",
+        "atr20",
+        "atr60",
+        "atr5_atr20",
+        "range_compression10",
+        "range_compression20",
+        "volatility20",
+        "rs5_vs_0050",
+        "rs20_vs_0050",
+        "rs60_vs_0050",
+        "recent_breakout_flag",
+        "recent_retest_flag",
+        "recent_local_low_distance",
+        "recent_local_high_distance",
+        "bias5",
+        "bias10",
+        "bias20"
+      ],
+      "coefficients": [
+        0.0008627006178850178,
+        0.001273748442411187,
+        -0.0031229426380920493,
+        0.003337874202747465,
+        -0.0015284745697830336,
+        0.00011008355569640386,
+        -0.0008638917215854938,
+        0.0012911211598074918,
+        0.004071198449597975,
+        -0.004036793100101419,
+        0.0005385934773786471,
+        0.002697304602646891,
+        0.007782734275579948,
+        0.00239294678804866,
+        -0.003099206033826263,
+        0.0010380466044130623,
+        0.0052155009151612,
+        -0.006728166385806739,
+        0.014436925457360687,
+        0.006208755122605706,
+        -0.004661850733721911,
+        0.0016865587440558953,
+        0.012208346726581273,
+        0.020591587890060666,
+        0.028608887637446914,
+        0.0038355751724325074,
+        -0.001019606607545205,
+        0.012909349019906776,
+        -0.007014738353868171,
+        -0.0033968007906416712,
+        -0.0010879746535441086,
+        -0.00930616533414342,
+        0.006932777894234433,
+        -0.0017372980842788439,
+        0.0031397560690834807,
+        0.002697304683290101,
+        0.00011008354995856714,
+        -0.0008638917210125833,
+        0.0012911213761697352
+      ],
+      "intercept": 0.05113004847298848,
+      "regularization_alpha": 0.1,
+      "training_observations": 323809
+    },
+    "fingerprint": "a943b58962b0e19e2830a700cd7ed1d32a8dc338be79652126e13be82b114ccd",
+    "pool": "EXACT_PUBLISHED_STAGE_A_RANK_LE_30",
+    "refit_count": 0
+  },
+  "primary_model": {
+    "name": "LOGISTIC_RIDGE_PATH_SUCCESS",
+    "fit_period": "HISTORICAL_DISCOVERY_2020_2022",
+    "feature_names": [
+      "return_3",
+      "return_5",
+      "return_10",
+      "return_20",
+      "return_60",
+      "close_vs_ma5",
+      "close_vs_ma10",
+      "close_vs_ma20",
+      "close_vs_ma60",
+      "distance_to_prior20_close_high",
+      "distance_to_prior60_close_high",
+      "drawdown_from_20d_high",
+      "drawdown_from_60d_high",
+      "days_since_20d_high",
+      "days_since_60d_high",
+      "ma5_slope",
+      "ma10_slope",
+      "ma20_slope",
+      "ma60_slope",
+      "volume_ratio5",
+      "volume_ratio20",
+      "prior_volume_contraction_5_20",
+      "atr5",
+      "atr20",
+      "atr60",
+      "atr5_atr20",
+      "range_compression10",
+      "range_compression20",
+      "volatility20",
+      "rs5_vs_0050",
+      "rs20_vs_0050",
+      "rs60_vs_0050",
+      "recent_breakout_flag",
+      "recent_retest_flag",
+      "recent_local_low_distance",
+      "recent_local_high_distance",
+      "bias5",
+      "bias10",
+      "bias20",
+      "frozen_stage_a_upside_score_z",
+      "frozen_stage_a_rank_percentile"
+    ],
+    "coefficients": [
+      -0.015374868456851444,
+      -0.011169815910280559,
+      -0.006984499838481657,
+      -0.015441707479179929,
+      -0.0016760254787492991,
+      -0.014586488726729328,
+      -0.015415470235878227,
+      -0.017898746583504523,
+      -0.012348469159039387,
+      -0.03310916500495762,
+      -0.005494105187040844,
+      -0.024067290562157406,
+      -6.109258282186725e-07,
+      0.008550523927768516,
+      -0.009295696848002707,
+      -0.012951238006418005,
+      -0.011833429298802036,
+      -0.012814372353560172,
+      -0.0008853898641463927,
+      -0.031533716275203336,
+      -0.05481472311843887,
+      -0.0203589369927334,
+      0.0010395278955637678,
+      -0.0008742121024770302,
+      0.011397107345728335,
+      0.0014421551394013124,
+      0.02267123834968546,
+      0.002125754788598977,
+      0.004422361010741958,
+      -0.011169815910280559,
+      -0.015441644867958985,
+      -0.0016767253175444682,
+      -0.005986639138248889,
+      -0.02470399289839597,
+      -0.0038810451858952853,
+      -0.024067290562157406,
+      -0.014586488726729328,
+      -0.015415470235878227,
+      -0.017898746583504523,
+      0.06655332906145668,
+      0.0027581885273222644
+    ],
+    "intercept": -0.5435764472215819,
+    "regularization_c": 10.0,
+    "training_observations": 21637,
+    "score_mean": 0.08511587399650546,
+    "score_scale": 0.004586507502427576,
+    "iterations": 4
+  },
+  "primary_model_fingerprint": "626789b7026e8006a1eac3e60180533ebd17bbe3772065e271b4d019179933d9",
+  "benchmark_model": {
+    "name": "IC_WEIGHTED_PATH_SCORE",
+    "fit_period": "HISTORICAL_DISCOVERY_2020_2022",
+    "feature_names": [
+      "return_3",
+      "return_5",
+      "return_10",
+      "return_20",
+      "return_60",
+      "close_vs_ma5",
+      "close_vs_ma10",
+      "close_vs_ma20",
+      "close_vs_ma60",
+      "distance_to_prior20_close_high",
+      "distance_to_prior60_close_high",
+      "drawdown_from_20d_high",
+      "drawdown_from_60d_high",
+      "days_since_20d_high",
+      "days_since_60d_high",
+      "ma5_slope",
+      "ma10_slope",
+      "ma20_slope",
+      "ma60_slope",
+      "volume_ratio5",
+      "volume_ratio20",
+      "prior_volume_contraction_5_20",
+      "atr5",
+      "atr20",
+      "atr60",
+      "atr5_atr20",
+      "range_compression10",
+      "range_compression20",
+      "volatility20",
+      "rs5_vs_0050",
+      "rs20_vs_0050",
+      "rs60_vs_0050",
+      "recent_breakout_flag",
+      "recent_retest_flag",
+      "recent_local_low_distance",
+      "recent_local_high_distance",
+      "bias5",
+      "bias10",
+      "bias20",
+      "frozen_stage_a_upside_score_z",
+      "frozen_stage_a_rank_percentile"
+    ],
+    "coefficients": [
+      -0.007381705042985299,
+      0.007014169743535135,
+      0.03278408354815445,
+      0.03450328993967113,
+      0.041726032621443705,
+      -0.005145769179682757,
+      0.010372897467625678,
+      0.0362565538084773,
+      0.050240236861864414,
+      -0.012609092600936428,
+      0.0009214191633342178,
+      -0.006810298824069939,
+      0.006268769532849036,
+      -0.0034255788941902226,
+      -0.011651038592880657,
+      0.021774399266922956,
+      0.03928453490191044,
+      0.03413135313981355,
+      0.050229187363176386,
+      -0.040289539021693785,
+      -0.048724690884072,
+      -0.01217773050824278,
+      0.007421621302752945,
+      0.016960518472205453,
+      0.01602065306308823,
+      -0.0015672018593772018,
+      0.061183760903533904,
+      0.056240726307237025,
+      0.023366186119527843,
+      0.007014169743535135,
+      0.03450328993967113,
+      0.041720687288193385,
+      8.612061940565438e-05,
+      -0.035838368696666026,
+      0.03887258066650822,
+      -0.006810298824069939,
+      -0.005145769179682757,
+      0.010372897467625678,
+      0.0362565538084773,
+      0.04344811241545497,
+      0.04344811241545497
+    ],
+    "intercept": 0.0,
+    "regularization_c": null,
+    "training_observations": 21637,
+    "score_mean": 0.08511587399650546,
+    "score_scale": 0.004586507502427576,
+    "iterations": 0
+  },
+  "benchmark_model_fingerprint": "c5a96f27ee7be5dce85dccb4c04b84b7cbe11dd783243e2ce018c2ca9c2b5ea1",
+  "fit_audit": {
+    "c_candidates": [
+      0.01,
+      0.1,
+      1.0,
+      10.0
+    ],
+    "c_fold_mean_daily_path_ic": {
+      "0.01": [
+        0.005215897453258731,
+        0.04280304662722915
+      ],
+      "0.1": [
+        0.005308382298694883,
+        0.04344476461214069
+      ],
+      "1.0": [
+        0.011639194641819292,
+        0.04475864853611962
+      ],
+      "10.0": [
+        0.030378409486228913,
+        0.05071253036092715
+      ]
+    },
+    "selection_metric": "MEAN_OF_2021_AND_2022_WALKFORWARD_MEAN_DAILY_PATH_IC",
+    "tie_break": "SMALLEST_C",
+    "selected_c": 10.0,
+    "fold_purge_audit": {
+      "TRAIN_2020_EVALUATE_2021": {
+        "requested_start": "20200101",
+        "requested_end": "20201231",
+        "purge_sessions": 10,
+        "last_included_signal_date": 20201217,
+        "purged_signal_dates": [
+          20201218,
+          20201221,
+          20201222,
+          20201223,
+          20201224,
+          20201225,
+          20201228,
+          20201229,
+          20201230,
+          20201231
+        ],
+        "training_observations": 7001
+      },
+      "TRAIN_2020_2021_EVALUATE_2022": {
+        "requested_start": "20200101",
+        "requested_end": "20211231",
+        "purge_sessions": 10,
+        "last_included_signal_date": 20211216,
+        "purged_signal_dates": [
+          20211217,
+          20211220,
+          20211221,
+          20211222,
+          20211223,
+          20211224,
+          20211227,
+          20211228,
+          20211229,
+          20211230
+        ],
+        "training_observations": 14276
+      }
+    },
+    "fold_preprocessing": {
+      "TRAIN_2020_EVALUATE_2021": {
+        "base_transform": "PUBLISHED_SAME_DAY_PERCENTILE_MINUS_0_5",
+        "stage_a_score_transform": "TRAINING_MASK_MEAN_STD_ZSCORE",
+        "stage_a_score_mean": 0.08479442012313765,
+        "stage_a_score_scale": 0.004750108859761262,
+        "stage_a_rank_percentile": "PUBLISHED_FULL_UNIVERSE_SAME_DAY_RANK_PERCENTILE_MINUS_0_5",
+        "fit_observations": 7001
+      },
+      "TRAIN_2020_2021_EVALUATE_2022": {
+        "base_transform": "PUBLISHED_SAME_DAY_PERCENTILE_MINUS_0_5",
+        "stage_a_score_transform": "TRAINING_MASK_MEAN_STD_ZSCORE",
+        "stage_a_score_mean": 0.08556847290177337,
+        "stage_a_score_scale": 0.004598024999356103,
+        "stage_a_rank_percentile": "PUBLISHED_FULL_UNIVERSE_SAME_DAY_RANK_PERCENTILE_MINUS_0_5",
+        "fit_observations": 14276
+      }
+    },
+    "final_fit_purge": {
+      "requested_start": "20200101",
+      "requested_end": "20221231",
+      "purge_sessions": 10,
+      "last_included_signal_date": 20221216,
+      "purged_signal_dates": [
+        20221219,
+        20221220,
+        20221221,
+        20221222,
+        20221223,
+        20221226,
+        20221227,
+        20221228,
+        20221229,
+        20221230
+      ],
+      "training_observations": 21637
+    },
+    "final_preprocessing": {
+      "base_transform": "PUBLISHED_SAME_DAY_PERCENTILE_MINUS_0_5",
+      "stage_a_score_transform": "TRAINING_MASK_MEAN_STD_ZSCORE",
+      "stage_a_score_mean": 0.08511587399650546,
+      "stage_a_score_scale": 0.004586507502427576,
+      "stage_a_rank_percentile": "PUBLISHED_FULL_UNIVERSE_SAME_DAY_RANK_PERCENTILE_MINUS_0_5",
+      "fit_observations": 21637
+    },
+    "final_fit_count": 1,
+    "later_period_refit_count": 0,
+    "stage_a_refit_count": 0,
+    "benchmark_audit": {
+      "daily_ic_observations": 714,
+      "feature_mean_daily_path_ic": {
+        "return_3": -0.007454386226635101,
+        "return_5": 0.007083232129029014,
+        "return_10": 0.03310687970206176,
+        "return_20": 0.03484301361299924,
+        "return_60": 0.04213687231529177,
+        "close_vs_ma5": -0.005196435061425542,
+        "close_vs_ma10": 0.010475030302984835,
+        "close_vs_ma20": 0.036613540335372875,
+        "close_vs_ma60": 0.05073490846696149,
+        "distance_to_prior20_close_high": -0.012733243291007267,
+        "distance_to_prior60_close_high": 0.0009304915707304441,
+        "drawdown_from_20d_high": -0.006877353871197923,
+        "drawdown_from_60d_high": 0.006330492615391904,
+        "days_since_20d_high": -0.0034593075689700586,
+        "days_since_60d_high": -0.011765756164329112,
+        "ma5_slope": 0.02198879270350266,
+        "ma10_slope": 0.039671335306312415,
+        "ma20_slope": 0.03446741467726667,
+        "ma60_slope": 0.05072375017353854,
+        "volume_ratio5": -0.04068623482134299,
+        "volume_ratio20": -0.04920444023544853,
+        "prior_volume_contraction_5_20": -0.012297633953632878,
+        "atr5": 0.00749469550684855,
+        "atr20": 0.017127513841255812,
+        "atr60": 0.016178394400717885,
+        "atr5_atr20": -0.0015826327233164144,
+        "range_compression10": 0.06178618380403182,
+        "range_compression20": 0.05679447947585204,
+        "volatility20": 0.023596252486940167,
+        "rs5_vs_0050": 0.007083232129029014,
+        "rs20_vs_0050": 0.03484301361299924,
+        "rs60_vs_0050": 0.042131474351227105,
+        "recent_breakout_flag": 8.696857370870597e-05,
+        "recent_retest_flag": -0.0361912377210694,
+        "recent_local_low_distance": 0.03925532491840014,
+        "recent_local_high_distance": -0.006877353871197923,
+        "bias5": -0.005196435061425542,
+        "bias10": 0.010475030302984835,
+        "bias20": 0.036613540335372875,
+        "frozen_stage_a_upside_score_z": 0.043875907920601274,
+        "frozen_stage_a_rank_percentile": 0.043875907920601274
+      },
+      "weight_normalization": "L1_ABSOLUTE_SUM_EQUALS_ONE"
+    }
+  },
+  "coefficient_stability": {
+    "walkforward_sign_agreement_fraction": 0.9024390243902439,
+    "all_three_sign_agreement_fraction": 0.8292682926829268,
+    "walkforward_coefficient_cosine": 0.9136295363267607,
+    "final_vs_train_2020_cosine": 0.8643484938230825,
+    "final_vs_train_2020_2021_cosine": 0.9135289271014542,
+    "largest_absolute_final_coefficients": [
+      {
+        "feature": "frozen_stage_a_upside_score_z",
+        "coefficient": 0.06655332906145668
+      },
+      {
+        "feature": "volume_ratio20",
+        "coefficient": -0.05481472311843887
+      },
+      {
+        "feature": "distance_to_prior20_close_high",
+        "coefficient": -0.03310916500495762
+      },
+      {
+        "feature": "volume_ratio5",
+        "coefficient": -0.031533716275203336
+      },
+      {
+        "feature": "recent_retest_flag",
+        "coefficient": -0.02470399289839597
+      },
+      {
+        "feature": "drawdown_from_20d_high",
+        "coefficient": -0.024067290562157406
+      },
+      {
+        "feature": "recent_local_high_distance",
+        "coefficient": -0.024067290562157406
+      },
+      {
+        "feature": "range_compression10",
+        "coefficient": 0.02267123834968546
+      },
+      {
+        "feature": "prior_volume_contraction_5_20",
+        "coefficient": -0.0203589369927334
+      },
+      {
+        "feature": "close_vs_ma20",
+        "coefficient": -0.017898746583504523
+      }
+    ],
+    "largest_positive_coefficients": [
+      {
+        "feature": "frozen_stage_a_upside_score_z",
+        "coefficient": 0.06655332906145668
+      },
+      {
+        "feature": "range_compression10",
+        "coefficient": 0.02267123834968546
+      }
+    ],
+    "largest_negative_coefficients": [
+      {
+        "feature": "volume_ratio20",
+        "coefficient": -0.05481472311843887
+      },
+      {
+        "feature": "distance_to_prior20_close_high",
+        "coefficient": -0.03310916500495762
+      },
+      {
+        "feature": "volume_ratio5",
+        "coefficient": -0.031533716275203336
+      },
+      {
+        "feature": "recent_retest_flag",
+        "coefficient": -0.02470399289839597
+      },
+      {
+        "feature": "drawdown_from_20d_high",
+        "coefficient": -0.024067290562157406
+      },
+      {
+        "feature": "recent_local_high_distance",
+        "coefficient": -0.024067290562157406
+      },
+      {
+        "feature": "prior_volume_contraction_5_20",
+        "coefficient": -0.0203589369927334
+      },
+      {
+        "feature": "close_vs_ma20",
+        "coefficient": -0.017898746583504523
+      }
+    ]
+  }
+}
