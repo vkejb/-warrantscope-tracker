@@ -1,0 +1,258 @@
+{
+  "study_id": "WINNER_COVERAGE_TAXONOMY_V0_1",
+  "status": "COMPLETE",
+  "result_status": "DESCRIPTIVE_ONLY",
+  "final_classification": "DESCRIPTIVE_ONLY",
+  "period_discipline": {
+    "2020_2022": "HISTORICAL_DISCOVERY",
+    "2023_2024": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS",
+    "2025": "STRESS_PREVALENCE_SEEN_NOT_BLIND",
+    "prospective_from_2026_09": "EXCLUDED_FROM_DISCOVERY_AND_TAXONOMY"
+  },
+  "answers": {
+    "1_full_market_winner_base_rate": 0.19963761561329713,
+    "2_n_compact_winner_coverage": 0.000585091581102969,
+    "3_n_compact_precision": 0.3474576271186441,
+    "4_largest_existing_setup_coverage": {
+      "setup": "TREND_PULLBACK",
+      "coverage": 0.020335500074920264
+    },
+    "5_largest_incremental_vs_n_compact": {
+      "setup": "TREND_PULLBACK",
+      "incremental_coverage": 0.020335500074920264
+    },
+    "6_unexplained_winner_share": 0.9499818050788803,
+    "7_unexplained_t_day_states": [
+      {
+        "family": "CANDIDATE_1_MIXED_MARKET_STATE",
+        "share": 0.7021502025553131,
+        "characteristics": "distance_to_prior20_close_high=-0.368;close_vs_ma20=-0.313;drawdown_from_60d_high=-0.282;recent_retest_flag=+0.252"
+      },
+      {
+        "family": "CANDIDATE_2_DIRECT_CONTINUATION_STATE",
+        "share": 0.19783421626674977,
+        "characteristics": "prior_volume_contraction_5_20=+1.877;volume_ratio20=+1.569;rs20_vs_0050=+1.384;return_20=+1.286"
+      }
+    ],
+    "8_direct_continuation_family_found": {
+      "state_identified": true,
+      "stable_unsupervised_taxonomy": true,
+      "directionally_consistent_candidate": false,
+      "evidence": [
+        {
+          "candidate_family": "CANDIDATE_2_DIRECT_CONTINUATION_STATE",
+          "discovery_members": 12697,
+          "directionally_consistent_all_periods": false
+        }
+      ]
+    },
+    "9_breakout_squeeze_family_found": {
+      "state_identified": false,
+      "stable_unsupervised_taxonomy": false,
+      "directionally_consistent_candidate": false,
+      "evidence": []
+    },
+    "10_next_detector_hypothesis": null,
+    "11_candidate_monthly_signals": null,
+    "12_n_compact_plus_candidate_monthly": {
+      "n_compact": null,
+      "combined": null
+    },
+    "13_candidate_trade_quality": {},
+    "14_cross_period_direction": {
+      "positive_gross_all_periods": false,
+      "pf_above_one_all_periods": false
+    },
+    "15_regime_month_tail_warning": {
+      "tail_dependent_any_period": false,
+      "top5_dates_share_by_period": {},
+      "warning": "Period and date concentration are descriptive; market-regime causality is not established."
+    }
+  },
+  "taxonomy": {
+    "fit_period": "HISTORICAL_DISCOVERY_2020_2022_UNEXPLAINED_WINNERS_ONLY",
+    "chosen_k": 2,
+    "feature_names": [
+      "return_5",
+      "return_20",
+      "return_60",
+      "distance_to_prior20_close_high",
+      "drawdown_from_60d_high",
+      "close_vs_ma20",
+      "ma20_slope",
+      "atr5_atr20",
+      "range_compression20",
+      "volatility20",
+      "volume_ratio20",
+      "prior_volume_contraction_5_20",
+      "rs20_vs_0050",
+      "days_since_20d_high",
+      "recent_breakout_flag",
+      "recent_retest_flag"
+    ],
+    "winsor_lower": [
+      -0.22005549827672552,
+      -0.35488032060775615,
+      -0.40874094989253656,
+      -0.3786481752299243,
+      -0.4762838230869522,
+      -0.24570472036007437,
+      -0.0983331681791699,
+      0.5284461001352289,
+      0.04807692307692313,
+      0.00994944441612995,
+      0.15256937129485018,
+      0.1983862749659496,
+      -0.29060380385372225,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "winsor_upper": [
+      0.2937140801934015,
+      0.7977988148805368,
+      1.775449999999998,
+      0.09663119629874428,
+      0.0,
+      0.3586411943097402,
+      0.15704511722287298,
+      1.8470991407701156,
+      0.9735973597359735,
+      0.06944930949968911,
+      5.950523810912625,
+      7.529993969814511,
+      0.7586248240961453,
+      19.0,
+      1.0,
+      1.0
+    ],
+    "robust_center": [
+      0.0016012820512820714,
+      0.02006994116641847,
+      0.08868144690781787,
+      -0.06765437518290901,
+      -0.1428571428571429,
+      0.006082792070538967,
+      0.0060735803034538405,
+      0.9734943795064608,
+      0.20369060715595366,
+      0.03169648612238221,
+      0.738560116180764,
+      0.8695709250724162,
+      0.008910583451012366,
+      9.0,
+      0.0,
+      0.0
+    ],
+    "robust_scale": [
+      0.08656849259648836,
+      0.21457012369396905,
+      0.3877760657421674,
+      0.11562959795523797,
+      0.16307620526869868,
+      0.10377026487653185,
+      0.050481047211590385,
+      0.3546319070975992,
+      0.1958893892096467,
+      0.018724896608283935,
+      0.7341175040726845,
+      0.8168865610774845,
+      0.18453383865681952,
+      13.0,
+      1.0,
+      1.0
+    ],
+    "centroids": [
+      [
+        -0.20311618717674712,
+        -0.225448402382205,
+        -0.0459305138160548,
+        -0.3679224862091736,
+        -0.28193264778427113,
+        -0.3129242026904405,
+        -0.24299023911226433,
+        -0.03256876410554462,
+        0.11168969412790461,
+        0.008207134527548074,
+        0.0721976152271684,
+        0.025771531035001072,
+        -0.1896045352755816,
+        0.16974018951170036,
+        0.04150023965489695,
+        0.2519372104169995
+      ],
+      [
+        0.933157129803716,
+        1.2862052574059,
+        1.0035769512971608,
+        0.43673537031359133,
+        0.4047887827240064,
+        1.2806419619751024,
+        1.081587864192325,
+        0.625188094941575,
+        0.9027692786627367,
+        0.3689270578031789,
+        1.5688789921964321,
+        1.8768929264600214,
+        1.3839489347038187,
+        -0.5320167499073009,
+        0.4045222568755316,
+        0.35880351573575275
+      ]
+    ],
+    "assignment_radii": [
+      3.6770064626691537,
+      6.552732589506119
+    ],
+    "cluster_names": [
+      "CANDIDATE_1_MIXED_MARKET_STATE",
+      "CANDIDATE_2_DIRECT_CONTINUATION_STATE"
+    ],
+    "k_selection": [
+      {
+        "k": 2,
+        "calinski_harabasz": 23136.037123683527,
+        "minimum_cluster_share": 0.2198192583359302,
+        "criterion": "MAX_CALINSKI_HARABASZ_UNSUPERVISED_DISCOVERY_ONLY"
+      },
+      {
+        "k": 3,
+        "calinski_harabasz": 20412.277676127967,
+        "minimum_cluster_share": 0.15602991586163914,
+        "criterion": "MAX_CALINSKI_HARABASZ_UNSUPERVISED_DISCOVERY_ONLY"
+      },
+      {
+        "k": 4,
+        "calinski_harabasz": 18589.51374745029,
+        "minimum_cluster_share": 0.08268931131193519,
+        "criterion": "MAX_CALINSKI_HARABASZ_UNSUPERVISED_DISCOVERY_ONLY"
+      },
+      {
+        "k": 5,
+        "calinski_harabasz": 16695.8986518799,
+        "minimum_cluster_share": 0.06086008102212527,
+        "criterion": "MAX_CALINSKI_HARABASZ_UNSUPERVISED_DISCOVERY_ONLY"
+      },
+      {
+        "k": 6,
+        "calinski_harabasz": 16195.226290247578,
+        "minimum_cluster_share": 0.03759738236210657,
+        "criterion": "MAX_CALINSKI_HARABASZ_UNSUPERVISED_DISCOVERY_ONLY"
+      }
+    ],
+    "minimum_centroid_separation": 4.478584012729632,
+    "minimum_cluster_share": 0.2198192583359302,
+    "stable_taxonomy": true,
+    "taxonomy_model_sha256": "ceed1203c524f803f99593d39918dca38c7e70dd1816618e46c90a454eebd96e",
+    "fit_count": 1,
+    "later_period_refits": 0
+  },
+  "execution": {
+    "parameter_search": "NONE",
+    "supervised_ml": "NONE",
+    "broker_connection": "ABSENT",
+    "actual_orders": 0,
+    "actual_fills": 0,
+    "broker_connections": 0
+  }
+}
