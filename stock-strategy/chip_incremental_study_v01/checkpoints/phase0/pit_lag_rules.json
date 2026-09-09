@@ -1,0 +1,7 @@
+{
+  "historical_rule": "source_date <= previous_market_session(signal_date)",
+  "required_lag_sessions": 1,
+  "same_day_historical_use": false,
+  "snapshot_backfill": false,
+  "reason": "Historical report date does not prove same-day public availability; next-session lag is conservative."
+}

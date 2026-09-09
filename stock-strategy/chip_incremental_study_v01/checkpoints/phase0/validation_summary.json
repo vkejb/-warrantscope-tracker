@@ -1,0 +1,25 @@
+{
+  "study_id": "CHIP_INCREMENTAL_STUDY_V0_1",
+  "checkpoint_status": "PHASE_0_COMPLETE_PHASE_1_PENDING",
+  "final_classification": null,
+  "pit_usable_families": [
+    "INSTITUTIONAL",
+    "MARGIN_SHORT"
+  ],
+  "pit_usable_with_lag_families": [
+    "INSTITUTIONAL",
+    "MARGIN_SHORT"
+  ],
+  "rejected_or_unavailable_families": [
+    "SECURITIES_LENDING",
+    "TDCC_OWNERSHIP",
+    "BROKER_BRANCH"
+  ],
+  "model_fit_count": 0,
+  "later_period_refit_count": 0,
+  "official_bulk_archive_complete": false,
+  "formal_study_run": false,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0
+}

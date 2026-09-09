@@ -1,0 +1,18 @@
+{
+  "status": "CHECKPOINT",
+  "study_id": "CHIP_INCREMENTAL_STUDY_V0_1",
+  "phase": "PHASE_0_POINT_IN_TIME_AUDIT",
+  "source_commit_before_checkpoint": "29aaccbc9986cc9b8c801d05db3940680c84a39f",
+  "config_hash": "b6528f803eb7ef6e2240488a2af832ff321e32f5fab90ef78c3d67f255892b02",
+  "artifact_sha256": {
+    "chip_data_availability_audit.csv": "6db1cc3afda3c36d0c83746e66bd9869ec3c3cee152495cde62db4f8bb1d724d",
+    "chip_source_manifest.json": "a87199b54d42175b7679609d295eb97b8eab6a4d56c57953149ef99d1125116a",
+    "pit_lag_rules.json": "ab49dc724c5b242f403ce96b503f0c0f76f92177e7da76c45b2416b4e473ba1d",
+    "validation_summary.json": "3c1deefcb02adf6d0f2e91736c19fbf099b8f92952d2711c8668413870ce6242"
+  },
+  "resume_requirement": "Acquire complete official 2020-2025 TWSE and TPEx daily institutional and margin/short archives under rate-safe conditions, then run tests and exactly one formal publish.",
+  "not_complete": true,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0
+}

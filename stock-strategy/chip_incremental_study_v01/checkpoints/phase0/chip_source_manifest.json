@@ -1,0 +1,35 @@
+{
+  "study_id": "CHIP_INCREMENTAL_STUDY_V0_1",
+  "checkpoint": "PHASE_0_POINT_IN_TIME_AUDIT",
+  "official_only": true,
+  "audit_date": "2026-09-09",
+  "verified_historical_sample_date": "2020-01-02",
+  "verified_samples": [
+    {
+      "source": "TWSE_T86",
+      "url": "https://www.twse.com.tw/rwd/zh/fund/T86?response=json&date=20200102&selectType=ALLBUT0999",
+      "payload_sha256": "e9cd2da51ff2eea433184fa4b01059545ca833459f82a195fb2ec8f1703d8a53"
+    },
+    {
+      "source": "TPEX_3ITRADE_HEDGE",
+      "url": "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=json&se=EW&t=D&d=109%2F01%2F02&s=0%2Casc",
+      "payload_sha256": "4843c0551d488eec1628f8907785f55be70dc2c03e8c9a5bd951f9c4630bdfdd"
+    },
+    {
+      "source": "TWSE_MI_MARGN",
+      "url": "https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?response=json&date=20200102&selectType=ALL",
+      "payload_sha256": "ab3a717d442547164105c3f33c5c888398e0678d2651b05712259c57e70d991e"
+    },
+    {
+      "source": "TPEX_MARGIN_BALANCE",
+      "url": "https://www.tpex.org.tw/www/zh-tw/margin/balance?date=2020%2F01%2F02&id=&response=json",
+      "payload_sha256": "95587508c0a4605d698523766d89be66a995ba371ead51d9315401ce261a3605"
+    }
+  ],
+  "bulk_acquisition": {
+    "status": "PENDING",
+    "reason": "Official public endpoints applied CDN Anti-DDoS throttling during the 2020-2025 bulk acquisition attempt; no partial payload was accepted as a research archive.",
+    "third_party_fallback_used": false,
+    "partial_history_used": false
+  }
+}
