@@ -255,6 +255,16 @@ class OfficialSourceClient:
             "twse_calendar", self.cfg.twse_calendar_url, expected_kind="json"
         )
 
+    def twse_news(self, *, refresh: bool = True) -> SourceSnapshot:
+        """Official TWSE news used only to evidence ad-hoc market closures."""
+
+        return self._get(
+            "twse_news",
+            self.cfg.twse_news_url,
+            refresh=refresh,
+            expected_kind="json",
+        )
+
 
 def decode_json(snapshot: SourceSnapshot) -> object:
     try:

@@ -16,17 +16,24 @@ import zipfile
 
 from shadow_daily_runner.calendar import build_trading_calendar, read_sessions
 from shadow_daily_runner.config import CFG, MODULE_DIR
+from shadow_daily_runner.io_utils import sha256_file
 from shadow_daily_runner.normalize import (
     CATEGORY_BLANK_POSITIVE,
     CATEGORY_BLANK_ZERO,
     CATEGORY_PARSE,
     CATEGORY_PARTIAL,
+    UNIVERSE_FILTER_DESCRIPTION,
     deterministic_zip,
+    eligible_security,
     parse_release_archive,
     parse_tpex,
     parse_twse,
 )
 from shadow_daily_runner.pipeline import PreparedInputs
+from shadow_daily_runner.preflight import (
+    extend_source_coverage_from_direct_audit,
+    run_historical_preflight,
+)
 from shadow_daily_runner.runner import attempt
 from shadow_daily_runner.sources import SourceSnapshot
 
@@ -57,6 +64,28 @@ def release_payload(rows: list[list[str]]) -> bytes:
 
 
 class NormalizationTests(unittest.TestCase):
+    def test_direct_official_universe_keeps_established_name_suffix_filter(self):
+        self.assertTrue(eligible_security("2330", "台積電"))
+        self.assertTrue(eligible_security("0050", "元大台灣50"))
+        # This deliberately mirrors the established release producer.  It is a
+        # compatibility proxy, not a claim that every company ending in 「特」
+        # is a special security.
+        self.assertFalse(eligible_security("3289", "宜特"))
+        self.assertFalse(eligible_security("9103", "美德醫療-DR"))
+
+        with tempfile.TemporaryDirectory() as temporary:
+            payload = release_payload(
+                [
+                    ["20260908", "2330", "台積電", "100", "10", "11", "9", "10"],
+                    ["20260908", "3289", "宜特", "100", "10", "11", "9", "10"],
+                    ["20260908", "9103", "美德醫療-DR", "100", "10", "11", "9", "10"],
+                ]
+            )
+            parsed = parse_release_archive(
+                snapshot(Path(temporary) / "source.zip", payload)
+            )
+            self.assertEqual(["2330"], [row["code"] for row in parsed.rows])
+
     def test_four_way_classification_and_exact_positive_reconciliation(self):
         with tempfile.TemporaryDirectory() as temporary:
             payload = release_payload(
@@ -192,6 +221,322 @@ class CalendarTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(calendar_bytes).hexdigest(), metadata["calendar_sha256"])
 
 
+class HistoricalPreflightTests(unittest.TestCase):
+    def temporary_config(self, root: Path):
+        return replace(CFG, runtime_dir=root / "runtime")
+
+    def write_calendar(self, cfg, days: list[str]) -> Path:
+        cfg.runtime_dir.mkdir(parents=True, exist_ok=True)
+        payload = ("date\n" + "".join(f"{day}\n" for day in days)).encode("utf-8")
+        cfg.calendar_path.write_bytes(payload)
+        raw_calendar = cfg.runtime_dir / "official_calendar.raw"
+        raw_calendar.write_bytes(b"official calendar fixture")
+        cfg.calendar_metadata_path.write_text(
+            json.dumps(
+                {
+                    "calendar_sha256": hashlib.sha256(payload).hexdigest(),
+                    "source": {
+                        "request_url": "https://openapi.twse.com.tw/v1/holidaySchedule/holidaySchedule",
+                        "retrieved_at_utc": "2026-09-08T00:00:00Z",
+                        "sha256": sha256_file(raw_calendar),
+                        "path": str(raw_calendar),
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        return cfg.calendar_path
+
+    def write_archive(self, root: Path, name: str, rows: list[dict[str, str]]) -> Path:
+        archive = root / name
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        payload = deterministic_zip(f"{archive.stem}.csv", rows)
+        archive.write_bytes(payload)
+        archive.with_suffix(archive.suffix + ".metadata.json").write_text(
+            json.dumps(
+                {
+                    "filename": archive.name,
+                    "sha256": hashlib.sha256(payload).hexdigest(),
+                    "source_manifest_hash": "d" * 64,
+                }
+            ),
+            encoding="utf-8",
+        )
+        return archive
+
+    def rows_for_days(self, days: list[str], per_day: int = 3) -> list[dict[str, str]]:
+        rows = []
+        for day_index, day in enumerate(days):
+            for offset in range(per_day):
+                code = "0050" if offset == 0 else f"{1100 + offset:04d}"
+                price = 10 + day_index + offset
+                rows.append(
+                    {
+                        "date": day.replace("-", ""),
+                        "code": code,
+                        "name": code,
+                        "volume": "100",
+                        "open": str(price),
+                        "high": str(price + 1),
+                        "low": str(price - 1),
+                        "close": str(price),
+                    }
+                )
+        return rows
+
+    def coverage(self, calendar: Path, days: list[str], per_day: int = 3) -> dict:
+        sessions = []
+        for index, day in enumerate(days):
+            twse_raw = calendar.parent / f"twse_{day}.raw"
+            tpex_raw = calendar.parent / f"tpex_{day}.raw"
+            twse_raw.write_bytes(f"TWSE {day}".encode())
+            tpex_raw.write_bytes(f"TPEX {day}".encode())
+            sessions.append(
+                {
+                    "date": day,
+                    "status": "READY",
+                    "TWSE": {
+                        "status": "READY",
+                        "row_count": per_day - 1,
+                        "request_url": f"https://www.twse.com.tw/eod?date={day}",
+                        "retrieved_at_utc": "2026-09-08T00:00:00Z",
+                        "sha256": sha256_file(twse_raw),
+                        "path": str(twse_raw),
+                        "response_date": day,
+                    },
+                    "TPEX": {
+                        "status": "READY",
+                        "row_count": 1,
+                        "request_url": f"https://www.tpex.org.tw/eod?date={day}",
+                        "retrieved_at_utc": "2026-09-08T00:00:00Z",
+                        "sha256": sha256_file(tpex_raw),
+                        "path": str(tpex_raw),
+                        "response_date": day,
+                    },
+                    "combined_count": per_day,
+                }
+            )
+        return {
+            "schema_version": "1",
+            "universe_filter": UNIVERSE_FILTER_DESCRIPTION,
+            "generated_at_utc": "2026-09-08T00:00:00Z",
+            "scope": {"start_date": days[0], "through_date": days[-1]},
+            "trading_calendar": {"path": str(calendar), "sha256": sha256_file(calendar)},
+            "sessions": sessions,
+        }
+
+    def test_complete_history_passes_all_fail_closed_checks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            days = ["2026-09-07", "2026-09-08"]
+            calendar = self.write_calendar(cfg, days)
+            archive = self.write_archive(
+                root, "weekly_2026_W37_clean.zip", self.rows_for_days(days)
+            )
+            cfg.historical_source_coverage_path.parent.mkdir(parents=True, exist_ok=True)
+            cfg.historical_source_coverage_path.write_text(
+                json.dumps(self.coverage(calendar, days)), encoding="utf-8"
+            )
+            result = run_historical_preflight(
+                archives=[archive],
+                calendar_path=calendar,
+                source_coverage_path=cfg.historical_source_coverage_path,
+                through_date="2026-09-08",
+                cfg=cfg,
+            )
+            self.assertTrue(result.ready)
+            self.assertTrue(all(result.audit["checks"].values()))
+            self.assertEqual([], result.audit["missing_calendar_sessions"])
+            self.assertEqual(0, result.audit["actual_orders"])
+            self.assertFalse(result.audit["signal_ledgers_touched"])
+
+    def test_missing_market_and_calendar_day_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            days = ["2026-09-07", "2026-09-08"]
+            calendar = self.write_calendar(cfg, days)
+            archive = self.write_archive(
+                root, "weekly_2026_W37_clean.zip", self.rows_for_days(days[:1])
+            )
+            coverage = self.coverage(calendar, days)
+            coverage["sessions"][1]["status"] = "UNRESOLVED"
+            coverage["sessions"][1]["TPEX"]["status"] = "MISSING"
+            coverage["sessions"][1]["TPEX"]["row_count"] = 0
+            coverage["sessions"][1]["combined_count"] = 2
+            cfg.historical_source_coverage_path.parent.mkdir(parents=True, exist_ok=True)
+            cfg.historical_source_coverage_path.write_text(json.dumps(coverage), encoding="utf-8")
+            result = run_historical_preflight(
+                archives=[archive], calendar_path=calendar,
+                source_coverage_path=cfg.historical_source_coverage_path,
+                through_date="2026-09-08", cfg=cfg,
+            )
+            self.assertFalse(result.ready)
+            self.assertEqual(["2026-09-08"], result.audit["missing_calendar_sessions"])
+            self.assertEqual("2026-09-08", result.audit["one_market_dates"][0]["date"])
+
+    def test_official_raw_source_hash_drift_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            days = ["2026-09-08"]
+            calendar = self.write_calendar(cfg, days)
+            archive = self.write_archive(root, "one.zip", self.rows_for_days(days))
+            coverage = self.coverage(calendar, days)
+            Path(coverage["sessions"][0]["TWSE"]["path"]).write_bytes(b"drift")
+            cfg.historical_source_coverage_path.parent.mkdir(parents=True, exist_ok=True)
+            cfg.historical_source_coverage_path.write_text(
+                json.dumps(coverage), encoding="utf-8"
+            )
+            result = run_historical_preflight(
+                archives=[archive], calendar_path=calendar,
+                source_coverage_path=cfg.historical_source_coverage_path,
+                through_date="2026-09-08", cfg=cfg,
+            )
+            self.assertFalse(result.ready)
+            self.assertFalse(result.audit["checks"]["official_source_hashes_fixed"])
+
+    def test_duplicate_invalid_and_archive_hash_drift_are_reported(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            days = ["2026-09-08"]
+            calendar = self.write_calendar(cfg, days)
+            rows = self.rows_for_days(days)
+            first = self.write_archive(root, "one.zip", rows)
+            second_rows = self.rows_for_days(days)
+            second_rows.append(
+                {
+                    "date": "20260908", "code": "2201", "name": "bad",
+                    "volume": "1", "open": "10", "high": "8", "low": "9", "close": "10",
+                }
+            )
+            second = self.write_archive(root, "two.zip", second_rows)
+            second.with_suffix(second.suffix + ".metadata.json").write_text(
+                json.dumps(
+                    {"filename": second.name, "sha256": "0" * 64,
+                     "source_manifest_hash": "d" * 64}
+                ),
+                encoding="utf-8",
+            )
+            cfg.historical_source_coverage_path.parent.mkdir(parents=True, exist_ok=True)
+            cfg.historical_source_coverage_path.write_text(
+                json.dumps(self.coverage(calendar, days)), encoding="utf-8"
+            )
+            result = run_historical_preflight(
+                archives=[first, second], calendar_path=calendar,
+                source_coverage_path=cfg.historical_source_coverage_path,
+                through_date="2026-09-08", cfg=cfg,
+            )
+            self.assertFalse(result.ready)
+            self.assertGreater(result.audit["duplicate_code_date_count"], 0)
+            self.assertGreater(result.audit["invalid_tradable_rows"], 0)
+            self.assertTrue(result.audit["archive_hash_issues"])
+
+    def test_abnormally_low_daily_market_coverage_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            days = [
+                "2026-09-01", "2026-09-02", "2026-09-03",
+                "2026-09-04", "2026-09-07",
+            ]
+            calendar = self.write_calendar(cfg, days)
+            rows = []
+            for day in days[:-1]:
+                rows.extend(self.rows_for_days([day], per_day=6))
+            rows.extend(self.rows_for_days([days[-1]], per_day=2))
+            archive = self.write_archive(root, "coverage.zip", rows)
+            coverage = self.coverage(calendar, days, per_day=6)
+            coverage["sessions"][-1]["TWSE"]["row_count"] = 1
+            coverage["sessions"][-1]["TPEX"]["row_count"] = 1
+            coverage["sessions"][-1]["combined_count"] = 2
+            cfg.historical_source_coverage_path.parent.mkdir(parents=True, exist_ok=True)
+            cfg.historical_source_coverage_path.write_text(
+                json.dumps(coverage), encoding="utf-8"
+            )
+            result = run_historical_preflight(
+                archives=[archive], calendar_path=calendar,
+                source_coverage_path=cfg.historical_source_coverage_path,
+                through_date="2026-09-07", cfg=cfg,
+            )
+            self.assertFalse(result.ready)
+            affected = {
+                (row["date"], row["market"])
+                for row in result.audit["low_coverage_dates"]
+            }
+            self.assertIn(("2026-09-07", "TWSE"), affected)
+            self.assertIn(("2026-09-07", "TOTAL"), affected)
+
+    def test_direct_official_coverage_extension_preserves_older_sessions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            calendar = self.write_calendar(cfg, ["2026-09-07", "2026-09-08"])
+            existing = self.coverage(calendar, ["2026-09-07"])
+            cfg.historical_source_coverage_path.parent.mkdir(parents=True, exist_ok=True)
+            cfg.historical_source_coverage_path.write_text(json.dumps(existing), encoding="utf-8")
+            sources = []
+            for market, host in (("twse", "www.twse.com.tw"), ("tpex", "www.tpex.org.tw")):
+                raw = root / f"{market}_20260908.raw"
+                raw.write_bytes(f"{market} 20260908".encode())
+                sources.append(
+                    {
+                        "source": f"{market}_eod_20260908",
+                        "response_date": "20260908",
+                        "request_url": f"https://{host}/eod?date=20260908",
+                        "retrieved_at_utc": "2026-09-08T06:30:00Z",
+                        "sha256": sha256_file(raw),
+                        "path": str(raw),
+                    }
+                )
+            merged = extend_source_coverage_from_direct_audit(
+                path=cfg.historical_source_coverage_path,
+                calendar_path=calendar,
+                direct_audit={
+                    "failures": [], "unresolved_invalid_rows": 0,
+                    "market_daily_counts": {
+                        "20260908": {"TWSE": 2, "TPEX": 1, "TOTAL": 3}
+                    },
+                    "archives": [{"sources": sources}],
+                },
+            )
+            self.assertEqual(
+                ["2026-09-07", "2026-09-08"],
+                [row["date"] for row in merged["sessions"]],
+            )
+
+    def test_preflight_through_date_ignores_later_valid_archive_and_coverage_rows(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            days = ["2026-09-07", "2026-09-08"]
+            calendar = self.write_calendar(cfg, days)
+            archive = self.write_archive(
+                root, "weekly_2026_W37_clean.zip", self.rows_for_days(days)
+            )
+            cfg.historical_source_coverage_path.parent.mkdir(parents=True, exist_ok=True)
+            cfg.historical_source_coverage_path.write_text(
+                json.dumps(self.coverage(calendar, days)), encoding="utf-8"
+            )
+            result = run_historical_preflight(
+                archives=[archive],
+                calendar_path=calendar,
+                source_coverage_path=cfg.historical_source_coverage_path,
+                through_date="2026-09-07",
+                cfg=cfg,
+            )
+            self.assertTrue(result.ready)
+            self.assertEqual(
+                ["2026-09-08"], result.audit["future_out_of_scope_archive_dates"]
+            )
+            self.assertEqual(
+                ["2026-09-08"],
+                result.audit["source_coverage"]["future_out_of_scope_session_dates"],
+            )
+
+
 class RunnerSafetyTests(unittest.TestCase):
     def temporary_config(self, root: Path):
         return replace(
@@ -313,6 +658,29 @@ class RunnerSafetyTests(unittest.TestCase):
                 for item in slots if item["Weekday"] == weekday
             )
             self.assertEqual([(14, 30), (15, 0), (15, 30), (16, 0)], actual)
+
+    def test_historical_preflight_launchd_runs_once_before_daily_attempts(self):
+        path = (
+            MODULE_DIR
+            / "launchd"
+            / "com.linyunyan.warrantscope.shadow-preflight.plist"
+        )
+        payload = plistlib.loads(path.read_bytes())
+        self.assertEqual(
+            ["-B", "-m", "shadow_daily_runner.main", "preflight-latest"],
+            payload["ProgramArguments"][1:],
+        )
+        self.assertNotIn("KeepAlive", payload)
+        self.assertNotIn("RunAtLoad", payload)
+        slots = payload["StartCalendarInterval"]
+        self.assertEqual(5, len(slots))
+        self.assertEqual(
+            [(weekday, 14, 15) for weekday in range(1, 6)],
+            sorted(
+                (item["Weekday"], item["Hour"], item["Minute"])
+                for item in slots
+            ),
+        )
 
 
 class FrozenContractTests(unittest.TestCase):

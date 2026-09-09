@@ -35,6 +35,7 @@ class RunnerConfig:
     twse_calendar_url: str = (
         "https://openapi.twse.com.tw/v1/holidaySchedule/holidaySchedule"
     )
+    twse_news_url: str = "https://openapi.twse.com.tw/v1/news/newsList"
     release_base_url: str = (
         "https://github.com/yukishirotsubasa/tw-stock-data-release/"
         "releases/download/daily-close-csv"
@@ -90,6 +91,18 @@ class RunnerConfig:
     @property
     def attempt_log_path(self) -> Path:
         return self.runtime_dir / "attempts.jsonl"
+
+    @property
+    def historical_source_coverage_path(self) -> Path:
+        return self.audit_dir / "historical_source_coverage.json"
+
+    @property
+    def historical_health_audit_path(self) -> Path:
+        return self.audit_dir / "historical_health_audit.json"
+
+    @property
+    def historical_repair_active_inputs_path(self) -> Path:
+        return self.runtime_dir / "historical_repair_active_inputs.json"
 
     @property
     def lock_path(self) -> Path:

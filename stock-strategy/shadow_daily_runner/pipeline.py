@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 from prospective_shadow_v01.market_data_provider import ExistingDailyDataProvider
 
-from .calendar import build_trading_calendar, read_sessions
+from .calendar import build_trading_calendar, collect_ad_hoc_closures, read_sessions
 from .config import CFG, RunnerConfig
 from .io_utils import (
     atomic_write_bytes,
@@ -22,15 +22,24 @@ from .io_utils import (
     utc_timestamp,
     write_immutable,
 )
+from .historical_repair import (
+    load_previous_archives_for_preflight,
+    load_repair_patch_archives,
+)
 from .normalize import (
     CATEGORIES,
     CATEGORY_BLANK_POSITIVE,
+    UNIVERSE_FILTER_DESCRIPTION,
     ParsedSource,
     deterministic_zip,
     official_exclusion_evidence,
     parse_release_archive,
     parse_tpex,
     parse_twse,
+)
+from .preflight import (
+    extend_source_coverage_from_direct_audit,
+    run_historical_preflight,
 )
 from .sources import OfficialSourceClient, SourceSnapshot
 
@@ -70,6 +79,8 @@ def _archive_path(
     stem: str,
     source_hash: str,
     rows: Iterable[dict[str, str]],
+    *,
+    metadata_extra: dict | None = None,
 ) -> tuple[Path, dict]:
     member_name = f"{stem}.csv"
     payload = deterministic_zip(member_name, rows)
@@ -84,6 +95,7 @@ def _archive_path(
         "sha256": clean_hash,
         "bytes": len(payload),
         "immutable": True,
+        **(metadata_extra or {}),
     }
     write_immutable(
         path.with_suffix(path.suffix + ".metadata.json"),
@@ -349,6 +361,10 @@ def _prepare_direct_official(
             f"weekly_{year}_W{week:02d}_official_through_{through}",
             manifest_hash,
             sorted(week_rows, key=lambda row: (row["date"], row["code"])),
+            metadata_extra={
+                "normalization_type": "DIRECT_OFFICIAL_ESTABLISHED_RELEASE_UNIVERSE",
+                "universe_filter": UNIVERSE_FILTER_DESCRIPTION,
+            },
         )
         archives.append(path)
         archive_metadata.append(
@@ -513,8 +529,16 @@ def prepare_inputs(
     }
     try:
         calendar_snapshot = source_client.calendar()
+        news_snapshot = source_client.twse_news(refresh=True)
+        ad_hoc_closures = collect_ad_hoc_closures(
+            news_snapshot,
+            local.year,
+            previous_calendar_metadata_path=cfg.calendar_metadata_path,
+        )
         calendar_bytes, calendar_metadata = build_trading_calendar(
-            calendar_snapshot, local.year
+            calendar_snapshot,
+            local.year,
+            ad_hoc_closures=ad_hoc_closures,
         )
         sessions = read_sessions(calendar_bytes)
         atomic_write_bytes(cfg.calendar_path, calendar_bytes)
@@ -550,15 +574,55 @@ def prepare_inputs(
                 audit=audit,
             )
 
+        prior_sessions = [
+            item
+            for item in sessions
+            if cfg.data_start <= item.replace("-", "") < target
+        ]
+        if prior_sessions:
+            prior = prior_sessions[-1]
+            prior_archives = load_previous_archives_for_preflight(prior, cfg)
+            before_download_health = run_historical_preflight(
+                archives=prior_archives,
+                calendar_path=cfg.calendar_path,
+                source_coverage_path=cfg.historical_source_coverage_path,
+                through_date=prior,
+                cfg=cfg,
+                audit_path=cfg.audit_dir / f"historical_preflight_before_{target}.json",
+            )
+            audit["historical_preflight_before_target_download"] = {
+                "path": str(before_download_health.audit_path),
+                "through_date": prior,
+                "status": before_download_health.audit.get("status"),
+                "checks": before_download_health.audit.get("checks", {}),
+            }
+            if not before_download_health.ready:
+                failed = [
+                    name
+                    for name, value in before_download_health.audit.get("checks", {}).items()
+                    if not value
+                ]
+                detail = ", ".join(failed) or before_download_health.audit.get(
+                    "failure_reason", "unknown historical preflight failure"
+                )
+                raise RuntimeError(
+                    f"historical preflight before target download failed closed: {detail}"
+                )
+
         history_paths, history_audit = _prepare_history(source_client, cfg)
         direct_paths, direct_audit = _prepare_direct_official(
             target, sessions, source_client, cfg
         )
-        archives = [*history_paths, *direct_paths]
+        repair_patch_paths = load_repair_patch_archives(cfg)
+        archives = [*history_paths, *direct_paths, *repair_patch_paths]
         audit["historical_normalization"] = {
             key: value for key, value in history_audit.items() if key != "events"
         }
         audit["direct_official"] = direct_audit
+        audit["historical_repair_patches"] = [
+            {"path": str(path), "sha256": sha256_file(path)}
+            for path in repair_patch_paths
+        ]
         if history_audit["unresolved_invalid_rows"]:
             raise RuntimeError(
                 f"historical normalization retains {history_audit['unresolved_invalid_rows']} "
@@ -569,6 +633,39 @@ def prepare_inputs(
             raise RuntimeError(
                 f"official EOD not ready: date={first.get('date')} reason={first.get('reason')}"
             )
+        coverage_manifest = extend_source_coverage_from_direct_audit(
+            path=cfg.historical_source_coverage_path,
+            calendar_path=cfg.calendar_path,
+            direct_audit=direct_audit,
+        )
+        audit["historical_source_coverage"] = {
+            "path": str(cfg.historical_source_coverage_path),
+            "sha256": sha256_file(cfg.historical_source_coverage_path),
+            "sessions": len(coverage_manifest["sessions"]),
+            "scope": coverage_manifest["scope"],
+        }
+        health = run_historical_preflight(
+            archives=archives,
+            calendar_path=cfg.calendar_path,
+            source_coverage_path=cfg.historical_source_coverage_path,
+            through_date=target,
+            cfg=cfg,
+        )
+        audit["historical_preflight"] = {
+            "path": str(health.audit_path),
+            "status": health.audit.get("status"),
+            "checks": health.audit.get("checks", {}),
+        }
+        if not health.ready:
+            failed = [
+                name
+                for name, value in health.audit.get("checks", {}).items()
+                if not value
+            ]
+            detail = ", ".join(failed) or health.audit.get(
+                "failure_reason", "unknown health-check failure"
+            )
+            raise RuntimeError(f"historical preflight failed closed: {detail}")
         clean_audit = _audit_clean_archives(
             archives, sessions, target, direct_audit, cfg
         )

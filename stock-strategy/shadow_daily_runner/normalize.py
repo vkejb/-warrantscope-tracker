@@ -17,6 +17,18 @@ from .sources import SourceSnapshot, decode_json
 COLUMNS = ("date", "code", "name", "volume", "open", "high", "low", "close")
 OHLC = ("open", "high", "low", "close")
 ORDINARY_STOCK = re.compile(r"^[1-9][0-9]{3}$")
+# Keep the direct-official layer identical to the established W01-W35 archive
+# producer.  This is a compatibility rule, not an authoritative security
+# master: the producer's broad suffix regex also excludes ordinary companies
+# whose legal names happen to end in `特`.  Removing that legacy exclusion only
+# after W35 would silently expand the frozen research universe.
+INELIGIBLE_NAME_SUFFIX = re.compile(
+    r"(?:N|DR|R1|R2|特|售[0-9]{2}|購[0-9]{2})$"
+)
+UNIVERSE_FILTER_DESCRIPTION = (
+    "code is 0050 or ^[1-9][0-9]{3}$; name suffix is not "
+    "N, DR, R1, R2, 特, 售[0-9]{2}, or 購[0-9]{2}"
+)
 MISSING = {"", "--", "---", "----", "null", "none", "nan"}
 
 CATEGORY_BLANK_ZERO = "blank_ohlc_zero_or_no_volume"
@@ -34,6 +46,14 @@ CATEGORIES = (
 def eligible_code(value: object) -> bool:
     code = str(value or "").strip()
     return code == "0050" or ORDINARY_STOCK.fullmatch(code) is not None
+
+
+def eligible_security(code_value: object, name_value: object) -> bool:
+    """Return the established release-producer universe membership proxy."""
+
+    return eligible_code(code_value) and INELIGIBLE_NAME_SUFFIX.search(
+        str(name_value or "").strip()
+    ) is None
 
 
 def clean_text(value: object) -> str:
@@ -146,10 +166,11 @@ def _validate_row(
         )
     row["date"] = day
     code = clean_text(row["code"])
-    if not eligible_code(code):
+    name = str(row["name"] or "").strip()
+    if not eligible_security(code, name):
         return None, None
     row["code"] = code
-    row["name"] = str(row["name"] or "").strip()
+    row["name"] = name
 
     try:
         volume = parse_volume(row["volume"])
@@ -314,7 +335,7 @@ def parse_release_archive(
     errors: list[dict] = []
     for line, source_row in enumerate(reader, start=2):
         code = clean_text(source_row.get("code"))
-        if not eligible_code(code):
+        if not eligible_security(code, source_row.get("name")):
             continue
         key_text = (
             clean_text(source_row.get("date")).replace("-", "").replace("/", ""),
@@ -366,6 +387,7 @@ def parse_twse(snapshot: SourceSnapshot, requested_date: str) -> ParsedSource:
     valid: list[dict[str, str]] = []
     excluded: list[dict] = []
     errors: list[dict] = []
+    universe_excluded: list[dict[str, str]] = []
     for line, values in enumerate(table.get("data", []), start=2):
         if len(values) != len(fields):
             code = clean_text(values[0]) if values else ""
@@ -392,6 +414,13 @@ def parse_twse(snapshot: SourceSnapshot, requested_date: str) -> ParsedSource:
             "low": values[index["最低價"]],
             "close": values[index["收盤價"]],
         }
+        if eligible_code(row["code"]) and not eligible_security(
+            row["code"], row["name"]
+        ):
+            universe_excluded.append(
+                {"code": clean_text(row["code"]), "name": str(row["name"]).strip()}
+            )
+            continue
         normalized, event = _validate_row(
             snapshot.path.name,
             line,
@@ -416,6 +445,9 @@ def parse_twse(snapshot: SourceSnapshot, requested_date: str) -> ParsedSource:
             "response_date": str(payload.get("date")),
             "response_status": str(payload.get("stat")),
             "table_title": table.get("title", ""),
+            "universe_filter": UNIVERSE_FILTER_DESCRIPTION,
+            "universe_excluded_rows": len(universe_excluded),
+            "universe_excluded_samples": universe_excluded[:25],
         },
         market="TWSE",
         requested_date=requested_date,
@@ -467,6 +499,7 @@ def parse_tpex(snapshot: SourceSnapshot, requested_date: str) -> ParsedSource:
     valid: list[dict[str, str]] = []
     excluded: list[dict] = []
     errors: list[dict] = []
+    universe_excluded: list[dict[str, str]] = []
     for relative_line, values in enumerate(reader, start=header_index + 2):
         if not values or not eligible_code(values[0] if values else ""):
             continue
@@ -493,6 +526,13 @@ def parse_tpex(snapshot: SourceSnapshot, requested_date: str) -> ParsedSource:
             "low": values[index["最低"]],
             "close": values[index["收盤"]],
         }
+        if eligible_code(row["code"]) and not eligible_security(
+            row["code"], row["name"]
+        ):
+            universe_excluded.append(
+                {"code": clean_text(row["code"]), "name": str(row["name"]).strip()}
+            )
+            continue
         normalized, event = _validate_row(
             snapshot.path.name,
             relative_line,
@@ -516,6 +556,9 @@ def parse_tpex(snapshot: SourceSnapshot, requested_date: str) -> ParsedSource:
             **snapshot.metadata(),
             "response_date": response_date,
             "response_status": lines[0].strip(),
+            "universe_filter": UNIVERSE_FILTER_DESCRIPTION,
+            "universe_excluded_rows": len(universe_excluded),
+            "universe_excluded_samples": universe_excluded[:25],
         },
         market="TPEX",
         requested_date=requested_date,

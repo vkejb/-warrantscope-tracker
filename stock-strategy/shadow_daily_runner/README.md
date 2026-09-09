@@ -20,13 +20,21 @@ W36 起由 runner 直接取得：
 - TPEx 官方「上櫃股票每日收盤行情（不含定價）」Big5 CSV；
 - TWSE 官方年度開休市日程。
 
+直接官方層沿用 W01～W35 上游的既有 universe compatibility filter：
+`0050` 或四碼代號，且名稱不以 `N` / `DR` / `R1` / `R2` / `特` /
+`售xx` / `購xx` 結尾。這是為了不在 W36 後悄悄擴張 frozen research
+universe；它是舊資料生產器的相容規則，不是完整、權威的 point-in-time
+security master（公司名稱剛好以「特」結尾也會被舊規則排除）。
+
 Raw response 以 SHA-256 content address 保存；clean ZIP 固定 member timestamp、排序與
 內容，檔名同時含 source-manifest hash 與 clean hash。若同名 immutable 檔內容不同會
 fail closed。
 
 `trading_calendar.csv` 只有 `date` 欄、ISO `YYYY-MM-DD`、升冪且 unique；旁邊的
 `trading_calendar.metadata.json` 保存官方 URL、retrieval timestamp、raw source hash、
-derived calendar hash 與推導方法。
+derived calendar hash 與推導方法。年度行事曆之外，只接受標題格式完全吻合的
+TWSE 臨時休市公告；已驗證的 raw/hash/record evidence 會與最新新聞清單做
+conflict-fatal union，避免新聞 API 日後滾動移除舊公告時把休市日誤加回。
 
 ## 缺價 normalization
 
@@ -47,6 +55,7 @@ derived calendar hash 與推導方法。
 
 ```bash
 python3 -B -m shadow_daily_runner.main prepare
+python3 -B -m shadow_daily_runner.main preflight-latest
 python3 -B -m shadow_daily_runner.main attempt
 python3 -B -m shadow_daily_runner.main status
 ```
@@ -60,6 +69,80 @@ total coverage、zero duplicate、zero unresolved invalid、固定 source hash�
 既有 `ExistingDailyDataProvider.load_through()` 自己完整通過。失敗只寫 runner audit／
 attempt report，不呼叫 `run-daily`，因此不會把資料缺口寫成 zero-signal day。
 
+### Historical preflight health check
+
+每次 `attempt` 在任何 `prospective_shadow_v01` 呼叫之前，都會對 `data_start` 至台北
+當日重新做全量 historical preflight。它不是策略 detector，也不會讀寫 signal／outcome
+ledger。固定檢查：
+
+- `trading_calendar.csv` 每一個 session 都有 archive price rows；
+- 每日 TWSE 與 TPEx 官方來源都存在，且各自有正的 eligible tradable row count；
+- 每日 TWSE、TPEx、combined count 不低於全期間中位數的既有 70% data-coverage floor；
+- clean archive 的每日筆數與官方雙市場 source manifest 一致；
+- duplicate code-date 與 unresolved invalid tradable OHLC 都是 0；
+- calendar、官方 raw source、clean archive 與 source-manifest hash 均完整且吻合。
+
+輸入 contract 為 `runtime/audit/historical_source_coverage.json`。`sessions` 必須依日期排序，
+每個 calendar session 至少包含：
+
+```json
+{
+  "date": "2026-09-08",
+  "status": "READY",
+  "TWSE": {
+    "status": "READY",
+    "row_count": 1076,
+    "request_url": "https://www.twse.com.tw/...",
+    "retrieved_at_utc": "2026-09-08T08:00:00Z",
+    "sha256": "<64 hex>",
+    "path": "/immutable/raw/twse_eod_20260908/<sha256>.json",
+    "response_date": "2026-09-08"
+  },
+  "TPEX": {
+    "status": "READY",
+    "row_count": 859,
+    "request_url": "https://www.tpex.org.tw/...",
+    "retrieved_at_utc": "2026-09-08T08:00:00Z",
+    "sha256": "<64 hex>",
+    "path": "/immutable/raw/tpex_eod_20260908/<sha256>.csv",
+    "response_date": "2026-09-08"
+  },
+  "combined_count": 1935
+}
+```
+
+Manifest 頂層另須有 `schema_version: "1"`、`trading_calendar.sha256` 與 `sessions`。
+W36 起的 direct official audit 會安全地延伸此 manifest；W01～W35 必須先由一次性的官方
+歷史修復工程建立，不得從股票代號猜測市場。缺 manifest、缺任一日／任一市場、來源 URL
+非官方、hash 不合法、count 不一致或低 coverage，結果一律為 `FAIL_CLOSED`。完整結果寫到
+`runtime/audit/historical_health_audit.json`。
+
+也可在完全不下載資料、不觸發 daily scan 的情況下手動稽核已準備好的輸入：
+
+```bash
+python3 -B -m shadow_daily_runner.main preflight \
+  --through 2026-09-09 \
+  --archives /fixed/path/weekly_2026_W*.zip \
+  --trading-calendar shadow_daily_runner/runtime/trading_calendar.csv \
+  --source-coverage shadow_daily_runner/runtime/audit/historical_source_coverage.json
+```
+
+只有 `historical_health_audit.json` 的所有 checks 都通過，既有 target-day readiness 與
+provider audit 才會繼續；任何失敗都不會建立 zero-signal day 或修改歷史 ledger。
+如果 retry 已有含今日的合法 archive，前置檢查會只評估明確指定的
+`--through` 範圍；較晚日期只列為 out-of-scope，不會被誤當成歷史異常。
+
+一次性全量修復（只寫 data/audit layer，與 `attempt` 共用同一把 process
+lock）：
+
+```bash
+python3 -B -m shadow_daily_runner.main repair-history --through 2026-09-08
+```
+
+這個指令會以正式 calendar 重比每個 session 的 TWSE/TPEx 官方 EOD，不覆寫舊
+archive，只建立 content-addressed patch / normalized base 並原子切換 active manifest。
+執行前後四個 prospective ledger 的 byte hash 必須完全相同。
+
 成功時只呼叫既有 `prospective_shadow_v01 run-daily`。該函式本身在 ledger 驗證前已同步
 執行 `update_outcomes_from_snapshot`，所以 runner 不重複載入一次資料或建立多餘的
 outcome run manifest。完成後再跑既有 `status`，確認 hash chain 及
@@ -67,8 +150,11 @@ outcome run manifest。完成後再跑既有 `status`，確認 hash chain 及
 
 ## launchd
 
-plist 明列每週一至週五台北時間 14:30、15:00、15:30、16:00 四次嘗試。14:30 是
-首次嘗試，不代表資料已完整。Mac 睡眠造成的 16:05 後延遲觸發會由 runner 拒絕。
+獨立 preflight plist 在每週一至週五台北時間 14:15 先以本地 immutable
+inputs 檢查至前一個交易日，不下載當日 EOD、不呼叫 strategy，也不寫 ledger。
+正式 runner plist 明列 14:30、15:00、15:30、16:00 四次嘗試。14:30 是首次
+當日 EOD 嘗試，不代表資料已完整。Mac 睡眠造成的 16:05 後延遲觸發會由
+runner 拒絕。
 
 安裝：
 
@@ -80,7 +166,9 @@ plist 明列每週一至週五台北時間 14:30、15:00、15:30、16:00 四次�
 
 ```bash
 plutil -lint shadow_daily_runner/launchd/com.linyunyan.warrantscope.shadow-daily.plist
+plutil -lint shadow_daily_runner/launchd/com.linyunyan.warrantscope.shadow-preflight.plist
 launchctl print gui/501/com.linyunyan.warrantscope.shadow-daily
+launchctl print gui/501/com.linyunyan.warrantscope.shadow-preflight
 ```
 
 這是使用者登入後的 LaunchAgent；Mac 必須保持登入、開機並可連線。日誌位於
