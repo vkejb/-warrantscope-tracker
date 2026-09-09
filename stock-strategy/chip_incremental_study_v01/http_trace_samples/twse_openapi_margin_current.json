@@ -1,0 +1,92 @@
+{
+  "study_id": "OFFICIAL_SOURCE_TRANSPORT_DIAGNOSTIC",
+  "probe": {
+    "trace_id": "twse_openapi_margin_current",
+    "endpoint_id": "TWSE_OPENAPI_MI_MARGN_CURRENT",
+    "source": "TWSE_OPENAPI_MI_MARGN",
+    "market": "TWSE",
+    "family": "MARGIN_SHORT",
+    "route_type": "OPENAPI_CURRENT_ONLY",
+    "url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_MARGN",
+    "params": [],
+    "response_format": "json",
+    "expected_date": null,
+    "supports_historical_date": false,
+    "client_profile": "DESCRIPTIVE_PUBLIC_CLIENT_NO_COOKIE",
+    "follow_redirects": true,
+    "referer": null
+  },
+  "requested_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_MARGN",
+  "request_headers": [
+    [
+      "User-Agent",
+      "WarrantScopeResearch/1.0 (official-data transport diagnostic)"
+    ],
+    [
+      "Accept",
+      "application/json,text/csv,text/plain,*/*"
+    ],
+    [
+      "Accept-Language",
+      "zh-TW,zh;q=0.9,en;q=0.8"
+    ]
+  ],
+  "cookie_session_used": false,
+  "started_at_utc": "2026-09-09T18:40:36.663695+00:00",
+  "finished_at_utc": "2026-09-09T18:40:36.962562+00:00",
+  "curl_exit_code": 0,
+  "curl_error": null,
+  "http_code": 200,
+  "url_effective": "https://openapi.twse.com.tw/v1/exchangeReport/MI_MARGN",
+  "num_redirects": 0,
+  "content_type": "application/json",
+  "size_download": 74959,
+  "time_total": 0.274486,
+  "ssl_verify_result": 0,
+  "http_version": "1.1",
+  "response_chain": [
+    {
+      "status_line": "HTTP/1.1 200 OK",
+      "status": 200,
+      "headers": {
+        "server": "nginx",
+        "date": "Wed, 09 Sep 2026 18:40:36 GMT",
+        "content-type": "application/json",
+        "last-modified": "Tue, 08 Sep 2026 21:23:12 GMT",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "etag": "W/\"6aa07cc0-71f9a\"",
+        "content-disposition": "attachment;filename=MI_MARGN.json",
+        "content-encoding": "gzip"
+      }
+    }
+  ],
+  "response_length": 466842,
+  "body_sha256": "206ec27594f1a3c00780f36f6afe64eb9f92c69ac27f39197952b6f10d10120f",
+  "body_validation": {
+    "valid_market_payload": true,
+    "payload_kind": "JSON_ARRAY",
+    "reported_date": null,
+    "row_count": 1297,
+    "schema_fields": [
+      "股票代號",
+      "股票名稱",
+      "融券今日餘額",
+      "融券前日餘額",
+      "融券現券償還",
+      "融券買進",
+      "融券賣出",
+      "融券限額",
+      "融資今日餘額",
+      "融資前日餘額",
+      "融資現金償還",
+      "融資買進",
+      "融資賣出",
+      "融資限額",
+      "註記",
+      "資券互抵"
+    ],
+    "validation_error": null
+  },
+  "classification": "WORKING_OFFICIAL"
+}

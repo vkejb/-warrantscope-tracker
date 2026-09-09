@@ -1,0 +1,98 @@
+{
+  "study_id": "OFFICIAL_SOURCE_TRANSPORT_DIAGNOSTIC",
+  "probe": {
+    "trace_id": "tpex_openapi_margin_current",
+    "endpoint_id": "TPEX_OPENAPI_MARGIN_CURRENT",
+    "source": "TPEX_OPENAPI_MARGIN",
+    "market": "TPEX",
+    "family": "MARGIN_SHORT",
+    "route_type": "OPENAPI_CURRENT_ONLY",
+    "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_margin_balance",
+    "params": [],
+    "response_format": "json",
+    "expected_date": null,
+    "supports_historical_date": false,
+    "client_profile": "DESCRIPTIVE_PUBLIC_CLIENT_NO_COOKIE",
+    "follow_redirects": true,
+    "referer": null
+  },
+  "requested_url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_margin_balance",
+  "request_headers": [
+    [
+      "User-Agent",
+      "WarrantScopeResearch/1.0 (official-data transport diagnostic)"
+    ],
+    [
+      "Accept",
+      "application/json,text/csv,text/plain,*/*"
+    ],
+    [
+      "Accept-Language",
+      "zh-TW,zh;q=0.9,en;q=0.8"
+    ]
+  ],
+  "cookie_session_used": false,
+  "started_at_utc": "2026-09-09T18:40:45.779176+00:00",
+  "finished_at_utc": "2026-09-09T18:40:46.533449+00:00",
+  "curl_exit_code": 0,
+  "curl_error": null,
+  "http_code": 200,
+  "url_effective": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_margin_balance",
+  "num_redirects": 0,
+  "content_type": "application/json",
+  "size_download": 551189,
+  "time_total": 0.734354,
+  "ssl_verify_result": 0,
+  "http_version": "1.1",
+  "response_chain": [
+    {
+      "status_line": "HTTP/1.1 200 OK",
+      "status": 200,
+      "headers": {
+        "server": "nginx",
+        "date": "Wed, 09 Sep 2026 18:40:46 GMT",
+        "content-type": "application/json",
+        "content-length": "551189",
+        "connection": "keep-alive",
+        "last-modified": "Wed, 09 Sep 2026 15:30:20 GMT",
+        "etag": "\"6aa17b8c-86915\"",
+        "content-disposition": "attachment;filename=tpex_mainboard_margin_balance.json",
+        "accept-ranges": "bytes",
+        "cache-control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+      }
+    }
+  ],
+  "response_length": 551189,
+  "body_sha256": "18cdef699ca07abfd7c02c5916033d808443292045db52c479cddb9f44cd8c62",
+  "body_validation": {
+    "valid_market_payload": true,
+    "payload_kind": "JSON_ARRAY",
+    "reported_date": null,
+    "row_count": 920,
+    "schema_fields": [
+      "CashRedemption",
+      "CompanyName",
+      "Date",
+      "MarginPurchase",
+      "MarginPurchaseBalance",
+      "MarginPurchaseBalanceBelongSecuritiesFinanceEnterprise",
+      "MarginPurchaseBalancePreviousDay",
+      "MarginPurchaseQuota",
+      "MarginPurchaseUtilizationRate",
+      "MarginSales",
+      "Note",
+      "Offsetting",
+      "SecuritiesCompanyCode",
+      "ShortConvering",
+      "ShortSale",
+      "ShortSaleBalance",
+      "ShortSaleBalanceBelongSecuritiesFinanceEnterprise",
+      "ShortSaleBalancePreviousDay",
+      "ShortSaleQuota",
+      "ShortSaleUtilizationRate",
+      "StockRedemption"
+    ],
+    "validation_error": null
+  },
+  "classification": "WORKING_OFFICIAL"
+}

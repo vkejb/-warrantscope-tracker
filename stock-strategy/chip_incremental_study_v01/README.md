@@ -59,6 +59,9 @@ and skips completed cache pairs. CDN rejection or a bounded-batch stop writes
 `download_progress.json` and exits without constructing the research store.
 TWSE CDN responses such as a 307/308 without a usable data response are treated
 as rate-limit rejection, not as a valid redirect or an empty market day.
+The downloader identifies itself with a descriptive public research User-Agent,
+requests JSON explicitly, accepts compressed transfer, follows ordinary public
+redirects, and uses no cookie or authenticated session.
 
 The final `chip_daily_store.npz` is assembled only after all 1,459 formal
 2020–2025 trading dates, plus the small required 2019 year-end feature warm-up,
@@ -88,6 +91,27 @@ authorized official bulk file; do not substitute third-party history.
 
 The Phase 1 acquisition engineering checkpoint is recorded at
 `checkpoints/phase1_acquisition/`. Its first bounded live attempt received a
-HiNetCDN HTTP 307 with no usable market payload, so coverage remains zero and
-the study remains unfit. The operational manifest and any future official raw
-payloads stay local under the gitignored `runtime/official_cache/`.
+HiNetCDN HTTP 307 with no usable market payload. After transport diagnosis and
+the public-client update, a four-request integration batch completed all TWSE
+and TPEx institutional and margin/short sources for 2019-12-23. The resumable
+cache now holds 1/1,466 dates (4/5,864 source-date pairs); the remaining 5,860
+pairs are deliberately not fetched by this transport-only checkpoint. The
+study remains unfit until the full coverage gate passes. Operational manifests
+and official raw payloads stay local under the gitignored
+`runtime/official_cache/`.
+
+## Official transport diagnostic
+
+`OFFICIAL_SOURCE_TRANSPORT_DIAGNOSTIC` tested the four official historical JSON
+routes on fixed samples from 2020, 2021, 2022, 2024, and 2025. All twenty
+market/source samples returned valid dated payloads without cookies or a public
+session. The same TWSE T86 control request also returned HTTP 200 with curl's
+default User-Agent, so the prior 307 cannot be attributed to a permanently bad
+endpoint or a proven User-Agent requirement. It is recorded conservatively as a
+transient CDN or edge-security rejection with an unknown exact trigger.
+
+The diagnostic artifacts are `transport_diagnostic.json`,
+`source_endpoint_matrix.csv`, and `http_trace_samples/`. Traces retain the full
+HTTP status/header chain and payload hash but do not commit the market payload
+body. Official current-only OpenAPI routes were also checked and are not used as
+a substitute for dated 2020–2025 history. Future 307 responses remain fail-closed.

@@ -23,6 +23,11 @@ SOURCE_ORDER = (
     "TWSE_MARGIN",
     "TPEX_MARGIN",
 )
+PUBLIC_USER_AGENT = "WarrantScopeResearch/1.0 (official PIT chip acquisition)"
+PUBLIC_HEADERS = (
+    "Accept: application/json,text/plain,*/*",
+    "Accept-Language: zh-TW,zh;q=0.9,en;q=0.8",
+)
 
 
 class OfficialRateLimitError(RuntimeError):
@@ -48,7 +53,11 @@ def _get(url: str, params: dict[str, object]) -> tuple[dict, str, str, bytes]:
     full_url = f"{url}?{query}"
     marker = b"\n__CHIP_HTTP_STATUS__="
     command = [
-        "/usr/bin/curl", "-sS", "-L", "--max-time", "45", "--get", url,
+        "/usr/bin/curl", "-sS", "--compressed", "-L", "--max-time", "45",
+        "-A", PUBLIC_USER_AGENT,
+        "-H", PUBLIC_HEADERS[0],
+        "-H", PUBLIC_HEADERS[1],
+        "--get", url,
         "--write-out", "\n__CHIP_HTTP_STATUS__=%{http_code}",
     ]
     for key, value in params.items():

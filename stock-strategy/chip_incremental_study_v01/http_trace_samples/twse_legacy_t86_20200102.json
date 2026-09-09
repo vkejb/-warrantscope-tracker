@@ -1,0 +1,118 @@
+{
+  "study_id": "OFFICIAL_SOURCE_TRANSPORT_DIAGNOSTIC",
+  "probe": {
+    "trace_id": "twse_legacy_t86_20200102",
+    "endpoint_id": "TWSE_LEGACY_T86_JSON",
+    "source": "TWSE_T86_RWD",
+    "market": "TWSE",
+    "family": "INSTITUTIONAL",
+    "route_type": "LEGACY_HISTORICAL",
+    "url": "https://www.twse.com.tw/fund/T86",
+    "params": [
+      [
+        "response",
+        "json"
+      ],
+      [
+        "date",
+        "20200102"
+      ],
+      [
+        "selectType",
+        "ALLBUT0999"
+      ]
+    ],
+    "response_format": "json",
+    "expected_date": 20200102,
+    "supports_historical_date": true,
+    "client_profile": "DESCRIPTIVE_PUBLIC_CLIENT_NO_COOKIE",
+    "follow_redirects": true,
+    "referer": null
+  },
+  "requested_url": "https://www.twse.com.tw/fund/T86?response=json&date=20200102&selectType=ALLBUT0999",
+  "request_headers": [
+    [
+      "User-Agent",
+      "WarrantScopeResearch/1.0 (official-data transport diagnostic)"
+    ],
+    [
+      "Accept",
+      "application/json,text/csv,text/plain,*/*"
+    ],
+    [
+      "Accept-Language",
+      "zh-TW,zh;q=0.9,en;q=0.8"
+    ]
+  ],
+  "cookie_session_used": false,
+  "started_at_utc": "2026-09-09T18:40:26.187808+00:00",
+  "finished_at_utc": "2026-09-09T18:40:27.997794+00:00",
+  "curl_exit_code": 0,
+  "curl_error": null,
+  "http_code": 200,
+  "url_effective": "https://www.twse.com.tw/fund/T86?response=json&date=20200102&selectType=ALLBUT0999",
+  "num_redirects": 0,
+  "content_type": "application/json;charset=UTF-8",
+  "size_download": 28408,
+  "time_total": 1.781524,
+  "ssl_verify_result": 0,
+  "http_version": "2",
+  "response_chain": [
+    {
+      "status_line": "HTTP/2 200 ",
+      "status": 200,
+      "headers": {
+        "server": "HiNetCDN",
+        "date": "Wed, 09 Sep 2026 18:40:27 GMT",
+        "content-type": "application/json;charset=UTF-8",
+        "vary": [
+          "Accept-Encoding",
+          "accept-encoding"
+        ],
+        "x-application-context": "application:production",
+        "set-cookie": "<redacted:JSESSIONID;sha256=eb01b7baa8b49f5279608b2fed78be88f2d915ac611af17ab1d5ff7aabcf059a>",
+        "content-security-policy": "frame-ancestors 'self' *.twse.com.tw *.tdcc.com.tw http://digitalprocesssyst-epassbook.cdn.hinet.net digitalprocesssys-epassbook.cdn.hinet.net;",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(),microphone=(),geolocation=(),sync-xhr=*,gyroscope=()",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "access-control-allow-origin": "*",
+        "x-cache": "MISS, MISS, MISS",
+        "x-request-id": "d8feb4f57033ecfee4e9213189789bb1",
+        "rule": "T86",
+        "content-encoding": "gzip"
+      }
+    }
+  ],
+  "response_length": 138440,
+  "body_sha256": "e9cd2da51ff2eea433184fa4b01059545ca833459f82a195fb2ec8f1703d8a53",
+  "body_validation": {
+    "valid_market_payload": true,
+    "payload_kind": "JSON_OBJECT",
+    "reported_date": 20200102,
+    "row_count": 1037,
+    "schema_fields": [
+      "證券代號",
+      "證券名稱",
+      "外陸資買進股數(不含外資自營商)",
+      "外陸資賣出股數(不含外資自營商)",
+      "外陸資買賣超股數(不含外資自營商)",
+      "外資自營商買進股數",
+      "外資自營商賣出股數",
+      "外資自營商買賣超股數",
+      "投信買進股數",
+      "投信賣出股數",
+      "投信買賣超股數",
+      "自營商買賣超股數",
+      "自營商買進股數(自行買賣)",
+      "自營商賣出股數(自行買賣)",
+      "自營商買賣超股數(自行買賣)",
+      "自營商買進股數(避險)",
+      "自營商賣出股數(避險)",
+      "自營商買賣超股數(避險)",
+      "三大法人買賣超股數"
+    ],
+    "validation_error": null
+  },
+  "classification": "WORKING_OFFICIAL"
+}

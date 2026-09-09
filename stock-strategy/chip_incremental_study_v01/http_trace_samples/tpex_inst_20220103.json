@@ -1,0 +1,140 @@
+{
+  "study_id": "OFFICIAL_SOURCE_TRANSPORT_DIAGNOSTIC",
+  "probe": {
+    "trace_id": "tpex_inst_20220103",
+    "endpoint_id": "TPEX_LEGACY_INSTITUTIONAL_JSON",
+    "source": "TPEX_INSTITUTIONAL",
+    "market": "TPEX",
+    "family": "INSTITUTIONAL",
+    "route_type": "LEGACY_HISTORICAL",
+    "url": "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php",
+    "params": [
+      [
+        "l",
+        "zh-tw"
+      ],
+      [
+        "o",
+        "json"
+      ],
+      [
+        "se",
+        "EW"
+      ],
+      [
+        "t",
+        "D"
+      ],
+      [
+        "d",
+        "111/01/03"
+      ],
+      [
+        "s",
+        "0,asc"
+      ]
+    ],
+    "response_format": "json",
+    "expected_date": 20220103,
+    "supports_historical_date": true,
+    "client_profile": "DESCRIPTIVE_PUBLIC_CLIENT_NO_COOKIE",
+    "follow_redirects": true,
+    "referer": null
+  },
+  "requested_url": "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=json&se=EW&t=D&d=111%2F01%2F03&s=0%2Casc",
+  "request_headers": [
+    [
+      "User-Agent",
+      "WarrantScopeResearch/1.0 (official-data transport diagnostic)"
+    ],
+    [
+      "Accept",
+      "application/json,text/csv,text/plain,*/*"
+    ],
+    [
+      "Accept-Language",
+      "zh-TW,zh;q=0.9,en;q=0.8"
+    ]
+  ],
+  "cookie_session_used": false,
+  "started_at_utc": "2026-09-09T18:41:38.171892+00:00",
+  "finished_at_utc": "2026-09-09T18:41:38.773941+00:00",
+  "curl_exit_code": 0,
+  "curl_error": null,
+  "http_code": 200,
+  "url_effective": "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=json&se=EW&t=D&d=111%2f01%2f03&s=0%2casc",
+  "num_redirects": 0,
+  "content_type": "application/json;charset=UTF-8",
+  "size_download": 118350,
+  "time_total": 0.576171,
+  "ssl_verify_result": 0,
+  "http_version": "1.1",
+  "response_chain": [
+    {
+      "status_line": "HTTP/1.1 200 ",
+      "status": 200,
+      "headers": {
+        "server": "nginx",
+        "date": "Wed, 09 Sep 2026 18:41:38 GMT",
+        "content-type": "application/json;charset=UTF-8",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "vary": [
+          [
+            "Origin",
+            "Access-Control-Request-Method"
+          ],
+          "Access-Control-Request-Headers"
+        ],
+        "set-cookie": "<redacted:JSESSIONID;sha256=0525454b2bd65327b02b4f72c8caea4e3adc4055594018645e7e345bad32982f>",
+        "content-security-policy": "frame-ancestors 'self' *.twse.com.tw *.tdcc.com.tw digitalprocesssys-epassbook.cdn.hinet.net http://digitalprocesssyst-epassbook.cdn.hinet.net;",
+        "strict-transport-security": "max-age=31535000; includeSubDomains; preload",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+        "x-frame-options": "SAMEORIGIN",
+        "x-content-type-options": "nosniff",
+        "x-xss-protection": "1; mode=block",
+        "cache-control": [
+          "max-age=600, private, must-revalidate",
+          "private"
+        ]
+      }
+    }
+  ],
+  "response_length": 118350,
+  "body_sha256": "73ce6005f4ad68a4f394bb321805036c9a0340316d39fe3739d6f071aaf87eae",
+  "body_validation": {
+    "valid_market_payload": true,
+    "payload_kind": "JSON_OBJECT",
+    "reported_date": 20220103,
+    "row_count": 764,
+    "schema_fields": [
+      "代號",
+      "名稱",
+      "買進股數",
+      "賣出股數",
+      "買賣超股數",
+      "買進股數",
+      "賣出股數",
+      "買賣超股數",
+      "買進股數",
+      "賣出股數",
+      "買賣超股數",
+      "買進股數",
+      "賣出股數",
+      "買賣超股數",
+      "買進股數",
+      "賣出股數",
+      "買賣超股數",
+      "買進股數",
+      "賣出股數",
+      "買賣超股數",
+      "買進股數",
+      "賣出股數",
+      "買賣超股數",
+      "三大法人買賣超股數合計"
+    ],
+    "validation_error": null
+  },
+  "classification": "WORKING_OFFICIAL"
+}

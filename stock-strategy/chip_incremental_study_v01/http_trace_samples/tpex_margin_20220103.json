@@ -1,0 +1,124 @@
+{
+  "study_id": "OFFICIAL_SOURCE_TRANSPORT_DIAGNOSTIC",
+  "probe": {
+    "trace_id": "tpex_margin_20220103",
+    "endpoint_id": "TPEX_MARGIN_BALANCE_JSON",
+    "source": "TPEX_MARGIN_BALANCE",
+    "market": "TPEX",
+    "family": "MARGIN_SHORT",
+    "route_type": "HISTORICAL",
+    "url": "https://www.tpex.org.tw/www/zh-tw/margin/balance",
+    "params": [
+      [
+        "date",
+        "2022/01/03"
+      ],
+      [
+        "id",
+        ""
+      ],
+      [
+        "response",
+        "json"
+      ]
+    ],
+    "response_format": "json",
+    "expected_date": 20220103,
+    "supports_historical_date": true,
+    "client_profile": "DESCRIPTIVE_PUBLIC_CLIENT_NO_COOKIE",
+    "follow_redirects": true,
+    "referer": null
+  },
+  "requested_url": "https://www.tpex.org.tw/www/zh-tw/margin/balance?date=2022%2F01%2F03&id=&response=json",
+  "request_headers": [
+    [
+      "User-Agent",
+      "WarrantScopeResearch/1.0 (official-data transport diagnostic)"
+    ],
+    [
+      "Accept",
+      "application/json,text/csv,text/plain,*/*"
+    ],
+    [
+      "Accept-Language",
+      "zh-TW,zh;q=0.9,en;q=0.8"
+    ]
+  ],
+  "cookie_session_used": false,
+  "started_at_utc": "2026-09-09T18:41:42.782373+00:00",
+  "finished_at_utc": "2026-09-09T18:41:43.180391+00:00",
+  "curl_exit_code": 0,
+  "curl_error": null,
+  "http_code": 200,
+  "url_effective": "https://www.tpex.org.tw/www/zh-tw/margin/balance?date=2022%2f01%2f03&id=&response=json",
+  "num_redirects": 0,
+  "content_type": "application/json;charset=UTF-8",
+  "size_download": 89205,
+  "time_total": 0.369564,
+  "ssl_verify_result": 0,
+  "http_version": "1.1",
+  "response_chain": [
+    {
+      "status_line": "HTTP/1.1 200 ",
+      "status": 200,
+      "headers": {
+        "server": "nginx",
+        "date": "Wed, 09 Sep 2026 18:41:42 GMT",
+        "content-type": "application/json;charset=UTF-8",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "vary": [
+          [
+            "Origin",
+            "Access-Control-Request-Method"
+          ],
+          "Access-Control-Request-Headers"
+        ],
+        "set-cookie": "<redacted:JSESSIONID;sha256=897c4d17242cf091dc3420ce896b85f6adbc06be3c447b819b8de54a982f5417>",
+        "content-security-policy": "frame-ancestors 'self' *.twse.com.tw *.tdcc.com.tw digitalprocesssys-epassbook.cdn.hinet.net http://digitalprocesssyst-epassbook.cdn.hinet.net;",
+        "strict-transport-security": "max-age=31535000; includeSubDomains; preload",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+        "x-frame-options": "SAMEORIGIN",
+        "x-content-type-options": "nosniff",
+        "x-xss-protection": "1; mode=block",
+        "cache-control": [
+          "max-age=600, private, must-revalidate",
+          "private"
+        ]
+      }
+    }
+  ],
+  "response_length": 89205,
+  "body_sha256": "40eabf0a3525b797b50c9f2c4e0aaaf9bd1d7de8403144a90267efc7dfb91dd1",
+  "body_validation": {
+    "valid_market_payload": true,
+    "payload_kind": "JSON_OBJECT",
+    "reported_date": 20220103,
+    "row_count": 761,
+    "schema_fields": [
+      "代號",
+      "名稱",
+      "前資餘額(張)",
+      "資買",
+      "資賣",
+      "現償",
+      "資餘額",
+      "資屬證金",
+      "資使用率(%)",
+      "資限額",
+      "前券餘額(張)",
+      "券賣",
+      "券買",
+      "券償",
+      "券餘額",
+      "券屬證金",
+      "券使用率(%)",
+      "券限額",
+      "資券相抵(張)",
+      "備註"
+    ],
+    "validation_error": null
+  },
+  "classification": "WORKING_OFFICIAL"
+}

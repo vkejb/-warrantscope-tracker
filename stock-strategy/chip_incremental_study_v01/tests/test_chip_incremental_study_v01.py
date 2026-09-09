@@ -22,9 +22,16 @@ from chip_incremental_study_v01.models import ALL_MODEL_FEATURES, fit_chip_logis
 from chip_incremental_study_v01.pit import build_chip_features, needed_codes, prior_session_map  # noqa: E402
 from chip_incremental_study_v01.sources import (  # noqa: E402
     OfficialRateLimitError,
+    PUBLIC_USER_AGENT,
     _get,
     download_official_chip_store,
     phase0_audit_rows,
+)
+from chip_incremental_study_v01.transport_diagnostic import (  # noqa: E402
+    Probe,
+    _classify,
+    _parse_header_chains,
+    _validate_body,
 )
 
 
@@ -40,6 +47,58 @@ def meta_fixture(days: int = 8):
 
 
 class TestChipIncrementalStudy(unittest.TestCase):
+    def test_transport_trace_redacts_cookie_and_preserves_redirect(self):
+        chains = _parse_header_chains(
+            "HTTP/2 307\r\nLocation: https://official.example/data\r\nSet-Cookie: sid=secret\r\n\r\n"
+            "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n"
+        )
+        self.assertEqual([row["status"] for row in chains], [307, 200])
+        self.assertEqual(chains[0]["headers"]["location"], "https://official.example/data")
+        self.assertNotIn("secret", chains[0]["headers"]["set-cookie"])
+
+    def test_transport_validation_rejects_html_redirect_body(self):
+        probe = Probe(
+            "x", "x", "TWSE_T86_RWD", "TWSE", "INSTITUTIONAL", "RWD_HISTORICAL",
+            "https://official.example", (), "json", 20200102, True,
+        )
+        validation = _validate_body(probe, b"<html>redirect</html>", "text/html")
+        trace = {"http_code": 307, "body_validation": validation}
+        self.assertFalse(validation["valid_market_payload"])
+        self.assertEqual(_classify(trace), "REDIRECT_BLOCKED")
+
+    def test_transport_validation_accepts_twse_multisection_margin_csv(self):
+        probe = Probe(
+            "x", "x", "TWSE_MI_MARGN_RWD", "TWSE", "MARGIN_SHORT", "RWD_HISTORICAL_CSV",
+            "https://official.example", (), "csv", 20200102, True,
+        )
+        body = (
+            '"109年01月02日 信用交易統計"\n'
+            '"項目","買進","賣出"\n'
+            '"109年01月02日 融資融券彙總 (全部)"\n'
+            '"股票",,"融資"\n'
+            '"代號","名稱","買進"\n'
+            '="2330","台積電","10"\n'
+        ).encode("cp950")
+        validation = _validate_body(probe, body, "text/csv;charset=ms950")
+        self.assertTrue(validation["valid_market_payload"])
+        self.assertEqual(validation["schema_fields"][:2], ["代號", "名稱"])
+        self.assertEqual(validation["row_count"], 1)
+
+    def test_official_downloader_uses_public_reproducible_client_profile(self):
+        payload = json.dumps({"stat": "OK"}).encode()
+        response = subprocess.CompletedProcess(
+            args=["curl"], returncode=0,
+            stdout=payload + b"\n__CHIP_HTTP_STATUS__=200", stderr=b"",
+        )
+        with patch("chip_incremental_study_v01.sources.subprocess.run", return_value=response) as run:
+            parsed, _digest, _url, _body = _get("https://official.invalid", {"date": "20200102"})
+        self.assertEqual(parsed["stat"], "OK")
+        command = run.call_args.args[0]
+        self.assertIn("--compressed", command)
+        self.assertEqual(command[command.index("-A") + 1], PUBLIC_USER_AGENT)
+        self.assertIn("Accept: application/json,text/plain,*/*", command)
+        self.assertIn("Accept-Language: zh-TW,zh;q=0.9,en;q=0.8", command)
+
     @staticmethod
     def _fake_source(source, date, wanted):
         market = "TWSE" if source.startswith("TWSE") else "TPEX"

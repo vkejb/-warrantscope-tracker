@@ -1,0 +1,113 @@
+{
+  "study_id": "OFFICIAL_SOURCE_TRANSPORT_DIAGNOSTIC",
+  "probe": {
+    "trace_id": "twse_margin_20250102",
+    "endpoint_id": "TWSE_RWD_MI_MARGN_JSON",
+    "source": "TWSE_MI_MARGN_RWD",
+    "market": "TWSE",
+    "family": "MARGIN_SHORT",
+    "route_type": "RWD_HISTORICAL",
+    "url": "https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN",
+    "params": [
+      [
+        "response",
+        "json"
+      ],
+      [
+        "date",
+        "20250102"
+      ],
+      [
+        "selectType",
+        "ALL"
+      ]
+    ],
+    "response_format": "json",
+    "expected_date": 20250102,
+    "supports_historical_date": true,
+    "client_profile": "DESCRIPTIVE_PUBLIC_CLIENT_NO_COOKIE",
+    "follow_redirects": true,
+    "referer": null
+  },
+  "requested_url": "https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?response=json&date=20250102&selectType=ALL",
+  "request_headers": [
+    [
+      "User-Agent",
+      "WarrantScopeResearch/1.0 (official-data transport diagnostic)"
+    ],
+    [
+      "Accept",
+      "application/json,text/csv,text/plain,*/*"
+    ],
+    [
+      "Accept-Language",
+      "zh-TW,zh;q=0.9,en;q=0.8"
+    ]
+  ],
+  "cookie_session_used": false,
+  "started_at_utc": "2026-09-09T18:42:11.342875+00:00",
+  "finished_at_utc": "2026-09-09T18:42:11.781371+00:00",
+  "curl_exit_code": 0,
+  "curl_error": null,
+  "http_code": 200,
+  "url_effective": "https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?response=json&date=20250102&selectType=ALL",
+  "num_redirects": 0,
+  "content_type": "application/json;charset=UTF-8",
+  "size_download": 38209,
+  "time_total": 0.410857,
+  "ssl_verify_result": 0,
+  "http_version": "2",
+  "response_chain": [
+    {
+      "status_line": "HTTP/2 200 ",
+      "status": 200,
+      "headers": {
+        "server": "HiNetCDN",
+        "date": "Wed, 09 Sep 2026 18:42:11 GMT",
+        "content-type": "application/json;charset=UTF-8",
+        "vary": [
+          "Accept-Encoding",
+          "accept-encoding"
+        ],
+        "x-application-context": "application:production",
+        "content-security-policy": "frame-ancestors 'self' *.twse.com.tw *.tdcc.com.tw http://digitalprocesssyst-epassbook.cdn.hinet.net digitalprocesssys-epassbook.cdn.hinet.net;",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(),microphone=(),geolocation=(),sync-xhr=*,gyroscope=()",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "access-control-allow-origin": "*",
+        "x-cache": "MISS, MISS, EXPIRED",
+        "x-request-id": "3c1d534b77f31a08b0a33638d5ac39b1",
+        "content-encoding": "gzip"
+      }
+    }
+  ],
+  "response_length": 118102,
+  "body_sha256": "0cc90a9c81d43f7ff04458aae19ef1af2ec91a0c0f9013ce24925e5a325543ae",
+  "body_validation": {
+    "valid_market_payload": true,
+    "payload_kind": "JSON_OBJECT",
+    "reported_date": 20250102,
+    "row_count": 1183,
+    "schema_fields": [
+      "代號",
+      "名稱",
+      "買進",
+      "賣出",
+      "現金償還",
+      "前日餘額",
+      "今日餘額",
+      "次一營業日限額",
+      "買進",
+      "賣出",
+      "現券償還",
+      "前日餘額",
+      "今日餘額",
+      "次一營業日限額",
+      "資券互抵",
+      "註記"
+    ],
+    "validation_error": null
+  },
+  "classification": "WORKING_OFFICIAL"
+}

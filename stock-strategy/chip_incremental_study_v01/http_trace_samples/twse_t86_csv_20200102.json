@@ -1,0 +1,96 @@
+{
+  "study_id": "OFFICIAL_SOURCE_TRANSPORT_DIAGNOSTIC",
+  "probe": {
+    "trace_id": "twse_t86_csv_20200102",
+    "endpoint_id": "TWSE_RWD_T86_CSV",
+    "source": "TWSE_T86_RWD",
+    "market": "TWSE",
+    "family": "INSTITUTIONAL",
+    "route_type": "RWD_HISTORICAL_CSV",
+    "url": "https://www.twse.com.tw/rwd/zh/fund/T86",
+    "params": [
+      [
+        "response",
+        "csv"
+      ],
+      [
+        "date",
+        "20200102"
+      ],
+      [
+        "selectType",
+        "ALLBUT0999"
+      ]
+    ],
+    "response_format": "csv",
+    "expected_date": 20200102,
+    "supports_historical_date": true,
+    "client_profile": "DESCRIPTIVE_PUBLIC_CLIENT_NO_COOKIE",
+    "follow_redirects": true,
+    "referer": null
+  },
+  "requested_url": "https://www.twse.com.tw/rwd/zh/fund/T86?response=csv&date=20200102&selectType=ALLBUT0999",
+  "request_headers": [
+    [
+      "User-Agent",
+      "WarrantScopeResearch/1.0 (official-data transport diagnostic)"
+    ],
+    [
+      "Accept",
+      "application/json,text/csv,text/plain,*/*"
+    ],
+    [
+      "Accept-Language",
+      "zh-TW,zh;q=0.9,en;q=0.8"
+    ]
+  ],
+  "cookie_session_used": false,
+  "started_at_utc": "2026-09-09T18:40:16.532836+00:00",
+  "finished_at_utc": "2026-09-09T18:40:17.528525+00:00",
+  "curl_exit_code": 0,
+  "curl_error": null,
+  "http_code": 200,
+  "url_effective": "https://www.twse.com.tw/rwd/zh/fund/T86?response=csv&date=20200102&selectType=ALLBUT0999",
+  "num_redirects": 0,
+  "content_type": "text/csv;charset=ms950",
+  "size_download": 135314,
+  "time_total": 0.965447,
+  "ssl_verify_result": 0,
+  "http_version": "2",
+  "response_chain": [
+    {
+      "status_line": "HTTP/2 200 ",
+      "status": 200,
+      "headers": {
+        "server": "HiNetCDN",
+        "date": "Wed, 09 Sep 2026 18:40:17 GMT",
+        "content-type": "text/csv;charset=ms950",
+        "x-application-context": "application:production",
+        "set-cookie": "<redacted:JSESSIONID;sha256=30dc6b506c0ecc43c967d440150a3bc89ced6087dc65da8ff29349f76fe434cb>",
+        "content-disposition": "attachment; filename=\"T86_ALLBUT0999_20200102.csv\"",
+        "content-security-policy": "frame-ancestors 'self' *.twse.com.tw *.tdcc.com.tw http://digitalprocesssyst-epassbook.cdn.hinet.net digitalprocesssys-epassbook.cdn.hinet.net;",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "permissions-policy": "camera=(),microphone=(),geolocation=(),sync-xhr=*,gyroscope=()",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "access-control-allow-origin": "*",
+        "x-cache": "MISS, MISS, MISS",
+        "x-request-id": "9d70ea2102cf5eb3af0d4bd65fc5f343",
+        "rule": "T86"
+      }
+    }
+  ],
+  "response_length": 135314,
+  "body_sha256": "b94ab35130a0f3e8406b1485aff1aec44281dd1b3ad74ef1705a1975366bc03e",
+  "body_validation": {
+    "valid_market_payload": true,
+    "payload_kind": "CSV",
+    "reported_date": null,
+    "row_count": 1045,
+    "schema_fields": [
+      "109年01月02日 三大法人買賣超日報"
+    ],
+    "validation_error": null
+  },
+  "classification": "WORKING_OFFICIAL"
+}

@@ -1,0 +1,97 @@
+{
+  "study_id": "OFFICIAL_SOURCE_TRANSPORT_DIAGNOSTIC",
+  "probe": {
+    "trace_id": "tpex_openapi_inst_current",
+    "endpoint_id": "TPEX_OPENAPI_INSTITUTIONAL_CURRENT",
+    "source": "TPEX_OPENAPI_INSTITUTIONAL",
+    "market": "TPEX",
+    "family": "INSTITUTIONAL",
+    "route_type": "OPENAPI_CURRENT_ONLY",
+    "url": "https://www.tpex.org.tw/openapi/v1/tpex_3insti_daily_trading",
+    "params": [],
+    "response_format": "json",
+    "expected_date": null,
+    "supports_historical_date": false,
+    "client_profile": "DESCRIPTIVE_PUBLIC_CLIENT_NO_COOKIE",
+    "follow_redirects": true,
+    "referer": null
+  },
+  "requested_url": "https://www.tpex.org.tw/openapi/v1/tpex_3insti_daily_trading",
+  "request_headers": [
+    [
+      "User-Agent",
+      "WarrantScopeResearch/1.0 (official-data transport diagnostic)"
+    ],
+    [
+      "Accept",
+      "application/json,text/csv,text/plain,*/*"
+    ],
+    [
+      "Accept-Language",
+      "zh-TW,zh;q=0.9,en;q=0.8"
+    ]
+  ],
+  "cookie_session_used": false,
+  "started_at_utc": "2026-09-09T18:40:40.975525+00:00",
+  "finished_at_utc": "2026-09-09T18:40:41.760877+00:00",
+  "curl_exit_code": 0,
+  "curl_error": null,
+  "http_code": 200,
+  "url_effective": "https://www.tpex.org.tw/openapi/v1/tpex_3insti_daily_trading",
+  "num_redirects": 0,
+  "content_type": "application/json",
+  "size_download": 850719,
+  "time_total": 0.761373,
+  "ssl_verify_result": 0,
+  "http_version": "1.1",
+  "response_chain": [
+    {
+      "status_line": "HTTP/1.1 200 OK",
+      "status": 200,
+      "headers": {
+        "server": "nginx",
+        "date": "Wed, 09 Sep 2026 18:40:41 GMT",
+        "content-type": "application/json",
+        "content-length": "850719",
+        "connection": "keep-alive",
+        "last-modified": "Wed, 09 Sep 2026 15:30:54 GMT",
+        "etag": "\"6aa17bae-cfb1f\"",
+        "content-disposition": "attachment;filename=tpex_3insti_daily_trading.json",
+        "accept-ranges": "bytes",
+        "cache-control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+      }
+    }
+  ],
+  "response_length": 850719,
+  "body_sha256": "fe5fb995e4a72238477ac7d606f1e2348c65cd79cc3a4e82398bb121b17bd93b",
+  "body_validation": {
+    "valid_market_payload": true,
+    "payload_kind": "JSON_ARRAY",
+    "reported_date": null,
+    "row_count": 899,
+    "schema_fields": [
+      " Foreign Investors include Mainland Area Investors (Foreign Dealers excluded)-Total Sell",
+      "CompanyName",
+      "Date",
+      "Dealers -TotalSell",
+      "Dealers-Difference",
+      "Dealers-TotalBuy",
+      "Dealers-TotalSell",
+      "Foreign Dealers-Total Buy",
+      "Foreign Dealers-TotalSell",
+      "Foreign Investors include Mainland Area Investors (Foreign Dealers excluded)-Difference",
+      "Foreign Investors include Mainland Area Investors (Foreign Dealers excluded)-Total Buy",
+      "ForeignDealers-Difference",
+      "ForeignInvestorsInclude MainlandAreaInvestors-Difference",
+      "ForeignInvestorsIncludeMainlandAreaInvestors-TotalBuy",
+      "ForeignInvestorsIncludeMainlandAreaInvestors-TotalSell",
+      "SecuritiesCompanyCode",
+      "SecuritiesInvestmentTrustCompanies-Difference",
+      "SecuritiesInvestmentTrustCompanies-TotalBuy",
+      "SecuritiesInvestmentTrustCompanies-TotalSell",
+      "TotalDifference"
+    ],
+    "validation_error": null
+  },
+  "classification": "WORKING_OFFICIAL"
+}
