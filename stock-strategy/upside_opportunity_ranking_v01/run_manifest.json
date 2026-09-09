@@ -1,0 +1,471 @@
+{
+  "status": "COMPLETE",
+  "study_id": "UPSIDE_OPPORTUNITY_RANKING_V0_1",
+  "result_status": "UPSIDE_SIGNAL_FOUND_BUT_NOT_TRADEABLE",
+  "source_commit_before_run": "4213cd7258f6a265476df005530075ee0e392b48",
+  "config_hash": "69b49703308ed8805bad7fbf2956f6252a6337a887ea7a975ff101e2ee0a744a",
+  "source_audit": {
+    "mother_rows": 704327,
+    "winner_store_sha256": "157339658c60fdb3604dc845a3234107f08f27dab1f39204766852ceaa17f5f8",
+    "cross_store_sha256": "eb88b627a45c9154ddb1aab6eb56cacc5bae32373f54edd171e07c6805ff67c5",
+    "stage_b_model_spec_sha256": "1548094c67eb4afb85622cd649ab122b82e4f1de24a20feb7b1b748d43ea217e",
+    "stage_b_manifest_sha256": "94993a531606202e1baa536ba8fdce2a347a769d389f5fa5d8cb0af149b260b4",
+    "stage_b_model_fingerprint": "5e3e78aef9d986bbbcf0e1e40857f962a5e4aec7d3a1b6df245123345cb6507a",
+    "stage_b_refit_count": 0,
+    "prospective_observations": 0,
+    "n_compact_signals": 236
+  },
+  "source_code_hashes": {
+    "upside_opportunity_ranking_v01/__init__.py": "6cb3d32875505fa153ceea417d720ab3ead665efc26a69ff09eb420ae5ddbdec",
+    "upside_opportunity_ranking_v01/analysis.py": "b6323b6996dd6f5f5550303ae1b59a0259df0c37ca64d910c812cb41fbfd1159",
+    "upside_opportunity_ranking_v01/config.py": "e186f4274846fa742e2b3839ec105369332448d303feff3ad6427112504f23c3",
+    "upside_opportunity_ranking_v01/data.py": "1a04738f063dbfa8a49ef47c6adf01ff6920072e77c41298700aa3075379eb26",
+    "upside_opportunity_ranking_v01/main.py": "67f5e71ab3b0cf072a608035a36239634601226506eb52cdc9e3a6249c2446c2",
+    "upside_opportunity_ranking_v01/models.py": "36402bfa43ba2cfa1102ca6ed7ee2610acc7c3089a1f08d7f2c3ee01030b2550",
+    "upside_opportunity_ranking_v01/ranking.py": "edbb12005497b52ef63ca2c9bc250f4088bfd6b23a8b1a512ace6de7b6fa8ada",
+    "upside_opportunity_ranking_v01/validation.py": "1165fbec095b56535ef620f117325fd54930c813e20ab496f4c2bb1555b9d25f"
+  },
+  "input_array_digest": "8d61998e05369ea75e4e5d2f7e9fce0c834af413226d76f16e18ac023952628a",
+  "stage_a_model_fingerprints": {
+    "LINEAR_RIDGE_MFE10": "a943b58962b0e19e2830a700cd7ed1d32a8dc338be79652126e13be82b114ccd",
+    "IC_WEIGHTED_MFE_RANK": "b748c30320c44fa985081e029215a3a04e88f9b9578cc11c69967ad25d610756"
+  },
+  "stage_b_model_fingerprint": "5e3e78aef9d986bbbcf0e1e40857f962a5e4aec7d3a1b6df245123345cb6507a",
+  "fit_audit": {
+    "alpha_candidates": [
+      0.1,
+      1.0,
+      10.0,
+      100.0
+    ],
+    "alpha_fold_mean_daily_mfe_ic": {
+      "0.1": [
+        0.19398931114594137,
+        0.14458830138806822
+      ],
+      "1.0": [
+        0.19398579232095636,
+        0.14459058062532942
+      ],
+      "10.0": [
+        0.19395657825833057,
+        0.14459406455731674
+      ],
+      "100.0": [
+        0.19359567702425248,
+        0.14469066875415892
+      ]
+    },
+    "selection_metric": "MEAN_OF_2021_AND_2022_WALKFORWARD_MEAN_DAILY_MFE_IC",
+    "tie_break": "SMALLEST_ALPHA",
+    "selected_alpha": 0.1,
+    "fold_purge_audit": {
+      "TRAIN_2020_EVALUATE_2021": {
+        "requested_start": "20200101",
+        "requested_end": "20201231",
+        "purge_sessions": 10,
+        "last_included_signal_date": 20201217,
+        "purged_signal_dates": [
+          20201218,
+          20201221,
+          20201222,
+          20201223,
+          20201224,
+          20201225,
+          20201228,
+          20201229,
+          20201230,
+          20201231
+        ],
+        "training_observations": 91088
+      },
+      "TRAIN_2020_2021_EVALUATE_2022": {
+        "requested_start": "20200101",
+        "requested_end": "20211231",
+        "purge_sessions": 10,
+        "last_included_signal_date": 20211216,
+        "purged_signal_dates": [
+          20211217,
+          20211220,
+          20211221,
+          20211222,
+          20211223,
+          20211224,
+          20211227,
+          20211228,
+          20211229,
+          20211230
+        ],
+        "training_observations": 219469
+      }
+    },
+    "final_fit_purge": {
+      "requested_start": "20200101",
+      "requested_end": "20221231",
+      "purge_sessions": 10,
+      "last_included_signal_date": 20221216,
+      "purged_signal_dates": [
+        20221219,
+        20221220,
+        20221221,
+        20221222,
+        20221223,
+        20221226,
+        20221227,
+        20221228,
+        20221229,
+        20221230
+      ],
+      "training_observations": 323809
+    },
+    "final_fit_count": 1,
+    "later_period_refit_count": 0,
+    "benchmark_audit": {
+      "daily_ic_observations": 725,
+      "feature_mean_daily_ic": {
+        "return_3": -0.010701432361246167,
+        "return_5": -0.0050466928843339014,
+        "return_10": 0.017973801443907235,
+        "return_20": 0.03208432595825769,
+        "return_60": 0.07770054474871829,
+        "close_vs_ma5": -0.013501044463641913,
+        "close_vs_ma10": -0.000879940611301244,
+        "close_vs_ma20": 0.020229600991249593,
+        "close_vs_ma60": 0.059704374957073425,
+        "distance_to_prior20_close_high": -0.06342364346914857,
+        "distance_to_prior60_close_high": -0.041713371096339054,
+        "drawdown_from_20d_high": -0.08949008887348875,
+        "drawdown_from_60d_high": -0.05855029723196829,
+        "days_since_20d_high": -0.01260134067282187,
+        "days_since_60d_high": -0.05506667466518612,
+        "ma5_slope": 0.013115744635853068,
+        "ma10_slope": 0.03065885418413717,
+        "ma20_slope": 0.03917592033661704,
+        "ma60_slope": 0.0820759868280077,
+        "volume_ratio5": -0.012011562011990242,
+        "volume_ratio20": -0.007799884817616465,
+        "prior_volume_contraction_5_20": 0.008793337133258554,
+        "atr5": 0.16839373963164445,
+        "atr20": 0.1778379633253961,
+        "atr60": 0.17064437944239463,
+        "atr5_atr20": 0.014374486139531972,
+        "range_compression10": 0.13776012643122912,
+        "range_compression20": 0.16414877441433484,
+        "volatility20": 0.16232087950924945,
+        "rs5_vs_0050": -0.005046676138474113,
+        "rs20_vs_0050": 0.032084335747419,
+        "rs60_vs_0050": 0.0777004541549947,
+        "recent_breakout_flag": 0.004623081810658222,
+        "recent_retest_flag": -0.02103664201692431,
+        "recent_local_low_distance": 0.1180297764971035,
+        "recent_local_high_distance": -0.08949008887348875,
+        "bias5": -0.013501044463641913,
+        "bias10": -0.000879940611301244,
+        "bias20": 0.020229600991249593
+      },
+      "weight_normalization": "L1_ABSOLUTE_SUM_EQUALS_ONE"
+    }
+  },
+  "ranking_audit": {
+    "LINEAR_RIDGE_MFE10": {
+      "ranking_definition": "SCORE_DESC_STOCK_CODE_ASC_TIEBREAK",
+      "ranked_observations": 704327,
+      "unique_signal_dates": 1459,
+      "primary_top_k": 10
+    },
+    "IC_WEIGHTED_MFE_RANK": {
+      "ranking_definition": "SCORE_DESC_STOCK_CODE_ASC_TIEBREAK",
+      "ranked_observations": 704327,
+      "unique_signal_dates": 1459,
+      "primary_top_k": 10
+    }
+  },
+  "two_stage_audit": {
+    "definition": "STAGE_A_TOP30_THEN_FROZEN_STAGE_B_SCORE_DESC_CODE_ASC",
+    "pool_size": 30,
+    "pool_rows": 43770,
+    "stage_b_refit_count": 0
+  },
+  "cooldown_audit": {
+    "definition": "TWO_STAGE_TOP5_SAME_STOCK_SESSION_DISTANCE_GTE_10",
+    "cooldown_sessions": 10,
+    "raw": 7295,
+    "accepted": 2736
+  },
+  "market_regime_audit": {
+    "market_proxy": "0050",
+    "taiex_status": "NOT_AVAILABLE_IN_REUSED_ARCHIVES",
+    "regime_features_are_t_or_earlier": true,
+    "calendar_dates": 1459,
+    "benchmark_rows": 1717,
+    "unavailable_regime_dates": 53,
+    "volatility_boundary_fit_period": "HISTORICAL_DISCOVERY_2020_2022_ONLY",
+    "volatility_discovery_median": 0.0110907555678876,
+    "sources": [
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+        "sha256": "6ff9ef9b46b359fb2ecc3a55ad95300ae09c0355c458edfc78b7aeaa9d2b2438"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+        "sha256": "108bcbb8b9da3edd15ea432110ffa435da754d79532946069f18162b8e52e94b"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+        "sha256": "ce7057ce36db38ef49075f6f15c24ebec2a1133e45947810483103197dd3623f"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+        "sha256": "223ddd94b573f2abe9660d2052163917415b43c1d0df629cc87f4cad807ca8f1"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+        "sha256": "769b63f6e722449fb69af52f5fa4a721bc81efff1f02cbf31a57465f8eae0d1a"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+        "sha256": "9192285411801b75a087fd668b855702d75b44d3ef82a398cd8aaaec35a63215"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+        "sha256": "1b19ea3e0a96b7bc0865bf4f5aec2e31c869f1dd55e527e0374f945e6ca49a99"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W01.zip",
+        "sha256": "abb17095be2e28b05aa3dd5772dedcd2fa11b690b3e57e458a3d81146f9f2388"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W02.zip",
+        "sha256": "299d876a0dbbd3c0afc22f8cf50fc671e83ea175fc7046c9de2d8f1ed005cf63"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W03.zip",
+        "sha256": "999b2a8397b9f68fbcabb0d7f41ed1fd6e8eb10d238622719565f201755fb269"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W04.zip",
+        "sha256": "60427d9eba29c3e3e5fee574ca6461af54fe75dca07cb01c338e57901725d91e"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W05.zip",
+        "sha256": "769656d3ad0bd722523d2bf23e879c1bf985e54d7e9f5828b5a3b399404814d4"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv",
+        "sha256": "f1e9af44b04345e656026819ad22aa68c04e00a9f116f6a6d5310a1d0fc3c78c"
+      }
+    ]
+  },
+  "protected_hashes_before": {
+    "prospective_signals.csv": "495b1deea4c325787891109a99443c04ddcf2c5a78531419a99a0d00bddef79e",
+    "prospective_outcomes.csv": "ca8668432c8750a171e8d78f29be38167ec5f0ee3338fb46333a056f40bf5ec8",
+    "prospective_scan_log.csv": "bd22fe74cfe0086fd678259a3df74786f478b7caa6ac762aad8fac9c9abae521",
+    "shadow_status.json": "f2db4f0ab0965e1eaeb09b159cc5bf516ae2216ae19296869cfa4958c31389ea",
+    "cross_sectional_alpha_ranking_v01/__init__.py": "73fd548cda4b92ce2ab274717384eb447c48f9c1ef61a0da536e5f52a29cdab5",
+    "cross_sectional_alpha_ranking_v01/analysis.py": "33189a27c530bb49b83d479a101f7a67429e64b81f3c3bb71d8b0379a4a13f2c",
+    "cross_sectional_alpha_ranking_v01/cluster_bootstrap_summary.csv": "3f220b19a9f47a6c871e880852fdffb73471271d08a6d3db7f9d8ab07c643b40",
+    "cross_sectional_alpha_ranking_v01/config.py": "1c9ae04f6e632d388689c223911b17854689f9c1de321177c5a27430378aba03",
+    "cross_sectional_alpha_ranking_v01/cooldown_trade_proxy_summary.csv": "21feecbb49b9746f20d8d9e9d1f31cbf7a18edaa8fac1dc6253c0542fe327cda",
+    "cross_sectional_alpha_ranking_v01/daily_ranking_metrics.csv": "0a0ed76401ff338a6592dd73ee396acd05525c55e0f50ea6d01d0155be67ae6e",
+    "cross_sectional_alpha_ranking_v01/data.py": "2613611000f5dab5cf277837fdae8f290f763ce8659e2ee390380d0bd54b682f",
+    "cross_sectional_alpha_ranking_v01/discovery_walkforward.csv": "d9eb7d752639bbed342a4488a7e3fa4eb6dee1187e7292d176436af36af7604a",
+    "cross_sectional_alpha_ranking_v01/entry_gap_diagnostics.csv": "e7aca79b7a0b4afe1331c2d5ac73f6d9a6234f7664809cb730aa4c41ccf331c3",
+    "cross_sectional_alpha_ranking_v01/feature_spec.json": "3c8b258e24185e1cb1c564c85d0d729c58c13b335da1174686069d3ad6d25380",
+    "cross_sectional_alpha_ranking_v01/frequency_summary.csv": "c36a257665374fbf3e9cbd491e852b91928a21b741466cbe885442b87bdb8d0c",
+    "cross_sectional_alpha_ranking_v01/main.py": "b5a641af63e0ca29123c147fc4a059784dc4bd8c497e2fc2304b7721df31be32",
+    "cross_sectional_alpha_ranking_v01/model_coefficients.csv": "042d79aa154191f83f3d7bbf4881a06a7be5759642187d995a262c27a3b6575c",
+    "cross_sectional_alpha_ranking_v01/model_spec.json": "1548094c67eb4afb85622cd649ab122b82e4f1de24a20feb7b1b748d43ea217e",
+    "cross_sectional_alpha_ranking_v01/models.py": "52f73965b72a01d024d47079860a775da884e6ea23a97b5a361624ed2295992b",
+    "cross_sectional_alpha_ranking_v01/n_compact_cohort_summary.csv": "25afa3f0c0a33c243f7e77ffe6c15146828a24d57deff9a8a6da7d948cd4f032",
+    "cross_sectional_alpha_ranking_v01/n_compact_rank_overlay.csv": "311df78009467beeca70395e1d290af23cc973b9fccb06c729eeacea2d31a12f",
+    "cross_sectional_alpha_ranking_v01/period_discipline.json": "c1e266cf99a3967ca59f17e7f46407470d10a4363274dfaa5f60a586ef4585d3",
+    "cross_sectional_alpha_ranking_v01/period_summary.csv": "f509b6de78cd8100a5919f3940526d3f7a47e3ac1198577a9fcde47bdf699e5d",
+    "cross_sectional_alpha_ranking_v01/preprocessing.py": "ec508d3f99879b0266f35fee75f97cf02c8d817fd124f10a407a6a5b0e34b5f6",
+    "cross_sectional_alpha_ranking_v01/ranking.py": "a300da0941794d8a075425933e9cc727fb810fbaaed4e1dfdaa4e0d9cc3bb937",
+    "cross_sectional_alpha_ranking_v01/regime_diagnostics.csv": "5074ab12e904279bd00844e13ae7b9b10e2a7ea33abd40fe0543159e1a362148",
+    "cross_sectional_alpha_ranking_v01/run_manifest.json": "94993a531606202e1baa536ba8fdce2a347a769d389f5fa5d8cb0af149b260b4",
+    "cross_sectional_alpha_ranking_v01/score_decile_summary.csv": "fe38c07a90e54ddc56d77b1dc3c767b93b4a4e1da3d6bae2b10d0679202786c0",
+    "cross_sectional_alpha_ranking_v01/score_quality_analysis.csv": "fa151697d3e4819016d80ff4270892cf502fa3f52798cf778d00db4c74e10f0f",
+    "cross_sectional_alpha_ranking_v01/top_bottom_spread.csv": "1b810ab7facacf101958108f14dae0396b13733ebbfcd554ed34c208e7716d2d",
+    "cross_sectional_alpha_ranking_v01/topk_summary.csv": "e5f1c1113ee8305d8f528e90d5d7084868ec2a3e66eed535f6887563440764bf",
+    "cross_sectional_alpha_ranking_v01/validation_summary.json": "777800f042b7ceb0abe220aa93447b0297741d2a1716772cd72230f89b20971c",
+    "cross_sectional_alpha_ranking_v01/year_summary.csv": "14c2cd2a173228a335d02a943ac35c429389ad76bd2aa06c953ee4faeab84495",
+    "winner_coverage_taxonomy_v01/__init__.py": "02b3bd78cbacbddbe04e412afe2085c7dc485079f48ff6743fde0ce0c216edc8",
+    "winner_coverage_taxonomy_v01/analysis.py": "1365ab4f87b5d2db1e1f33cf1a62b8ec2ad825950a717b657929ce10231b1be1",
+    "winner_coverage_taxonomy_v01/candidate_family_summary.csv": "d6e62068ed329aecffb2ddab0b8a649412ed109afa7200e7cc9678446886dd7c",
+    "winner_coverage_taxonomy_v01/config.py": "fca10827d3d50a35c22e5c69971f5562631475f4119c9621ea36f0cc4b5766c6",
+    "winner_coverage_taxonomy_v01/feature_control_comparison.csv": "b33afcbaaaf515dab763c85d95b3dbc6b486e0c7721eb7bb0783f8be6c3d0d52",
+    "winner_coverage_taxonomy_v01/features.py": "c84a35596904badc0ea42bac1d45592ced6a9c129c31aadb7ae37469dc5bb9ae",
+    "winner_coverage_taxonomy_v01/main.py": "cba17557ff35836d21d8d8717e901c2fb0ad23eb04f38c78f926393e2c784883",
+    "winner_coverage_taxonomy_v01/mother_sample_summary.csv": "190005e961f2fc9ed2d5cbfe5761d484d477b2021ece21ca55f4aacda12218e5",
+    "winner_coverage_taxonomy_v01/official_supplement.py": "c8f40256a45a0edf84edc597a57074042feda304185ed842f4f29c5e579eb12f",
+    "winner_coverage_taxonomy_v01/pipeline.py": "026584d949e0dd82c8c2f9648c2e82bfb1b63022f4b431a16d0f298469af98da",
+    "winner_coverage_taxonomy_v01/run_manifest.json": "d5618f2f8ed385a5022e4ec2a6495d700b535959dbb9bc904b5e97fb33daec50",
+    "winner_coverage_taxonomy_v01/setup_coverage.csv": "da8eeeafe16c0429b4415df39cd7a80fd7590b0246c47e108d0cb567edbc6759",
+    "winner_coverage_taxonomy_v01/taxonomy.py": "cb3d30bf8cdd12f853df2168ca1cf09de9e87760752669813838b08599c34f25",
+    "winner_coverage_taxonomy_v01/unexplained_winner_summary.csv": "4cd583ab92385b4c2f6f9307975d339354843490b0d5281308fdcb194e062afe",
+    "winner_coverage_taxonomy_v01/unique_marginal_coverage.csv": "df3fd1c6c109a5260401e0ee0eb64ffdeb0f3ad88c26e42d027d4ebaa5934872",
+    "winner_coverage_taxonomy_v01/validation_summary.json": "23a0000652dbdc430af68b3fb8df3bcb97154225e706781a030d6957ced77aa9",
+    "winner_coverage_taxonomy_v01/winner_base_rate.csv": "ddeaf7b65ab2995d546d6880f7346effc3c8e46caf65ffa7de9e99d919e95882",
+    "winner_coverage_taxonomy_v01/winner_overlap_matrix.csv": "55136b77f0c0cd2908614810dd226e7fb0ab49c720b1b3fd8f4b86b34812f06f",
+    "winner_coverage_taxonomy_v01/winner_taxonomy_summary.csv": "c4c2dbcb476d84a4a5b1b9eb9b863cb07a13aef82057111680cf7872b3e51bf0",
+    "multi_setup_study_v01/__init__.py": "46033ea3b2f10b1e6529bb61c30324df1441f9e11753deb4ae03643a00b72228",
+    "multi_setup_study_v01/analysis.py": "d948aa4a27f548f4cc997b2b9412eae5294c452f42f9927af602749768a4efae",
+    "multi_setup_study_v01/analysis_spec.json": "8fa458480f9d01d6053b257edaa71edf069683a801ccb89ccc8e78869f6ffcb2",
+    "multi_setup_study_v01/bootstrap_results.csv": "b4a072af0494bc6b87f0ae12adea340e77e29af02a6a50a2493b3b8b9f88a05c",
+    "multi_setup_study_v01/config.py": "4233355b72b29466f9e18bd01418ed34fe22b0a70d3d4bcf4ab19328b9356861",
+    "multi_setup_study_v01/data_audit.json": "6bdb62a300c240571866b65030b5ea5e5211a8c2a6eaf099705da62afa28ed0c",
+    "multi_setup_study_v01/entry_gap_analysis.csv": "5f0ff85db7c1c8c358b35354e8e91106acc711e9cb8346605337a7d8fa8aedf4",
+    "multi_setup_study_v01/features.py": "c1751a830f2116aa433900d7da68033707dd60ba4c2833aea2b174b4f08de14b",
+    "multi_setup_study_v01/main.py": "5216ddf3959842ab35a2760e220863d79b0c1a2989c61734dc3e1e82e6b27861",
+    "multi_setup_study_v01/outcomes.py": "2707a469e42c0e8b9489d37ac85c16ba991b29b6d54e9a14c56268030278e8c5",
+    "multi_setup_study_v01/ownership.py": "5a005c09b7821a828bd8fce8cff2e222ae5ad2cf8ce59f96596d93dfc802feea",
+    "multi_setup_study_v01/pipeline_validation.json": "fdecc09c73257762d2d3001992e21d44d70e212fe2bb76ae3ac043a6386eb71a",
+    "multi_setup_study_v01/run_manifest.json": "3dd9c8ea15c9a08902b4c6ee570d30c700c0bbd4429d545ac0cde01c1d28ea2f",
+    "multi_setup_study_v01/setup_comparison.csv": "307d6930b0a3be1ac9fc75bfdbb37cd54fc97e8b98b79b47a03da01942a84a2e",
+    "multi_setup_study_v01/setup_detectors.py": "a025efcd65422e1651eb468b00cc8ebcb4a753b7bf5250df6a2ae5b31b389ec3",
+    "multi_setup_study_v01/setup_year_summary.csv": "d0f6c4fd057234e29ce1ba8ac271df22b3a4216d9d4d38d0b767b05136b70027",
+    "multi_setup_study_v01/signal_clustering.csv": "d607e8c459fc6b999333652d7a8522fc025f0639b3bf3a5d4b4ad609e1035334",
+    "multi_setup_study_v01/signal_observations.csv": "18a49866cc43e701089a583e41bf67e81c6fcf7063d65d36fe5692ba0af3578d",
+    "multi_setup_study_v01/validation_summary.json": "c43571425ce72c1ac1345ff66a6350f34bd2e2212e9a9906a9a486372ab959fd",
+    "multi_setup_study_v01/winner_dependence.csv": "1f5f58f604896fdc28c52ca747f733187ed4a28abf6a9f844bd9667e49dd826f"
+  },
+  "protected_hashes_after": {
+    "prospective_signals.csv": "495b1deea4c325787891109a99443c04ddcf2c5a78531419a99a0d00bddef79e",
+    "prospective_outcomes.csv": "ca8668432c8750a171e8d78f29be38167ec5f0ee3338fb46333a056f40bf5ec8",
+    "prospective_scan_log.csv": "bd22fe74cfe0086fd678259a3df74786f478b7caa6ac762aad8fac9c9abae521",
+    "shadow_status.json": "f2db4f0ab0965e1eaeb09b159cc5bf516ae2216ae19296869cfa4958c31389ea",
+    "cross_sectional_alpha_ranking_v01/__init__.py": "73fd548cda4b92ce2ab274717384eb447c48f9c1ef61a0da536e5f52a29cdab5",
+    "cross_sectional_alpha_ranking_v01/analysis.py": "33189a27c530bb49b83d479a101f7a67429e64b81f3c3bb71d8b0379a4a13f2c",
+    "cross_sectional_alpha_ranking_v01/cluster_bootstrap_summary.csv": "3f220b19a9f47a6c871e880852fdffb73471271d08a6d3db7f9d8ab07c643b40",
+    "cross_sectional_alpha_ranking_v01/config.py": "1c9ae04f6e632d388689c223911b17854689f9c1de321177c5a27430378aba03",
+    "cross_sectional_alpha_ranking_v01/cooldown_trade_proxy_summary.csv": "21feecbb49b9746f20d8d9e9d1f31cbf7a18edaa8fac1dc6253c0542fe327cda",
+    "cross_sectional_alpha_ranking_v01/daily_ranking_metrics.csv": "0a0ed76401ff338a6592dd73ee396acd05525c55e0f50ea6d01d0155be67ae6e",
+    "cross_sectional_alpha_ranking_v01/data.py": "2613611000f5dab5cf277837fdae8f290f763ce8659e2ee390380d0bd54b682f",
+    "cross_sectional_alpha_ranking_v01/discovery_walkforward.csv": "d9eb7d752639bbed342a4488a7e3fa4eb6dee1187e7292d176436af36af7604a",
+    "cross_sectional_alpha_ranking_v01/entry_gap_diagnostics.csv": "e7aca79b7a0b4afe1331c2d5ac73f6d9a6234f7664809cb730aa4c41ccf331c3",
+    "cross_sectional_alpha_ranking_v01/feature_spec.json": "3c8b258e24185e1cb1c564c85d0d729c58c13b335da1174686069d3ad6d25380",
+    "cross_sectional_alpha_ranking_v01/frequency_summary.csv": "c36a257665374fbf3e9cbd491e852b91928a21b741466cbe885442b87bdb8d0c",
+    "cross_sectional_alpha_ranking_v01/main.py": "b5a641af63e0ca29123c147fc4a059784dc4bd8c497e2fc2304b7721df31be32",
+    "cross_sectional_alpha_ranking_v01/model_coefficients.csv": "042d79aa154191f83f3d7bbf4881a06a7be5759642187d995a262c27a3b6575c",
+    "cross_sectional_alpha_ranking_v01/model_spec.json": "1548094c67eb4afb85622cd649ab122b82e4f1de24a20feb7b1b748d43ea217e",
+    "cross_sectional_alpha_ranking_v01/models.py": "52f73965b72a01d024d47079860a775da884e6ea23a97b5a361624ed2295992b",
+    "cross_sectional_alpha_ranking_v01/n_compact_cohort_summary.csv": "25afa3f0c0a33c243f7e77ffe6c15146828a24d57deff9a8a6da7d948cd4f032",
+    "cross_sectional_alpha_ranking_v01/n_compact_rank_overlay.csv": "311df78009467beeca70395e1d290af23cc973b9fccb06c729eeacea2d31a12f",
+    "cross_sectional_alpha_ranking_v01/period_discipline.json": "c1e266cf99a3967ca59f17e7f46407470d10a4363274dfaa5f60a586ef4585d3",
+    "cross_sectional_alpha_ranking_v01/period_summary.csv": "f509b6de78cd8100a5919f3940526d3f7a47e3ac1198577a9fcde47bdf699e5d",
+    "cross_sectional_alpha_ranking_v01/preprocessing.py": "ec508d3f99879b0266f35fee75f97cf02c8d817fd124f10a407a6a5b0e34b5f6",
+    "cross_sectional_alpha_ranking_v01/ranking.py": "a300da0941794d8a075425933e9cc727fb810fbaaed4e1dfdaa4e0d9cc3bb937",
+    "cross_sectional_alpha_ranking_v01/regime_diagnostics.csv": "5074ab12e904279bd00844e13ae7b9b10e2a7ea33abd40fe0543159e1a362148",
+    "cross_sectional_alpha_ranking_v01/run_manifest.json": "94993a531606202e1baa536ba8fdce2a347a769d389f5fa5d8cb0af149b260b4",
+    "cross_sectional_alpha_ranking_v01/score_decile_summary.csv": "fe38c07a90e54ddc56d77b1dc3c767b93b4a4e1da3d6bae2b10d0679202786c0",
+    "cross_sectional_alpha_ranking_v01/score_quality_analysis.csv": "fa151697d3e4819016d80ff4270892cf502fa3f52798cf778d00db4c74e10f0f",
+    "cross_sectional_alpha_ranking_v01/top_bottom_spread.csv": "1b810ab7facacf101958108f14dae0396b13733ebbfcd554ed34c208e7716d2d",
+    "cross_sectional_alpha_ranking_v01/topk_summary.csv": "e5f1c1113ee8305d8f528e90d5d7084868ec2a3e66eed535f6887563440764bf",
+    "cross_sectional_alpha_ranking_v01/validation_summary.json": "777800f042b7ceb0abe220aa93447b0297741d2a1716772cd72230f89b20971c",
+    "cross_sectional_alpha_ranking_v01/year_summary.csv": "14c2cd2a173228a335d02a943ac35c429389ad76bd2aa06c953ee4faeab84495",
+    "winner_coverage_taxonomy_v01/__init__.py": "02b3bd78cbacbddbe04e412afe2085c7dc485079f48ff6743fde0ce0c216edc8",
+    "winner_coverage_taxonomy_v01/analysis.py": "1365ab4f87b5d2db1e1f33cf1a62b8ec2ad825950a717b657929ce10231b1be1",
+    "winner_coverage_taxonomy_v01/candidate_family_summary.csv": "d6e62068ed329aecffb2ddab0b8a649412ed109afa7200e7cc9678446886dd7c",
+    "winner_coverage_taxonomy_v01/config.py": "fca10827d3d50a35c22e5c69971f5562631475f4119c9621ea36f0cc4b5766c6",
+    "winner_coverage_taxonomy_v01/feature_control_comparison.csv": "b33afcbaaaf515dab763c85d95b3dbc6b486e0c7721eb7bb0783f8be6c3d0d52",
+    "winner_coverage_taxonomy_v01/features.py": "c84a35596904badc0ea42bac1d45592ced6a9c129c31aadb7ae37469dc5bb9ae",
+    "winner_coverage_taxonomy_v01/main.py": "cba17557ff35836d21d8d8717e901c2fb0ad23eb04f38c78f926393e2c784883",
+    "winner_coverage_taxonomy_v01/mother_sample_summary.csv": "190005e961f2fc9ed2d5cbfe5761d484d477b2021ece21ca55f4aacda12218e5",
+    "winner_coverage_taxonomy_v01/official_supplement.py": "c8f40256a45a0edf84edc597a57074042feda304185ed842f4f29c5e579eb12f",
+    "winner_coverage_taxonomy_v01/pipeline.py": "026584d949e0dd82c8c2f9648c2e82bfb1b63022f4b431a16d0f298469af98da",
+    "winner_coverage_taxonomy_v01/run_manifest.json": "d5618f2f8ed385a5022e4ec2a6495d700b535959dbb9bc904b5e97fb33daec50",
+    "winner_coverage_taxonomy_v01/setup_coverage.csv": "da8eeeafe16c0429b4415df39cd7a80fd7590b0246c47e108d0cb567edbc6759",
+    "winner_coverage_taxonomy_v01/taxonomy.py": "cb3d30bf8cdd12f853df2168ca1cf09de9e87760752669813838b08599c34f25",
+    "winner_coverage_taxonomy_v01/unexplained_winner_summary.csv": "4cd583ab92385b4c2f6f9307975d339354843490b0d5281308fdcb194e062afe",
+    "winner_coverage_taxonomy_v01/unique_marginal_coverage.csv": "df3fd1c6c109a5260401e0ee0eb64ffdeb0f3ad88c26e42d027d4ebaa5934872",
+    "winner_coverage_taxonomy_v01/validation_summary.json": "23a0000652dbdc430af68b3fb8df3bcb97154225e706781a030d6957ced77aa9",
+    "winner_coverage_taxonomy_v01/winner_base_rate.csv": "ddeaf7b65ab2995d546d6880f7346effc3c8e46caf65ffa7de9e99d919e95882",
+    "winner_coverage_taxonomy_v01/winner_overlap_matrix.csv": "55136b77f0c0cd2908614810dd226e7fb0ab49c720b1b3fd8f4b86b34812f06f",
+    "winner_coverage_taxonomy_v01/winner_taxonomy_summary.csv": "c4c2dbcb476d84a4a5b1b9eb9b863cb07a13aef82057111680cf7872b3e51bf0",
+    "multi_setup_study_v01/__init__.py": "46033ea3b2f10b1e6529bb61c30324df1441f9e11753deb4ae03643a00b72228",
+    "multi_setup_study_v01/analysis.py": "d948aa4a27f548f4cc997b2b9412eae5294c452f42f9927af602749768a4efae",
+    "multi_setup_study_v01/analysis_spec.json": "8fa458480f9d01d6053b257edaa71edf069683a801ccb89ccc8e78869f6ffcb2",
+    "multi_setup_study_v01/bootstrap_results.csv": "b4a072af0494bc6b87f0ae12adea340e77e29af02a6a50a2493b3b8b9f88a05c",
+    "multi_setup_study_v01/config.py": "4233355b72b29466f9e18bd01418ed34fe22b0a70d3d4bcf4ab19328b9356861",
+    "multi_setup_study_v01/data_audit.json": "6bdb62a300c240571866b65030b5ea5e5211a8c2a6eaf099705da62afa28ed0c",
+    "multi_setup_study_v01/entry_gap_analysis.csv": "5f0ff85db7c1c8c358b35354e8e91106acc711e9cb8346605337a7d8fa8aedf4",
+    "multi_setup_study_v01/features.py": "c1751a830f2116aa433900d7da68033707dd60ba4c2833aea2b174b4f08de14b",
+    "multi_setup_study_v01/main.py": "5216ddf3959842ab35a2760e220863d79b0c1a2989c61734dc3e1e82e6b27861",
+    "multi_setup_study_v01/outcomes.py": "2707a469e42c0e8b9489d37ac85c16ba991b29b6d54e9a14c56268030278e8c5",
+    "multi_setup_study_v01/ownership.py": "5a005c09b7821a828bd8fce8cff2e222ae5ad2cf8ce59f96596d93dfc802feea",
+    "multi_setup_study_v01/pipeline_validation.json": "fdecc09c73257762d2d3001992e21d44d70e212fe2bb76ae3ac043a6386eb71a",
+    "multi_setup_study_v01/run_manifest.json": "3dd9c8ea15c9a08902b4c6ee570d30c700c0bbd4429d545ac0cde01c1d28ea2f",
+    "multi_setup_study_v01/setup_comparison.csv": "307d6930b0a3be1ac9fc75bfdbb37cd54fc97e8b98b79b47a03da01942a84a2e",
+    "multi_setup_study_v01/setup_detectors.py": "a025efcd65422e1651eb468b00cc8ebcb4a753b7bf5250df6a2ae5b31b389ec3",
+    "multi_setup_study_v01/setup_year_summary.csv": "d0f6c4fd057234e29ce1ba8ac271df22b3a4216d9d4d38d0b767b05136b70027",
+    "multi_setup_study_v01/signal_clustering.csv": "d607e8c459fc6b999333652d7a8522fc025f0639b3bf3a5d4b4ad609e1035334",
+    "multi_setup_study_v01/signal_observations.csv": "18a49866cc43e701089a583e41bf67e81c6fcf7063d65d36fe5692ba0af3578d",
+    "multi_setup_study_v01/validation_summary.json": "c43571425ce72c1ac1345ff66a6350f34bd2e2212e9a9906a9a486372ab959fd",
+    "multi_setup_study_v01/winner_dependence.csv": "1f5f58f604896fdc28c52ca747f733187ed4a28abf6a9f844bd9667e49dd826f"
+  },
+  "artifact_sha256": {
+    "stage_a_model_spec.json": "95c56676f79a98fb8a48324d2777294f727f76327c815674b96c29810d9d057d",
+    "stage_a_coefficients.csv": "59e52178d2ffb680784bfc4e7bddc7fe98183dc575b357dc66ce0dda6cad316c",
+    "stage_a_walkforward.csv": "34d229627e20626ce66eab7e3a85c164aa709b975e5ba6eb991f87cb2a29a484",
+    "stage_a_topk_summary.csv": "f5af636868efeae2d38f106b0d196f4c5a5d541659e613af64c865942664aaf7",
+    "stage_a_year_summary.csv": "b21e1cfda000b060468b18dce217e020f1de4d6a5877a850f7a7c46dcc112c3a",
+    "stage_a_period_summary.csv": "fc7eacfea8aeaf1d47c1254e24e0177c0731459fd133fe9ae0e03bab766a3994",
+    "two_stage_summary.csv": "30bdc7a5378e7b36d6ab829da56c62bb1e6fc44367ec45f8b20e0365bf9cbf17",
+    "two_stage_year_summary.csv": "992e0965abb28ed12532157e219646ff8b2955a18751f4b5b41f0f0c7994300e",
+    "two_stage_period_summary.csv": "ddcc557b683dc2ab6890ef96771fbb62ff9f38cdd05e20fb46c975aa1c835ae5",
+    "complementarity_summary.csv": "1f30118b91fdbf8fe131581197d02cf37ef81a299fc09e51ac5483aa97252149",
+    "quadrant_analysis.csv": "4dbf31ff92867b268f40db1925f300cc8ca0818c0fbce85678c85fc5680e921f",
+    "cooldown_trade_proxy_summary.csv": "b088f3cfb857fec96c061fad46aff82d3d10922f6a6300775eb6c7ee2335049b",
+    "frequency_summary.csv": "682adc742ae8b51c80efd7aab3cf969e84a48cdacf3d0b8269d213561f11f41b",
+    "n_compact_overlay.csv": "7ac593be29536709e1b1f2ffd43105d1924dc54a7cc5ff6d85f7695835b3efff",
+    "regime_diagnostics.csv": "1de70b47f263a92a606dc0c42590652a02692689fc6c7574fd9e841e1ca76660",
+    "gap_diagnostics.csv": "ada1bfccb22ba1a4de6cd34f531395c0dfa1eb213bf36491d416e7f1d771345e",
+    "cluster_bootstrap_summary.csv": "47e955c133e751cb55387285403226c7c7478eb831e2d8a7c5816c51bfd28e7a",
+    "validation_summary.json": "63c26cf8f9e40c20cfdadc99eaeaf8a8cf27db320aa70f197b687266d47fea26"
+  },
+  "tracked_artifacts": [
+    "stage_a_model_spec.json",
+    "stage_a_coefficients.csv",
+    "stage_a_walkforward.csv",
+    "stage_a_topk_summary.csv",
+    "stage_a_year_summary.csv",
+    "stage_a_period_summary.csv",
+    "two_stage_summary.csv",
+    "two_stage_year_summary.csv",
+    "two_stage_period_summary.csv",
+    "complementarity_summary.csv",
+    "quadrant_analysis.csv",
+    "cooldown_trade_proxy_summary.csv",
+    "frequency_summary.csv",
+    "n_compact_overlay.csv",
+    "regime_diagnostics.csv",
+    "gap_diagnostics.csv",
+    "cluster_bootstrap_summary.csv",
+    "validation_summary.json",
+    "run_manifest.json"
+  ],
+  "local_observation_store": {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/upside_opportunity_ranking_v01/runtime/ranking_store.npz",
+    "sha256": "36c1071c2dcdabdbcb8a4a6d7126d819d9b545075473a5639766e0d234a6c0d9",
+    "tracked_by_git": false
+  },
+  "pipeline_validation": {
+    "passed": true,
+    "mother_reused": true,
+    "stage_a_target_is_mfe10": true,
+    "stage_b_exactly_reused": true,
+    "stage_b_refit_count": 0,
+    "later_period_refit_count": 0,
+    "prospective_observations_excluded": true,
+    "n_compact_unchanged": true,
+    "protected_hashes_unchanged": true,
+    "actual_orders": 0,
+    "actual_fills": 0,
+    "broker_connections": 0,
+    "manifest_written_last": true
+  },
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0
+}

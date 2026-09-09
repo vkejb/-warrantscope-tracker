@@ -1,0 +1,335 @@
+{
+  "study_id": "UPSIDE_OPPORTUNITY_RANKING_V0_1",
+  "status": "COMPLETE",
+  "final_classification": "UPSIDE_SIGNAL_FOUND_BUT_NOT_TRADEABLE",
+  "selected_stage_a_alpha": 0.1,
+  "stage_a_promotion_gate": {
+    "later_period_refit_count_zero": true,
+    "2023_2024_mfe10_above_universe": true,
+    "2023_2024_winner_rate_above_universe": true,
+    "2023_2024_mfe_ic_positive": true,
+    "2023_2024_top1_extreme_mfe_removed_lift_positive": true,
+    "2023_2024_not_single_date_dependent": true,
+    "2023_2024_not_single_month_dependent": true,
+    "2025_mfe10_above_universe": true,
+    "2025_winner_rate_above_universe": true,
+    "2025_mfe_ic_positive": true,
+    "2025_top1_extreme_mfe_removed_lift_positive": true,
+    "2025_not_single_date_dependent": true,
+    "2025_not_single_month_dependent": true
+  },
+  "two_stage_promotion_gate": {
+    "stage_b_refit_count_zero": true,
+    "later_period_refit_count_zero": true,
+    "2023_2024_net_mean_positive": false,
+    "2023_2024_net_pf_above_one": false,
+    "2023_2024_mfe10_above_universe": true,
+    "2023_2024_mae_better_than_stage_a": false,
+    "2023_2024_top1_removed_edge_remains": false,
+    "2023_2024_not_single_date_dependent": true,
+    "2023_2024_not_single_month_dependent": true,
+    "2025_net_mean_positive": true,
+    "2025_net_pf_above_one": true,
+    "2025_mfe10_above_universe": true,
+    "2025_mae_better_than_stage_a": true,
+    "2025_top1_removed_edge_remains": false,
+    "2025_not_single_date_dependent": true,
+    "2025_not_single_month_dependent": true
+  },
+  "concentration_diagnostics": {
+    "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+      "stage_a_remove_best_date_mfe_spread": 0.04024617514076185,
+      "stage_a_remove_best_month_mfe_spread": 0.03880742475910247,
+      "two_stage_remove_best_date_net_spread": 0.0021404097106758487,
+      "two_stage_remove_best_month_net_spread": 0.0004142465234730099
+    },
+    "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+      "stage_a_remove_best_date_mfe_spread": 0.03712062882936229,
+      "stage_a_remove_best_month_mfe_spread": 0.033062351806962334,
+      "two_stage_remove_best_date_net_spread": 0.006735249622926929,
+      "two_stage_remove_best_month_net_spread": 0.005156447499965813
+    }
+  },
+  "stage_a_later_periods": {
+    "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+      "mfe10": 0.08817086341009393,
+      "universe_mfe10": 0.04760372600485094,
+      "mfe_lift_difference": 0.040567137405242995,
+      "winner_rate": 0.35025733759910976,
+      "winner_rate_lift": 1.8404571023435012,
+      "plus10_rate": 0.293225761580192,
+      "plus10_universe": 0.14185595127866388,
+      "plus15_rate": 0.19529837251356238,
+      "plus15_universe": 0.07422875318164737,
+      "mae10": -0.07194347334666928,
+      "universe_mae10": -0.04401110925836116,
+      "volatility20": 0.045305963250750994,
+      "universe_volatility20": 0.025849446486206025,
+      "mean_daily_mfe_ic": 0.161178658005846
+    },
+    "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+      "mfe10": 0.08832831210438193,
+      "universe_mfe10": 0.050589212313723,
+      "mfe_lift_difference": 0.037739099790658925,
+      "winner_rate": 0.33800302156297213,
+      "winner_rate_lift": 1.6622584920224845,
+      "plus10_rate": 0.2826534816646065,
+      "plus10_universe": 0.15414595278100154,
+      "plus15_rate": 0.18678752918555144,
+      "plus15_universe": 0.0815852834698862,
+      "mae10": -0.07648767879663858,
+      "universe_mae10": -0.05011196303487763,
+      "volatility20": 0.046850732451466835,
+      "universe_volatility20": 0.028068817168662535,
+      "mean_daily_mfe_ic": 0.1619911070817522
+    }
+  },
+  "two_stage_later_periods": {
+    "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+      "winner_rate": 0.36795994993742176,
+      "plus10_before_minus5_rate": 0.3120567375886525,
+      "plus15_before_minus5_rate": 0.20483938256153525,
+      "mfe10_mean": 0.09169464304478854,
+      "mae10_mean": -0.07232420805184438,
+      "gross_mean": 0.003038761973977653,
+      "net_mean": -0.0027659023565884664,
+      "gross_profit_factor": 1.0765902414445017,
+      "net_profit_factor": 0.9353239852003506,
+      "top1_removed_net_mean": -0.0035900940523534335,
+      "top1_removed_net_pf": 0.9164368815235073,
+      "top5_removed_net_mean": -0.006457017095552773,
+      "top5_removed_net_pf": 0.8522259019123073
+    },
+    "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+      "winner_rate": 0.380873866446826,
+      "plus10_before_minus5_rate": 0.3091508656224237,
+      "plus15_before_minus5_rate": 0.1953833470733718,
+      "mfe10_mean": 0.08738971536474092,
+      "mae10_mean": -0.07304386709823424,
+      "gross_mean": 0.006388150343694877,
+      "net_mean": 0.0005640885438230911,
+      "gross_profit_factor": 1.16882117054543,
+      "net_profit_factor": 1.0138031634458429,
+      "top1_removed_net_mean": -0.00031449233623316494,
+      "top1_removed_net_pf": 0.9923424844590659,
+      "top5_removed_net_mean": -0.003255001948363862,
+      "top5_removed_net_pf": 0.922123487960207
+    }
+  },
+  "answers": {
+    "1_mfe10_stably_predictable": true,
+    "2_stage_a_mfe10_lift": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": 0.040567137405242995,
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": 0.037739099790658925
+    },
+    "3_stage_a_barrier_rate_lifts": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+        "plus8_difference": 0.15994736669399162,
+        "plus10_difference": 0.1513698103015281,
+        "plus15_difference": 0.12106961933191501
+      },
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+        "plus8_difference": 0.13466339467273986,
+        "plus10_difference": 0.12850752888360498,
+        "plus15_difference": 0.10520224571566525
+      }
+    },
+    "4_stage_a_volatility_context": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+        "selected": 0.045305963250750994,
+        "universe": 0.025849446486206025
+      },
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+        "selected": 0.046850732451466835,
+        "universe": 0.028068817168662535
+      }
+    },
+    "5_stage_a_mae_change": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": -0.027932364088308126,
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": -0.026375715761760947
+    },
+    "6_score_correlations": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+        "spearman": -0.4846481871688138,
+        "pearson": -0.4731518233122684
+      },
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+        "spearman": -0.38409043520865127,
+        "pearson": -0.37188776997307593
+      }
+    },
+    "7_complementary_information": true,
+    "8_high_high_quadrant": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+        "is_best_net_quadrant": false,
+        "net_mean": -0.005637163970521657,
+        "mfe10": 0.057547786720592436,
+        "mae10": -0.05032060487458068
+      },
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+        "is_best_net_quadrant": true,
+        "net_mean": -0.003924481935114602,
+        "mfe10": 0.06356594240391185,
+        "mae10": -0.053903829614002634
+      }
+    },
+    "9_10_two_stage_payoff": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+        "winner_rate": 0.36795994993742176,
+        "plus10_before_minus5_rate": 0.3120567375886525,
+        "plus15_before_minus5_rate": 0.20483938256153525,
+        "mfe10_mean": 0.09169464304478854,
+        "mae10_mean": -0.07232420805184438,
+        "gross_mean": 0.003038761973977653,
+        "net_mean": -0.0027659023565884664,
+        "gross_profit_factor": 1.0765902414445017,
+        "net_profit_factor": 0.9353239852003506,
+        "top1_removed_net_mean": -0.0035900940523534335,
+        "top1_removed_net_pf": 0.9164368815235073,
+        "top5_removed_net_mean": -0.006457017095552773,
+        "top5_removed_net_pf": 0.8522259019123073
+      },
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+        "winner_rate": 0.380873866446826,
+        "plus10_before_minus5_rate": 0.3091508656224237,
+        "plus15_before_minus5_rate": 0.1953833470733718,
+        "mfe10_mean": 0.08738971536474092,
+        "mae10_mean": -0.07304386709823424,
+        "gross_mean": 0.006388150343694877,
+        "net_mean": 0.0005640885438230911,
+        "gross_profit_factor": 1.16882117054543,
+        "net_profit_factor": 1.0138031634458429,
+        "top1_removed_net_mean": -0.00031449233623316494,
+        "top1_removed_net_pf": 0.9923424844590659,
+        "top5_removed_net_mean": -0.003255001948363862,
+        "top5_removed_net_pf": 0.922123487960207
+      }
+    },
+    "11_same_payoff_direction": false,
+    "12_tail_removal": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+        "top1_net_mean": -0.0035900940523534335,
+        "top1_net_pf": 0.9164368815235073,
+        "top5_net_mean": -0.006457017095552773,
+        "top5_net_pf": 0.8522259019123073
+      },
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+        "top1_net_mean": -0.00031449233623316494,
+        "top1_net_pf": 0.9923424844590659,
+        "top5_net_mean": -0.003255001948363862,
+        "top5_net_pf": 0.922123487960207
+      }
+    },
+    "13_cooldown_opportunities_per_month": 38.0,
+    "14_opportunity_increase_vs_n_compact": {
+      "two_stage_cooldown_per_month": 38.0,
+      "n_compact_observations_per_month_proxy": 3.2777777777777777
+    },
+    "15_n_compact_stage_a_rank": {
+      "signals": 236,
+      "median_rank": 181.0,
+      "top30_share": 0.03389830508474576
+    },
+    "16_two_stage_n_compact_overlap": {
+      "two_stage_observations": 7295,
+      "n_compact_observations": 236,
+      "overlap": 1
+    },
+    "17_market_regime": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+        "minimum_net_mean": -0.005793967620678213,
+        "maximum_net_mean": 0.0012120868561780853,
+        "sign_changes_across_slices": true
+      },
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+        "minimum_net_mean": -0.0035098461103414387,
+        "maximum_net_mean": 0.0001213732752001813,
+        "sign_changes_across_slices": true
+      }
+    },
+    "18_entry_gap": {
+      "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": [
+        {
+          "bucket": "LT_MINUS_1PCT",
+          "net_mean": 0.0023621261270843573,
+          "mfe10": 0.10833702816637583,
+          "mae10": -0.07044198180167266
+        },
+        {
+          "bucket": "MINUS_1_TO_0PCT",
+          "net_mean": 0.0017892373332915735,
+          "mfe10": 0.0867528800367426,
+          "mae10": -0.0639757252132641
+        },
+        {
+          "bucket": "0_TO_1PCT",
+          "net_mean": -0.004622872672626582,
+          "mfe10": 0.08429961295944735,
+          "mae10": -0.06812405751669273
+        },
+        {
+          "bucket": "1_TO_2PCT",
+          "net_mean": -0.007716649319477752,
+          "mfe10": 0.08865108337663703,
+          "mae10": -0.07533547443790563
+        },
+        {
+          "bucket": "2_TO_3PCT",
+          "net_mean": 0.0018845900044839265,
+          "mfe10": 0.10088522694409013,
+          "mae10": -0.07967584253203215
+        },
+        {
+          "bucket": "GE_3PCT",
+          "net_mean": -0.006726811791246275,
+          "mfe10": 0.0935641946629544,
+          "mae10": -0.09272411257636108
+        }
+      ],
+      "STRESS_PREVALENCE_SEEN_NOT_BLIND": [
+        {
+          "bucket": "LT_MINUS_1PCT",
+          "net_mean": -0.005170066809182766,
+          "mfe10": 0.10842163138331133,
+          "mae10": -0.07595968535847691
+        },
+        {
+          "bucket": "MINUS_1_TO_0PCT",
+          "net_mean": 0.0027545878561352423,
+          "mfe10": 0.06697574473349191,
+          "mae10": -0.07340511455850711
+        },
+        {
+          "bucket": "0_TO_1PCT",
+          "net_mean": 0.0030278408294672154,
+          "mfe10": 0.08464800851851392,
+          "mae10": -0.06400280747595266
+        },
+        {
+          "bucket": "1_TO_2PCT",
+          "net_mean": -0.0025121392719684743,
+          "mfe10": 0.07948754738555784,
+          "mae10": -0.07939570543387225
+        },
+        {
+          "bucket": "2_TO_3PCT",
+          "net_mean": 0.0004243608932231293,
+          "mfe10": 0.09998263461504084,
+          "mae10": -0.07978671903136428
+        },
+        {
+          "bucket": "GE_3PCT",
+          "net_mean": 0.004811546495307919,
+          "mfe10": 0.09071975479129363,
+          "mae10": -0.08338886442264709
+        }
+      ]
+    },
+    "19_build_prospective_two_stage_shadow": false
+  },
+  "later_period_refit_count": 0,
+  "stage_b_refit_count": 0,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0
+}
