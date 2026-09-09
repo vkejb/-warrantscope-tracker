@@ -112,7 +112,7 @@
     byId("portfolio-user-email").textContent = session.user.email || "已登入";
     byId("portfolio-session-status").textContent = "已登入";
     byId("portfolio-session-status").className = "badge active-status";
-    byId("account-overview-grid").innerHTML = ["起始本金", "銀行現金", "待交割", "交割調整後現金", "持倉市值", "持倉淨值", "總資產", "已實現損益", "未實現損益", "累計損益", "累計績效"].map(label => `
+    byId("account-overview-grid").innerHTML = ["起始本金", "銀行現金", "今日應收付", "全部未交割淨額", "交割調整後現金", "持倉市值", "持倉淨值", "總資產", "已實現損益", "未實現損益", "累計損益", "累計績效"].map(label => `
       <article class="account-metric loading-kpi"><span>${label}</span><strong>—</strong></article>
     `).join("");
     byId("performance-grid").innerHTML = ["本週", "本月", "累計"].map(label => `<article class="performance-card loading-kpi"><span>${label}</span><strong>—</strong></article>`).join("");
@@ -130,7 +130,8 @@
     const items = [
       ["起始本金", moneyOrWaiting(account.startingCapital, "尚未設定"), "", ""],
       ["銀行現金", moneyOrWaiting(account.cashBalance), "", ""],
-      ["待交割", moneyOrWaiting(account.pendingSettlement), account.pendingSettlement === null ? "" : pnlClass(account.pendingSettlement), ""],
+      ["今日應收付", moneyOrWaiting(account.todaySettlement, "等待交易"), account.todaySettlement === null ? "" : pnlClass(account.todaySettlement), ""],
+      ["全部未交割淨額", moneyOrWaiting(account.pendingSettlement), account.pendingSettlement === null ? "" : pnlClass(account.pendingSettlement), ""],
       ["交割調整後現金", moneyOrWaiting(account.adjustedCash), "", ""],
       ["持倉市值", moneyOrWaiting(account.positionMarketValue), "", ""],
       ["持倉淨值", moneyOrWaiting(account.positionLiquidationValue), "", ""],
@@ -148,7 +149,7 @@
     byId("account-as-of").className = `badge ${latest?.is_complete === false ? "warn" : account.asOf ? "active-status" : "neutral"}`;
     byId("account-formula-note").textContent = account.cumulativePnl === null
       ? "需要最新每日快照與起始本金，才能顯示累計績效。"
-      : `交割調整後現金＝銀行現金＋待交割；累計績效＝累計損益÷起始本金。淨外部現金流 ${signedMoney(account.externalCashFlow)}。`;
+      : `今日應收付只計快照當日交易；交割調整後現金＝銀行現金＋全部未交割淨額。累計績效＝策略累計損益÷起始本金；排除標記不計入策略績效。淨外部現金流 ${signedMoney(account.externalCashFlow)}。`;
   }
 
   function renderPerformance(account) {
@@ -189,11 +190,11 @@
           <div><dt>持有張數</dt><dd>${number(position.lots)} 張</dd></div>
           <div><dt>平均成交成本</dt><dd>${price(position.averagePrice)}</dd></div>
           <div><dt>含費成本</dt><dd>${money(position.feeBasis)}</dd><small>均價 ${price(position.averageCostWithFees)}</small></div>
-          <div><dt>已實現損益</dt><dd class="${pnlClass(position.realizedPnl)}">${signedMoney(position.realizedPnl)}</dd></div>
-          <div><dt>最新市價</dt><dd>${position.marketPrice === null ? "等待市價" : price(position.marketPrice)}</dd></div>
+          <div><dt>本 Episode 已實現</dt><dd class="${pnlClass(position.episodeRealizedPnl)}">${signedMoney(position.episodeRealizedPnl)}</dd></div>
+          <div><dt>清算參考價</dt><dd>${position.marketPrice === null ? "等待市價" : price(position.marketPrice)}</dd></div>
           <div><dt>未實現損益</dt><dd class="${position.unrealizedPnl === null ? "waiting" : pnlClass(position.unrealizedPnl)}">${position.unrealizedPnl === null ? "等待市價" : signedMoney(position.unrealizedPnl)}</dd></div>
         </dl>
-        <p class="position-footnote">移動加權平均 · 每張 1,000 單位${position.priceCapturedAt ? ` · 市價 ${escapeHtml(displayDateTime(position.priceCapturedAt))}` : ""}</p>
+        <p class="position-footnote">移動加權平均 · 每張 1,000 單位${position.priceType ? ` · ${escapeHtml(position.priceType)}` : ""}${position.priceCapturedAt ? ` · 市價 ${escapeHtml(displayDateTime(position.priceCapturedAt))}` : ""}</p>
       </article>
     `).join("");
   }
@@ -256,10 +257,9 @@
     }).join("");
   }
 
-  function renderClosedEpisodes(episodes) {
-    const rows = episodes
-      .filter(episode => String(episode.status || "").toUpperCase() === "CLOSED" || episode.ended_at)
-      .sort((a, b) => new Date(b.ended_at || b.started_at || 0) - new Date(a.ended_at || a.started_at || 0));
+  function renderClosedEpisodes(episodes, ledgerClosedEpisodes) {
+    const rows = core.mergeClosedEpisodeHistory(episodes, ledgerClosedEpisodes)
+      .sort((a, b) => new Date(b.endedAt || b.startedAt || 0) - new Date(a.endedAt || a.startedAt || 0));
     byId("closed-episode-count").textContent = `${rows.length} 段`;
     if (!rows.length) {
       byId("closed-episode-list").innerHTML = '<div class="empty">目前沒有已結束的 Trade Episode。</div>';
@@ -268,11 +268,24 @@
     byId("closed-episode-list").innerHTML = rows.map(episode => `
       <article class="closed-episode-card">
         <div class="card-title-row">
-          <div><span class="stock-code">${escapeHtml(episode.warrant_code)}</span><h3>${escapeHtml(episode.warrant_name || "未命名權證")}</h3></div>
-          <strong class="episode-pnl ${episode.realized_pnl === null || episode.realized_pnl === undefined ? "waiting" : pnlClass(episode.realized_pnl)}">${episode.realized_pnl === null || episode.realized_pnl === undefined ? "待結算" : signedMoney(episode.realized_pnl)}</strong>
+          <div><span class="stock-code">${escapeHtml(episode.warrantCode)}</span><h3>${escapeHtml(episode.warrantName || "未命名權證")}</h3></div>
+          <div class="episode-summary"><span class="badge active-status">已結束</span><strong class="episode-pnl ${episode.realizedPnl === null ? "waiting" : pnlClass(episode.realizedPnl)}">${episode.realizedPnl === null ? "待結算" : signedMoney(episode.realizedPnl)}</strong></div>
         </div>
-        <div class="position-context"><span>${escapeHtml(episode.underlying_code)} ${escapeHtml(episode.underlying_name)}</span><span>${escapeHtml(episode.issuer)}</span>${episode.signal_tag ? `<span>${escapeHtml(episode.signal_tag)}</span>` : ""}</div>
-        <dl class="episode-dates"><div><dt>開始</dt><dd>${escapeHtml(displayDateTime(episode.started_at))}</dd></div><div><dt>結束</dt><dd>${escapeHtml(displayDateTime(episode.ended_at))}</dd></div></dl>
+        <div class="position-context"><span>${escapeHtml(episode.underlyingCode)} ${escapeHtml(episode.underlyingName)}</span><span>${escapeHtml(episode.issuer)}</span>${episode.excludedFromStrategy ? '<span class="badge warn">不計入策略績效</span>' : ""}</div>
+        <div class="episode-performance">
+          <div><span>已實現損益</span><strong class="${episode.realizedPnl === null ? "waiting" : pnlClass(episode.realizedPnl)}">${episode.realizedPnl === null ? "待結算" : signedMoney(episode.realizedPnl)}</strong></div>
+          <div><span>Episode 報酬率</span><strong class="${episode.returnPercent === null ? "waiting" : pnlClass(episode.returnPercent)}">${episode.returnPercent === null ? "待計算" : percent(episode.returnPercent)}</strong></div>
+        </div>
+        <dl class="episode-dates">
+          <div><dt>進場</dt><dd>${escapeHtml(displayDateTime(episode.startedAt))}</dd></div>
+          <div><dt>最後出場</dt><dd>${escapeHtml(displayDateTime(episode.endedAt))}</dd></div>
+          <div><dt>總買進張數</dt><dd>${episode.totalBuyLots === null ? "—" : `${number(episode.totalBuyLots)} 張`}</dd></div>
+          <div><dt>持有天數</dt><dd>${episode.holdingDays === null ? "—" : `${number(episode.holdingDays)} 天`}</dd></div>
+          <div><dt>平均買進成本</dt><dd>${episode.averageBuyPrice === null ? "—" : price(episode.averageBuyPrice)}</dd></div>
+          <div><dt>加權平均賣出價</dt><dd>${episode.averageSellPrice === null ? "—" : price(episode.averageSellPrice)}</dd></div>
+          <div><dt>最後賣出價</dt><dd>${episode.lastSellPrice === null ? "—" : price(episode.lastSellPrice)}</dd></div>
+          <div><dt>含費買進總成本</dt><dd>${episode.feeInclusiveBuyCost === null ? "—" : money(episode.feeInclusiveBuyCost)}</dd></div>
+        </dl>
         ${episode.notes ? `<p class="transaction-note">${escapeHtml(episode.notes)}</p>` : ""}
       </article>
     `).join("");
@@ -315,7 +328,7 @@
   function renderLedger() {
     let ledgerError = null;
     try {
-      state.ledger = core.calculatePortfolio(state.transactions, state.prices);
+      state.ledger = core.calculatePortfolio(state.transactions, state.prices, state.tradeEpisodes);
     } catch (error) {
       ledgerError = error;
       state.ledger = core.calculatePortfolio([], state.prices);
@@ -332,7 +345,7 @@
     if (!ledgerError) renderPositions(state.ledger);
     renderCashFlows(state.cashFlows);
     renderTransactions(state.transactions);
-    renderClosedEpisodes(state.tradeEpisodes);
+    renderClosedEpisodes(state.tradeEpisodes, state.ledger.closedEpisodes);
     renderEquityCurve(state.dailySnapshots);
     if (ledgerError) setMessage(byId("portfolio-message"), localizedError(ledgerError, "無法計算持倉。"), "error");
     return ledgerError;

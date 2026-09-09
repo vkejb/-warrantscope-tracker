@@ -1,7 +1,7 @@
 window.WS_DATA = {
   "meta": {
     "title": "WarrantScope Tracker",
-    "generated": "2026-09-08 08:32 +08:00",
+    "generated": "2026-09-08 23:28 +08:00",
     "dates": [
       "2026-08-24",
       "2026-08-25",
@@ -13,14 +13,16 @@ window.WS_DATA = {
       "2026-09-02",
       "2026-09-03",
       "2026-09-04",
-      "2026-09-07"
+      "2026-09-07",
+      "2026-09-08"
     ],
     "months": [
       "2026-08",
       "2026-09"
     ],
-    "defaultDate": "2026-09-07",
+    "defaultDate": "2026-09-08",
     "notes": {
+      "2026-09-08": "9/8 Raw 3 張（6426 統新、6669 緯穎、2481 強茂），BUY / SELL Top20 均完整。截圖顯示觀察中 30、歷史 64；本批沒有人工確認的新進或退出，觀察名單與 Episode 不增減。統新、強茂維持 Fresh candidate；緯穎為既有 Episode 的 Bullish reversal。",
       "2026-09-07": "9/7 Raw 4 張（4 檔母股）；BUY Top20 中 19 筆可辨識、#8 截圖遭遮擋而保留缺值，SELL Top20 完整 20 筆。截圖顯示觀察中 30、歷史 64；目前只收錄 29 檔可辨識觀察明細，不猜測缺少的第 30 檔，也不捏造未提供的歷史 Episode 明細。",
       "2026-09-04": "No-Trigger Day；當日無爆量權證（Raw 0 張、0 檔母股、0 issuer）。買方 Top20、賣方 Top20 均已收錄；觀察名單維持 27 檔，無新進、無已知退出。",
       "2026-09-03": "9/3 Raw 7 張（5 檔母股）、買方 Top20、賣方 Top20 均已收錄；觀察中共 27 檔，友達為當日新進。可見金額僅為畫面中兩個分點加總的近似值，不代表完整主力淨額。",
@@ -38,6 +40,17 @@ window.WS_DATA = {
         "knownEpisodeDetails": 33,
         "source": "使用者截圖",
         "completeness": "計數已確認；未提供第 30 檔觀察標的與完整 64 筆歷史明細，維持未解析，不自行猜測。"
+      },
+      "2026-09-08": {
+        "raw": 3,
+        "activeWatch": 30,
+        "history": 64,
+        "knownWatchDetails": 29,
+        "knownEpisodeDetails": 33,
+        "newWatch": 0,
+        "knownExits": 0,
+        "source": "V4 更新包",
+        "completeness": "計數維持 30／64；本批無人工確認的新進或退出，僅延續 29 筆已辨識觀察明細，不自行補造第 30 檔或歷史明細。"
       }
     }
   },
@@ -1193,6 +1206,60 @@ window.WS_DATA = {
       "Prior_Buy_Rank": "未進 Top20",
       "Prior_Sell_Rank": "未進 Top20",
       "Notes": "既有觀察脈絡 Active Raw；主力 Top20 未提供方向確認，不因單張 Raw 自行判多。原始截圖未顯示 30 分量、流通量與倍數。"
+    },
+    {
+      "Date": "2026-09-08",
+      "Time_LastSeen": null,
+      "Underlying_Code": "6426",
+      "Underlying_Name": "統新",
+      "Warrant_Code": "080083",
+      "Warrant_Name": "統新台新62購01",
+      "Issuer": "台新",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Fresh Raw candidate",
+      "Prior_Buy_Rank": "BUY #9 = 419",
+      "Prior_Sell_Rank": "未進 Top20",
+      "Notes": "使用者未確認新進觀察，不自動加入 Watch。原始畫面未提供 30 分量、流通量與倍數，全部保留缺值。"
+    },
+    {
+      "Date": "2026-09-08",
+      "Time_LastSeen": null,
+      "Underlying_Code": "6669",
+      "Underlying_Name": "緯穎",
+      "Warrant_Code": "076856",
+      "Warrant_Name": "緯穎永豐67購01",
+      "Issuer": "永豐",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Active Retrigger / Bullish reversal",
+      "Prior_Buy_Rank": "BUY #2 = 1,031",
+      "Prior_Sell_Rank": "未進 Top20",
+      "Notes": "保留既有 Watch / Episode；9/7 同母股 Raw 偏 Distribution，9/8 改為 Raw + BUY #2 且 SELL 未進榜，形成明顯方向反轉。"
+    },
+    {
+      "Date": "2026-09-08",
+      "Time_LastSeen": null,
+      "Underlying_Code": "2481",
+      "Underlying_Name": "強茂",
+      "Warrant_Code": "082534",
+      "Warrant_Name": "強茂群益62購03",
+      "Issuer": "群益",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Fresh Raw candidate",
+      "Prior_Buy_Rank": "BUY #13 = 367",
+      "Prior_Sell_Rank": "未進 Top20",
+      "Notes": "使用者未確認新進觀察，不自動加入 Watch。原始畫面未提供 30 分量、流通量與倍數，全部保留缺值。"
     }
   ],
   "mainforce": [
@@ -3510,6 +3577,70 @@ window.WS_DATA = {
       "當日Raw": isRaw,
       "資料完整度": "Complete Top20 · 可見金額近似",
       "備註": `9/7 畫面中兩個可見分點加總約 ${visibleAmount.toLocaleString("zh-TW")} 萬；僅供近似，不代表完整主力淨額。`
+    })),
+    ...[
+      [1, "2409", "友達", 1051, false],
+      [2, "6669", "緯穎", 1031, true],
+      [3, "3008", "大立光", 973, false],
+      [4, "5314", "世紀*", 571, false],
+      [5, "3706", "神達", 540, false],
+      [6, "2344", "華邦電", 445, false],
+      [7, "2330", "台積電", 430, false],
+      [8, "3498", "陽程", 426, false],
+      [9, "6426", "統新", 419, true],
+      [10, "3231", "緯創", 416, false],
+      [11, "2345", "智邦", 408, false],
+      [12, "2408", "南亞科", 383, false],
+      [13, "2481", "強茂", 367, true],
+      [14, "3260", "威剛", 324, false],
+      [15, "3481", "群創", 305, false],
+      [16, "3661", "世芯-KY", 295, false],
+      [17, "3711", "日月光投控", 289, false],
+      [18, "6488", "環球晶", 287, false],
+      [19, "1815", "富喬", 282, false],
+      [20, "2615", "萬海", 269, false]
+    ].map(([rank, code, name, visibleAmount, isRaw]) => ({
+      "日期": "2026-09-08",
+      "方向": "BUY",
+      "排名": rank,
+      "母股代號": code,
+      "母股名稱": name,
+      "可見金額(萬)": visibleAmount,
+      "當日Raw": isRaw,
+      "資料完整度": "Complete Top20 · 可見金額近似",
+      "備註": `9/8 畫面中兩個可見分點加總約 ${visibleAmount.toLocaleString("zh-TW")} 萬；僅供近似，不代表完整主力淨額。`
+    })),
+    ...[
+      [1, "2059", "川湖", 2220],
+      [2, "2454", "聯發科", 1673],
+      [3, "1301", "台塑", 1247],
+      [4, "1815", "富喬", 1097],
+      [5, "4958", "臻鼎-KY", 902],
+      [6, "2634", "漢翔", 851],
+      [7, "2313", "華通", 750],
+      [8, "3017", "奇鋐", 748],
+      [9, "2344", "華邦電", 735],
+      [10, "5274", "信驊", 730],
+      [11, "3711", "日月光投控", 698],
+      [12, "6770", "力積電", 694],
+      [13, "6147", "頎邦", 663],
+      [14, "2408", "南亞科", 643],
+      [15, "5536", "聖暉*", 595],
+      [16, "5289", "宜鼎", 585],
+      [17, "3661", "世芯-KY", 573],
+      [18, "2308", "台達電", 569],
+      [19, "2327", "國巨", 538],
+      [20, "2301", "光寶科", 524]
+    ].map(([rank, code, name, visibleAmount]) => ({
+      "日期": "2026-09-08",
+      "方向": "SELL",
+      "排名": rank,
+      "母股代號": code,
+      "母股名稱": name,
+      "可見金額(萬)": visibleAmount,
+      "當日Raw": false,
+      "資料完整度": "Complete Top20 · 可見金額近似",
+      "備註": `9/8 畫面中兩個可見分點加總約 ${visibleAmount.toLocaleString("zh-TW")} 萬；僅供近似，不代表完整主力淨額。`
     }))
   ],
   "observationSnapshots": [
@@ -4706,8 +4837,39 @@ window.WS_DATA = {
       "資料來源": "使用者確認",
       "備註": "9/7 082589 Raw + BUY #11、SELL #19；買方較強，Fresh Raw→KEEP。"
     }
-  ].map(row => ({
-    ...row,
-    "今日Raw張數": ["4958", "6669", "2327", "6442"].includes(row["母股代號"]) ? 1 : 0
-  }))
+  ]
 };
+
+(() => {
+  const data = window.WS_DATA;
+  const contextByCode = {
+    "2409": ["Fresh / Recent", "9/8 BUY #1 可見 1,051 萬、SELL 未進 Top20，維持偏多；買方金額較 9/7 降溫。"],
+    "6669": ["Active Retrigger / Bullish reversal", "9/8 Raw + BUY #2、SELL 未進 Top20；相較 9/7 偏 Distribution，形成明顯方向反轉，保留既有 Episode。"],
+    "4958": ["Weak Follow-through / Bearish deterioration", "9/8 BUY 未進 Top20、SELL #5 可見 902 萬；9/7 Fresh KEEP 後轉弱，但未獲人工退出確認。"],
+    "6147": ["Bearish deterioration", "9/8 BUY 未進 Top20、SELL #13 可見 663 萬；較 9/7 雙向接近平衡惡化，但不自動退出。"],
+    "1301": ["Fresh / Recent", "9/8 SELL #3 可見 1,247 萬；公開 Watch 維持，私人交易狀態不複製到市場資料。"],
+    "6442": ["Direction Unconfirmed", "9/8 無 Raw，BUY / SELL Top20 皆未見；公開 Watch 維持，私人交易狀態不複製到市場資料。"],
+    "2327": ["Fresh Raw→KEEP", "9/8 SELL #19 可見 538 萬；未獲人工退出確認，保留 9/7 Active Episode。"],
+    "1815": ["Fresh / Recent", "9/8 BUY #19 可見 282 萬、SELL #4 可見 1,097 萬，當日明顯偏賣；不自動退出。"],
+    "2344": ["Mature", "9/8 BUY #6 可見 445 萬、SELL #9 可見 735 萬，當日偏賣；延續既有觀察。"],
+    "3260": ["Fresh / Recent", "9/8 BUY #14 可見 324 萬；延續既有觀察。"],
+    "3008": ["Mature", "9/8 BUY #3 可見 973 萬；延續既有觀察。"],
+    "2615": ["Developing", "9/8 BUY #20 可見 269 萬；延續既有觀察。"],
+    "6770": ["Mature", "9/8 SELL #12 可見 694 萬；延續既有觀察。"]
+  };
+  const previousSnapshot = data.observationSnapshots.filter(row => row["日期"] === "2026-09-07");
+  data.observationSnapshots.push(...previousSnapshot.map(row => ({
+    ...row,
+    "日期": "2026-09-08",
+    "狀態": "觀察中",
+    "當日Raw張數": row["母股代號"] === "6669" ? 1 : 0,
+    "Episode類型": contextByCode[row["母股代號"]]?.[0] ?? row["Episode類型"],
+    "確認程度": "Carry-forward / no watch change",
+    "備註": contextByCode[row["母股代號"]]?.[1] ?? "9/8 無人工確認的新進或退出；延續既有觀察與 Episode。",
+    "完整度": "Known row confirmed; screenshot count 30, identified rows 29"
+  })));
+  data.currentObservation = data.currentObservation.map(row => ({
+    ...row,
+    "今日Raw張數": row["母股代號"] === "6669" ? 1 : 0
+  }));
+})();

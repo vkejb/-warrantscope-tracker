@@ -7,11 +7,46 @@ global.window = {};
 require("../data.js");
 const data = global.window.WS_DATA;
 
-test("2026-09-07 是最新日期，9/4 No-Trigger Day 仍完整保留", () => {
-  assert.equal(data.meta.defaultDate, "2026-09-07");
-  assert.equal(data.meta.dates.at(-1), "2026-09-07");
+test("2026-09-08 是最新日期，9/4 No-Trigger Day 仍完整保留", () => {
+  assert.equal(data.meta.defaultDate, "2026-09-08");
+  assert.equal(data.meta.dates.at(-1), "2026-09-08");
   assert.equal(data.raw.filter(row => row.Date === "2026-09-04").length, 0);
   assert.match(data.meta.notes["2026-09-04"], /No-Trigger Day.*Raw 0 張.*0 檔母股.*0 issuer/);
+});
+
+test("2026-09-08 Raw 正好 3 張且未提供欄位維持缺值", () => {
+  const raw = data.raw.filter(row => row.Date === "2026-09-08");
+
+  assert.equal(raw.length, 3);
+  assert.deepEqual(raw.map(row => row.Warrant_Code), ["080083", "076856", "082534"]);
+  assert.deepEqual(raw.map(row => row.Underlying_Code), ["6426", "6669", "2481"]);
+  assert.ok(raw.every(row => row["30m_Volume"] === null && row.Circulation === null && row.Displayed_Multiple === null));
+  assert.ok(raw.every(row => row.Trade_Direction === "BUY"));
+  assert.match(raw.find(row => row.Warrant_Code === "076856").Notes, /方向反轉/);
+  assert.match(raw.find(row => row.Warrant_Code === "080083").Notes, /不自動加入 Watch/);
+  assert.match(raw.find(row => row.Warrant_Code === "082534").Notes, /不自動加入 Watch/);
+});
+
+test("2026-09-08 BUY 與 SELL Top20 完整且 Raw 標記正確", () => {
+  const rows = data.mainforce.filter(row => row["日期"] === "2026-09-08");
+  const buy = rows.filter(row => row["方向"] === "BUY");
+  const sell = rows.filter(row => row["方向"] === "SELL");
+
+  assert.equal(buy.length, 20);
+  assert.equal(sell.length, 20);
+  assert.deepEqual(buy.map(row => row["排名"]), Array.from({length: 20}, (_, index) => index + 1));
+  assert.deepEqual(sell.map(row => row["排名"]), Array.from({length: 20}, (_, index) => index + 1));
+  assert.deepEqual(buy.slice(0, 3).map(row => [row["母股代號"], row["可見金額(萬)"]]), [
+    ["2409", 1051], ["6669", 1031], ["3008", 973]
+  ]);
+  assert.deepEqual(sell.slice(0, 3).map(row => [row["母股代號"], row["可見金額(萬)"]]), [
+    ["2059", 2220], ["2454", 1673], ["1301", 1247]
+  ]);
+  assert.deepEqual(
+    rows.filter(row => row["當日Raw"] === true).map(row => `${row["方向"]}:${row["母股代號"]}`),
+    ["BUY:6669", "BUY:6426", "BUY:2481"]
+  );
+  assert.ok(rows.every(row => /僅供近似，不代表完整主力淨額/.test(row["備註"])));
 });
 
 test("2026-09-07 Raw 正好 4 張且未提供的量、流通、倍數全部保留缺值", () => {
@@ -183,9 +218,27 @@ test("2026-09-07 如實保存截圖 Watch 30／History 64，僅建立 29 筆可�
   assert.ok(added.every(row => row["進觀察日期"] === "2026-09-07" && row["狀態"] === "觀察中／新進"));
   assert.ok(snapshot.filter(row => ["4958", "6669", "2327", "6442"].includes(row["母股代號"])).every(row => row["當日Raw張數"] === 1));
   assert.deepEqual(
-    data.currentObservation.filter(row => row["今日Raw張數"] === 1).map(row => row["母股代號"]).sort(),
+    snapshot.filter(row => row["當日Raw張數"] === 1).map(row => row["母股代號"]).sort(),
     ["2327", "4958", "6442", "6669"]
   );
+});
+
+test("2026-09-08 Watch 30／History 64 維持，沒有新增 Watch、退出或 Episode", () => {
+  const previous = data.observationSnapshots.filter(row => row["日期"] === "2026-09-07");
+  const snapshot = data.observationSnapshots.filter(row => row["日期"] === "2026-09-08");
+  const counts = data.meta.reportedCounts["2026-09-08"];
+
+  assert.deepEqual([counts.raw, counts.activeWatch, counts.history, counts.newWatch, counts.knownExits], [3, 30, 64, 0, 0]);
+  assert.equal(snapshot.length, 29);
+  assert.deepEqual(snapshot.map(row => row["母股代號"]).sort(), previous.map(row => row["母股代號"]).sort());
+  assert.ok(!snapshot.some(row => ["6426", "2481"].includes(row["母股代號"])));
+  assert.deepEqual(snapshot.filter(row => row["當日Raw張數"] === 1).map(row => row["母股代號"]), ["6669"]);
+  assert.deepEqual(data.currentObservation.filter(row => row["今日Raw張數"] === 1).map(row => row["母股代號"]), ["6669"]);
+  assert.equal(data.episodes.length, 33);
+  assert.ok(!data.episodes.some(row => row["來源日期"] === "2026-09-08"));
+  assert.match(snapshot.find(row => row["母股代號"] === "6669")["備註"], /方向反轉.*保留既有 Episode/);
+  assert.match(snapshot.find(row => row["母股代號"] === "4958")["備註"], /轉弱.*未獲人工退出確認/);
+  assert.match(snapshot.find(row => row["母股代號"] === "6147")["備註"], /惡化.*不自動退出/);
 });
 
 test("臻鼎-KY 與國巨各新增一筆 2026-09-07 Active Episode，舊 Episode 不變", () => {
@@ -227,5 +280,5 @@ test("2026-09-02 舊資料完整保留", () => {
 
 test("公開市場資料未寫入私人持倉內容", () => {
   const source = fs.readFileSync(path.join(__dirname, "..", "data.js"), "utf8");
-  assert.doesNotMatch(source, /友達凱基61購12|台塑元大62購01|頎邦群益63購01|金像電元大64購04|緯穎元大63購11|富喬元大61購03/);
+  assert.doesNotMatch(source, /user_id|starting_capital|cash_balance|pending_settlement|net_asset_value|realized_pnl|unrealized_pnl|transaction_tax/i);
 });

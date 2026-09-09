@@ -5,6 +5,7 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const portfolioSource = fs.readFileSync(path.join(root, "portfolio.js"), "utf8");
+const portfolioCoreSource = fs.readFileSync(path.join(root, "portfolio-core.js"), "utf8");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const publicData = fs.readFileSync(path.join(root, "data.js"), "utf8");
 
@@ -29,6 +30,17 @@ test("損益頁包含帳戶、績效、持倉、現金流、交易、Episode 與
   ]) {
     assert.match(html, new RegExp(`id=\\"${id}\\"`));
   }
+});
+
+test("損益頁拆分今日與全部未交割，並以 ledger 補足已結束 Episode 績效", () => {
+  assert.match(portfolioSource, /今日應收付/);
+  assert.match(portfolioSource, /全部未交割淨額/);
+  assert.match(portfolioSource, /mergeClosedEpisodeHistory/);
+  assert.match(portfolioSource, /不計入策略績效/);
+  assert.match(portfolioSource, /Episode 報酬率/);
+  assert.match(portfolioCoreSource, /feeInclusiveBuyCost/);
+  assert.match(portfolioCoreSource, /EXCLUDED_FROM_STRATEGY/);
+  assert.match(portfolioCoreSource, /price_type/);
 });
 
 test("公開資料檔不包含 Supabase 私人資料設定或秘密金鑰", () => {

@@ -31,6 +31,15 @@
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
+  function pricePriority(snapshot) {
+    const type = String(snapshot?.price_type || "").toUpperCase();
+    return /LIQUIDATION|LIQUIDATE|BID/.test(type) ? 2 : 1;
+  }
+
+  function priceMarketDate(snapshot) {
+    return String(snapshot?.market_date || snapshot?.captured_at || snapshot?.created_at || "").slice(0, 10);
+  }
+
   function transactionOrder(a, b) {
     return timestamp(a.traded_at) - timestamp(b.traded_at)
       || timestamp(a.created_at) - timestamp(b.created_at)
@@ -49,7 +58,9 @@
   function priceIndex(priceSnapshots) {
     const latest = new Map();
     [...(priceSnapshots || [])]
-      .sort((a, b) => timestamp(b.captured_at || b.created_at) - timestamp(a.captured_at || a.created_at))
+      .sort((a, b) => priceMarketDate(b).localeCompare(priceMarketDate(a))
+        || pricePriority(b) - pricePriority(a)
+        || timestamp(b.captured_at || b.created_at) - timestamp(a.captured_at || a.created_at))
       .forEach(snapshot => {
         const code = String(snapshot.warrant_code || "").trim();
         const price = numeric(snapshot.price, NaN);
@@ -69,7 +80,18 @@
       grossBasis: 0,
       feeBasis: 0,
       realizedPnl: 0,
+      strategyRealizedPnl: 0,
       episodeRealizedPnl: 0,
+      episodeBuyLots: 0,
+      episodeBuyGross: 0,
+      episodeBuyFees: 0,
+      episodeFeeInclusiveBuyCost: 0,
+      episodeSellLots: 0,
+      episodeSellGross: 0,
+      episodeSellFees: 0,
+      episodeSellTaxes: 0,
+      episodeLastSellPrice: null,
+      episodeExcludedFromStrategy: false,
       episodeNumber: 0,
       currentEpisodeId: null,
       episodeStartedAt: null,
@@ -77,10 +99,14 @@
     };
   }
 
-  function calculatePortfolio(transactions, priceSnapshots = []) {
+  function calculatePortfolio(transactions, priceSnapshots = [], tradeEpisodes = []) {
     const states = new Map();
     const closedEpisodes = [];
     const sorted = effectiveTransactions(transactions).sort(transactionOrder);
+    const episodeRecords = new Map((tradeEpisodes || []).filter(row => row?.id).map(row => [String(row.id), row]));
+    const excludedEpisodeIds = new Set([...episodeRecords.entries()]
+      .filter(([, row]) => String(row.signal_tag || "").toUpperCase() === "EXCLUDED_FROM_STRATEGY")
+      .map(([id]) => id));
 
     sorted.forEach(transaction => {
       const code = String(transaction.warrant_code || "").trim();
@@ -111,12 +137,27 @@
           state.episodeRealizedPnl = 0;
           state.currentEpisodeId = transaction.episode_id || null;
           state.episodeStartedAt = transaction.traded_at || null;
+          state.episodeBuyLots = 0;
+          state.episodeBuyGross = 0;
+          state.episodeBuyFees = 0;
+          state.episodeFeeInclusiveBuyCost = 0;
+          state.episodeSellLots = 0;
+          state.episodeSellGross = 0;
+          state.episodeSellFees = 0;
+          state.episodeSellTaxes = 0;
+          state.episodeLastSellPrice = null;
+          state.episodeExcludedFromStrategy = excludedEpisodeIds.has(String(transaction.episode_id || ""));
         } else if (transaction.episode_id) {
           state.currentEpisodeId = transaction.episode_id;
+          state.episodeExcludedFromStrategy = excludedEpisodeIds.has(String(transaction.episode_id));
         }
         state.lots += lots;
         state.grossBasis += units * price;
         state.feeBasis += units * price + commission + transactionTax;
+        state.episodeBuyLots += lots;
+        state.episodeBuyGross += units * price;
+        state.episodeBuyFees += commission + transactionTax;
+        state.episodeFeeInclusiveBuyCost += units * price + commission + transactionTax;
       } else {
         if (lots > state.lots + EPSILON) {
           throw new PortfolioError(
@@ -125,7 +166,10 @@
             transaction,
           );
         }
-        if (transaction.episode_id) state.currentEpisodeId = transaction.episode_id;
+        if (transaction.episode_id) {
+          state.currentEpisodeId = transaction.episode_id;
+          state.episodeExcludedFromStrategy = excludedEpisodeIds.has(String(transaction.episode_id));
+        }
         const heldUnits = state.lots * UNITS_PER_LOT;
         const averageGrossCost = heldUnits ? state.grossBasis / heldUnits : 0;
         const averageFeeCost = heldUnits ? state.feeBasis / heldUnits : 0;
@@ -137,15 +181,42 @@
         state.feeBasis -= soldFeeBasis;
         state.realizedPnl = currency(state.realizedPnl + realized);
         state.episodeRealizedPnl = currency(state.episodeRealizedPnl + realized);
+        if (!state.episodeExcludedFromStrategy) state.strategyRealizedPnl = currency(state.strategyRealizedPnl + realized);
+        state.episodeSellLots += lots;
+        state.episodeSellGross += units * price;
+        state.episodeSellFees += commission;
+        state.episodeSellTaxes += transactionTax;
+        state.episodeLastSellPrice = price;
 
         if (state.lots <= EPSILON) {
+          const episodeRecord = episodeRecords.get(String(state.currentEpisodeId || ""));
+          const averageBuyPrice = state.episodeBuyLots ? state.episodeBuyGross / (state.episodeBuyLots * UNITS_PER_LOT) : null;
+          const averageSellPrice = state.episodeSellLots ? state.episodeSellGross / (state.episodeSellLots * UNITS_PER_LOT) : null;
           closedEpisodes.push({
             warrantCode: code,
+            warrantName: state.warrantName,
+            underlyingCode: state.underlyingCode,
+            underlyingName: state.underlyingName,
+            issuer: state.issuer,
             episodeId: state.currentEpisodeId,
             episodeNumber: state.episodeNumber,
             startedAt: state.episodeStartedAt,
             endedAt: transaction.traded_at || null,
             realizedPnl: state.episodeRealizedPnl,
+            returnPercent: state.episodeFeeInclusiveBuyCost
+              ? state.episodeRealizedPnl / state.episodeFeeInclusiveBuyCost * 100
+              : null,
+            totalBuyLots: state.episodeBuyLots,
+            averageBuyPrice,
+            averageSellPrice,
+            lastSellPrice: state.episodeLastSellPrice,
+            buyFees: state.episodeBuyFees,
+            sellFees: state.episodeSellFees,
+            sellTaxes: state.episodeSellTaxes,
+            feeInclusiveBuyCost: state.episodeFeeInclusiveBuyCost,
+            signalTag: episodeRecord?.signal_tag || null,
+            excludedFromStrategy: state.episodeExcludedFromStrategy,
+            holdingDays: holdingDays(state.episodeStartedAt, transaction.traded_at),
           });
           state.lots = 0;
           state.grossBasis = 0;
@@ -153,6 +224,16 @@
           state.currentEpisodeId = null;
           state.episodeStartedAt = null;
           state.episodeRealizedPnl = 0;
+          state.episodeBuyLots = 0;
+          state.episodeBuyGross = 0;
+          state.episodeBuyFees = 0;
+          state.episodeFeeInclusiveBuyCost = 0;
+          state.episodeSellLots = 0;
+          state.episodeSellGross = 0;
+          state.episodeSellFees = 0;
+          state.episodeSellTaxes = 0;
+          state.episodeLastSellPrice = null;
+          state.episodeExcludedFromStrategy = false;
         }
       }
 
@@ -171,6 +252,7 @@
           averagePrice: state.grossBasis / units,
           averageCostWithFees: state.feeBasis / units,
           marketPrice,
+          priceType: snapshot?.price_type || null,
           priceCapturedAt: snapshot?.captured_at || snapshot?.created_at || null,
           unrealizedPnl: marketPrice === null ? null : marketPrice * units - state.feeBasis,
         };
@@ -181,6 +263,12 @@
     const feeInclusiveCost = positions.reduce((sum, position) => sum + position.feeBasis, 0);
     const hasAllPrices = positions.every(position => position.unrealizedPnl !== null);
     const unrealizedPnl = hasAllPrices ? positions.reduce((sum, position) => sum + position.unrealizedPnl, 0) : null;
+    const strategyPositions = positions.filter(position => !position.episodeExcludedFromStrategy);
+    const hasAllStrategyPrices = strategyPositions.every(position => position.unrealizedPnl !== null);
+    const strategyRealizedPnl = [...states.values()].reduce((sum, state) => sum + state.strategyRealizedPnl, 0);
+    const strategyUnrealizedPnl = hasAllStrategyPrices
+      ? strategyPositions.reduce((sum, position) => sum + position.unrealizedPnl, 0)
+      : null;
 
     return {
       positions,
@@ -188,9 +276,75 @@
       realizedPnl,
       feeInclusiveCost,
       unrealizedPnl,
+      strategyRealizedPnl,
+      strategyUnrealizedPnl,
+      strategyCumulativePnl: strategyUnrealizedPnl === null ? null : strategyRealizedPnl + strategyUnrealizedPnl,
       states,
       transactions: sorted,
     };
+  }
+
+  function holdingDays(startedAt, endedAt) {
+    if (!startedAt || !endedAt) return null;
+    const start = new Date(`${String(startedAt).slice(0, 10)}T00:00:00.000Z`).getTime();
+    const end = new Date(`${String(endedAt).slice(0, 10)}T00:00:00.000Z`).getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+    return Math.max(1, Math.round((end - start) / 86400000));
+  }
+
+  function mergeClosedEpisodeHistory(tradeEpisodes, ledgerClosedEpisodes) {
+    const closed = [...(ledgerClosedEpisodes || [])];
+    const consumed = new Set();
+    const findLedgerEpisode = episode => {
+      const id = String(episode?.id || "");
+      let index = closed.findIndex((row, rowIndex) => !consumed.has(rowIndex) && id && String(row.episodeId || "") === id);
+      if (index < 0) {
+        index = closed.findIndex((row, rowIndex) => !consumed.has(rowIndex)
+          && row.warrantCode === String(episode?.warrant_code || "")
+          && (!episode?.started_at || String(row.startedAt || "").slice(0, 10) === String(episode.started_at).slice(0, 10))
+          && (!episode?.ended_at || String(row.endedAt || "").slice(0, 10) === String(episode.ended_at).slice(0, 10)));
+      }
+      if (index >= 0) consumed.add(index);
+      return index >= 0 ? closed[index] : null;
+    };
+    const rows = (tradeEpisodes || [])
+      .filter(episode => String(episode.status || "").toUpperCase() === "CLOSED" || episode.ended_at)
+      .map(episode => {
+        const ledgerEpisode = findLedgerEpisode(episode);
+        const databasePnl = nullableNumeric(episode.realized_pnl);
+        const realizedPnl = databasePnl ?? ledgerEpisode?.realizedPnl ?? null;
+        const feeInclusiveBuyCost = ledgerEpisode?.feeInclusiveBuyCost ?? null;
+        return {
+          id: episode.id || ledgerEpisode?.episodeId || null,
+          warrantCode: episode.warrant_code || ledgerEpisode?.warrantCode || "",
+          warrantName: episode.warrant_name || ledgerEpisode?.warrantName || "",
+          underlyingCode: episode.underlying_code || ledgerEpisode?.underlyingCode || "",
+          underlyingName: episode.underlying_name || ledgerEpisode?.underlyingName || "",
+          issuer: episode.issuer || ledgerEpisode?.issuer || "",
+          startedAt: episode.started_at || ledgerEpisode?.startedAt || null,
+          endedAt: episode.ended_at || ledgerEpisode?.endedAt || null,
+          totalBuyLots: ledgerEpisode?.totalBuyLots ?? null,
+          averageBuyPrice: ledgerEpisode?.averageBuyPrice ?? null,
+          averageSellPrice: ledgerEpisode?.averageSellPrice ?? null,
+          lastSellPrice: ledgerEpisode?.lastSellPrice ?? null,
+          feeInclusiveBuyCost,
+          realizedPnl,
+          returnPercent: realizedPnl !== null && feeInclusiveBuyCost
+            ? realizedPnl / feeInclusiveBuyCost * 100
+            : ledgerEpisode?.returnPercent ?? null,
+          holdingDays: ledgerEpisode?.holdingDays ?? holdingDays(episode.started_at, episode.ended_at),
+          signalTag: episode.signal_tag || ledgerEpisode?.signalTag || null,
+          excludedFromStrategy: String(episode.signal_tag || ledgerEpisode?.signalTag || "").toUpperCase() === "EXCLUDED_FROM_STRATEGY",
+          notes: episode.notes || "",
+          status: "CLOSED",
+        };
+      });
+
+    closed.forEach((episode, index) => {
+      if (consumed.has(index)) return;
+      rows.push({...episode, id: episode.episodeId, notes: "", status: "CLOSED"});
+    });
+    return rows;
   }
 
   function currentPosition(ledger, warrantCode) {
@@ -257,6 +411,25 @@
     return type === "WITHDRAWAL" || type === "INTEREST_EXPENSE" ? -amount : amount;
   }
 
+  function transactionNetCash(transaction) {
+    const explicit = nullableNumeric(transaction?.net_cash_amount);
+    if (explicit !== null) return explicit;
+    const side = String(transaction?.side || "").toUpperCase();
+    const lots = numeric(transaction?.lots, NaN);
+    const price = numeric(transaction?.price, NaN);
+    if (!Number.isFinite(lots) || !Number.isFinite(price) || !["BUY", "SELL"].includes(side)) return null;
+    const gross = lots * UNITS_PER_LOT * price;
+    const fees = numeric(transaction?.commission) + numeric(transaction?.transaction_tax);
+    return side === "BUY" ? -(gross + fees) : gross - fees;
+  }
+
+  function settlementNetForDate(transactions, date, timezone = "Asia/Taipei") {
+    if (!date) return null;
+    return currency(effectiveTransactions(transactions)
+      .filter(transaction => dateKeyInTimezone(transaction.traded_at, timezone) === date)
+      .reduce((sum, transaction) => sum + (transactionNetCash(transaction) ?? 0), 0));
+  }
+
   function calculateAccountOverview({settings, cashFlows, dailySnapshots, ledger}) {
     const snapshots = [...(dailySnapshots || [])].sort((a, b) => snapshotDate(a).localeCompare(snapshotDate(b)));
     const latestSnapshot = snapshots[snapshots.length - 1] || null;
@@ -273,14 +446,24 @@
     const totalAssets = snapshotNetAssetValue ?? calculatedTotalAssets;
     const externalCashFlow = netExternalCashFlow(cashFlows, snapshotDate(latestSnapshot), settings?.timezone || "Asia/Taipei");
     const snapshotTotalPnl = nullableNumeric(latestSnapshot?.total_pnl);
-    const cumulativePnl = snapshotTotalPnl ?? (totalAssets === null || startingCapital === null
-      ? null
-      : totalAssets - startingCapital - externalCashFlow);
+    const ledgerStrategyPnl = nullableNumeric(ledger?.strategyCumulativePnl);
+    const cumulativePnl = snapshotTotalPnl ?? ledgerStrategyPnl ?? (totalAssets === null || startingCapital === null
+        ? null
+        : totalAssets - startingCapital - externalCashFlow);
     const cumulativePerformance = cumulativePnl === null || !startingCapital
       ? null
       : cumulativePnl / startingCapital * 100;
-    const realizedPnl = nullableNumeric(latestSnapshot?.realized_pnl) ?? nullableNumeric(ledger?.realizedPnl);
-    const unrealizedPnl = nullableNumeric(latestSnapshot?.unrealized_pnl) ?? nullableNumeric(ledger?.unrealizedPnl);
+    const realizedPnl = nullableNumeric(latestSnapshot?.realized_pnl)
+      ?? nullableNumeric(ledger?.strategyRealizedPnl)
+      ?? nullableNumeric(ledger?.realizedPnl);
+    const unrealizedPnl = nullableNumeric(latestSnapshot?.unrealized_pnl)
+      ?? nullableNumeric(ledger?.strategyUnrealizedPnl)
+      ?? nullableNumeric(ledger?.unrealizedPnl);
+    const todaySettlement = settlementNetForDate(
+      ledger?.transactions || [],
+      snapshotDate(latestSnapshot),
+      settings?.timezone || "Asia/Taipei",
+    );
 
     return {
       latestSnapshot,
@@ -288,6 +471,7 @@
       startingCapital,
       cashBalance,
       pendingSettlement,
+      todaySettlement,
       adjustedCash,
       positionMarketValue,
       positionLiquidationValue,
@@ -323,14 +507,14 @@
       return key && key >= start && key <= end;
     });
     const completeRows = withinPeriod.filter(row => row.is_complete !== false);
-    const dayPnls = completeRows.map(row => nullableNumeric(row.day_pnl));
-    const dailyReturns = completeRows.map(row => nullableNumeric(row.twr_daily));
+    const dayPnls = completeRows.map(row => nullableNumeric(row.day_pnl)).filter(value => value !== null);
+    const dailyReturns = completeRows.map(row => nullableNumeric(row.twr_daily)).filter(value => value !== null);
     return {
       start,
       end,
       snapshotCount: completeRows.length,
-      pnl: dayPnls.length && dayPnls.every(value => value !== null) ? dayPnls.reduce((sum, value) => sum + value, 0) : null,
-      performance: dailyReturns.length && dailyReturns.every(value => value !== null) ? (dailyReturns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100 : null,
+      pnl: dayPnls.length ? dayPnls.reduce((sum, value) => sum + value, 0) : null,
+      performance: dailyReturns.length ? (dailyReturns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100 : null,
     };
   }
 
@@ -364,9 +548,12 @@
     calculatePerformance,
     currentPosition,
     effectiveTransactions,
+    mergeClosedEpisodeHistory,
     netExternalCashFlow,
+    settlementNetForDate,
     signedCashFlowAmount,
     snapshotTotalAssets,
+    transactionNetCash,
     validateSale,
   };
 });
