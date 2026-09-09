@@ -1,7 +1,7 @@
 window.WS_DATA = {
   "meta": {
     "title": "WarrantScope Tracker",
-    "generated": "2026-09-08 23:28 +08:00",
+    "generated": "2026-09-09 21:34 +08:00",
     "dates": [
       "2026-08-24",
       "2026-08-25",
@@ -14,14 +14,16 @@ window.WS_DATA = {
       "2026-09-03",
       "2026-09-04",
       "2026-09-07",
-      "2026-09-08"
+      "2026-09-08",
+      "2026-09-09"
     ],
     "months": [
       "2026-08",
       "2026-09"
     ],
-    "defaultDate": "2026-09-08",
+    "defaultDate": "2026-09-09",
     "notes": {
+      "2026-09-09": "9/9 Raw 7 張（5 檔母股），BUY / SELL Top20 均完整。觀察中由 30 增至 32、歷史維持 64；使用者只確認新增 2408 南亞科與 8299 群聯，兩檔建立 Active Episode，其餘 Raw 不自動加入 Watch。Raw 截圖未提供 30 分量、流通量與倍數，全部保留缺值。",
       "2026-09-08": "9/8 Raw 3 張（6426 統新、6669 緯穎、2481 強茂），BUY / SELL Top20 均完整。截圖顯示觀察中 30、歷史 64；本批沒有人工確認的新進或退出，觀察名單與 Episode 不增減。統新、強茂維持 Fresh candidate；緯穎為既有 Episode 的 Bullish reversal。",
       "2026-09-07": "9/7 Raw 4 張（4 檔母股）；BUY Top20 中 19 筆可辨識、#8 截圖遭遮擋而保留缺值，SELL Top20 完整 20 筆。截圖顯示觀察中 30、歷史 64；目前只收錄 29 檔可辨識觀察明細，不猜測缺少的第 30 檔，也不捏造未提供的歷史 Episode 明細。",
       "2026-09-04": "No-Trigger Day；當日無爆量權證（Raw 0 張、0 檔母股、0 issuer）。買方 Top20、賣方 Top20 均已收錄；觀察名單維持 27 檔，無新進、無已知退出。",
@@ -51,6 +53,17 @@ window.WS_DATA = {
         "knownExits": 0,
         "source": "V4 更新包",
         "completeness": "計數維持 30／64；本批無人工確認的新進或退出，僅延續 29 筆已辨識觀察明細，不自行補造第 30 檔或歷史明細。"
+      },
+      "2026-09-09": {
+        "raw": 7,
+        "activeWatch": 32,
+        "history": 64,
+        "knownWatchDetails": 31,
+        "knownEpisodeDetails": 35,
+        "newWatch": 2,
+        "knownExits": 0,
+        "source": "2026-09-09 V2 更新包",
+        "completeness": "計數已確認為 32／64；新增南亞科與群聯後共有 31 筆可辨識觀察明細，既有未解析第 30 檔仍維持缺值，不自行猜測。"
       }
     }
   },
@@ -4872,4 +4885,293 @@ window.WS_DATA = {
     ...row,
     "今日Raw張數": row["母股代號"] === "6669" ? 1 : 0
   }));
+})();
+
+(() => {
+  const data = window.WS_DATA;
+  const date = "2026-09-09";
+
+  data.raw = data.raw.filter(row => row.Date !== date);
+  data.raw.push(
+    {
+      "Date": date,
+      "Time_LastSeen": null,
+      "Underlying_Code": "2301",
+      "Underlying_Name": "光寶科",
+      "Warrant_Code": "083921",
+      "Warrant_Name": "光寶科台新63購06",
+      "Issuer": "台新",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Fresh Raw candidate",
+      "Prior_Buy_Rank": "BUY #19 = 543",
+      "Prior_Sell_Rank": "未進 Top20",
+      "Notes": "Raw + BUY #19、SELL 未進 Top20，偏多但仍需價格確認；未獲人工新增 Watch 確認，不自動加入觀察。原始截圖未提供 30 分量、流通量與倍數。"
+    },
+    ...[
+      ["076115", "南亞科台新61購13"],
+      ["083613", "南亞科台新63購07"],
+      ["072500", "南亞科台新61購05"]
+    ].map(([warrantCode, warrantName]) => ({
+      "Date": date,
+      "Time_LastSeen": null,
+      "Underlying_Code": "2408",
+      "Underlying_Name": "南亞科",
+      "Warrant_Code": warrantCode,
+      "Warrant_Name": warrantName,
+      "Issuer": "台新",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Strong Cross-Warrant + Main-Force Confirmation",
+      "Prior_Buy_Rank": "BUY #1 = 3,579",
+      "Prior_Sell_Rank": "SELL #14 = 537",
+      "Notes": "同母股 3 張 Raw + BUY #1、SELL #14，買方可見金額約為賣方 6.66 倍；使用者確認 2026-09-09 新增觀察並啟用 Active Episode。原始截圖未提供 30 分量、流通量與倍數。"
+    })),
+    {
+      "Date": date,
+      "Time_LastSeen": null,
+      "Underlying_Code": "3006",
+      "Underlying_Name": "晶豪科",
+      "Warrant_Code": "080035",
+      "Warrant_Name": "晶豪科國泰63購02",
+      "Issuer": "國泰",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "Unknown",
+      "Episode_Type": "Fresh Raw / Direction Unconfirmed",
+      "Prior_Buy_Rank": "未進 Top20",
+      "Prior_Sell_Rank": "未進 Top20",
+      "Notes": "Raw 但 BUY / SELL 均未進 Top20，方向維持 Unknown；不因現股近期上漲推定 BUY，也不自動加入 Watch。原始截圖未提供 30 分量、流通量與倍數。"
+    },
+    {
+      "Date": date,
+      "Time_LastSeen": null,
+      "Underlying_Code": "8299",
+      "Underlying_Name": "群聯",
+      "Warrant_Code": "712637",
+      "Warrant_Name": "群聯群益62購01",
+      "Issuer": "群益",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "Unknown",
+      "Episode_Type": "Fresh Raw / Direction Unconfirmed",
+      "Prior_Buy_Rank": "未進 Top20",
+      "Prior_Sell_Rank": "未進 Top20",
+      "Notes": "Raw 但 BUY / SELL 均未進 Top20，方向維持 Unknown；使用者確認 2026-09-09 新增觀察並啟用 Active Episode。原始截圖未提供 30 分量、流通量與倍數。"
+    },
+    {
+      "Date": date,
+      "Time_LastSeen": null,
+      "Underlying_Code": "6147",
+      "Underlying_Name": "頎邦",
+      "Warrant_Code": "711138",
+      "Warrant_Name": "頎邦台新61購04",
+      "Issuer": "台新",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "Unknown",
+      "Episode_Type": "Active Raw / Direction Unconfirmed",
+      "Prior_Buy_Rank": "未進 Top20",
+      "Prior_Sell_Rank": "未進 Top20",
+      "Notes": "既有觀察標的再次 Raw，但 BUY / SELL 均未進 Top20，方向維持 Unknown；保留既有 Episode，不另開新 Episode。原始截圖未提供 30 分量、流通量與倍數。"
+    }
+  );
+  const rawOrder = ["083921", "076115", "083613", "080035", "712637", "072500", "711138"];
+  const datedRaw = data.raw
+    .filter(row => row.Date === date)
+    .sort((left, right) => rawOrder.indexOf(left.Warrant_Code) - rawOrder.indexOf(right.Warrant_Code));
+  data.raw = data.raw.filter(row => row.Date !== date).concat(datedRaw);
+
+  const mainforceGroups = {
+    BUY: [
+      [1, "2408", "南亞科", 3377, 202],
+      [2, "5289", "宜鼎", 1965, 175],
+      [3, "2337", "旺宏", 1468, 296],
+      [4, "2409", "友達", 677, 342],
+      [5, "2345", "智邦", 692, 326],
+      [6, "3665", "貿聯-KY", 660, 227],
+      [7, "2308", "台達電", 737, 127],
+      [8, "3017", "奇鋐", 589, 245],
+      [9, "1815", "富喬", 443, 376],
+      [10, "2303", "聯電", 422, 355],
+      [11, "6488", "環球晶", 489, 213],
+      [12, "3042", "晶技", 490, 190],
+      [13, "6805", "富世達", 338, 302],
+      [14, "3105", "穩懋", 425, 214],
+      [15, "6669", "緯穎", 448, 115],
+      [16, "2464", "盟立", 408, 153],
+      [17, "2049", "上銀", 336, 209],
+      [18, "2615", "萬海", 358, 186],
+      [19, "2301", "光寶科", 327, 216],
+      [20, "4958", "臻鼎-KY", 325, 181]
+    ],
+    SELL: [
+      [1, "6239", "力成", 3271, 102],
+      [2, "3706", "神達", 810, 475],
+      [3, "3008", "大立光", 1154, 116],
+      [4, "3017", "奇鋐", 844, 177],
+      [5, "6805", "富世達", 896, 69],
+      [6, "5314", "世紀*", 446, 408],
+      [7, "3406", "玉晶光", 622, 218],
+      [8, "2330", "台積電", 586, 197],
+      [9, "2344", "華邦電", 450, 244],
+      [10, "5274", "信驊", 603, 82],
+      [11, "2303", "聯電", 528, 111],
+      [12, "2454", "聯發科", 306, 285],
+      [13, "3231", "緯創", 370, 191],
+      [14, "2408", "南亞科", 314, 223],
+      [15, "2409", "友達", 340, 175],
+      [16, "6505", "台塑化", 244, 232],
+      [17, "6223", "旺矽", 311, 159],
+      [18, "1301", "台塑", 398, 66],
+      [19, "2327", "國巨", 333, 127],
+      [20, "1802", "台玻", 300, 149]
+    ]
+  };
+  const rawRankCodes = new Set(["2301", "2408"]);
+  data.mainforce = data.mainforce.filter(row => row["日期"] !== date);
+  Object.entries(mainforceGroups).forEach(([direction, rows]) => {
+    data.mainforce.push(...rows.map(([rank, code, name, branch1, branch2]) => {
+      const visibleAmount = branch1 + branch2;
+      return {
+        "日期": date,
+        "方向": direction,
+        "排名": rank,
+        "母股代號": code,
+        "母股名稱": name,
+        "可見金額(萬)": visibleAmount,
+        "當日Raw": rawRankCodes.has(code),
+        "資料完整度": "Complete Top20 · 可見金額近似",
+        "備註": `9/9 畫面中兩個可見分點加總約 ${visibleAmount.toLocaleString("zh-TW")} 萬（${branch1.toLocaleString("zh-TW")} + ${branch2.toLocaleString("zh-TW")}）；僅供近似，不代表完整主力淨額。`
+      };
+    }));
+  });
+
+  const watchContext = {
+    "2409": ["Developing / two-way rotation", "9/9 BUY #4 可見 1,019 萬、SELL #15 可見 515 萬，買方約 1.98 倍；仍偏多，但雙向換手較 9/8 明顯。"],
+    "4958": ["Flow Improvement", "9/8 SELL #5、BUY 未進榜；9/9 轉為 BUY #20 可見 506 萬、SELL 未進榜，資金流改善，但價格尚待確認。"],
+    "6147": ["Active Raw / Direction Unconfirmed", "9/9 711138 再次 Raw，但 BUY / SELL 均未進 Top20；方向維持 Unknown，保留既有 Episode。"],
+    "6239": ["Bearish deterioration", "9/9 SELL #1 可見 3,373 萬、BUY 未進 Top20；賣方明顯，但未獲人工退出確認。"],
+    "3008": ["Bearish deterioration", "9/9 SELL #3 可見 1,270 萬、BUY 未進 Top20；延續觀察，不自動退出。"],
+    "3406": ["Bearish deterioration", "9/9 SELL #7 可見 840 萬、BUY 未進 Top20；延續觀察，不自動退出。"],
+    "2344": ["Bearish deterioration", "9/9 SELL #9 可見 694 萬、BUY 未進 Top20；延續觀察，不自動退出。"],
+    "1815": ["Flow Improvement", "9/9 BUY #9 可見 819 萬、SELL 未進 Top20；相較 9/8 偏賣改善。"],
+    "2345": ["Main Force Technical Candidate", "9/9 BUY #5 可見 1,018 萬、SELL 未進 Top20；延續既有觀察。"],
+    "2615": ["Developing", "9/9 BUY #18 可見 544 萬、SELL 未進 Top20；延續既有觀察。"],
+    "6669": ["Developing", "9/9 BUY #15 可見 563 萬、SELL 未進 Top20；延續 9/8 偏多方向，但可見買方金額降溫。"],
+    "1301": ["Bearish deterioration", "9/9 SELL #18 可見 464 萬、BUY 未進 Top20；公開 Watch 維持，不自動退出。"],
+    "2327": ["Weak Follow-through", "9/9 SELL #19 可見 460 萬、BUY 未進 Top20；保留 9/7 Active Episode，不自動退出。"]
+  };
+  const rawCountByCode = {"2408": 3, "8299": 1, "6147": 1};
+  const previousSnapshot = data.observationSnapshots.filter(row => row["日期"] === "2026-09-08");
+  const snapshotAdditions = [
+    {
+      "日期": date,
+      "母股代號": "2408",
+      "母股名稱": "南亞科",
+      "進觀察日期": date,
+      "狀態": "觀察中／新進",
+      "當日Raw張數": 3,
+      "Episode類型": "Strong Cross-Warrant + Main-Force Confirmation",
+      "確認程度": "User confirmed",
+      "備註": "3 張 Cross-Warrant Raw + BUY #1 可見 3,579 萬、SELL #14 可見 537 萬，買方約 6.66 倍；使用者確認新增 Watch。",
+      "完整度": "User-confirmed new watch; screenshot count 32, identified rows 31"
+    },
+    {
+      "日期": date,
+      "母股代號": "8299",
+      "母股名稱": "群聯",
+      "進觀察日期": date,
+      "狀態": "觀察中／新進",
+      "當日Raw張數": 1,
+      "Episode類型": "Fresh Raw / Direction Unconfirmed",
+      "確認程度": "User confirmed",
+      "備註": "712637 Raw；BUY / SELL 均未進 Top20，方向維持 Unknown；使用者確認新增 Watch。",
+      "完整度": "User-confirmed new watch; screenshot count 32, identified rows 31"
+    }
+  ];
+  data.observationSnapshots = data.observationSnapshots.filter(row => row["日期"] !== date);
+  data.observationSnapshots.push(
+    ...previousSnapshot.map(row => ({
+      ...row,
+      "日期": date,
+      "狀態": "觀察中",
+      "當日Raw張數": rawCountByCode[row["母股代號"]] ?? 0,
+      "Episode類型": watchContext[row["母股代號"]]?.[0] ?? row["Episode類型"],
+      "確認程度": "Carry-forward / no exit confirmed",
+      "備註": watchContext[row["母股代號"]]?.[1] ?? "9/9 未獲人工新增或退出確認；延續既有觀察與 Episode。",
+      "完整度": "Known row confirmed; screenshot count 32, identified rows 31"
+    })),
+    ...snapshotAdditions
+  );
+
+  data.currentObservation = data.currentObservation.map(row => ({
+    ...row,
+    "狀態": "觀察中",
+    "今日Raw張數": rawCountByCode[row["母股代號"]] ?? 0,
+    "Episode Age": watchContext[row["母股代號"]]?.[0] ?? row["Episode Age"],
+    "備註": watchContext[row["母股代號"]]?.[1] ?? "9/9 未獲人工新增或退出確認；延續既有觀察與 Episode。"
+  }));
+  [
+    ["2408", "南亞科", 3, "Strong Cross-Warrant + Main-Force Confirmation", "3 張 Cross-Warrant Raw + BUY #1 / SELL #14；使用者確認 9/9 新進觀察。"],
+    ["8299", "群聯", 1, "Fresh Raw / Direction Unconfirmed", "712637 Raw；主力排行未確認方向，使用者確認 9/9 新進觀察。"]
+  ].forEach(([code, name, rawCount, episodeAge, notes]) => {
+    if (!data.currentObservation.some(row => row["母股代號"] === code)) {
+      data.currentObservation.push({
+        "母股代號": code,
+        "母股名稱": name,
+        "列入觀察日": date,
+        "狀態": "觀察中／新進",
+        "今日Raw張數": rawCount,
+        "Episode Age": episodeAge,
+        "資料來源": "使用者確認",
+        "備註": notes
+      });
+    }
+  });
+
+  const episodeCodes = new Set(["2408", "8299"]);
+  data.episodes = data.episodes.filter(row => !(row["來源日期"] === date && episodeCodes.has(row["母股代號"])));
+  data.episodes.push(
+    {
+      "母股代號": "2408",
+      "母股名稱": "南亞科",
+      "進觀察日": date,
+      "退出日": null,
+      "目前狀態": "Active",
+      "確認程度": "User confirmed",
+      "進場參考價": null,
+      "退出參考價": null,
+      "歷史報酬%": null,
+      "資料用途": "Active Episode",
+      "來源日期": date,
+      "備註": "076115、083613、072500 共 3 張 Raw + BUY #1、SELL #14；使用者確認新增 Watch 並啟用 Episode。"
+    },
+    {
+      "母股代號": "8299",
+      "母股名稱": "群聯",
+      "進觀察日": date,
+      "退出日": null,
+      "目前狀態": "Active",
+      "確認程度": "User confirmed",
+      "進場參考價": null,
+      "退出參考價": null,
+      "歷史報酬%": null,
+      "資料用途": "Active Episode",
+      "來源日期": date,
+      "備註": "712637 Raw；BUY / SELL 均未進 Top20，方向維持 Unknown；使用者確認新增 Watch 並啟用 Episode。"
+    }
+  );
 })();
