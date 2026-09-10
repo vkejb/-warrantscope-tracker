@@ -35,6 +35,7 @@ from chip_incremental_study_v01.transport_diagnostic import (  # noqa: E402
 )
 from chip_incremental_study_v01.notifications import finalize_batch, send_notification  # noqa: E402
 import chip_incremental_study_v01.main as chip_main  # noqa: E402
+from chip_incremental_study_v01.main import run_to_completed_target  # noqa: E402
 
 
 def meta_fixture(days: int = 8):
@@ -49,6 +50,29 @@ def meta_fixture(days: int = 8):
 
 
 class TestChipIncrementalStudy(unittest.TestCase):
+    def test_completed_pair_target_compensates_for_retry_attempt(self):
+        calls = []
+        results = iter([
+            {"status": "PARTIAL", "complete_source_date_pairs": 1999,
+             "stop_reason": "BOUNDED_BATCH_LIMIT_REACHED"},
+            {"status": "PARTIAL", "complete_source_date_pairs": 2000,
+             "stop_reason": "BOUNDED_BATCH_LIMIT_REACHED"},
+        ])
+        def download_once(cap):
+            calls.append(cap)
+            return next(results)
+
+        result = run_to_completed_target(download_once, 1003, 2000, 997)
+        self.assertEqual(calls, [997, 1])
+        self.assertEqual(result["complete_source_date_pairs"], 2000)
+
+    def test_completed_pair_target_stops_on_official_failure(self):
+        def download_once(_cap):
+            return {"status": "PARTIAL", "complete_source_date_pairs": 1500,
+                    "stop_reason": "RATE_LIMITED:TWSE_MARGIN:20210101"}
+
+        result = run_to_completed_target(download_once, 1003, 2000, 997)
+        self.assertEqual(result["complete_source_date_pairs"], 1500)
     def test_checkpoint_and_complete_notifications_once(self):
         with tempfile.TemporaryDirectory() as temporary:
             runtime = Path(temporary)

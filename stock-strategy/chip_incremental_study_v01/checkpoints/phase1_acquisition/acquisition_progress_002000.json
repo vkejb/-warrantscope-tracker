@@ -1,0 +1,47 @@
+{
+  "status": "ACQUISITION_CHECKPOINT",
+  "study_id": "CHIP_INCREMENTAL_STUDY_V0_1",
+  "phase": "PHASE_1_OFFICIAL_DATA_ACQUISITION",
+  "source_commit": "59e20a8252daab6670cee6dc570aff795aab6a8f",
+  "checkpoint_timestamp_utc": "2026-09-10T15:42:44.394208+00:00",
+  "official_only": true,
+  "expected_source_date_pairs": 5864,
+  "complete_dates": 500,
+  "complete_source_date_pairs": 2000,
+  "remaining_source_date_pairs": 3864,
+  "coverage_by_source": {
+    "TWSE_INSTITUTIONAL": 500,
+    "TWSE_MARGIN": 500,
+    "TPEX_INSTITUTIONAL": 500,
+    "TPEX_MARGIN": 500
+  },
+  "next_missing_pair": {
+    "source": "TWSE_INSTITUTIONAL",
+    "date": 20220107
+  },
+  "previous_1999_root_cause": {
+    "starting_complete_pairs": 1003,
+    "target_complete_pairs": 2000,
+    "max_source_requests": 997,
+    "network_request_attempts": 997,
+    "successful_new_pairs": 996,
+    "retry_attempts_consuming_request_budget": 1,
+    "retry_event": "2021-06-08 TWSE_MARGIN DNS resolution failure; next attempt succeeded",
+    "conclusion": "The downloader request counter behaved as designed, but the outer target orchestration incorrectly equated network attempts with successful completed pairs."
+  },
+  "latest_failed_or_retryable_pairs": 0,
+  "latest_requesting_pairs": 0,
+  "unresolved_integrity_errors": 0,
+  "download_manifest_lines": 4006,
+  "download_manifest_sha256": "bd2b93ea8d07b4bf5704ade1778fce7c75e0231f7523733b5570f6aa579c1cc1",
+  "cache_hash_verification": "PASS_2000_OF_2000",
+  "runtime_checkpoint": "runtime/notifications/checkpoints/acquisition_002000.json",
+  "notification_result": "REACHED_TARGET_CHECKPOINT_SENT",
+  "coverage_gate_passed": false,
+  "formal_study_run": false,
+  "model_fit_count": 0,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "runtime_files_committed": false
+}

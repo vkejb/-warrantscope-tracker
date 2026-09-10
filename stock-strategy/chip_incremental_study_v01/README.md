@@ -135,3 +135,9 @@ PYTHONPATH=stock-strategy python3 -m chip_incremental_study_v01.main test-notifi
 
 If no banner appears, check macOS System Settings > Notifications and the
 notification permission for the terminal or launch process running the command.
+
+For an exact completed-pair checkpoint, use for example
+`--target-completed-pairs 3000`. This outer orchestration measures successful
+cached pairs rather than network attempts. If a retry consumes an attempt, it
+runs only the remaining successful-pair deficit. The downloader's immutable
+cache, endpoints, PIT lag, retry/backoff, and coverage gate are unchanged.

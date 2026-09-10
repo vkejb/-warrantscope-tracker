@@ -26,7 +26,7 @@ from .data import array_digest, load_frozen_research, protected_hashes
 from .models import ALL_MODEL_FEATURES, fit_chip_logistic, frozen_ohlcv_feature_matrix
 from .notifications import audit_runtime_cache, finalize_batch, test_notification, write_runtime_checkpoint
 from .pit import archive_trading_dates, build_chip_features, load_needed_volumes, needed_codes
-from .sources import download_official_chip_store, phase0_audit_rows
+from .sources import SOURCE_ORDER, download_official_chip_store, phase0_audit_rows
 
 
 CSV_OUTPUTS = (
@@ -42,6 +42,37 @@ JSON_OUTPUTS = (
     "validation_summary.json", "run_manifest.json",
 )
 TRACKED = CSV_OUTPUTS + JSON_OUTPUTS
+
+
+def run_to_completed_target(download_once, starting_completed: int, target_completed: int,
+                            max_source_requests: int) -> dict:
+    if target_completed < starting_completed or max_source_requests < 1:
+        raise ValueError("invalid completed-pair target orchestration")
+    current = starting_completed
+    result = None
+    while current < target_completed:
+        request_cap = min(max_source_requests, target_completed - current)
+        result = download_once(request_cap)
+        updated = int(result.get("complete_source_date_pairs", current))
+        if updated < current:
+            raise RuntimeError("completed-pair count moved backwards")
+        current = updated
+        if current >= target_completed or result.get("status") == "COMPLETE":
+            break
+        if result.get("stop_reason") != "BOUNDED_BATCH_LIMIT_REACHED":
+            break
+    if result is None:
+        raise RuntimeError("target orchestration made no acquisition attempt")
+    return result
+
+
+def cached_pair_count(cache_dir: Path) -> int:
+    return sum(
+        1
+        for source in SOURCE_ORDER
+        for entry in ((cache_dir / "entries" / source).iterdir() if (cache_dir / "entries" / source).exists() else ())
+        if entry.is_dir() and (entry / "raw.json").exists() and (entry / "parsed.json").exists()
+    )
 
 
 def write_csv(path: Path, rows: list[dict]) -> None:
@@ -93,18 +124,32 @@ def command_download(args, stock_strategy: Path, package: Path) -> int:
         needed.setdefault(int(date), set())
     runtime = package / "runtime"
     runtime.mkdir(exist_ok=True)
-    manifest = download_official_chip_store(
-        np.asarray(sorted(needed), dtype=np.int32), needed,
-        runtime / "chip_daily_store.npz", runtime / "chip_raw_manifest.json",
-        cache_dir=runtime / "official_cache",
-        request_interval_seconds=args.request_interval_seconds,
-        max_attempts=args.max_attempts,
-        initial_backoff_seconds=args.initial_backoff_seconds,
-        max_source_requests=args.max_source_requests,
-    )
+    cache_dir = runtime / "official_cache"
+
+    def download_once(request_cap):
+        return download_official_chip_store(
+            np.asarray(sorted(needed), dtype=np.int32), needed,
+            runtime / "chip_daily_store.npz", runtime / "chip_raw_manifest.json",
+            cache_dir=cache_dir,
+            request_interval_seconds=args.request_interval_seconds,
+            max_attempts=args.max_attempts,
+            initial_backoff_seconds=args.initial_backoff_seconds,
+            max_source_requests=request_cap,
+        )
+    if args.target_completed_pairs is None:
+        manifest = download_once(args.max_source_requests)
+    else:
+        starting = cached_pair_count(cache_dir)
+        preflight_errors = audit_runtime_cache(cache_dir, {"complete_source_date_pairs": starting})
+        if preflight_errors:
+            raise RuntimeError(f"target orchestration preflight failed: {preflight_errors[:3]}")
+        manifest = run_to_completed_target(
+            download_once, starting, args.target_completed_pairs, args.max_source_requests
+        )
     integrity_errors = audit_runtime_cache(runtime / "official_cache", manifest)
     checkpoint = write_runtime_checkpoint(runtime, manifest, integrity_errors)
-    finalize_batch(runtime, manifest, args.notify_target_pairs, integrity_errors, checkpoint.exists())
+    notify_target = args.notify_target_pairs or args.target_completed_pairs
+    finalize_batch(runtime, manifest, notify_target, integrity_errors, checkpoint.exists())
     if manifest.get("status") != "COMPLETE":
         print(json.dumps({
             "status": "CHECKPOINT_SAVED",
@@ -461,6 +506,7 @@ def main(argv: list[str] | None = None) -> int:
     download.add_argument("--initial-backoff-seconds", type=float, default=30.0)
     download.add_argument("--max-source-requests", type=int, default=20)
     download.add_argument("--notify-target-pairs", type=int)
+    download.add_argument("--target-completed-pairs", type=int)
     sub.add_parser("test-notification")
     sub.add_parser("publish-phase0-checkpoint")
     publish = sub.add_parser("publish")
