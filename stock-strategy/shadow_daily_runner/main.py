@@ -13,6 +13,10 @@ from .historical_repair import (
     repair_history,
 )
 from .io_utils import process_lock
+from .notifications import (
+    safe_notify_unhandled_attempt_failure,
+    send_test_notification,
+)
 from .pipeline import prepare_inputs, public_result, taipei_now
 from .preflight import run_historical_preflight
 from .runner import attempt, runner_status
@@ -54,6 +58,10 @@ def _parser() -> argparse.ArgumentParser:
     )
     commands.add_parser("attempt", help="scheduled current-day attempt; no date override exists")
     commands.add_parser("status", help="show runner and prospective-ledger counts")
+    commands.add_parser(
+        "test-notification",
+        help="send one macOS notification without running or sealing the shadow pipeline",
+    )
     return parser
 
 
@@ -127,11 +135,20 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "status":
             result = runner_status(CFG)
             code = 0
+        elif args.command == "test-notification":
+            result = send_test_notification(CFG)
+            code = 0 if result["status"] == "NOTIFICATION_TEST_SENT" else 3
         else:  # pragma: no cover
             raise AssertionError(args.command)
         print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False))
         return code
     except Exception as exc:
+        if args.command == "attempt":
+            safe_notify_unhandled_attempt_failure(
+                local=taipei_now(cfg=CFG),
+                reason=exc,
+                cfg=CFG,
+            )
         print(
             f"shadow daily runner failed: {type(exc).__name__}: {exc}",
             file=sys.stderr,

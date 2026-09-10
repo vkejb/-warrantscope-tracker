@@ -11,6 +11,7 @@ from typing import Callable
 
 from .config import CFG, RunnerConfig, STOCK_STRATEGY_DIR
 from .io_utils import append_jsonl, atomic_write_json, process_lock, sha256_file, utc_timestamp
+from .notifications import notification_status, safe_notify_attempt_result
 from .pipeline import PreparedInputs, prepare_inputs, public_result, taipei_now
 
 
@@ -46,6 +47,14 @@ def _record_attempt(cfg: RunnerConfig, payload: dict) -> None:
             **payload,
         },
     )
+
+
+def _finish_attempt(result: dict, local: datetime, cfg: RunnerConfig) -> dict:
+    _record_attempt(cfg, result)
+    return {
+        **result,
+        "notification": safe_notify_attempt_result(result, local, cfg),
+    }
 
 
 def _inside_attempt_window(local: datetime, cfg: RunnerConfig) -> bool:
@@ -157,8 +166,7 @@ def attempt(
                 "actual_fills": 0,
                 "broker_connections": 0,
             }
-            _record_attempt(cfg, result)
-            return result
+            return _finish_attempt(result, local, cfg)
         if target < cfg.first_scheduled_target:
             result = {
                 "status": "REFUSED_PRE_START",
@@ -168,8 +176,7 @@ def attempt(
                 "actual_fills": 0,
                 "broker_connections": 0,
             }
-            _record_attempt(cfg, result)
-            return result
+            return _finish_attempt(result, local, cfg)
         if not _inside_attempt_window(local, cfg):
             result = {
                 "status": "REFUSED_OUTSIDE_ATTEMPT_WINDOW",
@@ -181,8 +188,7 @@ def attempt(
                 "actual_fills": 0,
                 "broker_connections": 0,
             }
-            _record_attempt(cfg, result)
-            return result
+            return _finish_attempt(result, local, cfg)
 
         before = _ledger_hashes(cfg)
         prepared = prepare(now=now, cfg=cfg)
@@ -199,8 +205,7 @@ def attempt(
                 "actual_fills": 0,
                 "broker_connections": 0,
             }
-            _record_attempt(cfg, result)
-            return result
+            return _finish_attempt(result, local, cfg)
         if not prepared.ready:
             after = _ledger_hashes(cfg)
             if before != after:
@@ -215,8 +220,7 @@ def attempt(
                 "actual_fills": 0,
                 "broker_connections": 0,
             }
-            _record_attempt(cfg, result)
-            return result
+            return _finish_attempt(result, local, cfg)
 
         daily_result = _run_json(_run_daily_command(prepared, cfg), cfg)
         # run-daily already calls update_outcomes_from_snapshot before it
@@ -256,8 +260,7 @@ def attempt(
             "actual_fills": 0,
             "broker_connections": 0,
         }
-        _record_attempt(cfg, result)
-        return result
+        return _finish_attempt(result, local, cfg)
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -310,6 +313,7 @@ def runner_status(cfg: RunnerConfig = CFG) -> dict:
         "prospective_outcomes_revision_rows": len(outcomes),
         "prospective_scan_log_rows": len(scans),
         "ledger_hashes": _ledger_hashes(cfg),
+        "notification": notification_status(cfg),
         "execution_mode": "SHADOW_ONLY_NOT_SUBMITTED",
         "actual_orders": 0,
         "actual_fills": 0,

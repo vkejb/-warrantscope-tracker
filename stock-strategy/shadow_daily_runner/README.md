@@ -64,6 +64,42 @@ python3 -B -m shadow_daily_runner.main status
 日期參數，只接受台北當日 14:25～16:05；2026-09-07 或更早一律拒絕，避免 backfill。
 同日成功後的 retry 為 no-op。
 
+## macOS 系統通知
+
+runner 以 macOS 內建的 `/usr/bin/osascript` 發送 Notification Center 通知，沒有
+Homebrew、`terminal-notifier`、第三方 App 或外部 push service 相依。通知是獨立的
+best-effort 輸出層：任何通知、狀態或 notification log 錯誤都不會改變 shadow run
+結果，不會修改 prospective ledger，也不會阻止 seal。
+
+- seal、ledger hash 與 prospective status 全部驗證成功後才通知；
+- 有 N Compact 訊號時顯示檔數與最多前 5 檔（既有資料有名稱才顯示名稱）；
+- N Compact 為 0 檔仍會通知，表示當日正常完成並封存；
+- 14:30、15:00、15:30 readiness fail 不通知；只有設定中最後一個 16:00 attempt
+  確認仍失敗才通知；
+- final failure 若是 historical preflight fail，會顯示獨立的 Historical preflight
+  訊息，不包含 stack trace；
+- 同一 `signal_date + notification_type + payload_hash` 成功送出後不會重複通知；
+  若通知本身失敗，之後的同狀態 retry 仍可再嘗試。
+
+通知狀態保存在
+`shadow_daily_runner/runtime/notifications/notification_state.json`，通知紀錄保存在
+`shadow_daily_runner/runtime/logs/notification.log`。整個 `runtime/` 都不納入 Git。
+`status` 指令會以 additive `notification` 區塊顯示最近一次通知狀態，不改變既有
+runner 或 prospective status schema。
+
+只測試系統通知、不執行 strategy、不下載行情、不建立 scan 且不 seal 日期：
+
+```bash
+python3 -B -m shadow_daily_runner.main test-notification
+```
+
+成功會回報 `NOTIFICATION_TEST_SENT`；失敗會回報
+`NOTIFICATION_TEST_FAILED` 與簡短診斷。若指令回報成功但畫面沒有出現通知，請至
+macOS「系統設定 → 通知」檢查 Terminal、`osascript` 或實際執行來源的通知權限。
+從 Terminal 手動執行與 `launchd` 背景執行屬於不同環境，兩者權限可能不同；請先用
+上面的 CLI 測試 Terminal，再讓已安裝的 LaunchAgent 執行一次並查看
+`runtime/logs/notification.log`。不需要、也不應為通知功能修改 plist 排程。
+
 Readiness 同時要求 calendar target、完整 session、0050、TWSE/TPEx 個別 coverage、
 total coverage、zero duplicate、zero unresolved invalid、固定 source hash，最後還必須讓
 既有 `ExistingDailyDataProvider.load_through()` 自己完整通過。失敗只寫 runner audit／
