@@ -7,11 +7,51 @@ global.window = {};
 require("../data.js");
 const data = global.window.WS_DATA;
 
-test("2026-09-09 是最新日期，9/4 No-Trigger Day 仍完整保留", () => {
-  assert.equal(data.meta.defaultDate, "2026-09-09");
-  assert.equal(data.meta.dates.at(-1), "2026-09-09");
+test("2026-09-10 是最新日期，9/4 No-Trigger Day 仍完整保留", () => {
+  assert.equal(data.meta.defaultDate, "2026-09-10");
+  assert.equal(data.meta.dates.at(-1), "2026-09-10");
   assert.equal(data.raw.filter(row => row.Date === "2026-09-04").length, 0);
   assert.match(data.meta.notes["2026-09-04"], /No-Trigger Day.*Raw 0 張.*0 檔母股.*0 issuer/);
+});
+
+test("2026-09-10 Raw 正好 6 張且缺值、方向與順序符合更新包", () => {
+  const raw = data.raw.filter(row => row.Date === "2026-09-10");
+
+  assert.equal(raw.length, 6);
+  assert.deepEqual(raw.map(row => row.Warrant_Code), ["713557", "065856", "712550", "049309", "052771", "071061"]);
+  assert.deepEqual(raw.map(row => row.Underlying_Code), ["5536", "6669", "3211", "2357", "1303", "2454"]);
+  assert.ok(raw.every(row => row["30m_Volume"] === null && row.Circulation === null && row.Displayed_Multiple === null));
+  assert.deepEqual(raw.map(row => row.Trade_Direction), ["BUY", "SELL", "BUY", "Unknown", "BUY", "SELL"]);
+  assert.match(raw.find(row => row.Warrant_Code === "713557").Notes, /不自動加入觀察/);
+  assert.match(raw.find(row => row.Warrant_Code === "065856").Notes, /1\.63 倍.*偏空/);
+  assert.match(raw.find(row => row.Warrant_Code === "712550").Episode_Type, /Mature Episode Retrigger/);
+  assert.match(raw.find(row => row.Warrant_Code === "049309").Notes, /方向維持 Unknown/);
+  assert.match(raw.find(row => row.Warrant_Code === "052771").Notes, /不因下單券商偏好刪除/);
+  assert.match(raw.find(row => row.Warrant_Code === "071061").Notes, /2\.86 倍.*偏空/);
+});
+
+test("2026-09-10 BUY 與 SELL Top20 完整，名次、金額與 Raw 標記正確", () => {
+  const rows = data.mainforce.filter(row => row["日期"] === "2026-09-10");
+  const buy = rows.filter(row => row["方向"] === "BUY");
+  const sell = rows.filter(row => row["方向"] === "SELL");
+
+  assert.equal(buy.length, 20);
+  assert.equal(sell.length, 20);
+  assert.deepEqual(buy.map(row => row["排名"]), Array.from({length: 20}, (_, index) => index + 1));
+  assert.deepEqual(sell.map(row => row["排名"]), Array.from({length: 20}, (_, index) => index + 1));
+  assert.deepEqual(
+    [buy[0], buy[3], buy[6], buy[7], buy[9], buy[19]].map(row => [row["母股代號"], row["可見金額(萬)"]]),
+    [["2303", 1071], ["2409", 817], ["6147", 642], ["3211", 580], ["5536", 550], ["2449", 359]]
+  );
+  assert.deepEqual(
+    [sell[0], sell[8], sell[12], sell[19]].map(row => [row["母股代號"], row["可見金額(萬)"]]),
+    [["2454", 1632], ["6669", 865], ["4958", 593], ["3260", 429]]
+  );
+  assert.deepEqual(
+    rows.filter(row => row["當日Raw"] === true).map(row => `${row["方向"]}:${row["母股代號"]}`),
+    ["BUY:3211", "BUY:2454", "BUY:5536", "BUY:6669", "BUY:1303", "SELL:2454", "SELL:6669"]
+  );
+  assert.ok(rows.every(row => /僅供近似，不代表完整主力淨額/.test(row["備註"])));
 });
 
 test("2026-09-09 Raw 正好 7 張且缺值、方向與順序符合更新包", () => {
@@ -319,6 +359,36 @@ test("南亞科與群聯各建立一筆 2026-09-09 Active Episode，舊 Episode 
   assert.deepEqual(additions.map(row => row["母股代號"]), ["2408", "8299"]);
   assert.ok(additions.every(row => row["進觀察日"] === "2026-09-09" && row["目前狀態"] === "Active"));
   assert.ok(additions.every(row => row["退出日"] === null && row["進場參考價"] === null && row["退出參考價"] === null && row["歷史報酬%"] === null));
+});
+
+test("2026-09-10 Watch 32／History 64 維持，沒有新增 Watch、退出或 Episode", () => {
+  const previous = data.observationSnapshots.filter(row => row["日期"] === "2026-09-09");
+  const snapshot = data.observationSnapshots.filter(row => row["日期"] === "2026-09-10");
+  const counts = data.meta.reportedCounts["2026-09-10"];
+
+  assert.deepEqual(
+    [counts.raw, counts.activeWatch, counts.history, counts.newWatch, counts.knownExits, counts.knownWatchDetails, counts.knownEpisodeDetails],
+    [6, 32, 64, 0, 0, 31, 35]
+  );
+  assert.equal(previous.length, 31);
+  assert.equal(snapshot.length, 31);
+  assert.equal(new Set(snapshot.map(row => row["母股代號"])).size, 31);
+  assert.deepEqual(snapshot.map(row => row["母股代號"]).sort(), previous.map(row => row["母股代號"]).sort());
+  assert.ok(snapshot.every(row => row["狀態"] === "觀察中"));
+  assert.deepEqual(
+    snapshot.filter(row => row["當日Raw張數"] > 0).map(row => row["母股代號"]).sort(),
+    ["1303", "3211", "6669"]
+  );
+  assert.deepEqual(
+    data.currentObservation.filter(row => row["今日Raw張數"] > 0).map(row => row["母股代號"]).sort(),
+    ["1303", "3211", "6669"]
+  );
+  assert.ok(!snapshot.some(row => ["5536", "2357", "2454"].includes(row["母股代號"])));
+  assert.equal(data.currentObservation.length, 31);
+  assert.equal(data.episodes.length, 35);
+  assert.ok(!data.episodes.some(row => row["來源日期"] === "2026-09-10"));
+  assert.match(snapshot.find(row => row["母股代號"] === "3211")["備註"], /Mature|既有 Watch \/ Episode/);
+  assert.match(snapshot.find(row => row["母股代號"] === "2408")["備註"], /Signal|明顯降溫|保留 9\/9 Watch \/ Episode/);
 });
 
 test("臻鼎-KY 與國巨各新增一筆 2026-09-07 Active Episode，舊 Episode 不變", () => {
