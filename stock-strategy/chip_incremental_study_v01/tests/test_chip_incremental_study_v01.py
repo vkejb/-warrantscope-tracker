@@ -35,7 +35,7 @@ from chip_incremental_study_v01.transport_diagnostic import (  # noqa: E402
 )
 from chip_incremental_study_v01.notifications import finalize_batch, send_notification  # noqa: E402
 import chip_incremental_study_v01.main as chip_main  # noqa: E402
-from chip_incremental_study_v01.main import run_to_completed_target  # noqa: E402
+from chip_incremental_study_v01.main import acquisition_progress_view, run_to_completed_target  # noqa: E402
 
 
 def meta_fixture(days: int = 8):
@@ -50,6 +50,15 @@ def meta_fixture(days: int = 8):
 
 
 class TestChipIncrementalStudy(unittest.TestCase):
+    def test_complete_store_maps_to_final_progress_and_notification_counts(self):
+        complete = {"status": "COMPLETE", "dates_requested": 1466,
+                    "source_date_pairs": 5864, "coverage_gate": {"all_expected_dates_complete": True}}
+        progress = acquisition_progress_view(complete)
+        self.assertEqual(progress["complete_source_date_pairs"], 5864)
+        self.assertEqual(progress["expected_source_date_pairs"], 5864)
+        self.assertEqual(progress["missing_source_date_pairs"], 0)
+        self.assertIsNone(progress["stop_reason"])
+
     def test_completed_pair_target_compensates_for_retry_attempt(self):
         calls = []
         results = iter([

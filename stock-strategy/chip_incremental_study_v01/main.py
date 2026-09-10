@@ -53,7 +53,7 @@ def run_to_completed_target(download_once, starting_completed: int, target_compl
     while current < target_completed:
         request_cap = min(max_source_requests, target_completed - current)
         result = download_once(request_cap)
-        updated = int(result.get("complete_source_date_pairs", current))
+        updated = int(result.get("complete_source_date_pairs", result.get("source_date_pairs", current)))
         if updated < current:
             raise RuntimeError("completed-pair count moved backwards")
         current = updated
@@ -64,6 +64,21 @@ def run_to_completed_target(download_once, starting_completed: int, target_compl
     if result is None:
         raise RuntimeError("target orchestration made no acquisition attempt")
     return result
+
+
+def acquisition_progress_view(result: dict) -> dict:
+    if result.get("status") != "COMPLETE":
+        return result
+    expected_pairs = int(result["source_date_pairs"])
+    return {
+        **result,
+        "expected_dates": int(result["dates_requested"]),
+        "expected_source_date_pairs": expected_pairs,
+        "complete_dates": int(result["dates_requested"]),
+        "complete_source_date_pairs": expected_pairs,
+        "missing_source_date_pairs": 0,
+        "stop_reason": None,
+    }
 
 
 def cached_pair_count(cache_dir: Path) -> int:
@@ -146,10 +161,11 @@ def command_download(args, stock_strategy: Path, package: Path) -> int:
         manifest = run_to_completed_target(
             download_once, starting, args.target_completed_pairs, args.max_source_requests
         )
-    integrity_errors = audit_runtime_cache(runtime / "official_cache", manifest)
-    checkpoint = write_runtime_checkpoint(runtime, manifest, integrity_errors)
+    checkpoint_state = acquisition_progress_view(manifest)
+    integrity_errors = audit_runtime_cache(runtime / "official_cache", checkpoint_state)
+    checkpoint = write_runtime_checkpoint(runtime, checkpoint_state, integrity_errors)
     notify_target = args.notify_target_pairs or args.target_completed_pairs
-    finalize_batch(runtime, manifest, notify_target, integrity_errors, checkpoint.exists())
+    finalize_batch(runtime, checkpoint_state, notify_target, integrity_errors, checkpoint.exists())
     if manifest.get("status") != "COMPLETE":
         print(json.dumps({
             "status": "CHECKPOINT_SAVED",
