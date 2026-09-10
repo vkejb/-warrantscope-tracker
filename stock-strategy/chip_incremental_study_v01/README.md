@@ -33,6 +33,7 @@ unchanged to 2023–2024 and 2025.
 python -m chip_incremental_study_v01.main audit-sources
 python -m chip_incremental_study_v01.main download-official
 python -m chip_incremental_study_v01.main publish
+python -m chip_incremental_study_v01.main test-notification
 ```
 
 `download-official` is deliberately bounded and sequential. Its defaults fetch
@@ -115,3 +116,22 @@ The diagnostic artifacts are `transport_diagnostic.json`,
 HTTP status/header chain and payload hash but do not commit the market payload
 body. Official current-only OpenAPI routes were also checked and are not used as
 a substitute for dated 2020–2025 history. Future 307 responses remain fail-closed.
+
+## macOS batch notifications
+
+Phase 1 sends one macOS notification only after a batch ends and its runtime
+checkpoint has been written. Events are target-checkpoint reached, all 5,864
+pairs complete, official transport stop, and integrity/hash failure. Configure
+the target with `download-official --notify-target-pairs 2000`. Duplicate events
+are suppressed by event type, completed count, and payload hash. Notification
+state and `runtime/logs/notification.log` remain local and gitignored. An
+osascript failure is logged and never changes the acquisition exit status.
+
+Test manually without downloading or modifying cache/manifest:
+
+```bash
+PYTHONPATH=stock-strategy python3 -m chip_incremental_study_v01.main test-notification
+```
+
+If no banner appears, check macOS System Settings > Notifications and the
+notification permission for the terminal or launch process running the command.

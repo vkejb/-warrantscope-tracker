@@ -33,6 +33,8 @@ from chip_incremental_study_v01.transport_diagnostic import (  # noqa: E402
     _parse_header_chains,
     _validate_body,
 )
+from chip_incremental_study_v01.notifications import finalize_batch, send_notification  # noqa: E402
+import chip_incremental_study_v01.main as chip_main  # noqa: E402
 
 
 def meta_fixture(days: int = 8):
@@ -47,6 +49,48 @@ def meta_fixture(days: int = 8):
 
 
 class TestChipIncrementalStudy(unittest.TestCase):
+    def test_checkpoint_and_complete_notifications_once(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            ok = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+            with patch("chip_incremental_study_v01.notifications.subprocess.run", return_value=ok) as run:
+                progress = {"complete_source_date_pairs": 2000, "expected_source_date_pairs": 5864,
+                            "stop_reason": "BOUNDED_BATCH_LIMIT_REACHED"}
+                self.assertEqual(finalize_batch(runtime, progress, 2000), "REACHED_TARGET_CHECKPOINT")
+                self.assertEqual(finalize_batch(runtime, progress, 2000), "REACHED_TARGET_CHECKPOINT")
+                complete = {"complete_source_date_pairs": 5864, "expected_source_date_pairs": 5864,
+                            "stop_reason": None}
+                self.assertEqual(finalize_batch(runtime, complete, 5864), "ALL_PAIRS_COMPLETE")
+            self.assertEqual(run.call_count, 2)
+
+    def test_transport_and_integrity_failure_notifications(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            ok = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+            with patch("chip_incremental_study_v01.notifications.subprocess.run", return_value=ok) as run:
+                stopped = {"complete_source_date_pairs": 1008, "expected_source_date_pairs": 5864,
+                           "stop_reason": "RATE_LIMITED:TWSE_INSTITUTIONAL:20210101"}
+                self.assertEqual(finalize_batch(runtime, stopped, 2000), "OFFICIAL_TRANSPORT_STOP")
+                self.assertEqual(finalize_batch(runtime, stopped, 2000, ["HASH_MISMATCH"]), "INTEGRITY_FAILURE")
+            self.assertEqual(run.call_count, 2)
+
+    def test_notification_failure_does_not_raise_and_incomplete_checkpoint_suppresses_success(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            with patch("chip_incremental_study_v01.notifications.subprocess.run", side_effect=OSError("denied")):
+                self.assertFalse(send_notification(runtime, "TEST", 1, 2, "test"))
+            progress = {"complete_source_date_pairs": 2000, "expected_source_date_pairs": 5864,
+                        "stop_reason": "BOUNDED_BATCH_LIMIT_REACHED"}
+            with patch("chip_incremental_study_v01.notifications.send_notification") as send:
+                self.assertIsNone(finalize_batch(runtime, progress, 2000, checkpoint_ok=False))
+            send.assert_not_called()
+
+    def test_notification_cli_does_not_download_or_touch_cache_manifest(self):
+        with patch.object(chip_main, "test_notification", return_value=True) as notify, \
+             patch.object(chip_main, "command_download") as download:
+            self.assertEqual(chip_main.main(["test-notification"]), 0)
+        notify.assert_called_once()
+        download.assert_not_called()
     def test_transport_trace_redacts_cookie_and_preserves_redirect(self):
         chains = _parse_header_chains(
             "HTTP/2 307\r\nLocation: https://official.example/data\r\nSet-Cookie: sid=secret\r\n\r\n"

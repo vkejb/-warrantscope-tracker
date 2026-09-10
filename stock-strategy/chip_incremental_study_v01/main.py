@@ -24,6 +24,7 @@ from .analysis import (
 from .config import CFG, CHIP_FEATURES, INSTITUTIONAL_FEATURES, MARGIN_FEATURES
 from .data import array_digest, load_frozen_research, protected_hashes
 from .models import ALL_MODEL_FEATURES, fit_chip_logistic, frozen_ohlcv_feature_matrix
+from .notifications import audit_runtime_cache, finalize_batch, test_notification, write_runtime_checkpoint
 from .pit import archive_trading_dates, build_chip_features, load_needed_volumes, needed_codes
 from .sources import download_official_chip_store, phase0_audit_rows
 
@@ -101,6 +102,9 @@ def command_download(args, stock_strategy: Path, package: Path) -> int:
         initial_backoff_seconds=args.initial_backoff_seconds,
         max_source_requests=args.max_source_requests,
     )
+    integrity_errors = audit_runtime_cache(runtime / "official_cache", manifest)
+    checkpoint = write_runtime_checkpoint(runtime, manifest, integrity_errors)
+    finalize_batch(runtime, manifest, args.notify_target_pairs, integrity_errors, checkpoint.exists())
     if manifest.get("status") != "COMPLETE":
         print(json.dumps({
             "status": "CHECKPOINT_SAVED",
@@ -456,6 +460,8 @@ def main(argv: list[str] | None = None) -> int:
     download.add_argument("--max-attempts", type=int, default=2)
     download.add_argument("--initial-backoff-seconds", type=float, default=30.0)
     download.add_argument("--max-source-requests", type=int, default=20)
+    download.add_argument("--notify-target-pairs", type=int)
+    sub.add_parser("test-notification")
     sub.add_parser("publish-phase0-checkpoint")
     publish = sub.add_parser("publish")
     publish.add_argument("--output-dir", type=Path, default=package)
@@ -465,6 +471,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "download-official":
         return command_download(args, stock_strategy, package)
+    if args.command == "test-notification":
+        ok = test_notification(package / "runtime")
+        print("NOTIFICATION_TEST_SENT" if ok else "NOTIFICATION_TEST_FAILED")
+        return 0 if ok else 1
     if args.command == "publish-phase0-checkpoint":
         return command_phase0(package, repo)
     return command_publish(args, repo, stock_strategy, package)
