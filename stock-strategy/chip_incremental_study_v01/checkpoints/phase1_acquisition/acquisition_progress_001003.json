@@ -1,0 +1,44 @@
+{
+  "status": "ACQUISITION_CHECKPOINT",
+  "study_id": "CHIP_INCREMENTAL_STUDY_V0_1",
+  "phase": "PHASE_1_OFFICIAL_DATA_ACQUISITION",
+  "source_commit": "479c0ca",
+  "checkpoint_timestamp_utc": "2026-09-10T03:59:54.345617+00:00",
+  "official_only": true,
+  "transport_status": "TRANSPORT_RESOLVED",
+  "expected_dates": 1466,
+  "expected_source_date_pairs": 5864,
+  "complete_dates": 250,
+  "complete_source_date_pairs": 1003,
+  "remaining_source_date_pairs": 4861,
+  "coverage_by_source": {
+    "TWSE_INSTITUTIONAL": 251,
+    "TWSE_MARGIN": 251,
+    "TPEX_INSTITUTIONAL": 251,
+    "TPEX_MARGIN": 250
+  },
+  "partial_date_boundary": {
+    "date": 20201230,
+    "missing_sources": [
+      "TPEX_MARGIN"
+    ],
+    "reason": "BOUNDED_BATCH_LIMIT_REACHED"
+  },
+  "latest_failed_or_retryable_pairs": 0,
+  "latest_requesting_pairs": 0,
+  "unresolved_integrity_errors": 0,
+  "download_manifest_lines": 2010,
+  "download_manifest_sha256": "8fac1c27d9eb238e2d546b1e97e4131e93238a0e5b2ac5531e026b234ab906d9",
+  "cache_hash_verification": "PASS_1003_OF_1003",
+  "stop_reason": "BOUNDED_BATCH_LIMIT_REACHED",
+  "coverage_gate_passed": false,
+  "pit_feature_store_built": false,
+  "formal_study_run": false,
+  "model_fit_count": 0,
+  "later_period_refit_count": 0,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "runtime_files_committed": false,
+  "resume_requirement": "Resume from the local missing set, beginning with TPEX_MARGIN for 2020-12-30. Do not build the PIT feature store or fit a model until all 5864 source-date pairs pass coverage and integrity gates."
+}
