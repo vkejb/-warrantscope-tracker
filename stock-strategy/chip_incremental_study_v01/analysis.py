@@ -157,15 +157,20 @@ def discovery_diagnostics(
             ranks = transformed[:, column]
             top = finite & (ranks >= 0.3)
             bottom = finite & (ranks <= -0.3)
+            top_mean = finite_mean(y[top])
+            bottom_mean = finite_mean(y[bottom])
             rows.append({
                 "feature": name, "outcome": outcome_name,
                 "discovery_observations": int(np.count_nonzero(finite)),
                 "same_day_spearman": point,
                 "cluster_bootstrap_ci_low": low, "cluster_bootstrap_ci_high": high,
                 "raw_p_value": pvalue,
-                "top_quintile_mean": finite_mean(y[top]),
-                "bottom_quintile_mean": finite_mean(y[bottom]),
-                "top_minus_bottom_effect": None if finite_mean(y[top]) is None else finite_mean(y[top]) - finite_mean(y[bottom]),
+                "top_quintile_mean": top_mean,
+                "bottom_quintile_mean": bottom_mean,
+                "top_minus_bottom_effect": (
+                    None if top_mean is None or bottom_mean is None
+                    else top_mean - bottom_mean
+                ),
             })
             pvalues.append(pvalue)
     adjusted = _bh_adjust(pvalues)
@@ -193,6 +198,92 @@ def lag_rows(arrays: dict[str, np.ndarray], normal_rank: np.ndarray, extra_rank:
     return rows
 
 
+def cluster_bootstrap_rows(
+    arrays: dict[str, np.ndarray],
+    chip_top5: np.ndarray,
+    ohlcv_top5: np.ndarray,
+    reps: int = 5000,
+) -> list[dict]:
+    """Cluster-bootstrap primary Top5-minus-frozen-OHLCV Top5 effects."""
+    meta = arrays["meta"]
+    outcome = arrays["outcomes"]
+    metrics = {
+        "success_rate_delta": (arrays["path_success"].astype(float), "MEAN"),
+        "downside_first_rate_delta": ((arrays["path_class"] == 2).astype(float), "MEAN"),
+        "mfe10_delta": (outcome[:, OI["mfe_10d"]], "MEAN"),
+        "mae10_delta": (outcome[:, OI["mae_10d"]], "MEAN"),
+        "gross_mean_delta": (outcome[:, OI["gross_return"]], "MEAN"),
+        "net_mean_delta": (outcome[:, OI["net_return"]], "MEAN"),
+        "net_pf_delta": (outcome[:, OI["net_return"]], "PROFIT_FACTOR"),
+    }
+    periods = (
+        ("2020_2022_HISTORICAL_DISCOVERY", "20200101", "20221231"),
+        ("2023_2024_RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS", "20230101", "20241231"),
+        ("2025_STRESS_PREVALENCE_SEEN_NOT_BLIND", "20250101", "20251231"),
+    )
+    rng = np.random.default_rng(20260911)
+    rows = []
+    for period_label, start, end in periods:
+        period = date_mask(meta, start, end) & meta["outcome_evaluable"]
+        for cluster_type, cluster_values in (
+            ("SIGNAL_DATE", meta["signal_date"]),
+            ("CALENDAR_MONTH", meta["signal_date"] // 100),
+        ):
+            union = period & (chip_top5 | ohlcv_top5)
+            clusters = np.unique(cluster_values[union])
+            if len(clusters) < 2:
+                continue
+            for metric_name, (values, kind) in metrics.items():
+                aggregates = []
+                for cluster in clusters:
+                    local = period & (cluster_values == cluster)
+                    chip_values = values[local & chip_top5]
+                    base_values = values[local & ohlcv_top5]
+                    if kind == "MEAN":
+                        aggregates.append((
+                            float(np.nansum(chip_values)), int(np.count_nonzero(np.isfinite(chip_values))),
+                            float(np.nansum(base_values)), int(np.count_nonzero(np.isfinite(base_values))),
+                        ))
+                    else:
+                        aggregates.append((
+                            float(np.nansum(chip_values[chip_values > 0])),
+                            float(-np.nansum(chip_values[chip_values < 0])),
+                            float(np.nansum(base_values[base_values > 0])),
+                            float(-np.nansum(base_values[base_values < 0])),
+                        ))
+                aggregate = np.asarray(aggregates, dtype=np.float64)
+                draws = rng.integers(0, len(clusters), size=(reps, len(clusters)))
+                sampled = np.sum(aggregate[draws], axis=1)
+                if kind == "MEAN":
+                    valid = (sampled[:, 1] > 0) & (sampled[:, 3] > 0)
+                    boot = sampled[valid, 0] / sampled[valid, 1] - sampled[valid, 2] / sampled[valid, 3]
+                    chip_all = values[period & chip_top5]
+                    base_all = values[period & ohlcv_top5]
+                    point = float(np.nanmean(chip_all) - np.nanmean(base_all))
+                else:
+                    valid = (sampled[:, 1] > 0) & (sampled[:, 3] > 0)
+                    boot = sampled[valid, 0] / sampled[valid, 1] - sampled[valid, 2] / sampled[valid, 3]
+                    chip_all = values[period & chip_top5]
+                    base_all = values[period & ohlcv_top5]
+                    point = float(
+                        np.sum(chip_all[chip_all > 0]) / -np.sum(chip_all[chip_all < 0])
+                        - np.sum(base_all[base_all > 0]) / -np.sum(base_all[base_all < 0])
+                    )
+                low, high = map(float, np.quantile(boot, (0.025, 0.975)))
+                rows.append({
+                    "period": period_label,
+                    "cluster_type": cluster_type,
+                    "metric": metric_name,
+                    "point_estimate": point,
+                    "ci_95_low": low,
+                    "ci_95_high": high,
+                    "ci_crosses_zero": low <= 0 <= high,
+                    "bootstrap_reps": reps,
+                    "cluster_count": len(clusters),
+                })
+    return rows
+
+
 def frequency_rows(arrays: dict[str, np.ndarray], raw_top5: np.ndarray, cooldown: np.ndarray) -> list[dict]:
     rows = []
     for label, start, end in (("2020_2022", "20200101", "20221231"), ("2023_2024", "20230101", "20241231"), ("2025", "20250101", "20251231")):
@@ -211,5 +302,5 @@ def frequency_rows(arrays: dict[str, np.ndarray], raw_top5: np.ndarray, cooldown
 __all__ = [
     "complete_pool_dates", "rank_scores", "comparison_rows", "incremental_rows",
     "discovery_diagnostics", "ablation_rows", "lag_rows", "frequency_rows",
-    "cooldown_proxy",
+    "cluster_bootstrap_rows", "cooldown_proxy",
 ]

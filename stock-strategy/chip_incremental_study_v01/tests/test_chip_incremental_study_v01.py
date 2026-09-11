@@ -16,14 +16,18 @@ if str(STOCK_STRATEGY) not in sys.path:
     sys.path.insert(0, str(STOCK_STRATEGY))
 
 from chip_incremental_study_v01.config import CFG, CHIP_FEATURES  # noqa: E402
-from chip_incremental_study_v01.analysis import incremental_rows  # noqa: E402
+from chip_incremental_study_v01.analysis import discovery_diagnostics, incremental_rows  # noqa: E402
 from chip_incremental_study_v01.data import load_frozen_research, protected_hashes  # noqa: E402
 from chip_incremental_study_v01.identity_v2 import (  # noqa: E402
     IDENTITY_SCHEMA_VERSION,
     PARSER_SCHEMA_VERSION,
     parse_raw_source_v2,
 )
-from chip_incremental_study_v01.models import ALL_MODEL_FEATURES, fit_chip_logistic  # noqa: E402
+from chip_incremental_study_v01.models import (  # noqa: E402
+    ALL_MODEL_FEATURES,
+    fit_chip_logistic,
+    frozen_ohlcv_feature_matrix,
+)
 from chip_incremental_study_v01.pit import build_chip_features, needed_codes, prior_session_map  # noqa: E402
 from chip_incremental_study_v01.sources import (  # noqa: E402
     OfficialRateLimitError,
@@ -40,7 +44,13 @@ from chip_incremental_study_v01.transport_diagnostic import (  # noqa: E402
 )
 from chip_incremental_study_v01.notifications import finalize_batch, send_notification  # noqa: E402
 import chip_incremental_study_v01.main as chip_main  # noqa: E402
-from chip_incremental_study_v01.main import acquisition_progress_view, run_to_completed_target  # noqa: E402
+from chip_incremental_study_v01.main import (  # noqa: E402
+    EXPECTED_PHASE1_V2_STORE_SHA256,
+    acquisition_progress_view,
+    run_to_completed_target,
+)
+from surge_event_study_v01.data import sha256_file  # noqa: E402
+from extension_entry_study_v01.pipeline import OUTCOME_FIELDS  # noqa: E402
 
 
 def meta_fixture(days: int = 8):
@@ -161,6 +171,14 @@ class TestChipIncrementalStudy(unittest.TestCase):
         self.assertFalse(payload["safety"]["immutable_raw_modified"])
         self.assertFalse(payload["safety"]["legacy_parsed_modified"])
         self.assertEqual(payload["safety"]["formal_model_run_count"], 0)
+
+    def test_phase1_v2_store_hash_is_exact_preregistered_input(self):
+        path = STOCK_STRATEGY / "chip_incremental_study_v01/runtime/chip_daily_store_v2.npz"
+        checkpoint = STOCK_STRATEGY / "chip_incremental_study_v01/checkpoints/phase1_acquisition/phase1_acquisition_final_v2.json"
+        self.assertTrue(path.exists())
+        payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+        self.assertEqual(payload["final_store_sha256"], EXPECTED_PHASE1_V2_STORE_SHA256)
+        self.assertEqual(sha256_file(path), EXPECTED_PHASE1_V2_STORE_SHA256)
 
     def test_complete_store_maps_to_final_progress_and_notification_counts(self):
         complete = {"status": "COMPLETE", "dates_requested": 1466,
@@ -439,6 +457,8 @@ class TestChipIncrementalStudy(unittest.TestCase):
         self.assertEqual(audit["frozen_ohlcv_refit_count"], 0)
         self.assertEqual(len(arrays["meta"]), 704327)
         self.assertEqual(model.name, "LOGISTIC_RIDGE_PATH_SUCCESS")
+        matrix = frozen_ohlcv_feature_matrix(arrays, model)
+        self.assertEqual(matrix.shape, (704327, 41))
 
     def test_no_prospective_observations(self):
         arrays, _model, _audit = load_frozen_research(STOCK_STRATEGY)
@@ -467,6 +487,24 @@ class TestChipIncrementalStudy(unittest.TestCase):
         self.assertAlmostEqual(row["mfe_retention_vs_stage_a"], .9)
         self.assertAlmostEqual(row["mae_improvement_vs_stage_a"], .01)
 
+    def test_discovery_diagnostic_keeps_empty_quantile_effect_null(self):
+        count = 12
+        dtype = np.dtype([("signal_date", "<i4"), ("outcome_evaluable", "?")])
+        meta = np.asarray([(20200102 + index, True) for index in range(count)], dtype=dtype)
+        outcomes = np.zeros((count, len(OUTCOME_FIELDS)), dtype=float)
+        arrays = {
+            "meta": meta,
+            "path_success": (np.arange(count) % 2).astype(float),
+            "path_class": np.ones(count, dtype=np.uint8),
+            "outcomes": outcomes,
+        }
+        rows = discovery_diagnostics(
+            np.ones((count, 1)), np.full((count, 1), 0.5), ("constant_feature",),
+            arrays, np.ones(count, dtype=bool), bootstrap_reps=10,
+        )
+        self.assertTrue(rows)
+        self.assertTrue(all(row["top_minus_bottom_effect"] is None for row in rows))
+
     def test_module_has_no_broker_or_order_path(self):
         root = STOCK_STRATEGY / "chip_incremental_study_v01"
         text = "\n".join(path.read_text(encoding="utf-8") for path in root.glob("*.py"))
@@ -483,6 +521,9 @@ class TestChipIncrementalStudy(unittest.TestCase):
         self.assertEqual(payload["actual_fills"], 0)
         self.assertEqual(payload["broker_connections"], 0)
         self.assertEqual(payload["pipeline_validation"]["later_period_refit_count"], 0)
+        self.assertTrue(payload["pipeline_validation"]["phase1_v2_coverage_gate_pass"])
+        self.assertTrue(payload["pipeline_validation"]["phase1_v2_store_sha256_verified"])
+        self.assertEqual(payload["model_fit_count"], 11)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ import json
 import numpy as np
 
 from conditional_path_quality_ranking_v01.models import sigmoid, stage_a_rank_percentile
+from conditional_path_quality_ranking_v01.ranking import conditional_ranks
 from conditional_path_quality_ranking_v01.config import CONDITIONAL_FEATURE_NAMES
 
 from .config import C_CANDIDATES, CHIP_FEATURES
@@ -51,8 +52,21 @@ def frozen_ohlcv_feature_matrix(arrays: dict[str, np.ndarray], frozen_model) -> 
     if matrix.shape[1] != len(CONDITIONAL_FEATURE_NAMES):
         raise RuntimeError("frozen conditional feature width drifted")
     reproduced = frozen_model.predict_proba(matrix)
-    if not np.allclose(reproduced, arrays["ohlcv_conditional_probabilities"], rtol=0.0, atol=1e-15):
+    published = arrays["ohlcv_conditional_probabilities"]
+    # The immutable observation store serializes inputs separately from the
+    # published probability vector.  Require sub-2e-9 numeric agreement and,
+    # more importantly for this ranking study, exact Stage A Top30 ordering.
+    if not np.allclose(reproduced, published, rtol=0.0, atol=2e-9):
         raise RuntimeError("frozen OHLCV conditional probabilities do not reproduce")
+    pool = arrays["stage_a_ranks"] <= 30
+    reproduced_rank = conditional_ranks(
+        reproduced, pool, arrays["meta"]["signal_date"], arrays["meta"]["stock_code"]
+    )[0]["rank"]
+    published_rank = conditional_ranks(
+        published, pool, arrays["meta"]["signal_date"], arrays["meta"]["stock_code"]
+    )[0]["rank"]
+    if not np.array_equal(reproduced_rank[pool], published_rank[pool]):
+        raise RuntimeError("frozen OHLCV conditional ranking does not reproduce")
     return matrix
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -11,15 +12,17 @@ import tempfile
 
 import numpy as np
 
-from conditional_path_quality_ranking_v01.analysis import date_mask, metric_summary, n_compact_rows, regime_rows, gap_rows
+from conditional_path_quality_ranking_v01.analysis import (
+    date_mask, gap_rows, metric_summary, n_compact_rows, regime_rows, time_slices,
+)
 from conditional_path_quality_ranking_v01.ranking import cooldown_proxy
 from cross_sectional_alpha_ranking_v01.data import load_market_regime
 from cross_sectional_alpha_ranking_v01.preprocessing import purged_training_mask
 from surge_event_study_v01.data import sha256_file
 
 from .analysis import (
-    ablation_rows, comparison_rows, complete_pool_dates, discovery_diagnostics,
-    frequency_rows, incremental_rows, lag_rows, rank_scores,
+    ablation_rows, cluster_bootstrap_rows, comparison_rows, complete_pool_dates,
+    discovery_diagnostics, frequency_rows, incremental_rows, lag_rows, rank_scores,
 )
 from .config import CFG, CHIP_FEATURES, INSTITUTIONAL_FEATURES, MARGIN_FEATURES
 from .data import array_digest, load_frozen_research, protected_hashes
@@ -32,10 +35,12 @@ from .sources import SOURCE_ORDER, download_official_chip_store, phase0_audit_ro
 
 CSV_OUTPUTS = (
     "chip_data_availability_audit.csv", "discovery_chip_diagnostics.csv",
+    "discovery_walkforward.csv", "model_coefficients.csv",
     "chip_family_ablation.csv", "model_comparison.csv", "chip_topk_summary.csv",
     "chip_year_summary.csv", "chip_period_summary.csv", "incremental_value_summary.csv",
     "mfe_retention_summary.csv", "mae_improvement_summary.csv",
-    "publication_lag_sensitivity.csv", "regime_diagnostics.csv",
+    "publication_lag_sensitivity.csv", "cluster_bootstrap_summary.csv",
+    "regime_diagnostics.csv", "gap_diagnostics.csv", "n_compact_overlap.csv",
     "cooldown_trade_proxy_summary.csv",
 )
 JSON_OUTPUTS = (
@@ -43,6 +48,7 @@ JSON_OUTPUTS = (
     "validation_summary.json", "run_manifest.json",
 )
 TRACKED = CSV_OUTPUTS + JSON_OUTPUTS
+EXPECTED_PHASE1_V2_STORE_SHA256 = "47ed0bdaa0ed43fa7510860fcf24ef19c30b7ecc36e9d96ceb5841a6901763f5"
 
 
 def run_to_completed_target(download_once, starting_completed: int, target_completed: int,
@@ -230,6 +236,50 @@ def command_rebuild_v2(repo: Path, stock_strategy: Path, package: Path) -> int:
     return 0
 
 
+def command_prepare_volume_v2(stock_strategy: Path, package: Path) -> int:
+    runtime = package / "runtime"
+    volume_path = runtime / "chip_volume_store_v2.npz"
+    manifest_path = runtime / "chip_volume_manifest_v2.json"
+    if volume_path.exists() or manifest_path.exists():
+        if not (volume_path.exists() and manifest_path.exists()):
+            raise RuntimeError("incomplete immutable v2 volume store/manifest pair")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if sha256_file(volume_path) != manifest["chip_volume_store_sha256"]:
+            raise RuntimeError("immutable v2 volume store hash mismatch")
+        print(json.dumps(manifest, ensure_ascii=False))
+        return 0
+    arrays, _frozen, _audit, pool = load_context(stock_strategy)
+    input_dir = stock_strategy / "winner_coverage_taxonomy_v01/runtime/input"
+    needed = required_chip_source_codes(arrays, pool, input_dir)
+    volumes, audit = load_needed_volumes(input_dir, needed)
+    keys = np.asarray(
+        [(date, code, value) for (date, code), value in sorted(volumes.items())],
+        dtype=np.float64,
+    )
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=".chip_volume_store_v2.", suffix=".npz", dir=runtime
+    )
+    os.close(descriptor)
+    Path(temporary_name).unlink(missing_ok=True)
+    try:
+        np.savez_compressed(temporary_name, keys=keys)
+        Path(temporary_name).replace(volume_path)
+    finally:
+        Path(temporary_name).unlink(missing_ok=True)
+    manifest = {
+        "status": "COMPLETE",
+        "source": "FROZEN_EXISTING_OHLCV_ARCHIVES",
+        "chip_data_source": "chip_daily_store_v2.npz only",
+        "volume_audit": audit,
+        "rows": len(keys),
+        "chip_volume_store_sha256": sha256_file(volume_path),
+        "formal_model_run_count": 0,
+    }
+    write_json(manifest_path, manifest)
+    print(json.dumps(manifest, ensure_ascii=False))
+    return 0
+
+
 def command_phase0(package: Path, repo: Path) -> int:
     target = package / "checkpoints/phase0"
     if target.exists():
@@ -311,12 +361,14 @@ def _fit(arrays, base_features, chip_features, common_pool):
         ("TRAIN_2020_2021_EVAL_2022", "20200101", "20211231", "20220101", "20221231"),
     )
     rows = []
+    candidate_models = {}
     mean_auc = {value: [] for value in CFG.c_candidates}
     for label, train_start, train_end, eval_start, eval_end in folds:
         train, purge = purged_training_mask(dates, evaluable & common_pool, train_start, train_end, CFG.label_purge_sessions)
         evaluation = date_mask(arrays["meta"], eval_start, eval_end) & common_pool & evaluable
         for candidate in CFG.c_candidates:
             model = fit_chip_logistic(combined, target, train, candidate, label, ALL_MODEL_FEATURES)
+            candidate_models[(label, candidate)] = model
             probability = model.predict_proba(combined)
             from conditional_path_quality_ranking_v01.analysis import binary_auc
             auc = binary_auc(target[evaluation], probability[evaluation])
@@ -325,7 +377,9 @@ def _fit(arrays, base_features, chip_features, common_pool):
                 "fold": label, "regularization_c": candidate, "selected": False,
                 "training_observations": model.training_observations,
                 "evaluation_observations": int(np.count_nonzero(evaluation)),
-                "evaluation_auc": auc, "purged_tail_rows": purge["purged_tail_rows"],
+                "evaluation_auc": auc,
+                "purged_signal_date_count": len(purge["purged_signal_dates"]),
+                "last_included_signal_date": purge["last_included_signal_date"],
             })
     selected = min(CFG.c_candidates, key=lambda value: (-float(np.mean(mean_auc[value])), value))
     for row in rows:
@@ -334,12 +388,38 @@ def _fit(arrays, base_features, chip_features, common_pool):
         dates, evaluable & common_pool, CFG.discovery_start, CFG.discovery_end, CFG.label_purge_sessions
     )
     primary = fit_chip_logistic(combined, target, final_mask, selected, "HISTORICAL_DISCOVERY_2020_2022", ALL_MODEL_FEATURES)
-    return primary, rows, {"selected_c": selected, "candidates": list(CFG.c_candidates), "fold_auc": mean_auc, "final_purge": purge, "later_period_refit_count": 0}, combined, final_mask
+    selected_models = [candidate_models[(fold[0], selected)] for fold in folds]
+    coefficient_rows = []
+    for scope, model in [(model.fit_period, model) for model in selected_models] + [("FINAL_DISCOVERY_MODEL", primary)]:
+        for name, coefficient in zip(model.feature_names, model.coefficients):
+            coefficient_rows.append({
+                "model_scope": scope,
+                "regularization_c": model.regularization_c,
+                "feature": name,
+                "coefficient": coefficient,
+                "intercept": model.intercept,
+                "training_observations": model.training_observations,
+            })
+    fold_vectors = [np.asarray(model.coefficients) for model in selected_models]
+    denominator = float(np.linalg.norm(fold_vectors[0]) * np.linalg.norm(fold_vectors[1]))
+    cosine = float(np.dot(fold_vectors[0], fold_vectors[1]) / denominator) if denominator else None
+    sign_agreement = float(np.mean(np.sign(fold_vectors[0]) == np.sign(fold_vectors[1])))
+    fit_audit = {
+        "selected_c": selected,
+        "candidates": list(CFG.c_candidates),
+        "fold_auc": mean_auc,
+        "final_purge": purge,
+        "discovery_cv_fit_count": len(folds) * len(CFG.c_candidates),
+        "primary_final_model_fit_count": 1,
+        "later_period_refit_count": 0,
+        "selected_fold_coefficient_sign_agreement": sign_agreement,
+        "selected_fold_coefficient_cosine_similarity": cosine,
+    }
+    return primary, rows, coefficient_rows, fit_audit, combined, final_mask
 
 
 def _topk_rows(arrays, ranking, common_pool):
     rows = []
-    from conditional_path_quality_ranking_v01.analysis import time_slices
     for kind, label, start, end in time_slices():
         period = date_mask(arrays["meta"], start, end)
         for k in (3, 5, 10):
@@ -357,18 +437,57 @@ def _update_audit_coverage(rows, pit_audit):
             row["missing_pct"] = 1.0 - row["coverage_pct"]
 
 
+def validate_phase1_v2_inputs(package: Path) -> dict:
+    runtime = package / "runtime"
+    checkpoint_path = package / "checkpoints/phase1_acquisition/phase1_acquisition_final_v2.json"
+    chip_path = runtime / "chip_daily_store_v2.npz"
+    raw_manifest_path = runtime / "chip_raw_manifest_v2.json"
+    volume_path = runtime / "chip_volume_store_v2.npz"
+    volume_manifest_path = runtime / "chip_volume_manifest_v2.json"
+    required = (checkpoint_path, chip_path, raw_manifest_path, volume_path, volume_manifest_path)
+    missing = [str(path) for path in required if not path.exists()]
+    if missing:
+        raise FileNotFoundError("Phase 1 v2 inputs absent: " + ", ".join(missing))
+    checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+    raw_manifest = json.loads(raw_manifest_path.read_text(encoding="utf-8"))
+    volume_manifest = json.loads(volume_manifest_path.read_text(encoding="utf-8"))
+    if checkpoint.get("status") != "COMPLETE" or not checkpoint.get("coverage_gate", {}).get("pass"):
+        raise RuntimeError("Phase 1 v2 checkpoint is not COMPLETE/PASS")
+    if raw_manifest.get("status") != "COMPLETE" or not raw_manifest.get("coverage_gate", {}).get("pass"):
+        raise RuntimeError("Phase 1 v2 raw manifest is not COMPLETE/PASS")
+    if checkpoint.get("final_store_sha256") != EXPECTED_PHASE1_V2_STORE_SHA256:
+        raise RuntimeError("Phase 1 v2 checkpoint final store SHA-256 drifted")
+    if raw_manifest.get("final_store_sha256") != EXPECTED_PHASE1_V2_STORE_SHA256:
+        raise RuntimeError("Phase 1 v2 raw manifest final store SHA-256 drifted")
+    actual_store_hash = sha256_file(chip_path)
+    if actual_store_hash != EXPECTED_PHASE1_V2_STORE_SHA256:
+        raise RuntimeError("Phase 1 v2 final store SHA-256 mismatch")
+    actual_volume_hash = sha256_file(volume_path)
+    if volume_manifest.get("status") != "COMPLETE" or volume_manifest.get("chip_volume_store_sha256") != actual_volume_hash:
+        raise RuntimeError("immutable v2 volume store manifest/hash mismatch")
+    return {
+        "checkpoint": checkpoint,
+        "raw_manifest": raw_manifest,
+        "volume_manifest": volume_manifest,
+        "chip_path": chip_path,
+        "raw_manifest_path": raw_manifest_path,
+        "volume_path": volume_path,
+        "volume_manifest_path": volume_manifest_path,
+        "chip_daily_store_sha256": actual_store_hash,
+        "chip_volume_store_sha256": actual_volume_hash,
+    }
+
+
 def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> int:
     existing = [name for name in TRACKED if (args.output_dir / name).exists()]
     if existing:
         raise FileExistsError("refusing to overwrite published study: " + ", ".join(existing))
+    inputs = validate_phase1_v2_inputs(package)
+    chip_path = inputs["chip_path"]
+    volume_path = inputs["volume_path"]
+    raw_manifest_path = inputs["raw_manifest_path"]
     protected_before = protected_hashes(stock_strategy)
     arrays, frozen, source_audit, pool = load_context(stock_strategy)
-    runtime = package / "runtime"
-    chip_path = runtime / "chip_daily_store_v2.npz"
-    volume_path = runtime / "chip_volume_store.npz"
-    raw_manifest_path = runtime / "chip_raw_manifest_v2.json"
-    if not all(path.exists() for path in (chip_path, volume_path, raw_manifest_path)):
-        raise FileNotFoundError("Phase 1 v2 source stores absent; complete rebuild-v2 and volume preparation first")
     with np.load(chip_path, allow_pickle=False) as payload:
         chip_daily = payload["chip_daily"].copy()
     with np.load(volume_path, allow_pickle=False) as payload:
@@ -381,7 +500,7 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
     if np.count_nonzero(common_pool) < 10_000:
         raise RuntimeError("insufficient complete PIT Stage A pool")
     base_features = frozen_ohlcv_feature_matrix(arrays, frozen)
-    primary, walkforward, fit_audit, combined, final_mask = _fit(
+    primary, walkforward, coefficient_rows, fit_audit, combined, final_mask = _fit(
         arrays, base_features, normal["transformed_chip_features"], common_pool
     )
     probability = primary.predict_proba(combined)
@@ -401,12 +520,11 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
     incremental = incremental_rows(model_comparison)
     topk = _topk_rows(arrays, chip_ranking, common_pool)
 
-    family_rankings = {}
-    family_models = {}
+    family_rankings = {"ALL_CHIP": chip_ranking["rank"]}
+    family_models = {"ALL_CHIP": primary}
     slices = {
         "INSTITUTIONAL_ONLY": slice(0, len(INSTITUTIONAL_FEATURES)),
         "MARGIN_SHORT_ONLY": slice(len(INSTITUTIONAL_FEATURES), len(CHIP_FEATURES)),
-        "ALL_CHIP": slice(0, len(CHIP_FEATURES)),
     }
     for family, feature_slice in slices.items():
         matrix = np.column_stack((base_features, normal["transformed_chip_features"][:, feature_slice]))
@@ -414,6 +532,12 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
         model = fit_chip_logistic(matrix, arrays["path_success"], final_mask, primary.regularization_c, "HISTORICAL_DISCOVERY_2020_2022", names)
         family_models[family] = model
         family_rankings[family] = rank_scores(model.predict_proba(matrix), common_pool, arrays["meta"])["rank"]
+    fit_audit["family_ablation_fit_count"] = len(slices)
+    fit_audit["model_fit_count"] = (
+        fit_audit["discovery_cv_fit_count"]
+        + fit_audit["primary_final_model_fit_count"]
+        + fit_audit["family_ablation_fit_count"]
+    )
     ablation = ablation_rows(arrays, family_rankings, common_pool)
 
     extra_combined = np.column_stack((base_features, extra["transformed_chip_features"]))
@@ -432,10 +556,16 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
     gap = gap_rows(arrays, chip_ranking["rank"])
     compact = n_compact_rows(arrays, chip_ranking["rank"])
     frequency = frequency_rows(arrays, raw_top5, cooldown)
+    bootstrap = cluster_bootstrap_rows(
+        arrays, raw_top5, pools["OHLCV_TOP5_COMMON_DATES"], reps=5000
+    )
 
     period_primary = {row["time_slice"]: row for row in model_comparison if row["time_slice_type"] == "PERIOD" and row["cohort"] == "CHIP_TOP5"}
     period_base = {row["time_slice"]: row for row in model_comparison if row["time_slice_type"] == "PERIOD" and row["cohort"] == "OHLCV_TOP5_COMMON_DATES"}
-    later = ("2023_2024_RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS", "2025_STRESS_PREVALENCE_SEEN_NOT_BLIND")
+    later = tuple(
+        label for kind, label, _start, _end in time_slices()
+        if kind == "PERIOD" and label != "HISTORICAL_DISCOVERY"
+    )
     gates = {}
     for label in later:
         chip, base = period_primary[label], period_base[label]
@@ -456,21 +586,48 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
         gates[label]["success_gt_ohlcv"] and gates[label]["downside_lt_ohlcv"] and gates[label]["mae_better_than_ohlcv"]
         for label in later
     )
-    classification = "PROMISING_FOR_CHIP_PROSPECTIVE_SHADOW" if all_gate else ("CHIP_INCREMENTAL_SIGNAL_BUT_NOT_TRADEABLE" if path_incremental else "NO_INCREMENTAL_CHIP_EDGE")
+    directional_incremental = all(
+        gates[label]["success_gt_ohlcv"] and gates[label]["downside_lt_ohlcv"]
+        for label in later
+    )
+    classification = (
+        "CHIP_INCREMENTAL_EDGE_FOUND_AND_TRADEABLE" if all_gate else
+        "CHIP_INCREMENTAL_EDGE_FOUND_BUT_NOT_TRADEABLE" if path_incremental else
+        "CHIP_DIRECTIONAL_INFORMATION_WITHOUT_NET_EDGE" if directional_incremental else
+        "NO_INCREMENTAL_CHIP_EDGE"
+    )
     validation = {
         "study_id": CFG.study_id, "final_classification": classification,
         "phase0_pit_audit_pass": True, "promotion_gates": gates,
+        "model_fit_count": fit_audit["model_fit_count"],
+        "model_fit_breakdown": {
+            "discovery_cv": fit_audit["discovery_cv_fit_count"],
+            "primary_final": fit_audit["primary_final_model_fit_count"],
+            "family_ablation": fit_audit["family_ablation_fit_count"],
+        },
         "later_period_refit_count": 0, "stage_a_refit_count": 0,
         "frozen_ohlcv_refit_count": 0, "common_observation_keys": int(np.count_nonzero(common_pool)),
         "pit_feature_audit": pit_audit, "extra_lag_audit": extra_audit,
+        "phase1_v2_coverage_gate_pass": inputs["checkpoint"]["coverage_gate"]["pass"],
+        "phase1_v2_store_sha256": inputs["chip_daily_store_sha256"],
+        "selected_c": primary.regularization_c,
+        "coefficient_stability": {
+            "selected_fold_sign_agreement": fit_audit["selected_fold_coefficient_sign_agreement"],
+            "selected_fold_cosine_similarity": fit_audit["selected_fold_coefficient_cosine_similarity"],
+        },
         "actual_orders": 0, "actual_fills": 0, "broker_connections": 0,
     }
     audit_rows = phase0_audit_rows()
     _update_audit_coverage(audit_rows, pit_audit)
-    raw_manifest = json.loads(raw_manifest_path.read_text(encoding="utf-8"))
+    raw_manifest = inputs["raw_manifest"]
     source_manifest = {
         "study_id": CFG.study_id, "official_only": True,
         "phase1_v2_manifest": raw_manifest,
+        "phase1_v2_checkpoint_sha256": sha256_file(
+            package / "checkpoints/phase1_acquisition/phase1_acquisition_final_v2.json"
+        ),
+        "phase1_v2_coverage_gate_pass": inputs["checkpoint"]["coverage_gate"]["pass"],
+        "verified_final_store_sha256": inputs["chip_daily_store_sha256"],
         "raw_manifest_sha256": sha256_file(raw_manifest_path),
         "date_payload_count": raw_manifest["counts"]["complete_dates"],
         "source_urls": [
@@ -488,6 +645,8 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
     try:
         write_csv(staging / "chip_data_availability_audit.csv", audit_rows)
         write_csv(staging / "discovery_chip_diagnostics.csv", diagnostics)
+        write_csv(staging / "discovery_walkforward.csv", walkforward)
+        write_csv(staging / "model_coefficients.csv", coefficient_rows)
         write_csv(staging / "chip_family_ablation.csv", ablation)
         write_csv(staging / "model_comparison.csv", model_comparison)
         write_csv(staging / "chip_topk_summary.csv", topk)
@@ -497,7 +656,10 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
         write_csv(staging / "mfe_retention_summary.csv", [{"time_slice_type": row["time_slice_type"], "time_slice": row["time_slice"], "mfe_retention": row["mfe_retention_vs_stage_a"]} for row in incremental])
         write_csv(staging / "mae_improvement_summary.csv", [{"time_slice_type": row["time_slice_type"], "time_slice": row["time_slice"], "mae_improvement": row["mae_improvement_vs_stage_a"]} for row in incremental])
         write_csv(staging / "publication_lag_sensitivity.csv", lag_sensitivity)
+        write_csv(staging / "cluster_bootstrap_summary.csv", bootstrap)
         write_csv(staging / "regime_diagnostics.csv", regime)
+        write_csv(staging / "gap_diagnostics.csv", gap)
+        write_csv(staging / "n_compact_overlap.csv", compact)
         write_csv(staging / "cooldown_trade_proxy_summary.csv", frequency)
         write_json(staging / "chip_source_manifest.json", source_manifest)
         write_json(staging / "chip_feature_spec.json", {
@@ -523,6 +685,8 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
             "pit_audit": pit_audit, "regime_audit": regime_audit,
             "cooldown_audit": cooldown_audit, "protected_hashes_before": protected_before,
             "protected_hashes_after": protected_after, "artifact_sha256": artifacts,
+            "model_fit_count": fit_audit["model_fit_count"],
+            "later_period_refit_count": 0,
             "local_runtime": {
                 "chip_daily_store_sha256": sha256_file(chip_path),
                 "chip_volume_store_sha256": sha256_file(volume_path),
@@ -533,6 +697,8 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
                 "frozen_stage_a_exact_reuse": True, "stage_a_refit_count": 0,
                 "frozen_ohlcv_baseline_exact_reuse": True, "frozen_ohlcv_refit_count": 0,
                 "same_observation_keys": True, "later_period_refit_count": 0,
+                "phase1_v2_coverage_gate_pass": inputs["checkpoint"]["coverage_gate"]["pass"],
+                "phase1_v2_store_sha256_verified": inputs["chip_daily_store_sha256"] == EXPECTED_PHASE1_V2_STORE_SHA256,
                 "prospective_ledger_unchanged": protected_before == protected_after,
                 "actual_orders": 0, "actual_fills": 0, "broker_connections": 0,
             },
@@ -544,7 +710,13 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
             shutil.move(staging / name, args.output_dir / name)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
-    print(json.dumps({"status": "COMPLETE", "classification": classification, "selected_c": primary.regularization_c, "actual_orders": 0, "actual_fills": 0, "broker_connections": 0}, ensure_ascii=False))
+    print(json.dumps({
+        "status": "COMPLETE", "classification": classification,
+        "selected_c": primary.regularization_c,
+        "model_fit_count": fit_audit["model_fit_count"],
+        "later_period_refit_count": 0,
+        "actual_orders": 0, "actual_fills": 0, "broker_connections": 0,
+    }, ensure_ascii=False))
     return 0
 
 
@@ -565,6 +737,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("test-notification")
     sub.add_parser("publish-phase0-checkpoint")
     sub.add_parser("rebuild-v2")
+    sub.add_parser("prepare-v2-volume")
     publish = sub.add_parser("publish")
     publish.add_argument("--output-dir", type=Path, default=package)
     args = parser.parse_args(argv)
@@ -581,6 +754,8 @@ def main(argv: list[str] | None = None) -> int:
         return command_phase0(package, repo)
     if args.command == "rebuild-v2":
         return command_rebuild_v2(repo, stock_strategy, package)
+    if args.command == "prepare-v2-volume":
+        return command_prepare_volume_v2(stock_strategy, package)
     return command_publish(args, repo, stock_strategy, package)
 
 

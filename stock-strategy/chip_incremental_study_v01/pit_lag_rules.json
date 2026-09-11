@@ -1,0 +1,8 @@
+{
+  "decision_cutoff": "T_CLOSE_RESEARCH_DECISION_FOR_T_PLUS_1_OPEN",
+  "historical_rule": "source_date <= previous_market_session(T)",
+  "required_lag_sessions": 1,
+  "sensitivity_extra_lag_sessions": 1,
+  "same_day_historical_use": false,
+  "snapshot_backfill": false
+}

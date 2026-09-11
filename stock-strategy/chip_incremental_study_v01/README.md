@@ -33,6 +33,7 @@ unchanged to 2023–2024 and 2025.
 python -m chip_incremental_study_v01.main audit-sources
 python -m chip_incremental_study_v01.main download-official
 python -m chip_incremental_study_v01.main rebuild-v2
+python -m chip_incremental_study_v01.main prepare-v2-volume
 python -m chip_incremental_study_v01.main publish
 python -m chip_incremental_study_v01.main test-notification
 ```
@@ -82,12 +83,25 @@ refuses to overwrite them.
 
 This module contains no broker SDK, account access, order, or fill path.
 
-## Current checkpoint
+## Formal result
 
-Phase 0 and the Phase 1 acquisition are complete. The formal model study has
-not run. Both official daily families passed the PIT audit only with a
+Phase 0 and Phase 1 v2 are complete, and the one-time formal study has been
+published. Both official daily families passed the PIT audit only with a
 one-session lag. All 1,466 source dates and 5,864 official source-date payloads
-are present in the immutable local raw cache.
+are present in the immutable local raw cache. The verified v2 final-store hash
+is `47ed0bdaa0ed43fa7510860fcf24ef19c30b7ecc36e9d96ceb5841a6901763f5`.
+
+The discovery-only walk-forward selected `C=10`. The final classification is
+`NO_INCREMENTAL_CHIP_EDGE`: combined chip features slightly increased path
+success in both later periods, but also increased downside-first frequency and
+made MAE worse. Net mean and net PF remained below zero and one, respectively.
+All signal-date and calendar-month bootstrap intervals for later-period success
+and net-return deltas crossed zero. No prospective chip shadow was created.
+
+The published run records 8 discovery CV fits, 1 final discovery fit, 2 fixed
+family-ablation fits, and zero later-period refits. Stage A, the frozen OHLCV
+baseline, N Compact, and prospective ledgers were not refit or modified by this
+study. `actual_orders`, `actual_fills`, and `broker_connections` are all zero.
 
 The legacy schema-v1 parsed cache is retained unchanged as forensic evidence.
 It converted official security codes to integers, causing TWSE ETFs such as

@@ -1,0 +1,71 @@
+{
+  "study_id": "CHIP_INCREMENTAL_STUDY_V0_1",
+  "final_classification": "NO_INCREMENTAL_CHIP_EDGE",
+  "phase0_pit_audit_pass": true,
+  "promotion_gates": {
+    "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS": {
+      "success_gt_ohlcv": true,
+      "downside_lt_ohlcv": false,
+      "mae_better_than_ohlcv": false,
+      "mfe_retention_gte_80pct": true,
+      "net_mean_positive": false,
+      "net_pf_gt_1": false,
+      "top1_removed_net_positive": false,
+      "best_date_removed_net_positive": false,
+      "best_month_removed_net_positive": false
+    },
+    "STRESS_PREVALENCE_SEEN_NOT_BLIND": {
+      "success_gt_ohlcv": true,
+      "downside_lt_ohlcv": false,
+      "mae_better_than_ohlcv": false,
+      "mfe_retention_gte_80pct": true,
+      "net_mean_positive": false,
+      "net_pf_gt_1": false,
+      "top1_removed_net_positive": false,
+      "best_date_removed_net_positive": false,
+      "best_month_removed_net_positive": false
+    }
+  },
+  "model_fit_count": 11,
+  "model_fit_breakdown": {
+    "discovery_cv": 8,
+    "primary_final": 1,
+    "family_ablation": 2
+  },
+  "later_period_refit_count": 0,
+  "stage_a_refit_count": 0,
+  "frozen_ohlcv_refit_count": 0,
+  "common_observation_keys": 34890,
+  "pit_feature_audit": {
+    "stage_a_pool_rows": 43770,
+    "chip_valid_rows": 43202,
+    "chip_valid_coverage_pct": 0.9870230751656386,
+    "institutional_complete_rows": 43202,
+    "institutional_coverage_pct": 0.9870230751656386,
+    "margin_observed_rows": 41047,
+    "margin_coverage_pct": 0.9377884395704821,
+    "lag_sessions": 1,
+    "future_or_same_date_source_rows": 0
+  },
+  "extra_lag_audit": {
+    "stage_a_pool_rows": 43770,
+    "chip_valid_rows": 43141,
+    "chip_valid_coverage_pct": 0.9856294265478638,
+    "institutional_complete_rows": 43141,
+    "institutional_coverage_pct": 0.9856294265478638,
+    "margin_observed_rows": 40990,
+    "margin_coverage_pct": 0.9364861777473155,
+    "lag_sessions": 2,
+    "future_or_same_date_source_rows": 0
+  },
+  "phase1_v2_coverage_gate_pass": true,
+  "phase1_v2_store_sha256": "47ed0bdaa0ed43fa7510860fcf24ef19c30b7ecc36e9d96ceb5841a6901763f5",
+  "selected_c": 10.0,
+  "coefficient_stability": {
+    "selected_fold_sign_agreement": 0.703125,
+    "selected_fold_cosine_similarity": 0.6961855576281661
+  },
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0
+}
