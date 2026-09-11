@@ -23,6 +23,7 @@ from .analysis import (
 )
 from .config import CFG, CHIP_FEATURES, INSTITUTIONAL_FEATURES, MARGIN_FEATURES
 from .data import array_digest, load_frozen_research, protected_hashes
+from .identity_v2 import rebuild_v2_from_immutable_raw
 from .models import ALL_MODEL_FEATURES, fit_chip_logistic, frozen_ohlcv_feature_matrix
 from .notifications import audit_runtime_cache, finalize_batch, test_notification, write_runtime_checkpoint
 from .pit import archive_trading_dates, build_chip_features, load_needed_volumes, needed_codes
@@ -119,9 +120,7 @@ def load_context(stock_strategy: Path):
     return arrays, frozen, audit, pool
 
 
-def command_download(args, stock_strategy: Path, package: Path) -> int:
-    arrays, _frozen, _audit, pool = load_context(stock_strategy)
-    input_dir = stock_strategy / "winner_coverage_taxonomy_v01/runtime/input"
+def required_chip_source_codes(arrays: dict[str, np.ndarray], pool: np.ndarray, input_dir: Path) -> dict[int, set[int]]:
     full_calendar = archive_trading_dates(input_dir, 20190101, 20251231)
     first = needed_codes(
         arrays["meta"]["signal_date"], arrays["meta"]["stock_code"], pool, 1,
@@ -134,9 +133,15 @@ def command_download(args, stock_strategy: Path, package: Path) -> int:
     needed = {date: set(codes) for date, codes in first.items()}
     for date, codes in second.items():
         needed.setdefault(date, set()).update(codes)
-    formal_dates = np.unique(arrays["meta"]["signal_date"]).astype(np.int32)
-    for date in formal_dates:
+    for date in np.unique(arrays["meta"]["signal_date"]).astype(np.int32):
         needed.setdefault(int(date), set())
+    return needed
+
+
+def command_download(args, stock_strategy: Path, package: Path) -> int:
+    arrays, _frozen, _audit, pool = load_context(stock_strategy)
+    input_dir = stock_strategy / "winner_coverage_taxonomy_v01/runtime/input"
+    needed = required_chip_source_codes(arrays, pool, input_dir)
     runtime = package / "runtime"
     runtime.mkdir(exist_ok=True)
     cache_dir = runtime / "official_cache"
@@ -193,6 +198,35 @@ def command_download(args, stock_strategy: Path, package: Path) -> int:
         "chip_raw_manifest_sha256": sha256_file(runtime / "chip_raw_manifest.json"),
     })
     print(json.dumps({"status": "DOWNLOADED", "dates": len(needed), "volume_audit": volume_audit}, ensure_ascii=False))
+    return 0
+
+
+def command_rebuild_v2(repo: Path, stock_strategy: Path, package: Path) -> int:
+    arrays, _frozen, _audit, pool = load_context(stock_strategy)
+    input_dir = stock_strategy / "winner_coverage_taxonomy_v01/runtime/input"
+    needed = required_chip_source_codes(arrays, pool, input_dir)
+    manifest = rebuild_v2_from_immutable_raw(
+        package=package, repo=repo, needed_codes_by_date=needed
+    )
+    checkpoint_dir = package / "checkpoints/phase1_acquisition"
+    checkpoint_path = checkpoint_dir / "phase1_acquisition_final_v2.json"
+    duplicate_path = checkpoint_dir / "cross_market_duplicate_audit_v2.json"
+    if checkpoint_path.exists() or duplicate_path.exists():
+        raise FileExistsError("refusing to overwrite immutable Phase 1 v2 checkpoint")
+    write_json(checkpoint_path, manifest)
+    duplicate = json.loads(
+        (package / "runtime/parsed_v2/cross_market_duplicate_audit_v2.json").read_text(encoding="utf-8")
+    )
+    write_json(duplicate_path, duplicate)
+    print(json.dumps({
+        "status": "PHASE_1_ACQUISITION_FINAL_V2",
+        "coverage_gate": manifest["coverage_gate"],
+        "counts": manifest["counts"],
+        "formal_model_run_count": 0,
+        "actual_orders": 0,
+        "actual_fills": 0,
+        "broker_connections": 0,
+    }, ensure_ascii=False))
     return 0
 
 
@@ -330,11 +364,11 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
     protected_before = protected_hashes(stock_strategy)
     arrays, frozen, source_audit, pool = load_context(stock_strategy)
     runtime = package / "runtime"
-    chip_path = runtime / "chip_daily_store.npz"
+    chip_path = runtime / "chip_daily_store_v2.npz"
     volume_path = runtime / "chip_volume_store.npz"
-    raw_manifest_path = runtime / "chip_raw_manifest.json"
+    raw_manifest_path = runtime / "chip_raw_manifest_v2.json"
     if not all(path.exists() for path in (chip_path, volume_path, raw_manifest_path)):
-        raise FileNotFoundError("Phase 1 source stores absent; run download-official first")
+        raise FileNotFoundError("Phase 1 v2 source stores absent; complete rebuild-v2 and volume preparation first")
     with np.load(chip_path, allow_pickle=False) as payload:
         chip_daily = payload["chip_daily"].copy()
     with np.load(volume_path, allow_pickle=False) as payload:
@@ -436,10 +470,15 @@ def command_publish(args, repo: Path, stock_strategy: Path, package: Path) -> in
     raw_manifest = json.loads(raw_manifest_path.read_text(encoding="utf-8"))
     source_manifest = {
         "study_id": CFG.study_id, "official_only": True,
-        "download_summary": json.loads((runtime / "chip_download_summary.json").read_text(encoding="utf-8")),
+        "phase1_v2_manifest": raw_manifest,
         "raw_manifest_sha256": sha256_file(raw_manifest_path),
-        "date_payload_count": len(raw_manifest["date_payloads"]),
-        "source_urls": sorted({entry["url"].split("?")[0] for day in raw_manifest["date_payloads"] for entry in day["sources"].values()}),
+        "date_payload_count": raw_manifest["counts"]["complete_dates"],
+        "source_urls": [
+            "https://www.twse.com.tw/rwd/zh/fund/T86",
+            "https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN",
+            "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php",
+            "https://www.tpex.org.tw/www/zh-tw/margin/balance",
+        ],
     }
     protected_after = protected_hashes(stock_strategy)
     if protected_before != protected_after:
@@ -525,6 +564,7 @@ def main(argv: list[str] | None = None) -> int:
     download.add_argument("--target-completed-pairs", type=int)
     sub.add_parser("test-notification")
     sub.add_parser("publish-phase0-checkpoint")
+    sub.add_parser("rebuild-v2")
     publish = sub.add_parser("publish")
     publish.add_argument("--output-dir", type=Path, default=package)
     args = parser.parse_args(argv)
@@ -539,6 +579,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if ok else 1
     if args.command == "publish-phase0-checkpoint":
         return command_phase0(package, repo)
+    if args.command == "rebuild-v2":
+        return command_rebuild_v2(repo, stock_strategy, package)
     return command_publish(args, repo, stock_strategy, package)
 
 

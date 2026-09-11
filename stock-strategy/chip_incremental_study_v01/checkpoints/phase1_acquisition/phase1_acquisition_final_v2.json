@@ -1,0 +1,55 @@
+{
+  "status": "COMPLETE",
+  "study_id": "CHIP_INCREMENTAL_STUDY_V0_1",
+  "phase": "PHASE_1_ACQUISITION_FINAL_V2",
+  "official_only": true,
+  "parser_schema_version": 2,
+  "identity_schema_version": 2,
+  "source_raw_manifest_sha256": "67ecdad2802e042ee914586a9f48e6ad752922cdbdc2c753b72ab77063ffebb7",
+  "raw_tree_sha256": "20141bdd6d50cf0da04ff8387b4bb9a56aacbd76ce78fc3c8a563685b3b1a93f",
+  "legacy_parsed_tree_sha256": "b102cd67490d91439314da694064fc9575e6915656c46d2c8e9df49fcd86c70a",
+  "parsed_v2_manifest_sha256": "6089399022ebe7b4be56698cb1b730d30a6904d332bcc8fb0d5f5c1795d134bf",
+  "parser_code_sha256": "a5448e5f00aa3fa464548a087a24423b6c645adaf71c4eee26b2e73016d2f426",
+  "source_git_commit": "5cee92ff1fa41c4af5445f8a9f7143e80ae1cb15",
+  "security_master_sha256": "1be79d9b7ea0458adbfdfce060df772020f6e5c48ce805d59badfc5812076e41",
+  "duplicate_audit_sha256": "d23195959d1357cd6d1214333295ea46caec8f3eb02b24f8d91db1f7c97cd5fe",
+  "final_store_sha256": "47ed0bdaa0ed43fa7510860fcf24ef19c30b7ecc36e9d96ceb5841a6901763f5",
+  "counts": {
+    "raw_pairs": 5864,
+    "parsed_v2_pairs": 5864,
+    "complete_dates": 1466,
+    "source_counts": {
+      "TWSE_INSTITUTIONAL": 1466,
+      "TPEX_INSTITUTIONAL": 1466,
+      "TWSE_MARGIN": 1466,
+      "TPEX_MARGIN": 1466
+    },
+    "cross_market_identity_collisions": 0,
+    "etf_exclusions": 641,
+    "ordinary_stock_matched_rows": 156618,
+    "final_store_records": 80335
+  },
+  "coverage_gate": {
+    "completed_source_date_pairs": true,
+    "complete_dates": true,
+    "four_sources_each_1466": true,
+    "missing_pairs": 0,
+    "unresolved_parse_errors": 0,
+    "integrity_hash_errors": 0,
+    "cross_market_identity_collisions": 0,
+    "duplicate_stock_date": 0,
+    "pit_lag_mapping_complete": true,
+    "security_type_mapping_complete_for_used_rows": true,
+    "pass": true
+  },
+  "safety": {
+    "official_raw_redownloads": 0,
+    "immutable_raw_modified": false,
+    "legacy_parsed_modified": false,
+    "formal_model_run_count": 0,
+    "actual_orders": 0,
+    "actual_fills": 0,
+    "broker_connections": 0
+  },
+  "created_at_utc": "2026-09-11T04:55:53.093710+00:00"
+}

@@ -18,6 +18,11 @@ if str(STOCK_STRATEGY) not in sys.path:
 from chip_incremental_study_v01.config import CFG, CHIP_FEATURES  # noqa: E402
 from chip_incremental_study_v01.analysis import incremental_rows  # noqa: E402
 from chip_incremental_study_v01.data import load_frozen_research, protected_hashes  # noqa: E402
+from chip_incremental_study_v01.identity_v2 import (  # noqa: E402
+    IDENTITY_SCHEMA_VERSION,
+    PARSER_SCHEMA_VERSION,
+    parse_raw_source_v2,
+)
 from chip_incremental_study_v01.models import ALL_MODEL_FEATURES, fit_chip_logistic  # noqa: E402
 from chip_incremental_study_v01.pit import build_chip_features, needed_codes, prior_session_map  # noqa: E402
 from chip_incremental_study_v01.sources import (  # noqa: E402
@@ -50,6 +55,113 @@ def meta_fixture(days: int = 8):
 
 
 class TestChipIncrementalStudy(unittest.TestCase):
+    @staticmethod
+    def _twse_institutional_raw(rows):
+        return json.dumps({
+            "stat": "OK", "date": 20200601,
+            "fields": [
+                "證券代號", "證券名稱", "外陸資買賣超股數(不含外資自營商)",
+                "投信買賣超股數", "自營商買賣超股數",
+            ],
+            "data": rows,
+        }, ensure_ascii=False).encode()
+
+    @staticmethod
+    def _tpex_institutional_raw(rows):
+        fields = ["代號", "名稱"] + [f"f{i}" for i in range(2, 24)]
+        return json.dumps({
+            "stat": "ok", "date": 20200601,
+            "tables": [{"fields": fields, "data": rows}],
+        }, ensure_ascii=False).encode()
+
+    def test_v2_preserves_leading_zero_and_filters_etf_before_research_mapping(self):
+        raw = self._twse_institutional_raw([
+            ["006203", "元大MSCI台灣", "0", "0", "3000"],
+            ["2330", "台積電", "10", "2", "-1"],
+        ])
+        before = bytes(raw)
+        parsed, exclusions = parse_raw_source_v2(
+            "TWSE_INSTITUTIONAL", 20200601, raw, {"6203", "2330"}, "https://official.invalid"
+        )
+        self.assertEqual(raw, before)
+        self.assertEqual(parsed["schema_version"], PARSER_SCHEMA_VERSION)
+        self.assertEqual(parsed["identity_schema_version"], IDENTITY_SCHEMA_VERSION)
+        self.assertEqual([row["security_code"] for row in parsed["rows"]], ["2330"])
+        self.assertEqual(exclusions[0]["security_code"], "006203")
+        self.assertEqual(exclusions[0]["security_type"], "ETF")
+        self.assertNotEqual(exclusions[0]["security_code"], "6203")
+
+    def test_v2_tpex_exact_6203_maps_to_common_stock(self):
+        row = ["6203", "海韻電"] + ["0"] * 22
+        row[10], row[13], row[22] = "-103000", "0", "-62000"
+        parsed, exclusions = parse_raw_source_v2(
+            "TPEX_INSTITUTIONAL", 20200601,
+            self._tpex_institutional_raw([row]), {"6203"}, "https://official.invalid",
+        )
+        self.assertFalse(exclusions)
+        self.assertEqual(parsed["rows"][0]["security_code"], "6203")
+        self.assertEqual(parsed["rows"][0]["security_type"], "COMMON_STOCK")
+        self.assertEqual(parsed["rows"][0]["market"], "TPEX")
+
+    def test_v2_same_numeric_suffix_has_distinct_canonical_identity(self):
+        twse, exclusions = parse_raw_source_v2(
+            "TWSE_INSTITUTIONAL", 20200601,
+            self._twse_institutional_raw([["006203", "元大MSCI台灣", "0", "0", "0"]]),
+            {"6203"}, "https://official.invalid/twse",
+        )
+        tpex_row = ["6203", "海韻電"] + ["0"] * 22
+        tpex, _ = parse_raw_source_v2(
+            "TPEX_INSTITUTIONAL", 20200601,
+            self._tpex_institutional_raw([tpex_row]), {"6203"}, "https://official.invalid/tpex",
+        )
+        self.assertFalse(twse["rows"])
+        self.assertEqual((exclusions[0]["market"], exclusions[0]["security_code"]), ("TWSE", "006203"))
+        self.assertEqual(
+            (tpex["rows"][0]["market"], tpex["rows"][0]["security_code"]),
+            ("TPEX", "6203"),
+        )
+
+    def test_v2_known_etf_suffixes_never_collide_with_research_codes(self):
+        raw = self._twse_institutional_raw([
+            ["006203", "元大MSCI台灣", "0", "0", "0"],
+            ["006204", "永豐臺灣加權", "0", "0", "0"],
+            ["006207", "復華滬深", "0", "0", "0"],
+        ])
+        parsed, exclusions = parse_raw_source_v2(
+            "TWSE_INSTITUTIONAL", 20200601, raw,
+            {"6203", "6204", "6207"}, "https://official.invalid",
+        )
+        self.assertFalse(parsed["rows"])
+        self.assertEqual(
+            [row["security_code"] for row in exclusions],
+            ["006203", "006204", "006207"],
+        )
+
+    def test_v2_parser_output_is_deterministic(self):
+        raw = self._twse_institutional_raw([["2330", "台積電", "10", "2", "-1"]])
+        first = parse_raw_source_v2(
+            "TWSE_INSTITUTIONAL", 20200601, raw, {"2330"}, "https://official.invalid"
+        )
+        second = parse_raw_source_v2(
+            "TWSE_INSTITUTIONAL", 20200601, raw, {"2330"}, "https://official.invalid"
+        )
+        self.assertEqual(first, second)
+
+    def test_phase1_v2_checkpoint_contract_when_available(self):
+        path = STOCK_STRATEGY / "chip_incremental_study_v01/checkpoints/phase1_acquisition/phase1_acquisition_final_v2.json"
+        if not path.exists():
+            self.skipTest("Phase 1 v2 rebuild not completed yet")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(payload["counts"]["raw_pairs"], 5864)
+        self.assertEqual(payload["counts"]["parsed_v2_pairs"], 5864)
+        self.assertEqual(payload["counts"]["complete_dates"], 1466)
+        self.assertEqual(payload["counts"]["cross_market_identity_collisions"], 0)
+        self.assertEqual(payload["counts"]["etf_exclusions"], 641)
+        self.assertTrue(payload["coverage_gate"]["pass"])
+        self.assertFalse(payload["safety"]["immutable_raw_modified"])
+        self.assertFalse(payload["safety"]["legacy_parsed_modified"])
+        self.assertEqual(payload["safety"]["formal_model_run_count"], 0)
+
     def test_complete_store_maps_to_final_progress_and_notification_counts(self):
         complete = {"status": "COMPLETE", "dates_requested": 1466,
                     "source_date_pairs": 5864, "coverage_gate": {"all_expected_dates_complete": True}}

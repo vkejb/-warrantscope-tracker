@@ -1,0 +1,60 @@
+{
+  "identity_schema_version": 2,
+  "mapping_basis": "Exact official security-code string membership in the frozen research universe, followed by source-date market identity. Numeric suffix matching is forbidden.",
+  "runtime_security_master_sha256": "1be79d9b7ea0458adbfdfce060df772020f6e5c48ce805d59badfc5812076e41",
+  "official_non_common_stock_exclusions": [
+    {
+      "market": "TWSE",
+      "security_code": "006203",
+      "security_name": "元大MSCI台灣",
+      "security_type": "ETF",
+      "evidence_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006203"
+    },
+    {
+      "market": "TWSE",
+      "security_code": "006204",
+      "security_name": "永豐臺灣加權",
+      "security_type": "ETF",
+      "evidence_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006204"
+    },
+    {
+      "market": "TWSE",
+      "security_code": "006205",
+      "security_name": "富邦上証",
+      "security_type": "ETF",
+      "evidence_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006205"
+    },
+    {
+      "market": "TWSE",
+      "security_code": "006206",
+      "security_name": "元大上證50",
+      "security_type": "ETF",
+      "evidence_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006206"
+    },
+    {
+      "market": "TWSE",
+      "security_code": "006207",
+      "security_name": "復華滬深",
+      "security_type": "ETF",
+      "evidence_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006207"
+    },
+    {
+      "market": "TWSE",
+      "security_code": "008201",
+      "security_name": "BP上證50",
+      "security_type": "ETF",
+      "evidence_url": "https://www.twse.com.tw/rwd/staticFiles/product/publication/0005000023.pdf"
+    }
+  ],
+  "legacy_false_match_counts": {
+    "006203": 111,
+    "006204": 116,
+    "006205": 166,
+    "006206": 36,
+    "006207": 138,
+    "008201": 74,
+    "total": 641,
+    "former_cross_market_collision_occurrences": 365
+  },
+  "status": "FROZEN_FOR_PHASE_1_V2"
+}

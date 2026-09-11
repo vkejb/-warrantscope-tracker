@@ -1,0 +1,7008 @@
+{
+  "study_id": "CHIP_INCREMENTAL_STUDY_V0_1",
+  "diagnostic_id": "PHASE1_CROSS_MARKET_DUPLICATE_FORENSIC",
+  "generated_at_utc": "2026-09-11T04:42:11.102252+00:00",
+  "scope": "READ_ONLY_IMMUTABLE_CACHE_FORENSIC_NO_MODEL",
+  "phase1_download_status": {
+    "complete_source_date_pairs": 5864,
+    "expected_source_date_pairs": 5864,
+    "missing_source_date_pairs": 0,
+    "final_store_created": false,
+    "coverage_gate": "FAIL_CLOSED"
+  },
+  "focus_2020_06_01_6203": {
+    "TWSE_INSTITUTIONAL": {
+      "raw_exact_6203_present": false,
+      "raw_006203_present": true,
+      "raw_fields": [
+        "證券代號",
+        "證券名稱",
+        "外陸資買進股數(不含外資自營商)",
+        "外陸資賣出股數(不含外資自營商)",
+        "外陸資買賣超股數(不含外資自營商)",
+        "外資自營商買進股數",
+        "外資自營商賣出股數",
+        "外資自營商買賣超股數",
+        "投信買進股數",
+        "投信賣出股數",
+        "投信買賣超股數",
+        "自營商買賣超股數",
+        "自營商買進股數(自行買賣)",
+        "自營商賣出股數(自行買賣)",
+        "自營商買賣超股數(自行買賣)",
+        "自營商買進股數(避險)",
+        "自營商賣出股數(避險)",
+        "自營商買賣超股數(避險)",
+        "三大法人買賣超股數"
+      ],
+      "raw_rows": [
+        [
+          "006203",
+          "元大MSCI台灣    ",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "3,000",
+          "0",
+          "0",
+          "0",
+          "4,000",
+          "1,000",
+          "3,000",
+          "3,000"
+        ]
+      ],
+      "parsed_rows": [
+        {
+          "dealer": 3000,
+          "foreign": 0,
+          "investment_trust": 0,
+          "stock_code": 6203
+        }
+      ],
+      "source_url": "https://www.twse.com.tw/rwd/zh/fund/T86?response=json&date=20200601&selectType=ALLBUT0999",
+      "raw_sha256": "ce3ae883679049c721b97d41df2a928810200a9523c751ee0ce42e49cce71189",
+      "parsed_sha256": "cb7a22760ba19bffc42bdc4cc38cd1788802735700fd681fc675d5208c1356a3",
+      "source_row_count": 1065,
+      "matched_row_count": 26,
+      "retrieval_timestamp_utc": "2026-09-09T19:39:00.565221+00:00"
+    },
+    "TPEX_INSTITUTIONAL": {
+      "raw_exact_6203_present": true,
+      "raw_006203_present": false,
+      "raw_fields": [
+        "代號",
+        "名稱",
+        "買進股數",
+        "賣出股數",
+        "買賣超股數",
+        "買進股數",
+        "賣出股數",
+        "買賣超股數",
+        "買進股數",
+        "賣出股數",
+        "買賣超股數",
+        "買進股數",
+        "賣出股數",
+        "買賣超股數",
+        "買進股數",
+        "賣出股數",
+        "買賣超股數",
+        "買進股數",
+        "賣出股數",
+        "買賣超股數",
+        "買進股數",
+        "賣出股數",
+        "買賣超股數",
+        "三大法人買賣超股數合計"
+      ],
+      "raw_rows": [
+        [
+          "6203",
+          "海韻電",
+          "80,000",
+          "183,000",
+          "-103,000",
+          "0",
+          "0",
+          "0",
+          "80,000",
+          "183,000",
+          "-103,000",
+          "0",
+          "0",
+          "0",
+          "5,000",
+          "65,000",
+          "-60,000",
+          "0",
+          "2,000",
+          "-2,000",
+          "5,000",
+          "67,000",
+          "-62,000",
+          "-165,000"
+        ]
+      ],
+      "parsed_rows": [
+        {
+          "dealer": -62000,
+          "foreign": -103000,
+          "investment_trust": 0,
+          "stock_code": 6203
+        }
+      ],
+      "source_url": "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=json&se=EW&t=D&d=109%2F06%2F01&s=0%2Casc",
+      "raw_sha256": "a32c191e62e49289a90f5de0b8f6167de10febd9a9c38f2cf3db128d0e8ee692",
+      "parsed_sha256": "7e45a3c128ece69c947fead2579d4d15ff62be11b8098237e45aecda949ab492",
+      "source_row_count": 620,
+      "matched_row_count": 24,
+      "retrieval_timestamp_utc": "2026-09-09T19:39:06.385443+00:00"
+    },
+    "TWSE_MARGIN": {
+      "raw_exact_6203_present": false,
+      "raw_006203_present": true,
+      "raw_fields": [
+        "代號",
+        "名稱",
+        "買進",
+        "賣出",
+        "現金償還",
+        "前日餘額",
+        "今日餘額",
+        "次一營業日限額",
+        "買進",
+        "賣出",
+        "現券償還",
+        "前日餘額",
+        "今日餘額",
+        "次一營業日限額",
+        "資券互抵",
+        "註記"
+      ],
+      "raw_rows": [
+        [
+          "006203",
+          "元大MSCI台灣",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "2,929",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "2,929",
+          "0",
+          "X "
+        ]
+      ],
+      "parsed_rows": [
+        {
+          "margin_balance": 0,
+          "short_balance": 0,
+          "stock_code": 6203
+        }
+      ],
+      "source_url": "https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?response=json&date=20200601&selectType=ALL",
+      "raw_sha256": "35d9af60cf7d4fd62f90c999325ec4290e4dec743aa771dc902bfd097cb2cc21",
+      "parsed_sha256": "bdfe267cf5e17835577c7e0ec1b3ef79f1850ad337dd1583c6038f12a6e9e271",
+      "source_row_count": 1061,
+      "matched_row_count": 25,
+      "retrieval_timestamp_utc": "2026-09-09T19:39:11.912459+00:00"
+    },
+    "TPEX_MARGIN": {
+      "raw_exact_6203_present": true,
+      "raw_006203_present": false,
+      "raw_fields": [
+        "代號",
+        "名稱",
+        "前資餘額(張)",
+        "資買",
+        "資賣",
+        "現償",
+        "資餘額",
+        "資屬證金",
+        "資使用率(%)",
+        "資限額",
+        "前券餘額(張)",
+        "券賣",
+        "券買",
+        "券償",
+        "券餘額",
+        "券屬證金",
+        "券使用率(%)",
+        "券限額",
+        "資券相抵(張)",
+        "備註"
+      ],
+      "raw_rows": [
+        [
+          "6203",
+          "海韻電",
+          "2,305",
+          "181",
+          "137",
+          "0",
+          "2,349",
+          "43",
+          "11.75",
+          "19,988",
+          "200",
+          "0",
+          "0",
+          "0",
+          "200",
+          "2",
+          "1.0",
+          "19,988",
+          "1",
+          ""
+        ]
+      ],
+      "parsed_rows": [
+        {
+          "margin_balance": 2349,
+          "short_balance": 200,
+          "stock_code": 6203
+        }
+      ],
+      "source_url": "https://www.tpex.org.tw/www/zh-tw/margin/balance?date=2020%2F06%2F01&id=&response=json",
+      "raw_sha256": "add3761d9425ef66e1a3818b88718d7703c6231cb1aee442e86c177b1785673e",
+      "parsed_sha256": "c8c6743b519d6a5a19634f77b24d6485a38bd079494dcd7ea4319f30cca9ab6d",
+      "source_row_count": 746,
+      "matched_row_count": 16,
+      "retrieval_timestamp_utc": "2026-09-09T19:39:17.536133+00:00"
+    }
+  },
+  "official_identity_evidence": {
+    "tpex_6203_company_profile": {
+      "official_url": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O",
+      "official_full_payload_sha256": "c0867e0c28b7aa44efec947e9f46fce488edf01dea6437b771761c87c158df1d",
+      "official_full_payload_bytes": 1072012,
+      "payload_row": {
+        "Date": "1150910",
+        "SecuritiesCompanyCode": "6203",
+        "CompanyName": "海韻電子工業股份有限公司",
+        "CompanyAbbreviation": "海韻電",
+        "Registration": "－ ",
+        "SecuritiesIndustryCode": "28",
+        "Address": "8F., #19 Alley 360 Sec. 1, Neihu Road, Neihu,Taipei,Taiwan, R.O.C.",
+        "UnifiedBusinessNo.": "04329168",
+        "Chairman": "張昀琦",
+        "GeneralManager": "孫崇熙",
+        "Spokesman": "裴琳",
+        "TitleOfSpokesman": "特助",
+        "DeputySpokesperson": "呂螢芳",
+        "Telephone": "02-26590338",
+        "DateOfIncorporation": "19750919",
+        "DateOfListing": "20021226",
+        "ParValueOfCommonStock": "新台幣                 10.0000元",
+        "Paidin.Capital.NTDollars": "824013700",
+        "PrivateStock.shares": "0",
+        "PreferredStock.shares": "0",
+        "PreparationOfFinancialReportType": "1",
+        "StockTransferAgent": "統一綜合證券股份有限公司",
+        "StockTransferAgentTelephone": "02-27463666",
+        "StockTransferAgentAddress": "台北市松山區東興路8號B1",
+        "AccountingFirm": "勤業眾信聯合會計師事務所",
+        "CPA.CharteredPublicAccountant.First": "胡家熀",
+        "CPA.CharteredPublicAccountant.Second": "莊碧玉",
+        "Symbol": "Sea Sonic",
+        "Fax": "02-26590530",
+        "EmailAddress": "investor@seasonic.com.tw",
+        "WebAddress": "www.seasonic.com",
+        "IssueShares": "82401370"
+      },
+      "historical_market_on_2020_06_01_evidence": "The immutable official TPEx institutional and margin raw payloads for 2020-06-01 both contain exact code 6203 and name 海韻電."
+    },
+    "twse_leading_zero_etf_evidence": [
+      {
+        "security_code": "006203",
+        "security_name": "元大MSCI台灣",
+        "security_type": "ETF",
+        "official_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006203",
+        "official_payload_sha256": "5d354569680164df7f40761b4401041cdca6974cdc393443acd9b95c8f7243e4",
+        "payload_bytes": 33128
+      },
+      {
+        "security_code": "006204",
+        "security_name": "永豐臺灣加權",
+        "security_type": "ETF",
+        "official_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006204",
+        "official_payload_sha256": "6d52fc37c8c6baccf88390ed5457bd96dd3623470a97346f284b54b0ef5e8f1f",
+        "payload_bytes": 33172
+      },
+      {
+        "security_code": "006207",
+        "security_name": "復華滬深",
+        "security_type": "ETF",
+        "official_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006207",
+        "official_payload_sha256": "4ee40d814896f4d0e1a678286012286227054652f94040c7af93639002bc55e9",
+        "payload_bytes": 32463
+      }
+    ],
+    "archive_period_transfer_check": {
+      "period": "2019-12-23 through 2025-12-31",
+      "exact_twse_6203_found": false,
+      "tpex_6203_found": true,
+      "raw_exact_code_row_counts": {
+        "TWSE_INSTITUTIONAL": {},
+        "TWSE_MARGIN": {},
+        "TPEX_INSTITUTIONAL": {
+          "6203": 1463,
+          "6204": 1218,
+          "6207": 1454
+        },
+        "TPEX_MARGIN": {
+          "6203": 1466,
+          "6204": 1466,
+          "6207": 1466
+        }
+      },
+      "twse_leading_zero_code_row_counts": {
+        "TWSE_INSTITUTIONAL": {
+          "006203": 1357,
+          "006204": 1422,
+          "006207": 1466
+        },
+        "TWSE_MARGIN": {
+          "006203": 1466,
+          "006204": 1466,
+          "006207": 1466
+        }
+      },
+      "conclusion": "No market transfer is indicated within the acquired archive period. The TWSE identity is 006203, not 6203. No broader all-history negative claim is made."
+    }
+  },
+  "full_archive_summary": {
+    "duplicate_occurrence_count": 365,
+    "duplicate_date_code_pairs": 184,
+    "duplicate_dates": 184,
+    "duplicate_codes": [
+      6203,
+      6204,
+      6207
+    ],
+    "institutional_duplicate_count": 181,
+    "margin_duplicate_count": 184,
+    "first_duplicate_date": "20200601",
+    "last_duplicate_date": "20251029",
+    "only_2020_06_01_6203": false,
+    "by_numeric_code": {
+      "6203": {
+        "occurrence_count": 111,
+        "unique_dates": 57,
+        "first_date": "20200601",
+        "last_date": "20230808",
+        "institutional_count": 54,
+        "margin_count": 57
+      },
+      "6204": {
+        "occurrence_count": 116,
+        "unique_dates": 58,
+        "first_date": "20231115",
+        "last_date": "20251029",
+        "institutional_count": 58,
+        "margin_count": 58
+      },
+      "6207": {
+        "occurrence_count": 138,
+        "unique_dates": 69,
+        "first_date": "20240322",
+        "last_date": "20250904",
+        "institutional_count": 69,
+        "margin_count": 69
+      }
+    }
+  },
+  "all_cross_market_duplicate_occurrences": [
+    {
+      "date": "20200601",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200602",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200603",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200604",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200605",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200608",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200609",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200703",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200706",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200707",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200708",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200709",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200710",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200713",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200714",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200715",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200716",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200717",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200720",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200721",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200722",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200723",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200724",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200727",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200728",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200729",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200730",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200731",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200803",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210311",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210312",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210315",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210316",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210317",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210318",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210319",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230612",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230613",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230614",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230616",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230619",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230620",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230718",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230719",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230721",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230724",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230725",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230726",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230728",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230731",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230802",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230804",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230807",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230808",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231115",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231116",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231117",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231120",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231121",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231122",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231123",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231124",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231127",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231128",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231129",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231130",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231201",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231204",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231205",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231206",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231207",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231208",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231211",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231212",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231213",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231214",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231215",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231218",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231219",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231220",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231221",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231222",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231225",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231226",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231227",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231228",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231229",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240102",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240103",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240104",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240105",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240108",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240109",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240110",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240111",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240112",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240202",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240205",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240215",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240216",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240219",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240220",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240221",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240222",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240223",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240322",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240325",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240326",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240327",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240328",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240329",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240401",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240402",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240403",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240408",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240409",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240410",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240411",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240412",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240415",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240416",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240417",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240418",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240419",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240422",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240423",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240424",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240425",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240426",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240429",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240430",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240502",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240503",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240506",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240507",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240508",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240509",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240510",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240513",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240514",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240515",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240516",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240517",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240520",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240531",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240603",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240604",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240605",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240606",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240607",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240611",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240612",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240625",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240626",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240627",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240628",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240701",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240702",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240703",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250815",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250818",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250819",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250820",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250821",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250822",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250825",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250826",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250827",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250828",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250829",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250901",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250902",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250903",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250904",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251020",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251021",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251022",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251023",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251027",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251028",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251029",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "INSTITUTIONAL",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200601",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200602",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200603",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200604",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200605",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200608",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200609",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200703",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200706",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200707",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200708",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200709",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200710",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200713",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200714",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200715",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200716",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200717",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200720",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200721",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200722",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200723",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200724",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200727",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200728",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200729",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200730",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200731",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20200803",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210311",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210312",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210315",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210316",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210317",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210318",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20210319",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230612",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230613",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230614",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230615",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230616",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230619",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230620",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230718",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230719",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230720",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230721",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230724",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230725",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230726",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230728",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230731",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230801",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230802",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230804",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230807",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20230808",
+      "numeric_code_after_parser": 6203,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006203",
+          "security_name": "元大MSCI台灣"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6203",
+          "security_name": "海韻電"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231115",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231116",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231117",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231120",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231121",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231122",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231123",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231124",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231127",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231128",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231129",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231130",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231201",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231204",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231205",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231206",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231207",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231208",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231211",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231212",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231213",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231214",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231215",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231218",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231219",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231220",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231221",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231222",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231225",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231226",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231227",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231228",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20231229",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240102",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240103",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240104",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240105",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240108",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240109",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240110",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240111",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240112",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240202",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240205",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240215",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240216",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240219",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240220",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240221",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240222",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240223",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240322",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240325",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240326",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240327",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240328",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240329",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240401",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240402",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240403",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240408",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240409",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240410",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240411",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240412",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240415",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240416",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240417",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240418",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240419",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240422",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240423",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240424",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240425",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240426",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240429",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240430",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240502",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240503",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240506",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240507",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240508",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240509",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240510",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240513",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240514",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240515",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240516",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240517",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240520",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240531",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240603",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240604",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240605",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240606",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240607",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240611",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240612",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240625",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240626",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240627",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240628",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240701",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240702",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20240703",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250815",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250818",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250819",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250820",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250821",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250822",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250825",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250826",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250827",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250828",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250829",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250901",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250902",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250903",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20250904",
+      "numeric_code_after_parser": 6207,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006207",
+          "security_name": "復華滬深"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6207",
+          "security_name": "雷科"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251020",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251021",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251022",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251023",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251027",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251028",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    },
+    {
+      "date": "20251029",
+      "numeric_code_after_parser": 6204,
+      "feature_family": "MARGIN_SHORT",
+      "twse_raw_identities": [
+        {
+          "raw_security_code": "006204",
+          "security_name": "永豐臺灣加權"
+        }
+      ],
+      "tpex_raw_identities": [
+        {
+          "raw_security_code": "6204",
+          "security_name": "艾華"
+        }
+      ],
+      "diagnosis": "LEADING_ZERO_TRUNCATION_COLLISION"
+    }
+  ],
+  "root_cause": {
+    "classification": "CASE_C_PARSER_BUG_WITH_SCHEMA_IDENTITY_DEFECT",
+    "finding": "TWSE exact codes 006203, 006204, and 006207 are ETFs. int(code) removes leading zeros and collides with TPEx common-stock codes 6203, 6204, and 6207.",
+    "not_official_same_code_overlap": true,
+    "wanted_code_integer_representation_contributed": true,
+    "parser_locations": [
+      "sources.py:_twse_institutional",
+      "sources.py:_twse_margin"
+    ],
+    "schema_locations": [
+      "wanted: set[int]",
+      "parsed stock_code stored as integer",
+      "assembly keyed only by integer code"
+    ]
+  },
+  "recommended_fix_not_applied": {
+    "primary": "Preserve official security_code as a string; resolve market and security_type before matching the ordinary-stock universe; exclude ETFs through an auditable official security master/filter before numeric conversion.",
+    "canonical_identity": "Use at least (market, security_code), preferably (market, security_type, security_code).",
+    "rebuild_scope": "Immutable raw cache can remain unchanged. Parser output for affected/all cached sources and the final store may be deterministically rebuilt after approval; do not generic-dedupe or prefer a market.",
+    "status": "AWAITING_USER_CONFIRMATION"
+  },
+  "safety": {
+    "immutable_raw_cache_modified": false,
+    "model_fit_count": 0,
+    "actual_orders": 0,
+    "actual_fills": 0,
+    "broker_connections": 0
+  }
+}

@@ -32,6 +32,7 @@ unchanged to 2023–2024 and 2025.
 ```bash
 python -m chip_incremental_study_v01.main audit-sources
 python -m chip_incremental_study_v01.main download-official
+python -m chip_incremental_study_v01.main rebuild-v2
 python -m chip_incremental_study_v01.main publish
 python -m chip_incremental_study_v01.main test-notification
 ```
@@ -64,7 +65,7 @@ The downloader identifies itself with a descriptive public research User-Agent,
 requests JSON explicitly, accepts compressed transfer, follows ordinary public
 redirects, and uses no cookie or authenticated session.
 
-The final `chip_daily_store.npz` is assembled only after all 1,459 formal
+The final versioned `chip_daily_store_v2.npz` is assembled only after all 1,459 formal
 2020–2025 trading dates, plus the small required 2019 year-end feature warm-up,
 have all four official payloads and pass the duplicate, parse, two-market
 coverage, and PIT-lag gates. Warm-up rows are never included in formal
@@ -83,23 +84,28 @@ This module contains no broker SDK, account access, order, or fill path.
 
 ## Current checkpoint
 
-Phase 0 is complete at `checkpoints/phase0/`. The formal model study has not
-run. Both official daily families passed the PIT audit only with a one-session
-lag, but a complete 2020–2025 archive was not accepted because the first bulk
-download attempt triggered the official CDN Anti-DDoS controls. Partial dates
-were discarded. Resume only with a rate-safe official acquisition or an
-authorized official bulk file; do not substitute third-party history.
+Phase 0 and the Phase 1 acquisition are complete. The formal model study has
+not run. Both official daily families passed the PIT audit only with a
+one-session lag. All 1,466 source dates and 5,864 official source-date payloads
+are present in the immutable local raw cache.
 
-The Phase 1 acquisition engineering checkpoint is recorded at
-`checkpoints/phase1_acquisition/`. Its first bounded live attempt received a
-HiNetCDN HTTP 307 with no usable market payload. After transport diagnosis and
-the public-client update, a four-request integration batch completed all TWSE
-and TPEx institutional and margin/short sources for 2019-12-23. The resumable
-cache now holds 1/1,466 dates (4/5,864 source-date pairs); the remaining 5,860
-pairs are deliberately not fetched by this transport-only checkpoint. The
-study remains unfit until the full coverage gate passes. Operational manifests
-and official raw payloads stay local under the gitignored
-`runtime/official_cache/`.
+The legacy schema-v1 parsed cache is retained unchanged as forensic evidence.
+It converted official security codes to integers, causing TWSE ETFs such as
+`006203` to collide with TPEx common stock `6203`. Schema v2 reparses the
+existing raw payloads without network access, preserves official codes as
+strings, validates exact membership in the frozen common-stock research
+universe, and carries market, security type, name, and source date before any
+research integer mapping. Its versioned lineage is:
+
+`official_cache/raw.json` -> `parsed_v2/` -> `chip_daily_store_v2.npz`.
+
+The v2 coverage gate passes with zero cross-market exact-identity collisions,
+zero duplicate stock-dates, complete PIT-lag mapping, and complete security
+type mapping for used rows. It excludes 641 legacy numeric-suffix ETF false
+matches, including all 365 rows that previously created explicit cross-market
+collisions. Final counts, hashes, and safety counters are recorded in
+`checkpoints/phase1_acquisition/phase1_acquisition_final_v2.json`. Operational
+payloads and stores remain local under the gitignored `runtime/` directory.
 
 ## Official transport diagnostic
 

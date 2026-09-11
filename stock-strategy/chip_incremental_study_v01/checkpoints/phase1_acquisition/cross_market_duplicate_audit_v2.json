@@ -1,0 +1,17 @@
+{
+  "collisions": [],
+  "cross_market_identity_collisions": 0,
+  "etf_exclusions": 641,
+  "excluded_by_security_code": {
+    "006203": 111,
+    "006204": 116,
+    "006205": 166,
+    "006206": 36,
+    "006207": 138,
+    "008201": 74
+  },
+  "former_cross_market_collision_occurrences": 365,
+  "legacy_numeric_false_match_exclusions": 641,
+  "schema_version": 2,
+  "status": "PASS"
+}
