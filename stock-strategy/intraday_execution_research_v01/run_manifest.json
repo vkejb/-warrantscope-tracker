@@ -1,0 +1,32 @@
+{
+  "status": "COMPLETE",
+  "study_id": "INTRADAY_EXECUTION_RESEARCH_V0_1",
+  "classification": "INFRASTRUCTURE_READY_NO_REAL_INTRADAY_EVIDENCE",
+  "config_hash": "c8a414590bf6d197906d697eb80e4273d04936aeeaa3e56cfdf86b3304cd184b",
+  "frozen_stage_a": {
+    "store_sha256": "36c1071c2dcdabdbcb8a4a6d7126d819d9b545075473a5639766e0d234a6c0d9",
+    "model_spec_sha256": "95c56676f79a98fb8a48324d2777294f727f76327c815674b96c29810d9d057d",
+    "run_manifest_sha256": "313dd76524d94d69b4ca26c45d229503877fc9cbd298d839bc2f94ee7931066a",
+    "model_id": "LINEAR_RIDGE_MFE10",
+    "model_fingerprint": "a943b58962b0e19e2830a700cd7ed1d32a8dc338be79652126e13be82b114ccd",
+    "stage_a_refit_count": 0
+  },
+  "mock_artifacts": {
+    "watchlist_sha256": "f2f8abe8c45908069c75c9c66e2a1911045382696cc0709b3579858896be964e",
+    "seal_sha256": "bdfd2b08ed9ee1ace7687161373a4dc6b32bf0cbdf3bb18c86c5838fa504aae5"
+  },
+  "pipeline": {
+    "adapter": "MOCK_ONLY",
+    "append_only_raw": true,
+    "deterministic_1m_5m_aggregation": true,
+    "snapshot_no_future_data": true,
+    "entry_proxy_strictly_after_snapshot": true,
+    "sealed_day_immutable": true
+  },
+  "formal_research_run_count": 0,
+  "model_fit_count": 0,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "created_at_utc": "2026-09-11T10:00:08.860230+00:00"
+}

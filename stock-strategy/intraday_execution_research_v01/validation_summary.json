@@ -1,0 +1,26 @@
+{
+  "study_id": "INTRADAY_EXECUTION_RESEARCH_V0_1",
+  "classification": "INFRASTRUCTURE_READY_NO_REAL_INTRADAY_EVIDENCE",
+  "mock_session_date": "2025-12-24",
+  "watchlist_symbols": 30,
+  "snapshot_times": [
+    "09:05",
+    "09:15",
+    "09:30",
+    "10:00",
+    "11:00",
+    "13:00"
+  ],
+  "formal_research_run_count": 0,
+  "model_fit_count": 0,
+  "stage_a_refit_count": 0,
+  "real_intraday_observations": 0,
+  "mock_daily_seal_validation": {
+    "pass": true,
+    "errors": [],
+    "state": "SEALED"
+  },
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0
+}
