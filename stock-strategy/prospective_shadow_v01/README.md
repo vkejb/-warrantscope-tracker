@@ -68,9 +68,18 @@ python3 -m prospective_shadow_v01.main update-outcomes \
   --trading-calendar /path/to/trading_calendar.csv
 
 python3 -m prospective_shadow_v01.main status
+
+python3 -B -m prospective_shadow_v01.main diagnostics --date 20260909
 ```
 
 若沒有 supplement，可完全省略 `--supplements`。本版不建立排程器，因 repository 尚未有一條可證明每日盤後已完整落地的行情更新流程；資料供應流程確定後，再讓外部排程每天呼叫同一個 `run-daily` 即可。
+
+`diagnostics` 只允許重播已有一筆 `COMPLETE` scan 的日期。它從該日
+readiness audit 取回當時封存的 archive 清單，並強制核對 trading calendar、
+input manifest、prospective config、規則及所有 scan counts。輸出包含 raw／
+accepted N_RETEST、N Compact 與每檔未通過 Compact 的逐條原因。此命令不建立
+`ShadowStore`，不取得 write lock、不 seal、不寫 ledger/status/run manifest，也沒有
+下單或 broker 入口；任何封存資料不一致都會 fail closed。
 
 ## 驗證
 
@@ -79,6 +88,6 @@ cd stock-strategy
 python3 -B -m unittest discover -s prospective_shadow_v01/tests -v
 ```
 
-測試固定檢查：T+1 後資料改動不影響 signal、重跑不重複、conflict 不改檔、outcome updater 不修改 signal bytes、outcome 只允許單調 revision、Compact 邊界與共用函式一致，以及 production package 沒有券商／網路／憑證／下單入口。
+測試固定檢查：T+1 後資料改動不影響 signal、重跑不重複、conflict 不改檔、outcome updater 不修改 signal bytes、outcome 只允許單調 revision、Compact 邊界與共用函式一致、diagnostics 前後 ledger/status bytes 完全相同，以及 production package 沒有券商／網路／憑證／下單入口。
 
 這些 observation 只能用來做 2026-09-06 之後的 prospective Shadow confirmation；不得依其 outcome 回頭修改本版規則，也不是實際可成交績效。

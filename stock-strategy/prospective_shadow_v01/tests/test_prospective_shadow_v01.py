@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import ast
 import csv
+from contextlib import redirect_stdout
 from datetime import date, datetime, timedelta, timezone
+import io
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -27,6 +30,11 @@ from prospective_shadow_v01.detector import (  # noqa: E402
     assert_frozen_contract,
     scan_snapshot,
 )
+from prospective_shadow_v01.diagnostics import (  # noqa: E402
+    compact_failure_reasons,
+    diagnose_snapshot,
+)
+from prospective_shadow_v01.main import main as shadow_main  # noqa: E402
 from prospective_shadow_v01.market_data_provider import (  # noqa: E402
     ExistingDailyDataProvider,
 )
@@ -40,6 +48,7 @@ from prospective_shadow_v01.storage import (  # noqa: E402
     ImmutableSignalConflict,
     OutcomeRevisionConflict,
     ShadowStore,
+    sha256_file,
 )
 from surge_event_study_v01.models import Bar  # noqa: E402
 
@@ -242,6 +251,116 @@ class FrozenDetectorTests(unittest.TestCase):
             geometry = classifier.call_args.args[0]
             self.assertEqual(geometry["pivot_separation_sessions"], 7)
             self.assertGreater(geometry["bottom_difference"], 0.0)
+
+    def test_diagnostic_replay_matches_frozen_scan_and_explains_boundaries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / "compact.zip"
+            calendar = Path(directory) / "trading_calendar.csv"
+            write_archive(archive, compact_rows())
+            write_calendar(calendar)
+            snapshot = ExistingDailyDataProvider(
+                [archive], trading_calendar_path=calendar
+            ).load_through("20260907")
+            frozen = scan_snapshot(snapshot, "20260907")
+            diagnostic = diagnose_snapshot(snapshot, "20260907")
+
+            self.assertEqual(
+                diagnostic["raw_n_retest_count"], frozen.raw_n_retest_count
+            )
+            self.assertEqual(
+                diagnostic["accepted_n_retest_count"],
+                frozen.accepted_n_retest_count,
+            )
+            self.assertEqual(
+                diagnostic["n_compact_retest_count"], frozen.compact_count
+            )
+            self.assertEqual(
+                diagnostic["raw_n_retest_candidates"][0]["stock_id"], "1234"
+            )
+            self.assertEqual(
+                diagnostic["raw_n_retest_candidates"][0][
+                    "compact_failure_reasons"
+                ],
+                [],
+            )
+        self.assertEqual(
+            compact_failure_reasons(
+                {"pivot_separation_sessions": 8, "bottom_difference": 0.0}
+            ),
+            [
+                "PIVOT_SEPARATION_SESSIONS_GT_7",
+                "BOTTOM_DIFFERENCE_NOT_POSITIVE",
+            ],
+        )
+
+    def test_diagnostics_cli_is_read_only_and_verifies_sealed_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "compact.zip"
+            calendar = root / "trading_calendar.csv"
+            write_archive(archive, compact_rows())
+            write_calendar(calendar)
+            snapshot = ExistingDailyDataProvider(
+                [archive], trading_calendar_path=calendar
+            ).load_through("20260907")
+            scan = scan_snapshot(snapshot, "20260907")
+            store = ShadowStore(root / "shadow")
+            store.initialize()
+            store.append_scan(
+                scan,
+                provider_name=snapshot.provider_name,
+                input_manifest_hash=snapshot.input_manifest_hash,
+            )
+            audit_dir = root / "runtime" / "audit"
+            audit_dir.mkdir(parents=True)
+            copied_calendar = root / "runtime" / "trading_calendar.csv"
+            copied_calendar.write_bytes(calendar.read_bytes())
+            audit = audit_dir / "readiness_20260907.json"
+            audit.write_text(
+                json.dumps(
+                    {
+                        "status": "READY",
+                        "ready": True,
+                        "target_date": "20260907",
+                        "prospective_input_manifest_hash": snapshot.input_manifest_hash,
+                        "prospective_provider_audit": {
+                            "sources": [str(archive)],
+                            "input_manifest_hash": snapshot.input_manifest_hash,
+                        },
+                        "trading_calendar": {
+                            "calendar_sha256": sha256_file(copied_calendar)
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            protected = [
+                store.scans_path,
+                store.signals_path,
+                store.outcomes_path,
+                store.status_path,
+            ]
+            before = {path: path.read_bytes() for path in protected}
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = shadow_main(
+                    [
+                        "--store-dir",
+                        str(store.root),
+                        "diagnostics",
+                        "--date",
+                        "20260907",
+                        "--readiness-audit",
+                        str(audit),
+                    ]
+                )
+            payload = json.loads(output.getvalue())
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(payload["sealed_scan_verified"])
+            self.assertEqual(payload["n_compact_retest_count"], 1)
+            self.assertEqual(
+                {path: path.read_bytes() for path in protected}, before
+            )
 
 
 class AppendOnlyStorageTests(unittest.TestCase):

@@ -7,6 +7,7 @@ import sys
 
 from .config import CFG
 from .detector import assert_frozen_contract
+from .diagnostics import run_sealed_diagnostics
 from .market_data_provider import ExistingDailyDataProvider
 from .service import run_daily, update_outcomes
 from .storage import ShadowStore
@@ -26,6 +27,18 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("init", help="create and validate empty append-only ledgers")
     commands.add_parser("status", help="verify ledger chains and print status")
+    diagnostics = commands.add_parser(
+        "diagnostics", help="read-only replay of a sealed prospective scan"
+    )
+    diagnostics.add_argument("--date", required=True, help="YYYYMMDD")
+    diagnostics.add_argument(
+        "--readiness-audit",
+        type=Path,
+        help=(
+            "sealed readiness audit; defaults to the matching audit produced "
+            "by shadow_daily_runner"
+        ),
+    )
 
     for name in ("run-daily", "update-outcomes"):
         command = commands.add_parser(name)
@@ -52,20 +65,36 @@ def _provider(args) -> ExistingDailyDataProvider:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
-    store = ShadowStore(args.store_dir, CFG)
     try:
         assert_frozen_contract(CFG)
-        if args.command == "init":
-            store.initialize()
-            result = {"command": "init", "status": store.validate()}
-        elif args.command == "status":
-            result = {"command": "status", "status": store.validate()}
-        elif args.command == "run-daily":
-            result = run_daily(_provider(args), store)
-        elif args.command == "update-outcomes":
-            result = update_outcomes(_provider(args), store, args.as_of)
-        else:  # pragma: no cover - argparse enforces this branch.
-            raise AssertionError(args.command)
+        if args.command == "diagnostics":
+            target = str(args.date).strip().replace("-", "")
+            default_audit = (
+                Path(__file__).resolve().parents[1]
+                / "shadow_daily_runner"
+                / "runtime"
+                / "audit"
+                / f"readiness_{target}.json"
+            )
+            result = run_sealed_diagnostics(
+                target,
+                args.store_dir,
+                args.readiness_audit or default_audit,
+                CFG,
+            )
+        else:
+            store = ShadowStore(args.store_dir, CFG)
+            if args.command == "init":
+                store.initialize()
+                result = {"command": "init", "status": store.validate()}
+            elif args.command == "status":
+                result = {"command": "status", "status": store.validate()}
+            elif args.command == "run-daily":
+                result = run_daily(_provider(args), store)
+            elif args.command == "update-outcomes":
+                result = update_outcomes(_provider(args), store, args.as_of)
+            else:  # pragma: no cover - argparse enforces this branch.
+                raise AssertionError(args.command)
         if args.command in {"run-daily", "update-outcomes"}:
             manifest = store.record_run(args.command, result)
             result["run_manifest"] = str(manifest.relative_to(store.root))
