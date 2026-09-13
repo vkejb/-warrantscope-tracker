@@ -1,0 +1,4 @@
+﻿feature,feature_family,favorable_side,threshold,discovery_extreme_success_delta,discovery_extreme_downside_delta,selection_strength,strong_group_context_min_points
+peer_turnover_share_change_5d,ACTIVITY_VOLUME,LOW,-0.11296601051487003,0.02351801979376955,-0.03726583210332168,0.060783851897091234,2
+peer_breadth_ma20_rising,BREADTH,LOW,0.6,0.013497976360952957,-0.05210463222728401,0.06560260858823697,2
+peer_rs_20d_vs_0050,RETURN_RS,LOW,0.00614004243635147,0.036052094583047645,-0.07999600014013042,0.11604809472317801,2

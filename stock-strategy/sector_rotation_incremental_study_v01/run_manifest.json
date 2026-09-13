@@ -1,0 +1,394 @@
+{
+  "artifacts": {
+    "cluster_bootstrap_summary.csv": "a36895f24d2433caad2f53993531b149f9365e5611c06b80ca9fc5a3a5eb70cf",
+    "composite_score_results.csv": "31666056e0848b7eb30e6f796a3763233b45079aaac013de598f77ff4e405204",
+    "concentration_diagnostics.csv": "74e82fc0826f5958431c67c700ea524cd09f14e18ae89839a720e3b9c079fd23",
+    "dynamic_peer_results.csv": "23fbe677e7d7adc4a837ff35fe3e2e255e746c02df481f2657cc742602ab0f7a",
+    "feature_bucket_results.csv": "05df5d01abc2a5772b4de4b33728b99ab93a9a1b1b805e4340674edc54d4c4ba",
+    "pit_audit.json": "f031fe9401c40ca5b959df0cb0ecf1567fd7320e88e60446b8257c061311d3fb",
+    "pool_reduction_summary.csv": "a3feb5e5c98f0d86072cbf6a4ce9311bf1e4638d92be9df346b6a67b047c1457",
+    "regime_diagnostics.csv": "a648fa97a593bb27c6e2ad62c599aa8551a40c3bb2e99c7052012e143751b408",
+    "tail_removal_summary.csv": "38294e62e38db292b85e535a26e4096ccaa54b9dc2732215ef0ed8ad7b592578",
+    "validation_summary.json": "3f7f274c8bbe953f51770f52372301400022d690868f7cd62a934851a2cf2c8c"
+  },
+  "composite_audit": {
+    "eligible": true,
+    "required_distinct_feature_families": 2,
+    "rule": "one strongest discovery-consistent feature per economic family; HIGH uses frozen Q60, LOW uses frozen Q40",
+    "selected_feature_families": 3
+  },
+  "config": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "bootstrap_reps": 5000,
+    "bootstrap_seed": 20260913,
+    "broker_connections": 0,
+    "composite_condition_quantile": 0.6,
+    "execution_mode": "RESEARCH_ONLY_NO_EXECUTION",
+    "expected_conditional_store_sha256": "efefade875e8fc1f2566e2d5de0e8dcb6cfd267e2ece80304d166ff642ef918c",
+    "expected_stage_a_store_sha256": "36c1071c2dcdabdbcb8a4a6d7126d819d9b545075473a5639766e0d234a6c0d9",
+    "feature_families": [
+      {
+        "family": "RETURN_RS",
+        "feature": "peer_return_1d"
+      },
+      {
+        "family": "RETURN_RS",
+        "feature": "peer_return_3d"
+      },
+      {
+        "family": "RETURN_RS",
+        "feature": "peer_return_5d"
+      },
+      {
+        "family": "RETURN_RS",
+        "feature": "peer_return_20d"
+      },
+      {
+        "family": "RETURN_RS",
+        "feature": "peer_rs_3d_vs_0050"
+      },
+      {
+        "family": "RETURN_RS",
+        "feature": "peer_rs_5d_vs_0050"
+      },
+      {
+        "family": "RETURN_RS",
+        "feature": "peer_rs_20d_vs_0050"
+      },
+      {
+        "family": "BREADTH",
+        "feature": "peer_breadth_up"
+      },
+      {
+        "family": "BREADTH",
+        "feature": "peer_breadth_above_ma20"
+      },
+      {
+        "family": "BREADTH",
+        "feature": "peer_breadth_ma20_rising"
+      },
+      {
+        "family": "BREADTH",
+        "feature": "peer_breadth_20d_close_high"
+      },
+      {
+        "family": "ACTIVITY_VOLUME",
+        "feature": "peer_turnover_market_share"
+      },
+      {
+        "family": "ACTIVITY_VOLUME",
+        "feature": "peer_turnover_share_vs_20d"
+      },
+      {
+        "family": "ACTIVITY_VOLUME",
+        "feature": "peer_turnover_share_change_5d"
+      },
+      {
+        "family": "ACTIVITY_VOLUME",
+        "feature": "peer_turnover_share_change_20d"
+      },
+      {
+        "family": "ACTIVITY_VOLUME",
+        "feature": "peer_median_volume_ratio5"
+      },
+      {
+        "family": "ACTIVITY_VOLUME",
+        "feature": "peer_median_volume_ratio20"
+      }
+    ],
+    "minimum_common_sessions": 40,
+    "minimum_composite_families": 2,
+    "peer_count": 10,
+    "percentile_boundaries": [
+      0.2,
+      0.4,
+      0.6,
+      0.8
+    ],
+    "periods": [
+      {
+        "end": 20221231,
+        "label": "HISTORICAL_DISCOVERY",
+        "start": 20200101
+      },
+      {
+        "end": 20241231,
+        "label": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS",
+        "start": 20230101
+      },
+      {
+        "end": 20251231,
+        "label": "STRESS_PREVALENCE_SEEN_NOT_BLIND",
+        "start": 20250101
+      }
+    ],
+    "pool_sizes": [
+      15,
+      10,
+      5
+    ],
+    "primary_population": "FROZEN_STAGE_A_TOP30",
+    "study_id": "SECTOR_ROTATION_INCREMENTAL_STUDY_V0_1",
+    "trailing_correlation_sessions": 60
+  },
+  "config_fingerprint": "c44f487a2ddab37e09a9948defb70a4004a8ab1f9accf9e0b687c5c9b67b37f0",
+  "discovery_boundaries": {
+    "peer_breadth_20d_close_high": [
+      0.0,
+      0.0,
+      0.1,
+      0.3
+    ],
+    "peer_breadth_above_ma20": [
+      0.2,
+      0.5,
+      0.8,
+      0.9
+    ],
+    "peer_breadth_ma20_rising": [
+      0.3,
+      0.6,
+      0.8,
+      1.0
+    ],
+    "peer_breadth_up": [
+      0.2,
+      0.4,
+      0.6,
+      0.8
+    ],
+    "peer_median_volume_ratio20": [
+      0.5473224147303526,
+      0.695253250363225,
+      0.8629818752487225,
+      1.1513880140174795
+    ],
+    "peer_median_volume_ratio5": [
+      0.6292264263987052,
+      0.7635859717555803,
+      0.907902077637285,
+      1.1364784128309935
+    ],
+    "peer_return_1d": [
+      -0.016561060204576216,
+      -0.002987012519971854,
+      0.006049663584463482,
+      0.017901246737426303
+    ],
+    "peer_return_20d": [
+      -0.05001819736830895,
+      0.014715297414888293,
+      0.0735490647165041,
+      0.15540886541943166
+    ],
+    "peer_return_3d": [
+      -0.02717999728650014,
+      -0.004412085037927502,
+      0.01302484522349869,
+      0.03512389406261891
+    ],
+    "peer_return_5d": [
+      -0.03450820977625868,
+      -0.005045392547373037,
+      0.018478142285275244,
+      0.04987105279077218
+    ],
+    "peer_rs_20d_vs_0050": [
+      -0.04264611769178067,
+      0.00614004243635147,
+      0.05504124222685125,
+      0.13250955030292486
+    ],
+    "peer_rs_3d_vs_0050": [
+      -0.02374229446695363,
+      -0.005437910987084647,
+      0.008794735579897505,
+      0.028408532660988008
+    ],
+    "peer_rs_5d_vs_0050": [
+      -0.029936057403086417,
+      -0.006434869498593728,
+      0.012965506329498977,
+      0.04055132194012559
+    ],
+    "peer_turnover_market_share": [
+      0.007867508116353278,
+      0.012445055847932741,
+      0.01894747157817338,
+      0.031202778857615195
+    ],
+    "peer_turnover_share_change_20d": [
+      -0.31095852808440255,
+      0.03051338061640025,
+      0.47738816426681047,
+      1.3666416511726662
+    ],
+    "peer_turnover_share_change_5d": [
+      -0.34023778147278544,
+      -0.11296601051487003,
+      0.16035153361016738,
+      0.6484554906887235
+    ],
+    "peer_turnover_share_vs_20d": [
+      -0.3090190764250072,
+      -0.1165207094277572,
+      0.1204452167756724,
+      0.5300196641270087
+    ]
+  },
+  "documentation_sha256": "a7bafa5a3848beba26fdda3424e569177877e3d2eb08560a84acba9612bca762",
+  "formal_publish_count": 1,
+  "frozen_inputs": {
+    "conditional_store_sha256": "efefade875e8fc1f2566e2d5de0e8dcb6cfd267e2ece80304d166ff642ef918c",
+    "later_period_refit_count": 0,
+    "stage_a_dates": 1459,
+    "stage_a_refit_count": 0,
+    "stage_a_rows": 43770,
+    "stage_a_store_sha256": "36c1071c2dcdabdbcb8a4a6d7126d819d9b545075473a5639766e0d234a6c0d9"
+  },
+  "input_hashes": [
+    {
+      "bytes": 9003967,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+      "sha256": "6ff9ef9b46b359fb2ecc3a55ad95300ae09c0355c458edfc78b7aeaa9d2b2438"
+    },
+    {
+      "bytes": 9535208,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+      "sha256": "108bcbb8b9da3edd15ea432110ffa435da754d79532946069f18162b8e52e94b"
+    },
+    {
+      "bytes": 9714358,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+      "sha256": "ce7057ce36db38ef49075f6f15c24ebec2a1133e45947810483103197dd3623f"
+    },
+    {
+      "bytes": 9907809,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+      "sha256": "223ddd94b573f2abe9660d2052163917415b43c1d0df629cc87f4cad807ca8f1"
+    },
+    {
+      "bytes": 9904931,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+      "sha256": "769b63f6e722449fb69af52f5fa4a721bc81efff1f02cbf31a57465f8eae0d1a"
+    },
+    {
+      "bytes": 10541237,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+      "sha256": "9192285411801b75a087fd668b855702d75b44d3ef82a398cd8aaaec35a63215"
+    },
+    {
+      "bytes": 11020470,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+      "sha256": "1b19ea3e0a96b7bc0865bf4f5aec2e31c869f1dd55e527e0374f945e6ca49a99"
+    },
+    {
+      "bytes": 110045,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv",
+      "sha256": "f1e9af44b04345e656026819ad22aa68c04e00a9f116f6a6d5310a1d0fc3c78c"
+    }
+  ],
+  "load_audit": {
+    "checkpoint_reused": true,
+    "input_hashes_reverified": true
+  },
+  "peer_audit": {
+    "available_rows": 43320,
+    "coverage_pct": 0.9897189856065799,
+    "future_data_used": false,
+    "leave_one_out": true,
+    "maximum_feature_timestamp": 20251231,
+    "minimum_common_sessions": 40,
+    "peer_count": 10,
+    "stage_a_rows": 43770,
+    "trailing_sessions": 60,
+    "unavailable_reasons": {
+      "nonfinite_feature_vector": 450
+    }
+  },
+  "peer_store_content_digest": "85c16a99df334abe4bba7b2d91f2a32b5524f7162225d7d45383913dddd79919",
+  "peer_store_sha256": "83b40ae5e339cb9229523d188559c8ce6f280bc6ea87250921ee948e07ca4b7d",
+  "post_publish_completion_note": "Tail treatment expanded to include success and MFE; Stage-A peer-count concentration rows added before Git publication. No model or feature recomputation.",
+  "prepare_audit": {
+    "causal_contract_reverified": true,
+    "checkpoint_reused": true
+  },
+  "published_at_utc": "2026-09-13T07:38:00.201668+00:00",
+  "regime_audit": {
+    "benchmark_rows": 1717,
+    "calendar_dates": 1459,
+    "market_proxy": "0050",
+    "regime_features_are_t_or_earlier": true,
+    "sources": [
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+        "sha256": "6ff9ef9b46b359fb2ecc3a55ad95300ae09c0355c458edfc78b7aeaa9d2b2438"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+        "sha256": "108bcbb8b9da3edd15ea432110ffa435da754d79532946069f18162b8e52e94b"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+        "sha256": "ce7057ce36db38ef49075f6f15c24ebec2a1133e45947810483103197dd3623f"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+        "sha256": "223ddd94b573f2abe9660d2052163917415b43c1d0df629cc87f4cad807ca8f1"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+        "sha256": "769b63f6e722449fb69af52f5fa4a721bc81efff1f02cbf31a57465f8eae0d1a"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+        "sha256": "9192285411801b75a087fd668b855702d75b44d3ef82a398cd8aaaec35a63215"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+        "sha256": "1b19ea3e0a96b7bc0865bf4f5aec2e31c869f1dd55e527e0374f945e6ca49a99"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W01.zip",
+        "sha256": "abb17095be2e28b05aa3dd5772dedcd2fa11b690b3e57e458a3d81146f9f2388"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W02.zip",
+        "sha256": "299d876a0dbbd3c0afc22f8cf50fc671e83ea175fc7046c9de2d8f1ed005cf63"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W03.zip",
+        "sha256": "999b2a8397b9f68fbcabb0d7f41ed1fd6e8eb10d238622719565f201755fb269"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W04.zip",
+        "sha256": "60427d9eba29c3e3e5fee574ca6461af54fe75dca07cb01c338e57901725d91e"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W05.zip",
+        "sha256": "769656d3ad0bd722523d2bf23e879c1bf985e54d7e9f5828b5a3b399404814d4"
+      },
+      {
+        "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv",
+        "sha256": "f1e9af44b04345e656026819ad22aa68c04e00a9f116f6a6d5310a1d0fc3c78c"
+      }
+    ],
+    "taiex_status": "NOT_AVAILABLE_IN_REUSED_ARCHIVES",
+    "unavailable_regime_dates": 53,
+    "volatility_boundary_fit_period": "HISTORICAL_DISCOVERY_2020_2022_ONLY",
+    "volatility_discovery_median": 0.0110907555678876
+  },
+  "safety": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "broker_connections": 0
+  },
+  "source_hashes": {
+    "analysis.py": "c643ff85743fc1d96e0fd1a7a864ca1d2d1dbc4d8d8cfbc261926d48efb21666",
+    "config.py": "8e1de82b4893d34e1891190e406b4dc71b134d55f89ba582d5296cbf939dfcab",
+    "data.py": "f2892916d0492d9efb6d001520bac36b30a61f38bc443cb298c81e9e3c517f9c",
+    "main.py": "9d0a4dbbf081dfbccf22c59dea61447b4a64d52a49f705276addc6662543fe89"
+  },
+  "study_id": "SECTOR_ROTATION_INCREMENTAL_STUDY_V0_1"
+}

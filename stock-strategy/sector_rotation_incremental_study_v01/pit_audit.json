@@ -1,0 +1,22 @@
+{
+  "dynamic_market_peers": {
+    "decision": "PIT_USABLE",
+    "definition": "Top 10 Pearson-correlated eligible peers from trailing 60 T-or-earlier daily returns",
+    "future_constituents_used": false,
+    "minimum_common_sessions": 40,
+    "self_excluded": true,
+    "tie_breaker": "stock_id ascending after correlation descending"
+  },
+  "official_sector": {
+    "action": "EXCLUDED_FAIL_CLOSED_NO_CURRENT_CLASSIFICATION_BACKFILL",
+    "decision": "OFFICIAL_SECTOR_PIT_UNSAFE",
+    "effective_change_dates_available": false,
+    "evidence": {
+      "repository_search": "no official 2020-2025 daily industry-membership history with effective change dates",
+      "v21_diagnostic": "v21/diagnostic_analysis.py: current/future labels are not backfilled",
+      "v21_loader": "v21/data_loader.py: latest/historical labels are not complete PIT daily industry history"
+    },
+    "historical_membership_reconstructable": false,
+    "survivorship_hindsight_risk": true
+  }
+}

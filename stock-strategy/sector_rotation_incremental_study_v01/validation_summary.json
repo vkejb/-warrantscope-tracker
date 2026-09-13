@@ -1,0 +1,26 @@
+{
+  "checks": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "all_features_t_or_earlier": true,
+    "broker_connections": 0,
+    "current_sector_hindsight_used": false,
+    "frozen_stage_a_exact_reuse": true,
+    "future_constituents_used": false,
+    "future_normalization_used": false,
+    "leave_one_out": true,
+    "outcome_leakage": false,
+    "protected_artifacts_unchanged": true,
+    "trailing_peer_correlation_only": true
+  },
+  "classification": "SECTOR_ROTATION_DIRECTION_ONLY",
+  "composite_feature_count": 3,
+  "composite_score_eligible": true,
+  "dynamic_peer_coverage": 0.9897189856065799,
+  "failures": [],
+  "later_period_refit_count": 0,
+  "official_sector_status": "OFFICIAL_SECTOR_PIT_UNSAFE",
+  "stage_a_refit_count": 0,
+  "status": "COMPLETE",
+  "study_id": "SECTOR_ROTATION_INCREMENTAL_STUDY_V0_1"
+}
