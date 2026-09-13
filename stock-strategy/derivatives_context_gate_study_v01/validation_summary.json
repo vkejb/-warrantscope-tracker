@@ -1,0 +1,28 @@
+{
+  "study_id": "DERIVATIVES_CONTEXT_GATE_STUDY_V0_1",
+  "status": "COMPLETE",
+  "classification": "NO_DERIVATIVES_CONTEXT_EDGE",
+  "phase0_pit_audit": "PASS_WITH_UNAVAILABLE_FAMILIES",
+  "frozen_stage_a_exact_reuse": true,
+  "stage_a_refit_count": 0,
+  "conditional_refit_count": 0,
+  "context_features": [
+    "tx_total_oi",
+    "tx_total_oi_change_1",
+    "tx_total_oi_change_5",
+    "txo_volume_pc_ratio",
+    "txo_oi_pc_ratio",
+    "txo_volume_pc_change_1",
+    "txo_volume_pc_change_5",
+    "txo_oi_pc_change_1",
+    "txo_oi_pc_change_5"
+  ],
+  "context_score_feature_count": 3,
+  "stage_a_signal_dates": 1459,
+  "context_covered_signal_dates": 1459,
+  "missing_signal_dates": [],
+  "coverage_pct": 1.0,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0
+}
