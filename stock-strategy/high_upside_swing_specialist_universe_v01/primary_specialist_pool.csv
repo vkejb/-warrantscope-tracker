@@ -1,0 +1,16 @@
+﻿primary_selection_order,stock_id,stock_name,discovery_rank,swing_score,repeatability_status,selection_status,selection_reason
+1,3228,金麗科,1,0.978030303030303,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+2,3661,世芯-KY,2,0.975,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+3,5351,鈺創,3,0.9410984848484849,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+4,8046,南電,4,0.9395833333333334,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+5,6415,矽力*-KY,5,0.9346590909090909,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+6,3529,力旺,6,0.9333333333333333,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+7,6531,愛普*,7,0.928030303030303,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+8,3552,同致,8,0.9272727272727272,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+9,6533,晶心科,9,0.925568181818182,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+10,2603,長榮,10,0.9255681818181818,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+11,3707,漢磊,11,0.8857954545454545,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+12,5269,祥碩,12,0.8801136363636364,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+13,8261,富鼎,13,0.8564393939393941,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+14,6104,創惟,15,0.853030303030303,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80
+15,3141,晶宏,16,0.8494318181818181,PASS,PRIMARY_SELECTED,highest remaining discovery Swing Score with all pairwise correlations <=0.80

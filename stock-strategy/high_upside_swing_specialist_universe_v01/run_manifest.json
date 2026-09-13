@@ -1,0 +1,233 @@
+{
+  "actual_fills": 0,
+  "actual_orders": 0,
+  "broker_connections": 0,
+  "config_fingerprint": "9f6acf3f470335d3bf05c00f6f4159fe998b1a492e3f6c5c69e33a2be2a7057e",
+  "confirmation_period": "2023-2024",
+  "documentation_sha256": "fc6becab8ef716f188b4cfc03e7ba7154ceb9af18bdbb1e7a4948a821a946b64",
+  "formal_publish_count": 1,
+  "future_outcomes_used_for_discovery_universe_characterization": true,
+  "input_hashes": [
+    {
+      "bytes": 9003967,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+      "sha256": "6ff9ef9b46b359fb2ecc3a55ad95300ae09c0355c458edfc78b7aeaa9d2b2438"
+    },
+    {
+      "bytes": 9535208,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+      "sha256": "108bcbb8b9da3edd15ea432110ffa435da754d79532946069f18162b8e52e94b"
+    },
+    {
+      "bytes": 9714358,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+      "sha256": "ce7057ce36db38ef49075f6f15c24ebec2a1133e45947810483103197dd3623f"
+    },
+    {
+      "bytes": 9907809,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+      "sha256": "223ddd94b573f2abe9660d2052163917415b43c1d0df629cc87f4cad807ca8f1"
+    },
+    {
+      "bytes": 9904931,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+      "sha256": "769b63f6e722449fb69af52f5fa4a721bc81efff1f02cbf31a57465f8eae0d1a"
+    },
+    {
+      "bytes": 10541237,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+      "sha256": "9192285411801b75a087fd668b855702d75b44d3ef82a398cd8aaaec35a63215"
+    },
+    {
+      "bytes": 11020470,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+      "sha256": "1b19ea3e0a96b7bc0865bf4f5aec2e31c869f1dd55e527e0374f945e6ca49a99"
+    },
+    {
+      "bytes": 110045,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv",
+      "sha256": "f1e9af44b04345e656026819ad22aa68c04e00a9f116f6a6d5310a1d0fc3c78c"
+    }
+  ],
+  "later_period_outcomes_used_for_discovery_selection": false,
+  "later_period_rerank_count": 0,
+  "later_period_reselection_count": 0,
+  "load_audit": {
+    "accepted_rows_before_deduplication": 2973118,
+    "benchmark_rows": 1696,
+    "broad_source_gap_dates": [],
+    "corporate_action_limitation": "Unadjusted OHLCV and the 0.89-1.11 overnight discontinuity rule cannot identify all ex-rights/ex-dividend events.",
+    "duplicate_rows_overridden": 0,
+    "first_stock_date": "20190102",
+    "invalid_row_samples": [
+      {
+        "line": 179,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 220,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 221,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 254,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 259,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 309,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 422,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 658,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 667,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 713,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 776,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 795,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 825,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 850,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 858,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 950,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 984,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 1041,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 1066,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      },
+      {
+        "line": 1081,
+        "reason": "invalid open: ''",
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip:yearly_2019.csv"
+      }
+    ],
+    "invalid_rows": 32491,
+    "last_stock_date": "20251231",
+    "ordinary_code_count": 2008,
+    "ordinary_row_count": 2971422,
+    "security_master_limitation": "Four-digit code syntax is only a proxy for historical common-stock membership; no complete point-in-time security master is available.",
+    "skipped_archives": [],
+    "sources": [
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv"
+    ],
+    "turnover_limitation": "close multiplied by volume is a proxy, not reported turnover."
+  },
+  "manifest_payload_sha256": "a1885d64b4a744cf60461d122082eea747a7fa6fbb1aebb8072349a8ad234a9a",
+  "model_fit_count": 0,
+  "output_hashes": {
+    "analysis_spec.json": "d7e596ae3d44735e64801704aec9ef910fc43621062dad0f8a2a2cf86a4b2274",
+    "annual_swing_repeatability.csv": "7477fd36b7ea468ee87728f38c125a450312761b43c5ca4f9ce9572778990dcb",
+    "comparison_vs_stable_specialist_universe.csv": "1f1a0168c13f261106e8e07f481cc3c34548d6aff04b60a32da6cd711c5324c7",
+    "confirmation_2023_2024.csv": "ffadde29eba5eafe07735c3cc558ca67bc57aff2fa46b20ca8e272d0067e62ed",
+    "correlation_matrix.csv": "cae23431ae76c63a4efb348cf2b822ef6ed114ac03ea3f8a5ac07434d9cd8e5a",
+    "daily_movement_metrics.csv": "083e4b5382815395a55f1dd6242ceb5207a0dfdff8697d474748897b6502829a",
+    "deoverlapped_swing_episodes.csv": "f018e15b980a94846153ab2dcbf69223b6d948573dc4f1ae754b2dcc69fb997e",
+    "discovery_rankings.csv": "7ee10fd2c02c0c39dc3d359cb06bb71e8814a900e97a686623c51f50588639c6",
+    "discovery_swing_scores.csv": "fd92d9c6dc519211df6b90cddce93bee46db218638f7ff3ba06d8381dbb54965",
+    "eligibility_universe.csv": "0c6fe17fe10edc14093f542e242597399c74a7d040406448bf7a5e55cb5885ba",
+    "final_high_upside_specialist_universe.csv": "689fca4dccabe7d96086684346bdee0f80c8aadcb4312508ac2c212e8dd91673",
+    "high_correlation_reserve.csv": "8abd2ddfda45c5ca04fe44c647604a785644da12d92ba8156d6e16b3110d81fa",
+    "high_upside_swing_reserve.csv": "64a7dfcf1e9534f3af9acc9845b4df145f7981e93fe844fc38efa5e1ab4cab3a",
+    "primary_specialist_pool.csv": "fb2206c43c588f5317ab8af2e87028e1ad9040711948c93cbfd886488d4aab2f",
+    "stress_2025.csv": "a54e92df8f2d328a5bc75a2bf3955e19ff402c17952afe18b9400842a7bf2701",
+    "swing_opportunity_metrics.csv": "ab505206695d0f9816d767101e75478dc2fbaea00df32c2db26987280f84e762",
+    "swing_persistence_metrics.csv": "5a1ed2a80a23397554e8b1b453633a115b07d6afde8e2aec91c28eaaa28f3410",
+    "validation_summary.json": "7c7ffa35344dbcf8cf8af9a6c3d28208653837c8f86223cde1e51f680863aab3"
+  },
+  "prepare_audit": {
+    "calendar_first_date": "20190102",
+    "calendar_last_date": "20251231",
+    "calendar_sessions": 1701,
+    "detected_overnight_discontinuities": 747,
+    "discontinuity_rule": [
+      0.89,
+      1.11
+    ],
+    "prepared_stock_count": 1977,
+    "stock_rows_not_on_0050_calendar": 0
+  },
+  "previous_universe_hash": {
+    "path": "specialist_universe_discovery_v01/final_specialist_universe.csv",
+    "sha256": "6b064cb6180317f7484522b63f8bd3de56160c0e97c30de62ecbf650b8f6b200",
+    "stock_count": 15
+  },
+  "selection_period": "2020-2022",
+  "source_hashes": {
+    "__init__.py": "5a4dd86258ffa6de349dd8d3003604c89295a3c618b7a68077edf0322938f158",
+    "analysis.py": "effa0a3f97ecf816d1e379722ef7ff2da9238e709a84d13ed28c53d9a03c9dbc",
+    "config.py": "42db32fe92c797a921fa09115f7da6ea46fde1bfe902bfd00890e01197c6af20",
+    "main.py": "535c4718bfff3eed7d1181b2a8c55ce44fcebaf9b3d95fcff2fca4e1a1333499"
+  },
+  "stage_a_refit_count": 0,
+  "status": "COMPLETE",
+  "stress_period": "2025",
+  "study_id": "HIGH_UPSIDE_SWING_SPECIALIST_UNIVERSE_V0_1",
+  "warrant_research": false
+}

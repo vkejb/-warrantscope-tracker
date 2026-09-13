@@ -1,0 +1,120 @@
+{
+  "actual_fills": 0,
+  "actual_orders": 0,
+  "broker_connections": 0,
+  "checks": {
+    "all_primary_pairwise_correlations_le_0_80": true,
+    "all_primary_repeatability_pass": true,
+    "cluster_quota_used": false,
+    "later_selection_mutations_zero": true,
+    "primary_pool_at_most_15": true,
+    "safety_zero": true,
+    "warrant_research": false
+  },
+  "classifications": {
+    "DISCOVERY_ONLY_HIGH_UPSIDE": [
+      "6415",
+      "6533"
+    ],
+    "LOST_TRADABILITY": [
+      "3141",
+      "3228",
+      "3552",
+      "3707",
+      "5351",
+      "8261"
+    ],
+    "PERSISTENT_HIGH_UPSIDE_SPECIALIST": [
+      "6531"
+    ],
+    "REGIME_HIGH_UPSIDE_SPECIALIST": [
+      "2603",
+      "3529",
+      "3661",
+      "5269",
+      "6104",
+      "8046"
+    ]
+  },
+  "comparison": [
+    {
+      "average_pairwise_correlation": 0.2794639365968387,
+      "median_atr14_pct": 3.349568087873648,
+      "median_daily_range_pct": 2.9504741833508956,
+      "median_er20": 0.2191858403420648,
+      "median_mfe10": 0.034912718204488824,
+      "median_p75_mfe10": 0.07499999999999996,
+      "median_up10_episode_rate_per_252": 7.542857142857143,
+      "median_up15_episode_rate_per_252": 2.742857142857143,
+      "median_up8_episode_rate_per_252": 10.628571428571428,
+      "row_type": "UNIVERSE",
+      "stock_count": 15,
+      "universe": "PREVIOUS_STABLE_SPECIALIST_UNIVERSE"
+    },
+    {
+      "average_pairwise_correlation": 0.3561221508344909,
+      "median_atr14_pct": 5.541649569560941,
+      "median_daily_range_pct": 4.585959085132467,
+      "median_er20": 0.22058135143518923,
+      "median_mfe10": 0.05754571013453591,
+      "median_p75_mfe10": 0.13468013468013473,
+      "median_up10_episode_rate_per_252": 12.342857142857142,
+      "median_up15_episode_rate_per_252": 9.0,
+      "median_up8_episode_rate_per_252": 14.742857142857142,
+      "row_type": "UNIVERSE",
+      "stock_count": 15,
+      "universe": "HIGH_UPSIDE_SWING_PRIMARY"
+    },
+    {
+      "average_pairwise_correlation": 0.07665821423765218,
+      "median_atr14_pct": 2.192081481687293,
+      "median_daily_range_pct": 1.6354849017815716,
+      "median_er20": 0.001395511093124413,
+      "median_mfe10": 0.022632991930047086,
+      "median_p75_mfe10": 0.05968013468013478,
+      "median_up10_episode_rate_per_252": 4.799999999999999,
+      "median_up15_episode_rate_per_252": 6.257142857142857,
+      "median_up8_episode_rate_per_252": 4.114285714285714,
+      "row_type": "ABSOLUTE_DIFFERENCE",
+      "stock_count": 0,
+      "universe": "HIGH_UPSIDE_MINUS_PREVIOUS"
+    },
+    {
+      "average_pairwise_correlation": 1.2743044958542937,
+      "median_atr14_pct": 1.6544370570113882,
+      "median_daily_range_pct": 1.5543125613538256,
+      "median_er20": 1.00636679399977,
+      "median_mfe10": 1.6482735545677765,
+      "median_p75_mfe10": 1.7957351290684642,
+      "median_up10_episode_rate_per_252": 1.6363636363636362,
+      "median_up15_episode_rate_per_252": 3.28125,
+      "median_up8_episode_rate_per_252": 1.3870967741935483,
+      "row_type": "RATIO",
+      "stock_count": 1.0,
+      "universe": "HIGH_UPSIDE_DIVIDED_BY_PREVIOUS"
+    }
+  ],
+  "confirmation_period": "2023-2024",
+  "eligibility_pass_count": 133,
+  "future_outcomes_used_for_discovery_universe_characterization": true,
+  "general_reserve_count": 15,
+  "high_correlation_reserve_count": 1,
+  "intraday_noise_low_persistence_examples": [],
+  "later_period_outcomes_used_for_discovery_selection": false,
+  "later_period_rerank_count": 0,
+  "later_period_reselection_count": 0,
+  "model_fit_count": 0,
+  "pool_correlation": {
+    "average_pairwise_correlation": 0.3561221508344909,
+    "maximum_pairwise_correlation": 0.5370925156980169
+  },
+  "prepared_stock_count": 1977,
+  "primary_pool_count": 15,
+  "raw_stock_count": 2008,
+  "repeatability_pass_count": 130,
+  "selection_period": "2020-2022",
+  "stage_a_refit_count": 0,
+  "status": "COMPLETE",
+  "stress_period": "2025",
+  "study_id": "HIGH_UPSIDE_SWING_SPECIALIST_UNIVERSE_V0_1"
+}

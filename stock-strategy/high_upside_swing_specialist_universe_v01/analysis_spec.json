@@ -1,0 +1,228 @@
+{
+  "actual_fills": 0,
+  "actual_orders": 0,
+  "broker_connections": 0,
+  "config": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "annual_minimum_coverage": 0.9,
+    "annual_minimum_sessions": 180,
+    "annualization_sessions": 252,
+    "atr_window": 14,
+    "broker_connections": 0,
+    "efficiency_long_window": 20,
+    "efficiency_short_window": 10,
+    "episode_cooldown_sessions": 10,
+    "execution_mode": "RESEARCH_ONLY_NO_EXECUTION",
+    "forward_sessions": 10,
+    "later_normal_minimum_coverage": 0.9,
+    "later_normal_minimum_sessions": 180,
+    "later_normal_minimum_turnover_proxy": 200000000.0,
+    "maximum_discovery_missing_run_sessions": 20,
+    "maximum_input_date": "20251231",
+    "maximum_p95_gap_pct": 8.0,
+    "maximum_pairwise_correlation": 0.8,
+    "maximum_primary_pool_size": 15,
+    "maximum_reserve_size": 15,
+    "minimum_median_atr14_pct": 2.0,
+    "minimum_median_close": 10.0,
+    "minimum_median_daily_range_pct": 2.5,
+    "minimum_median_turnover_proxy": 200000000.0,
+    "model_fit_count": 0,
+    "periods": [
+      {
+        "calendar_years": 3,
+        "end": "20221231",
+        "label": "HISTORICAL_DISCOVERY",
+        "start": "20200101"
+      },
+      {
+        "calendar_years": 2,
+        "end": "20241231",
+        "label": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS",
+        "start": "20230101"
+      },
+      {
+        "calendar_years": 1,
+        "end": "20251231",
+        "label": "STRESS_PREVALENCE_SEEN_NOT_BLIND",
+        "start": "20250101"
+      }
+    ],
+    "persistent_mfe10_minimum_retention": 0.6,
+    "persistent_up10_minimum_retention": 0.5,
+    "persistent_up8_minimum_retention": 0.6,
+    "regime_expansion_retention": 1.2,
+    "repeatability_minimum_up10_episodes": 2,
+    "repeatability_minimum_up8_episodes": 3,
+    "repeatability_minimum_years": 2,
+    "score_weights": {
+      "daily_movement_component": 0.05,
+      "median_mfe10_component": 0.1,
+      "p75_mfe10_component": 0.15,
+      "swing_persistence_component": 0.1,
+      "up10_episode_component": 0.2,
+      "up15_episode_component": 0.1,
+      "up8_before_down5_component": 0.1,
+      "up8_episode_component": 0.2
+    },
+    "severe_maximum_gap_multiple": 3.0,
+    "severe_maximum_missing_run_sessions": 40,
+    "severe_maximum_p95_gap_pct": 12.0,
+    "severe_minimum_coverage": 0.8,
+    "severe_minimum_sessions": 160,
+    "severe_minimum_turnover_proxy": 100000000.0,
+    "stage_a_refit_count": 0,
+    "study_id": "HIGH_UPSIDE_SWING_SPECIALIST_UNIVERSE_V0_1",
+    "tail_p75_mfe10_minimum_retention": 0.8,
+    "tail_up10_rate_minimum_retention": 0.75,
+    "thresholds": [
+      {
+        "horizon_sessions": 5,
+        "return_threshold": 0.05,
+        "threshold_id": "UP5_5D"
+      },
+      {
+        "horizon_sessions": 10,
+        "return_threshold": 0.08,
+        "threshold_id": "UP8_10D"
+      },
+      {
+        "horizon_sessions": 10,
+        "return_threshold": 0.1,
+        "threshold_id": "UP10_10D"
+      },
+      {
+        "horizon_sessions": 10,
+        "return_threshold": 0.15,
+        "threshold_id": "UP15_10D"
+      }
+    ]
+  },
+  "config_fingerprint": "9f6acf3f470335d3bf05c00f6f4159fe998b1a492e3f6c5c69e33a2be2a7057e",
+  "daily_movement_gate": "median ATR14 >=2.0% OR median (High-Low)/prior Close >=2.5%; minimum gate only",
+  "episode_definition": {
+    "cooldown": "after accepted T, calendar sessions T+1 through T+10 cannot start another episode for the same stock and threshold; T+11 may start",
+    "ranking_measure": "deoverlapped episodes per 252 period sessions",
+    "start": "each evaluable T whose future Close path reaches threshold",
+    "thresholds": [
+      [
+        "UP5_5D",
+        0.05,
+        5
+      ],
+      [
+        "UP8_10D",
+        0.08,
+        10
+      ],
+      [
+        "UP10_10D",
+        0.1,
+        10
+      ],
+      [
+        "UP15_10D",
+        0.15,
+        10
+      ]
+    ]
+  },
+  "forward_characterization": {
+    "complete_path_required": "same prepare_stocks segment, consecutive market sessions, and entirely inside named period",
+    "future_outcomes_used_for_discovery_universe_characterization": true,
+    "later_period_outcomes_used_for_discovery_selection": false,
+    "path": "Day1-Day10 session Close returns",
+    "reference_entry": "T+1 regular-session Open"
+  },
+  "industry_used_for_selection": false,
+  "input_hashes": [
+    {
+      "bytes": 9003967,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+      "sha256": "6ff9ef9b46b359fb2ecc3a55ad95300ae09c0355c458edfc78b7aeaa9d2b2438"
+    },
+    {
+      "bytes": 9535208,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+      "sha256": "108bcbb8b9da3edd15ea432110ffa435da754d79532946069f18162b8e52e94b"
+    },
+    {
+      "bytes": 9714358,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+      "sha256": "ce7057ce36db38ef49075f6f15c24ebec2a1133e45947810483103197dd3623f"
+    },
+    {
+      "bytes": 9907809,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+      "sha256": "223ddd94b573f2abe9660d2052163917415b43c1d0df629cc87f4cad807ca8f1"
+    },
+    {
+      "bytes": 9904931,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+      "sha256": "769b63f6e722449fb69af52f5fa4a721bc81efff1f02cbf31a57465f8eae0d1a"
+    },
+    {
+      "bytes": 10541237,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+      "sha256": "9192285411801b75a087fd668b855702d75b44d3ef82a398cd8aaaec35a63215"
+    },
+    {
+      "bytes": 11020470,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+      "sha256": "1b19ea3e0a96b7bc0865bf4f5aec2e31c869f1dd55e527e0374f945e6ca49a99"
+    },
+    {
+      "bytes": 110045,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv",
+      "sha256": "f1e9af44b04345e656026819ad22aa68c04e00a9f116f6a6d5310a1d0fc3c78c"
+    }
+  ],
+  "later_classification": {
+    "discovery_only": "both later periods fail and no upside metric expands to >=120% of discovery",
+    "lost_tradability": "any later period fails fixed severe coverage, sessions, turnover, missing-run, or gap checks",
+    "persistent": "both later periods: +8 episode retention >=60%, +10 >=50%, median MFE10 >=60%, and normal liquidity",
+    "regime": "tradability retained and exactly one period passes, or any later upside metric expands to >=120% of discovery"
+  },
+  "model_fit_count": 0,
+  "previous_universe": {
+    "path": "specialist_universe_discovery_v01/final_specialist_universe.csv",
+    "sha256": "6b064cb6180317f7484522b63f8bd3de56160c0e97c30de62ecbf650b8f6b200",
+    "stock_count": 15
+  },
+  "primary_selection": {
+    "cluster_quota": false,
+    "greedy_correlation": "accept only when discovery daily-return correlation with every selected stock <=0.80",
+    "maximum": 15,
+    "minimum_is_not_forced": true,
+    "order": "repeatability-passed stocks by Swing Score descending, stock_id ascending"
+  },
+  "repeatability_gate": "at least two of 2020, 2021, 2022 each have >=3 deoverlapped +8 episodes and >=2 deoverlapped +10 episodes",
+  "research_periods": {
+    "confirmation_period": "2023-2024 RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS",
+    "selection_period": "2020-2022",
+    "stress_period": "2025 STRESS_PREVALENCE_SEEN_NOT_BLIND"
+  },
+  "score_definition": {
+    "daily_movement_component": "equal mean of median ATR14 and median daily-range percentile credits",
+    "downside_first_used": false,
+    "mae_used": false,
+    "normalization": "tie-aware 0-1 percentile ranks over the 2020-2022 eligible cross-section only",
+    "weights": {
+      "daily_movement_component": 0.05,
+      "median_mfe10_component": 0.1,
+      "p75_mfe10_component": 0.15,
+      "swing_persistence_component": 0.1,
+      "up10_episode_component": 0.2,
+      "up15_episode_component": 0.1,
+      "up8_before_down5_component": 0.1,
+      "up8_episode_component": 0.2
+    }
+  },
+  "setup_results_used_for_selection": false,
+  "stage_a_refit_count": 0,
+  "status": "FROZEN_BEFORE_FORMAL_RESULTS",
+  "study_id": "HIGH_UPSIDE_SWING_SPECIALIST_UNIVERSE_V0_1",
+  "swing_persistence_definition": "median absolute Day10 Close return from T+1 Open divided by sqrt(10) times discovery median daily (High-Low)/prior Close",
+  "tail_dependency_definition": "diagnostic only; true if Top5%-MFE removal leaves P75 MFE10 below 80% of original or +10 raw hit rate below 75% of original"
+}
