@@ -1,0 +1,26 @@
+{
+  "checks": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "all_primary_features_t_or_earlier": true,
+    "broker_connections": 0,
+    "frozen_dynamic_peer_exact_reuse": true,
+    "frozen_stage_a_exact_reuse": true,
+    "future_data_only_in_lead_time_diagnostic": true,
+    "later_period_threshold_selection": false,
+    "leave_one_out": true,
+    "protected_artifacts_unchanged": true
+  },
+  "classification": "NO_EARLY_ROTATION_EDGE",
+  "discovery_supporting_acceleration_families": 1,
+  "dynamic_peer_coverage": 0.9897189856065799,
+  "dynamic_peer_refit_count": 0,
+  "early_rotation_composite_eligible": false,
+  "failures": [],
+  "later_period_refit_count": 0,
+  "official_sector_status": "OFFICIAL_SECTOR_PIT_UNSAFE_INHERITED_NOT_RETESTED",
+  "selected_acceleration_families": 0,
+  "stage_a_refit_count": 0,
+  "status": "COMPLETE",
+  "study_id": "EARLY_ROTATION_ACCELERATION_STUDY_V0_1"
+}
