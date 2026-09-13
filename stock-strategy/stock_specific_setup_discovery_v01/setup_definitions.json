@@ -1,0 +1,89 @@
+{
+  "definitions": [
+    {
+      "definition": "Close_T > maximum Close over T-20 through T-1",
+      "setup_family": "BREAKOUT",
+      "setup_id": "A1"
+    },
+    {
+      "definition": "A1 and Volume_T / median Volume over T-20 through T-1 >= 1.5",
+      "setup_family": "BREAKOUT",
+      "setup_id": "A2"
+    },
+    {
+      "definition": "Close_T > maximum Close over T-60 through T-1",
+      "setup_family": "BREAKOUT",
+      "setup_id": "A3"
+    },
+    {
+      "definition": "A3 and Volume_T / median Volume over T-20 through T-1 >= 1.5",
+      "setup_family": "BREAKOUT",
+      "setup_id": "A4"
+    },
+    {
+      "definition": "MA20_T > MA60_T; MA20_T > MA20_T-5; abs(Close_T-MA20_T) <= 0.50 ATR20_T; Close_T >= MA20_T",
+      "setup_family": "TREND_PULLBACK",
+      "setup_id": "B1"
+    },
+    {
+      "definition": "MA20_T > MA60_T; MA20_T > MA20_T-5; Low_T <= MA20_T; Close_T >= MA20_T",
+      "setup_family": "TREND_PULLBACK",
+      "setup_id": "B2"
+    },
+    {
+      "definition": "MA20_T > MA60_T; MA20_T > MA20_T-5; Close_T in [MA20_T-0.50 ATR20_T, MA20_T+0.25 ATR20_T]; Close_T > Close_T-1",
+      "setup_family": "TREND_PULLBACK",
+      "setup_id": "B3"
+    },
+    {
+      "definition": "Close_T <= MA20_T - 1.0 ATR20_T",
+      "setup_family": "MEAN_REVERSION",
+      "setup_id": "C1"
+    },
+    {
+      "definition": "Close_T <= MA20_T - 1.5 ATR20_T",
+      "setup_family": "MEAN_REVERSION",
+      "setup_id": "C2"
+    },
+    {
+      "definition": "Close_T <= MA20_T - 1.0 ATR20_T and Close_T > MA60_T",
+      "setup_family": "MEAN_REVERSION",
+      "setup_id": "C3"
+    },
+    {
+      "definition": "ATR5/ATR20 through T-1 <= 0.75 and Close_T > prior 10-session Close high",
+      "setup_family": "VOLATILITY_CONTRACTION_EXPANSION",
+      "setup_id": "D1"
+    },
+    {
+      "definition": "ATR5/ATR20 through T-1 <= 0.85 and Close_T > prior 20-session Close high",
+      "setup_family": "VOLATILITY_CONTRACTION_EXPANSION",
+      "setup_id": "D2"
+    },
+    {
+      "definition": "prior 5-session mean normalized range < prior 20-session mean normalized range * 0.70 and Close_T > prior 10-session Close high",
+      "setup_family": "VOLATILITY_CONTRACTION_EXPANSION",
+      "setup_id": "D3"
+    },
+    {
+      "definition": "Gap_T >= 2%; Close_T > Open_T; close location >= 0.70",
+      "setup_family": "GAP_BEHAVIOR",
+      "setup_id": "E1"
+    },
+    {
+      "definition": "Gap_T >= 2%; Close_T < Open_T; Close_T > Close_T-1",
+      "setup_family": "GAP_BEHAVIOR",
+      "setup_id": "E2"
+    },
+    {
+      "definition": "Gap_T <= -2%; Close_T > Open_T; Close_T > Close_T-1",
+      "setup_family": "GAP_BEHAVIOR",
+      "setup_id": "E3"
+    }
+  ],
+  "machine_learning": false,
+  "short_setups": false,
+  "status": "PREREGISTERED_BEFORE_FORMAL_RESULTS",
+  "study_id": "STOCK_SPECIFIC_SETUP_DISCOVERY_V0_1",
+  "warrant_research": false
+}

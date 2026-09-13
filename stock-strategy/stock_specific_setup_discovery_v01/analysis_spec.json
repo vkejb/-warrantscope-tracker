@@ -1,0 +1,235 @@
+{
+  "bootstrap": "5000 calendar-month cluster resamples with replacement; all trades in sampled months retained together",
+  "causality": {
+    "complete_outcome_boundary": "Day10 must remain inside the named period and the same prepare_stocks segment",
+    "contraction_atr5_atr20": "raw-price true-range means ending T-1",
+    "contraction_range": "(High-Low)/prior Close means ending T-1",
+    "entry": "T+1 regular-session Open",
+    "ma20_and_ma60": "include T Close; MA20 slope is MA20_T > MA20_T-5",
+    "primary_exit": "Day5 Close",
+    "prior_high_excludes_t": true,
+    "pullback_atr20": "raw-price true-range mean ending T",
+    "secondary_exit": "Day10 Close",
+    "signal_information": "T regular-session OHLCV and earlier only",
+    "volume20": "median T-20 through T-1"
+  },
+  "config": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "bootstrap_iterations": 5000,
+    "bootstrap_seed": 20260914,
+    "broker_connections": 0,
+    "commission_rate": 0.00039900000000000005,
+    "execution_mode": "RESEARCH_ONLY_NO_EXECUTION",
+    "maximum_input_date": "20251231",
+    "maximum_positive_quarter_share": 0.75,
+    "minimum_commission": 1,
+    "minimum_discovery_day5_net_pf": 1.05,
+    "minimum_discovery_trades": 30,
+    "minimum_history_sessions": 65,
+    "minimum_positive_discovery_years": 2,
+    "multiple_testing_status": "MULTIPLE_HYPOTHESIS_RESEARCH",
+    "per_trade_notional": 30000.0,
+    "periods": [
+      {
+        "end": "20221231",
+        "label": "HISTORICAL_DISCOVERY",
+        "start": "20200101"
+      },
+      {
+        "end": "20241231",
+        "label": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS",
+        "start": "20230101"
+      },
+      {
+        "end": "20251231",
+        "label": "STRESS_PREVALENCE_SEEN_NOT_BLIND",
+        "start": "20250101"
+      }
+    ],
+    "primary_horizon_sessions": 5,
+    "secondary_horizon_sessions": 10,
+    "sell_tax_rate": 0.003,
+    "setup_definitions": [
+      {
+        "definition": "Close_T > maximum Close over T-20 through T-1",
+        "family": "BREAKOUT",
+        "setup_id": "A1"
+      },
+      {
+        "definition": "A1 and Volume_T / median Volume over T-20 through T-1 >= 1.5",
+        "family": "BREAKOUT",
+        "setup_id": "A2"
+      },
+      {
+        "definition": "Close_T > maximum Close over T-60 through T-1",
+        "family": "BREAKOUT",
+        "setup_id": "A3"
+      },
+      {
+        "definition": "A3 and Volume_T / median Volume over T-20 through T-1 >= 1.5",
+        "family": "BREAKOUT",
+        "setup_id": "A4"
+      },
+      {
+        "definition": "MA20_T > MA60_T; MA20_T > MA20_T-5; abs(Close_T-MA20_T) <= 0.50 ATR20_T; Close_T >= MA20_T",
+        "family": "TREND_PULLBACK",
+        "setup_id": "B1"
+      },
+      {
+        "definition": "MA20_T > MA60_T; MA20_T > MA20_T-5; Low_T <= MA20_T; Close_T >= MA20_T",
+        "family": "TREND_PULLBACK",
+        "setup_id": "B2"
+      },
+      {
+        "definition": "MA20_T > MA60_T; MA20_T > MA20_T-5; Close_T in [MA20_T-0.50 ATR20_T, MA20_T+0.25 ATR20_T]; Close_T > Close_T-1",
+        "family": "TREND_PULLBACK",
+        "setup_id": "B3"
+      },
+      {
+        "definition": "Close_T <= MA20_T - 1.0 ATR20_T",
+        "family": "MEAN_REVERSION",
+        "setup_id": "C1"
+      },
+      {
+        "definition": "Close_T <= MA20_T - 1.5 ATR20_T",
+        "family": "MEAN_REVERSION",
+        "setup_id": "C2"
+      },
+      {
+        "definition": "Close_T <= MA20_T - 1.0 ATR20_T and Close_T > MA60_T",
+        "family": "MEAN_REVERSION",
+        "setup_id": "C3"
+      },
+      {
+        "definition": "ATR5/ATR20 through T-1 <= 0.75 and Close_T > prior 10-session Close high",
+        "family": "VOLATILITY_CONTRACTION_EXPANSION",
+        "setup_id": "D1"
+      },
+      {
+        "definition": "ATR5/ATR20 through T-1 <= 0.85 and Close_T > prior 20-session Close high",
+        "family": "VOLATILITY_CONTRACTION_EXPANSION",
+        "setup_id": "D2"
+      },
+      {
+        "definition": "prior 5-session mean normalized range < prior 20-session mean normalized range * 0.70 and Close_T > prior 10-session Close high",
+        "family": "VOLATILITY_CONTRACTION_EXPANSION",
+        "setup_id": "D3"
+      },
+      {
+        "definition": "Gap_T >= 2%; Close_T > Open_T; close location >= 0.70",
+        "family": "GAP_BEHAVIOR",
+        "setup_id": "E1"
+      },
+      {
+        "definition": "Gap_T >= 2%; Close_T < Open_T; Close_T > Close_T-1",
+        "family": "GAP_BEHAVIOR",
+        "setup_id": "E2"
+      },
+      {
+        "definition": "Gap_T <= -2%; Close_T > Open_T; Close_T > Close_T-1",
+        "family": "GAP_BEHAVIOR",
+        "setup_id": "E3"
+      }
+    ],
+    "slippage_one_way": 0.001,
+    "stage_a_refit_count": 0,
+    "study_id": "STOCK_SPECIFIC_SETUP_DISCOVERY_V0_1",
+    "top5_removed_minimum_net_pf": 0.9,
+    "warrant_research": false
+  },
+  "config_fingerprint": "f39568ae4cf39f397fe5399f4948ca1be0f7d9f571d8bf8b8958829b39224961",
+  "cost_assumptions": {
+    "commission_rate": 0.00039900000000000005,
+    "minimum_commission": 1,
+    "per_trade_notional": 30000.0,
+    "sell_tax_rate": 0.003,
+    "slippage_one_way": 0.001
+  },
+  "deoverlap": "Per stock and setup variant independently; a new T-close signal is allowed on the prior trade's Day5 close, otherwise active-position signals are ignored",
+  "discovery_gate": {
+    "annual_consistency": "positive Day5 net mean in at least two of 2020, 2021, 2022",
+    "day5_net_mean": "> 0",
+    "day5_net_pf": "> 1.05",
+    "minimum_trades": 30,
+    "quarter_concentration": "largest positive-quarter share <= 0.75",
+    "top5_removal": "Day5 net PF >= 0.9"
+  },
+  "future_path_metrics_used_in_selection": false,
+  "input_hashes": [
+    {
+      "bytes": 9003967,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+      "sha256": "6ff9ef9b46b359fb2ecc3a55ad95300ae09c0355c458edfc78b7aeaa9d2b2438"
+    },
+    {
+      "bytes": 9535208,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+      "sha256": "108bcbb8b9da3edd15ea432110ffa435da754d79532946069f18162b8e52e94b"
+    },
+    {
+      "bytes": 9714358,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+      "sha256": "ce7057ce36db38ef49075f6f15c24ebec2a1133e45947810483103197dd3623f"
+    },
+    {
+      "bytes": 9907809,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+      "sha256": "223ddd94b573f2abe9660d2052163917415b43c1d0df629cc87f4cad807ca8f1"
+    },
+    {
+      "bytes": 9904931,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+      "sha256": "769b63f6e722449fb69af52f5fa4a721bc81efff1f02cbf31a57465f8eae0d1a"
+    },
+    {
+      "bytes": 10541237,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+      "sha256": "9192285411801b75a087fd668b855702d75b44d3ef82a398cd8aaaec35a63215"
+    },
+    {
+      "bytes": 11020470,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+      "sha256": "1b19ea3e0a96b7bc0865bf4f5aec2e31c869f1dd55e527e0374f945e6ca49a99"
+    },
+    {
+      "bytes": 110045,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv",
+      "sha256": "f1e9af44b04345e656026819ad22aa68c04e00a9f116f6a6d5310a1d0fc3c78c"
+    }
+  ],
+  "market_context": {
+    "0050_close_vs_ma60": "normalized 0050 Close_T > inclusive trailing MA60_T",
+    "0050_return20_sign": "normalized Close_T/Close_T-20-1 >= 0 versus < 0",
+    "dependency_label": "MATERIAL_SIGN_REVERSAL only if bucket net means have opposite signs and differ by at least 1 percentage point",
+    "entry_gate": false
+  },
+  "multiple_testing_status": "MULTIPLE_HYPOTHESIS_RESEARCH",
+  "path_diagnostics": "MFE/MAE and +8-before--5 use future session Close returns relative to T+1 Open; descriptive only",
+  "period_discipline": {
+    "2023_2024": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS; frozen primary setup only",
+    "2025": "STRESS_PREVALENCE_SEEN_NOT_BLIND; frozen primary setup only",
+    "later_period_parameter_changes": false,
+    "setup_selection": "2020-2022 HISTORICAL_DISCOVERY only"
+  },
+  "primary_selection_order": [
+    "highest minimum annual Day5 net mean",
+    "highest overall Day5 net PF",
+    "highest Day5 net mean",
+    "higher de-overlapped trade count",
+    "setup_id lexical ascending"
+  ],
+  "specialist_type_used_in_selection": false,
+  "status": "FROZEN_BEFORE_FORMAL_SETUP_RESULTS",
+  "stock_setup_matrix": "Within each family, diagnostic variant is selected by discovery Day5 net PF, trade count, then setup_id; later data never chooses the matrix variant",
+  "study_id": "STOCK_SPECIFIC_SETUP_DISCOVERY_V0_1",
+  "tail_robustness": "Day5 net results at original, remove ceiling(top 1%), remove ceiling(top 5%) winners",
+  "universe": {
+    "file_sha256": "6b064cb6180317f7484522b63f8bd3de56160c0e97c30de62ecbf650b8f6b200",
+    "path": "specialist_universe_discovery_v01/final_specialist_universe.csv",
+    "snapshot_sha256": "ed56fdbc575d0cc8c2f9eaf1d28bd87a16e87b17ad4b56c1d4c649d0a1ceb56c",
+    "source_manifest_sha256": "aeec02903425182bd7a905b199fd007c600c0e870888dda4beb82dced24ec093",
+    "stock_count": 15
+  },
+  "warrant_research": false
+}

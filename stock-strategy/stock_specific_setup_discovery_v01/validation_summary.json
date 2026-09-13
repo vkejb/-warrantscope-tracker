@@ -1,0 +1,83 @@
+{
+  "actual_fills": 0,
+  "actual_orders": 0,
+  "broker_connections": 0,
+  "checks": {
+    "entry_t_plus_1_open": true,
+    "future_metrics_excluded_from_selection": true,
+    "later_setup_frozen": true,
+    "no_machine_learning": true,
+    "no_warrant_research": true,
+    "one_or_zero_primary_per_stock": true,
+    "safety_zero": true,
+    "same_day_close_execution": false,
+    "selection_discovery_only": true,
+    "universe_exactly_frozen_15": true
+  },
+  "cost_assumptions": {
+    "commission_rate": 0.00039900000000000005,
+    "minimum_commission": 1,
+    "per_trade_notional": 30000.0,
+    "sell_tax_rate": 0.003,
+    "slippage_one_way": 0.001
+  },
+  "discovery_setup_found_count": 5,
+  "final_classifications": {
+    "DISCOVERY_ONLY_EDGE": [
+      "2376",
+      "2379",
+      "3661"
+    ],
+    "NO_STABLE_STOCK_EDGE": [
+      "1101",
+      "1216",
+      "1477",
+      "2308",
+      "2324",
+      "2357",
+      "2454",
+      "3017",
+      "3653",
+      "9958"
+    ],
+    "REGIME_DEPENDENT_STOCK_EDGE": [
+      "8046"
+    ],
+    "STABLE_STOCK_SPECIFIC_EDGE": [
+      "2345"
+    ],
+    "TOO_SPARSE": []
+  },
+  "future_path_metrics_used_in_selection": false,
+  "later_period_setup_changes": 0,
+  "multiple_testing_status": "MULTIPLE_HYPOTHESIS_RESEARCH",
+  "specialist_type_comparison": {
+    "CORE_SPECIALIST": {
+      "discovery_setup_count": 3,
+      "regime_dependent_edge_count": 0,
+      "stable_edge_count": 1,
+      "stock_count": 11
+    },
+    "REGIME_SPECIALIST": {
+      "discovery_setup_count": 2,
+      "regime_dependent_edge_count": 1,
+      "stable_edge_count": 0,
+      "stock_count": 4
+    }
+  },
+  "specialist_type_used_in_discovery_selection": false,
+  "stage_a_refit_count": 0,
+  "status": "COMPLETE",
+  "study_id": "STOCK_SPECIFIC_SETUP_DISCOVERY_V0_1",
+  "tested_stock_count": 15,
+  "tested_variant_count": 16,
+  "total_discovery_hypotheses": 240,
+  "universe_audit": {
+    "file_sha256": "6b064cb6180317f7484522b63f8bd3de56160c0e97c30de62ecbf650b8f6b200",
+    "path": "specialist_universe_discovery_v01/final_specialist_universe.csv",
+    "snapshot_sha256": "ed56fdbc575d0cc8c2f9eaf1d28bd87a16e87b17ad4b56c1d4c649d0a1ceb56c",
+    "source_manifest_sha256": "aeec02903425182bd7a905b199fd007c600c0e870888dda4beb82dced24ec093",
+    "stock_count": 15
+  },
+  "warrant_research": false
+}
