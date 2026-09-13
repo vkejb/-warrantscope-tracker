@@ -1,0 +1,207 @@
+{
+  "clustering_definition": {
+    "algorithm": "deterministic farthest-first initialized Lloyd KMeans; lowest stock_id is first centroid; argmin cluster tie and stock-order ties",
+    "features": [
+      "beta_0050",
+      "correlation_0050",
+      "upside_capture",
+      "downside_capture",
+      "median_atr14_pct",
+      "median_realized_vol20_annualized_pct",
+      "median_efficiency20",
+      "lag1_daily_return_autocorrelation",
+      "idiosyncratic_volatility_annualized_pct",
+      "p95_abs_overnight_gap_pct"
+    ],
+    "future_data_used": false,
+    "k": 8,
+    "liquidity_feature_used": false,
+    "standardization": "population z-score of discovery winsorized features",
+    "winsorization": "discovery eligible cross-section 2.5%/97.5% per feature"
+  },
+  "config": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "annual_minimum_coverage": 0.9,
+    "annual_minimum_sessions": 180,
+    "annualization_sessions": 252,
+    "atr_window": 14,
+    "benchmark_symbol": "0050",
+    "broker_connections": 0,
+    "cluster_count": 8,
+    "cluster_features": [
+      "beta_0050",
+      "correlation_0050",
+      "upside_capture",
+      "downside_capture",
+      "median_atr14_pct",
+      "median_realized_vol20_annualized_pct",
+      "median_efficiency20",
+      "lag1_daily_return_autocorrelation",
+      "idiosyncratic_volatility_annualized_pct",
+      "p95_abs_overnight_gap_pct"
+    ],
+    "core_maximum_beta_absolute_change": 0.5,
+    "core_maximum_gap_multiple": 2.0,
+    "core_retention_maximum": 1.8,
+    "core_retention_minimum": 0.6,
+    "defensive_beta_maximum": 0.8,
+    "defensive_downside_capture_maximum": 0.9,
+    "discovery_end": "20221231",
+    "discovery_start": "20200101",
+    "efficiency_window": 20,
+    "execution_mode": "RESEARCH_ONLY_NO_EXECUTION",
+    "final_pool_maximum": 15,
+    "forward_sessions": 10,
+    "future_outcomes_used_for_universe_selection": false,
+    "industry_used_for_score_cluster_or_selection": false,
+    "kmeans_max_iterations": 300,
+    "kmeans_seed": 20260914,
+    "kmeans_tolerance": 1e-10,
+    "later_normal_minimum_coverage": 0.9,
+    "later_normal_minimum_sessions": 180,
+    "later_normal_minimum_turnover_proxy": 200000000.0,
+    "later_normal_minimum_turnover_retention": 0.4,
+    "maximum_discovery_missing_run_sessions": 20,
+    "maximum_input_date": "20251231",
+    "maximum_p95_gap_pct": 8.0,
+    "maximum_representatives_per_cluster": 2,
+    "minimum_median_atr14_pct": 1.0,
+    "minimum_median_close": 10.0,
+    "minimum_median_turnover_proxy": 200000000.0,
+    "pairwise_high_redundancy_threshold": 0.8,
+    "periods": [
+      {
+        "end": "20221231",
+        "label": "HISTORICAL_DISCOVERY",
+        "start": "20200101"
+      },
+      {
+        "end": "20241231",
+        "label": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS",
+        "start": "20230101"
+      },
+      {
+        "end": "20251231",
+        "label": "STRESS_PREVALENCE_SEEN_NOT_BLIND",
+        "start": "20250101"
+      }
+    ],
+    "rank2_maximum_primary_correlation": 0.75,
+    "realized_vol_window": 20,
+    "score_weights": {
+      "behavior_stability_component": 0.2,
+      "continuity_component": 0.2,
+      "gap_safety_component": 0.1,
+      "liquidity_component": 0.25,
+      "tradable_volatility_component": 0.15,
+      "trend_structure_quality_component": 0.1
+    },
+    "severe_maximum_gap_multiple": 3.0,
+    "severe_maximum_missing_run_sessions": 40,
+    "severe_maximum_p95_gap_pct": 12.0,
+    "severe_minimum_coverage": 0.8,
+    "severe_minimum_sessions": 160,
+    "severe_minimum_turnover_proxy": 100000000.0,
+    "severe_minimum_turnover_retention": 0.25,
+    "stage_a_refit_count": 0,
+    "study_id": "SPECIALIST_UNIVERSE_DISCOVERY_V0_1",
+    "tradable_volatility_full_credit_percentile": 0.6,
+    "trend_efficiency_full_credit_percentile": 0.6,
+    "winsor_lower_quantile": 0.025,
+    "winsor_upper_quantile": 0.975
+  },
+  "config_fingerprint": "19b6acfadf674d22cbcd0b081aaa86a2c9b5494e399d3159f9c03fddb173047e",
+  "future_outcomes_used_for_universe_selection": false,
+  "industry_status": "UNAVAILABLE_NO_RELIABLE_REPOSITORY_SOURCE",
+  "industry_used_for_score_cluster_or_selection": false,
+  "input_hashes": [
+    {
+      "bytes": 9003967,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+      "sha256": "6ff9ef9b46b359fb2ecc3a55ad95300ae09c0355c458edfc78b7aeaa9d2b2438"
+    },
+    {
+      "bytes": 9535208,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+      "sha256": "108bcbb8b9da3edd15ea432110ffa435da754d79532946069f18162b8e52e94b"
+    },
+    {
+      "bytes": 9714358,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+      "sha256": "ce7057ce36db38ef49075f6f15c24ebec2a1133e45947810483103197dd3623f"
+    },
+    {
+      "bytes": 9907809,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+      "sha256": "223ddd94b573f2abe9660d2052163917415b43c1d0df629cc87f4cad807ca8f1"
+    },
+    {
+      "bytes": 9904931,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+      "sha256": "769b63f6e722449fb69af52f5fa4a721bc81efff1f02cbf31a57465f8eae0d1a"
+    },
+    {
+      "bytes": 10541237,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+      "sha256": "9192285411801b75a087fd668b855702d75b44d3ef82a398cd8aaaec35a63215"
+    },
+    {
+      "bytes": 11020470,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+      "sha256": "1b19ea3e0a96b7bc0865bf4f5aec2e31c869f1dd55e527e0374f945e6ca49a99"
+    },
+    {
+      "bytes": 110045,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv",
+      "sha256": "f1e9af44b04345e656026819ad22aa68c04e00a9f116f6a6d5310a1d0fc3c78c"
+    }
+  ],
+  "market_sensitivity_definition": {
+    "beta_0050": "OLS slope with intercept: stock daily return on 0050 daily return",
+    "correlation_0050": "Pearson daily return correlation",
+    "daily_alignment": "same-date continuous stock and continuous normalized 0050 close returns",
+    "downside_capture": "mean stock return / mean 0050 return on sessions where 0050 return < 0",
+    "idiosyncratic_volatility": "population standard deviation of OLS residuals times sqrt(252)",
+    "upside_capture": "mean stock return / mean 0050 return on sessions where 0050 return > 0"
+  },
+  "period_discipline": {
+    "2023_2024": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS; stability and classification only",
+    "2025": "STRESS_PREVALENCE_SEEN_NOT_BLIND; stability and classification only",
+    "eligibility_normalization_score_cluster_representatives_and_ordering": "2020-2022 HISTORICAL_DISCOVERY only",
+    "later_period_reclustering": false,
+    "later_period_reranking": false
+  },
+  "quality_score_definition": {
+    "behavior_stability": "inverse percentile of equal mean annual CV for ATR14, absolute return, and turnover in 2020/2021/2022",
+    "continuity": "eligible-universe percentile of discovery coverage",
+    "gap_safety": "inverse percentile of discovery P95 absolute overnight gap",
+    "liquidity": "eligible-universe percentile of discovery median turnover",
+    "tradable_volatility": "equal mean of ATR14 and absolute-return percentile credits; each credit is percentile/0.60 capped at 1.0 so the most volatile tail cannot outrank merely by magnitude",
+    "trend_structure_quality": "equal mean of ER20 percentile/0.60 capped at 1.0 and inverse percentile of absolute lag1 autocorrelation",
+    "weights": {
+      "behavior_stability_component": 0.2,
+      "continuity_component": 0.2,
+      "gap_safety_component": 0.1,
+      "liquidity_component": 0.25,
+      "tradable_volatility_component": 0.15,
+      "trend_structure_quality_component": 0.1
+    }
+  },
+  "representative_selection_definition": {
+    "maximum_per_cluster": 2,
+    "maximum_pool_size": 15,
+    "minimum_pool_size_is_not_forced": true,
+    "ordering": "all cluster primaries by cluster id, then eligible secondaries by score descending, average correlation to already-selected pool ascending, stock_id ascending",
+    "primary": "highest discovery quality score in each non-empty cluster; stock_id ascending tie-break",
+    "secondary": "cluster rank2 only when discovery daily return correlation with primary is below 0.75"
+  },
+  "stability_definition": {
+    "core": "both later periods retain normal coverage/liquidity and pass ATR 0.60-1.80, absolute return 0.60-1.80, P95 gap <=2x, beta absolute change <=0.50",
+    "exclude": "any later period fails fixed severe coverage, sessions, liquidity, missing-run, or extreme-gap checks",
+    "regime": "severe tradability passes but one or more normal/core behavior checks fail",
+    "volatility_or_beta_shift_alone_causes_exclusion": false
+  },
+  "status": "FROZEN_BEFORE_FORMAL_RANKING",
+  "study_id": "SPECIALIST_UNIVERSE_DISCOVERY_V0_1"
+}
