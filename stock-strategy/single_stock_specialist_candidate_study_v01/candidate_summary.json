@@ -1,0 +1,48 @@
+{
+  "candidate_stability": [
+    {
+      "code": "2408",
+      "cross_period_stability_pass": false,
+      "status": "FAIL"
+    },
+    {
+      "code": "2344",
+      "cross_period_stability_pass": false,
+      "status": "FAIL"
+    },
+    {
+      "code": "3231",
+      "cross_period_stability_pass": false,
+      "status": "FAIL"
+    },
+    {
+      "code": "3017",
+      "cross_period_stability_pass": true,
+      "status": "PASS"
+    },
+    {
+      "code": "2368",
+      "cross_period_stability_pass": true,
+      "status": "PASS"
+    }
+  ],
+  "future_outcomes_used_in_candidate_score": false,
+  "not_a_trading_strategy": true,
+  "research_type": "SPECIALIST CANDIDATE SCREENING",
+  "result_status": "CANDIDATE_SELECTED_FOR_NEXT_STRATEGY_STUDY",
+  "safety": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "broker_connections": 0,
+    "model_fit_count": 0,
+    "stage_a_refit_count": 0
+  },
+  "selected_candidate": {
+    "code": "2368",
+    "discovery_rank": 1,
+    "name": "金像電",
+    "specialist_score": 0.7500000000000001
+  },
+  "selection_rule": "Highest 2020-2022 discovery rank among candidates passing both fixed later-period stability gates",
+  "study_id": "SINGLE_STOCK_SPECIALIST_CANDIDATE_STUDY_V0_1"
+}

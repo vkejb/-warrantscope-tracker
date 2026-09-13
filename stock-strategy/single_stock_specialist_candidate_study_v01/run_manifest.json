@@ -1,0 +1,148 @@
+{
+  "config": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "annualization_sessions": 252,
+    "atr_window": 14,
+    "benchmark_symbol": "0050",
+    "broker_connections": 0,
+    "candidates": [
+      {
+        "code": "2408",
+        "name": "南亞科"
+      },
+      {
+        "code": "2344",
+        "name": "華邦電"
+      },
+      {
+        "code": "3231",
+        "name": "緯創"
+      },
+      {
+        "code": "3017",
+        "name": "奇鋐"
+      },
+      {
+        "code": "2368",
+        "name": "金像電"
+      }
+    ],
+    "component_weights": {
+      "behavior_stability_component": 0.15,
+      "continuity_component": 0.2,
+      "gap_safety_component": 0.1,
+      "liquidity_component": 0.25,
+      "volatility_opportunity_component": 0.3
+    },
+    "discovery_end": "20221231",
+    "discovery_start": "20200101",
+    "efficiency_window": 20,
+    "execution_mode": "RESEARCH_ONLY_NO_EXECUTION",
+    "forward_sessions": 10,
+    "future_outcomes_used_in_candidate_score": false,
+    "maximum_gap_multiple": 2.0,
+    "maximum_input_date": "20251231",
+    "model_fit_count": 0,
+    "periods": [
+      {
+        "end": "20221231",
+        "label": "HISTORICAL_DISCOVERY",
+        "start": "20200101"
+      },
+      {
+        "end": "20241231",
+        "label": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS",
+        "start": "20230101"
+      },
+      {
+        "end": "20251231",
+        "label": "STRESS_PREVALENCE_SEEN_NOT_BLIND",
+        "start": "20250101"
+      }
+    ],
+    "realized_vol_window": 20,
+    "retention_maximum": 1.8,
+    "retention_minimum": 0.6,
+    "stability_minimum_coverage": 0.9,
+    "stability_minimum_sessions": 180,
+    "stage_a_refit_count": 0,
+    "study_id": "SINGLE_STOCK_SPECIALIST_CANDIDATE_STUDY_V0_1"
+  },
+  "config_fingerprint": "14029a1e7ff1ba0a9b0e0fd677218b66decc10158647c12d8b1ccfd6d6f1d01e",
+  "documentation_sha256": "1d0e2ebe6b985858610fabda5363ade9e9bff4201766daf9f940a3dd57f3e371",
+  "formal_publish_count": 1,
+  "future_outcomes_used_in_candidate_score": false,
+  "input_hashes": [
+    {
+      "bytes": 9003967,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+      "sha256": "6ff9ef9b46b359fb2ecc3a55ad95300ae09c0355c458edfc78b7aeaa9d2b2438"
+    },
+    {
+      "bytes": 9535208,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+      "sha256": "108bcbb8b9da3edd15ea432110ffa435da754d79532946069f18162b8e52e94b"
+    },
+    {
+      "bytes": 9714358,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+      "sha256": "ce7057ce36db38ef49075f6f15c24ebec2a1133e45947810483103197dd3623f"
+    },
+    {
+      "bytes": 9907809,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+      "sha256": "223ddd94b573f2abe9660d2052163917415b43c1d0df629cc87f4cad807ca8f1"
+    },
+    {
+      "bytes": 9904931,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+      "sha256": "769b63f6e722449fb69af52f5fa4a721bc81efff1f02cbf31a57465f8eae0d1a"
+    },
+    {
+      "bytes": 10541237,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+      "sha256": "9192285411801b75a087fd668b855702d75b44d3ef82a398cd8aaaec35a63215"
+    },
+    {
+      "bytes": 11020470,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+      "sha256": "1b19ea3e0a96b7bc0865bf4f5aec2e31c869f1dd55e527e0374f945e6ca49a99"
+    },
+    {
+      "bytes": 110045,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv",
+      "sha256": "f1e9af44b04345e656026819ad22aa68c04e00a9f116f6a6d5310a1d0fc3c78c"
+    }
+  ],
+  "manifest_payload_sha256": "e9cd90bd0cf2053e75a8bc9fce3ddd563368068337e6c57aa22f79d6dfe5135b",
+  "output_hashes": {
+    "annual_metrics.csv": "c647783e8caf855b5ce1fb8b2ae59057c2ca9bd65a60dc5bf1fdda5c5e5b75d2",
+    "candidate_period_metrics.csv": "45b967044e10ba0534dafb4a7f317e4a792f65110ccac61d4fd234cff60529a6",
+    "candidate_summary.json": "db14b94392a989f1e45a45c30d1f58d129b5ea1c45f5fe518fe8c3e05eb4323b",
+    "data_audit.json": "5d2f2b89fbcfe558c8f07592e56e59a67e9f24160bea61528647901ad6e2a7e5",
+    "discovery_ranking.csv": "0d70ceb96ea1474d5e6b235ff8431954c5429669ac3fc8fd53f85c8d60a0426e",
+    "stability_confirmation.csv": "932d355dbc5b08d3d0df827bf054542a580375ad8fe353bd0d83d4acb0530629"
+  },
+  "period_discipline": {
+    "2023_2024": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS; fixed gate only; no reranking, reweighting, or threshold changes",
+    "2025": "STRESS_PREVALENCE_SEEN_NOT_BLIND; fixed gate only; no reranking, reweighting, or threshold changes",
+    "ranking_period": "2020-2022 HISTORICAL_DISCOVERY only"
+  },
+  "result_status": "CANDIDATE_SELECTED_FOR_NEXT_STRATEGY_STUDY",
+  "safety": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "broker_connections": 0,
+    "model_fit_count": 0,
+    "stage_a_refit_count": 0
+  },
+  "source_hashes": {
+    "__init__.py": "c0a2b97541f104ceb95ca4a685ac749a50add2c66e04b2ea76a402898c665282",
+    "analysis.py": "257df74cf2bee758dab72df32fe3090db57b3d56676234f8dd08122fbd715d3f",
+    "config.py": "f37552fa1da865bdef42643e03e2186e2218c87fa57490eff0d417398f98413c",
+    "main.py": "b160faa63853b1e3f7da4184480ae848a72e3181c2108d7156d105e2a5941901"
+  },
+  "status": "COMPLETE",
+  "study_id": "SINGLE_STOCK_SPECIALIST_CANDIDATE_STUDY_V0_1"
+}
