@@ -1,0 +1,23 @@
+{
+  "checks": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "all_bi_counts_included": true,
+    "all_signals_t_or_earlier": true,
+    "broker_connections": 0,
+    "exact_upstream_signal_used": true,
+    "later_period_parameter_selection": false,
+    "protected_artifacts_unchanged": true,
+    "same_day_close_execution": false,
+    "signal_definition_modified": false,
+    "t_plus_1_open_outcome_reused": true
+  },
+  "classification": "CZSC_THIRD_BUY_REGIME_DEPENDENT",
+  "failures": [],
+  "intersection_count": 10564,
+  "later_period_refit_count": 0,
+  "signal_count": 103761,
+  "stage_a_refit_count": 0,
+  "status": "COMPLETE",
+  "study_id": "CZSC_THIRD_BUY_INCREMENTAL_STUDY_V0_1"
+}
