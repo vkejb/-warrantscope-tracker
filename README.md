@@ -37,6 +37,7 @@
 - 9/9：Raw 7 張 + BUY／SELL Top20；觀察中 32、歷史 64，僅新增南亞科、群聯與各自的 Active Episode，其餘 Raw 不自動加入觀察
 - 9/10：Raw 6 張 + BUY／SELL Top20；回補使用者確認已列入觀察的聖暉*，觀察中 33、歷史 64
 - 9/11：Raw 4 張 + BUY／SELL Top20；新增穩懋 Active Episode，觀察中 34、歷史 64，今日沒有已知退出
+- 9/14：Raw 2 張 + BUY／SELL Top20；觀察中 34、歷史 64 維持不變，沒有新增觀察或已知退出
 
 ## 之後放到 GitHub Pages
 
