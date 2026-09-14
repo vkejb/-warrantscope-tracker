@@ -1,0 +1,27 @@
+{
+  "actual_fills": 0,
+  "actual_orders": 0,
+  "broker_connections": 0,
+  "classification_rationale": "NO_CROSS_PERIOD_INCREMENTAL_EDGE",
+  "concept_status": "CONCEPT_RECONSTRUCTION_NOT_AUTHOR_STRATEGY",
+  "family_effect_label": "NO_FAMILY_EFFECT",
+  "final_classification": "NO_MEASURED_MOVE_LOCATION_EDGE",
+  "future_outcomes_used_for_structure_construction": false,
+  "lookahead_violation_count": 0,
+  "model_fit_count": 0,
+  "primary_active_stock_count": 9,
+  "primary_definition_replaced_by_sensitivity": false,
+  "primary_measured_move_available_count": 6126,
+  "primary_measured_move_coverage": 0.47591671845867,
+  "primary_unavailable_reasons": {
+    "STRUCTURAL_VALIDITY_FAILED": 6746
+  },
+  "secondary_eligible_stock_count": 133,
+  "stage_a_refit_count": 0,
+  "status": "COMPLETE",
+  "strongest_setup_family": "TREND_PULLBACK",
+  "study_id": "MEASURED_MOVE_LOCATION_INCREMENTAL_STUDY_V0_1",
+  "supporting_families": [],
+  "total_frozen_signal_observations_primary": 12872,
+  "total_frozen_signal_observations_secondary": 181357
+}

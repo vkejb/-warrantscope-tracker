@@ -1,0 +1,48 @@
+{
+  "all_predefined_setup_observations_used": true,
+  "definition_count": 16,
+  "measured_move_results_used_to_select_setups": false,
+  "prior_primary_setup_selection_used": false,
+  "setup_ids": [
+    "A1",
+    "A2",
+    "A3",
+    "A4",
+    "B1",
+    "B2",
+    "B3",
+    "C1",
+    "C2",
+    "C3",
+    "D1",
+    "D2",
+    "D3",
+    "E1",
+    "E2",
+    "E3"
+  ],
+  "source_files": [
+    {
+      "path": "stock_specific_setup_discovery_v01/setup_definitions.json",
+      "sha256": "f683cf919022f94d6ac83253f3de77a7ab6430bb69ea9f7adafcdec74969b755"
+    },
+    {
+      "path": "stock_specific_setup_discovery_v01/analysis_spec.json",
+      "sha256": "e0e47d0a3d2e0117ef90d11102ee3573d19d410a247221eefcd09003ecdc5afa"
+    },
+    {
+      "path": "stock_specific_setup_discovery_v01/run_manifest.json",
+      "sha256": "9b91430910967922ce5c9c123da9341dc7628fd54518d26117ad7f218fe35cf4"
+    },
+    {
+      "path": "stock_specific_setup_discovery_v01/config.py",
+      "sha256": "47524ece20212fd924cb45c863f45812574a7c218fbd91de7a8f653983a25d61"
+    },
+    {
+      "path": "stock_specific_setup_discovery_v01/setups.py",
+      "sha256": "e37c4c22d81c9cd63955cb0ad2106888f4d3f2e33b8a911bdb6c1f275d36e877"
+    }
+  ],
+  "source_study_id": "STOCK_SPECIFIC_SETUP_DISCOVERY_V0_1",
+  "study_id": "MEASURED_MOVE_LOCATION_INCREMENTAL_STUDY_V0_1"
+}

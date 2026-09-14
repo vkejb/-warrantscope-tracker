@@ -1,0 +1,9 @@
+{
+  "future_pivot_used": false,
+  "lookahead_violation_count": 0,
+  "maximum_pivot_confirmation_after_signal": 0,
+  "primary_pivot_window": "2x2",
+  "same_day_close_execution_used": false,
+  "sensitivity_only_pivot_window": "3x3",
+  "study_id": "MEASURED_MOVE_LOCATION_INCREMENTAL_STUDY_V0_1"
+}

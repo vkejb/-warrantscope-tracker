@@ -1,0 +1,277 @@
+{
+  "actual_fills": 0,
+  "actual_orders": 0,
+  "bootstrap": {
+    "iterations": 5000,
+    "schemes": [
+      "signal_date_cluster",
+      "calendar_month_cluster"
+    ],
+    "statistics": "cluster-resampled means/rates and net-PF differences; A-B and C-B"
+  },
+  "broker_connections": 0,
+  "causal_pivot": {
+    "abc": "most recent completed consecutive LOW-HIGH-LOW in causal compressed sequence",
+    "compression": "consecutive highs retain higher; consecutive lows retain lower",
+    "high": "High_i > both left highs and >= both right highs",
+    "low": "Low_i < both left lows and <= both right lows",
+    "primary": "2-left/2-right; pivot usable only when pivot_index+2 confirmation_date <= signal T",
+    "sensitivity_only": "3-left/3-right; never replaces primary",
+    "tie_handling": "same-type equal price retains earlier confirmed pivot; raw ties order by confirmation index, pivot index, LOW then HIGH"
+  },
+  "classification": {
+    "edge": "discovery A-B improves mean MFE10, D5 net and downside-first, and each later period keeps >=2/3 directions",
+    "family_specific": "exactly one family/period supports >=2/3 A-B directions when pooled rules do not pass",
+    "regime": "discovery all three A-B directions but only one later period keeps >=2/3",
+    "risk_path": "A-B downside-first improves in all periods without a full return edge",
+    "too_sparse": "primary measured-move coverage <30% or primary A/B evaluable n <100 in any named period",
+    "u_shape": "discovery A-B and C-B each keep >=2/3 directions and later C-B keeps >=2/3"
+  },
+  "concept_status": "CONCEPT_RECONSTRUCTION_NOT_AUTHOR_STRATEGY",
+  "config": {
+    "actual_fills": 0,
+    "actual_orders": 0,
+    "bootstrap_iterations": 5000,
+    "bootstrap_seed": 20260915,
+    "broker_connections": 0,
+    "commission_rate": 0.00039900000000000005,
+    "concept_status": "CONCEPT_RECONSTRUCTION_NOT_AUTHOR_STRATEGY",
+    "execution_mode": "RESEARCH_ONLY_NO_EXECUTION",
+    "maximum_input_date": "20251231",
+    "minimum_commission": 1.0,
+    "minimum_coverage": 0.3,
+    "minimum_primary_group_observations_per_period": 100,
+    "model_fit_count": 0,
+    "per_trade_notional": 30000.0,
+    "periods": [
+      {
+        "end": "20221231",
+        "label": "HISTORICAL_DISCOVERY",
+        "start": "20200101"
+      },
+      {
+        "end": "20241231",
+        "label": "RETROSPECTIVE_CONFIRMATION_NOT_BLIND_OOS",
+        "start": "20230101"
+      },
+      {
+        "end": "20251231",
+        "label": "STRESS_PREVALENCE_SEEN_NOT_BLIND",
+        "start": "20250101"
+      }
+    ],
+    "primary_groups": [
+      [
+        "A_R_LT_0_8",
+        null,
+        0.8
+      ],
+      [
+        "B_R_0_8_TO_1_2",
+        0.8,
+        1.2
+      ],
+      [
+        "C_R_GE_1_2",
+        1.2,
+        null
+      ]
+    ],
+    "primary_horizon": 5,
+    "primary_left": 2,
+    "primary_right": 2,
+    "ratio_buckets": [
+      [
+        "B0_R_LT_0",
+        null,
+        0.0
+      ],
+      [
+        "B1_R_0_TO_0_5",
+        0.0,
+        0.5
+      ],
+      [
+        "B2_R_0_5_TO_0_8",
+        0.5,
+        0.8
+      ],
+      [
+        "B3_R_0_8_TO_1_0",
+        0.8,
+        1.0
+      ],
+      [
+        "B4_R_1_0_TO_1_2",
+        1.0,
+        1.2
+      ],
+      [
+        "B5_R_1_2_TO_1_5",
+        1.2,
+        1.5
+      ],
+      [
+        "B6_R_GE_1_5",
+        1.5,
+        null
+      ]
+    ],
+    "secondary_horizon": 10,
+    "sell_tax_rate": 0.003,
+    "sensitivity_left": 3,
+    "sensitivity_right": 3,
+    "slippage_one_way": 0.001,
+    "stage_a_refit_count": 0,
+    "study_id": "MEASURED_MOVE_LOCATION_INCREMENTAL_STUDY_V0_1"
+  },
+  "config_fingerprint": "922b8692417b8027937a02d68f32aa5fbe8e38f51ec6e183cb963139e95ab1db",
+  "continuous_analysis": "Spearman only; deciles are equal-count pooled within scope and period with deterministic tie order",
+  "future_outcomes_used_for_structure_construction": false,
+  "input_hashes": [
+    {
+      "bytes": 9003967,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+      "sha256": "6ff9ef9b46b359fb2ecc3a55ad95300ae09c0355c458edfc78b7aeaa9d2b2438"
+    },
+    {
+      "bytes": 9535208,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+      "sha256": "108bcbb8b9da3edd15ea432110ffa435da754d79532946069f18162b8e52e94b"
+    },
+    {
+      "bytes": 9714358,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+      "sha256": "ce7057ce36db38ef49075f6f15c24ebec2a1133e45947810483103197dd3623f"
+    },
+    {
+      "bytes": 9907809,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+      "sha256": "223ddd94b573f2abe9660d2052163917415b43c1d0df629cc87f4cad807ca8f1"
+    },
+    {
+      "bytes": 9904931,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+      "sha256": "769b63f6e722449fb69af52f5fa4a721bc81efff1f02cbf31a57465f8eae0d1a"
+    },
+    {
+      "bytes": 10541237,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+      "sha256": "9192285411801b75a087fd668b855702d75b44d3ef82a398cd8aaaec35a63215"
+    },
+    {
+      "bytes": 11020470,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+      "sha256": "1b19ea3e0a96b7bc0865bf4f5aec2e31c869f1dd55e527e0374f945e6ca49a99"
+    },
+    {
+      "bytes": 110045,
+      "path": "winner_coverage_taxonomy_v01/runtime/input/twse_price_supplement.csv",
+      "sha256": "f1e9af44b04345e656026819ad22aa68c04e00a9f116f6a6d5310a1d0fc3c78c"
+    }
+  ],
+  "later_periods_used_to_change_buckets_or_pivots": false,
+  "market_context_used_as_gate": false,
+  "measured_move": {
+    "below_c": "negative R retained and marked BELOW_C",
+    "completion_ratio": "(Close_T-C_price)/(B_price-A_price)",
+    "length": "B_price-A_price",
+    "structural_validity": "A_index<B_index<C_index; B>A; A<C<B; each leg >=1 session; all confirmation indices <=T",
+    "target_d": "C_price+(B_price-A_price)"
+  },
+  "model_fit_count": 0,
+  "outcomes": {
+    "costs": {
+      "commission_rate": 0.00039900000000000005,
+      "minimum_commission": 1.0,
+      "per_trade_notional": 30000.0,
+      "sell_tax_rate": 0.003,
+      "slippage_one_way": 0.001
+    },
+    "entry": "T+1 regular-session Open",
+    "full_path": "same discontinuity segment, consecutive market sessions, wholly inside named period",
+    "paths": "Day1-Day10 Close"
+  },
+  "primary_groups": [
+    [
+      "A_R_LT_0_8",
+      null,
+      0.8
+    ],
+    [
+      "B_R_0_8_TO_1_2",
+      0.8,
+      1.2
+    ],
+    [
+      "C_R_GE_1_2",
+      1.2,
+      null
+    ]
+  ],
+  "ratio_buckets": [
+    [
+      "B0_R_LT_0",
+      null,
+      0.0
+    ],
+    [
+      "B1_R_0_TO_0_5",
+      0.0,
+      0.5
+    ],
+    [
+      "B2_R_0_5_TO_0_8",
+      0.5,
+      0.8
+    ],
+    [
+      "B3_R_0_8_TO_1_0",
+      0.8,
+      1.0
+    ],
+    [
+      "B4_R_1_0_TO_1_2",
+      1.0,
+      1.2
+    ],
+    [
+      "B5_R_1_2_TO_1_5",
+      1.2,
+      1.5
+    ],
+    [
+      "B6_R_GE_1_5",
+      1.5,
+      null
+    ]
+  ],
+  "setup_source_manifest_sha256": "0be6b74c524e4f7dd994936f3eb62adf392b15b3f4fc041b30b4c5921d2f24ab",
+  "stage_a_refit_count": 0,
+  "status": "FROZEN_BEFORE_FORMAL_RESULTS",
+  "study_id": "MEASURED_MOVE_LOCATION_INCREMENTAL_STUDY_V0_1",
+  "threshold_optimization_count": 0,
+  "universe_source": {
+    "active_count": 9,
+    "active_stock_ids": [
+      "3661",
+      "8046",
+      "6415",
+      "3529",
+      "6531",
+      "6533",
+      "2603",
+      "5269",
+      "6104"
+    ],
+    "eligibility_universe.csv": {
+      "path": "high_upside_swing_specialist_universe_v01/eligibility_universe.csv",
+      "sha256": "0c6fe17fe10edc14093f542e242597399c74a7d040406448bf7a5e55cb5885ba"
+    },
+    "final_high_upside_specialist_universe.csv": {
+      "path": "high_upside_swing_specialist_universe_v01/final_high_upside_specialist_universe.csv",
+      "sha256": "689fca4dccabe7d96086684346bdee0f80c8aadcb4312508ac2c212e8dd91673"
+    },
+    "secondary_count": 133
+  }
+}
