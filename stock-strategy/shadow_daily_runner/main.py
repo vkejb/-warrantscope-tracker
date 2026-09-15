@@ -149,6 +149,16 @@ def main(argv: list[str] | None = None) -> int:
                 reason=exc,
                 cfg=CFG,
             )
+            try:
+                from prospective_notifications_v01.notifier import notify, warning_message
+                local = taipei_now(cfg=CFG)
+                target = local.strftime("%Y%m%d")
+                if target >= "20260916":
+                    notify("DAILY_RUNNER", target, type(exc).__name__, "WARNING",
+                           warning_message(target, "daily runner", type(exc).__name__, str(exc)),
+                           providers=("TELEGRAM",))
+            except Exception:
+                pass
         print(
             f"shadow daily runner failed: {type(exc).__name__}: {exc}",
             file=sys.stderr,

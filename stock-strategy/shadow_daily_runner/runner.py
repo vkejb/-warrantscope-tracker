@@ -7,12 +7,70 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import traceback
 from typing import Callable
 
 from .config import CFG, RunnerConfig, STOCK_STRATEGY_DIR
 from .io_utils import append_jsonl, atomic_write_json, process_lock, sha256_file, utc_timestamp
 from .notifications import notification_status, safe_notify_attempt_result
 from .pipeline import PreparedInputs, prepare_inputs, public_result, taipei_now
+
+
+def _postseal_notifications(target: str, prepared: PreparedInputs | None, cfg: RunnerConfig, local: datetime) -> dict:
+    """Side effects only after the N ledger has sealed; never alter N records."""
+    from prospective_notifications_v01.notifier import daily_message, notify, warning_message
+    activation_date = "20260916"
+
+    if target < activation_date:
+        return {"status": "PRE_ACTIVATION_LEGACY_MACOS_ONLY"}
+    scan_rows = _read_csv(cfg.shadow_store_dir / "prospective_scan_log.csv")
+    scan = next((row for row in reversed(scan_rows) if row.get("signal_date") == target and row.get("scan_status") == "COMPLETE"), None)
+    if scan is None:
+        try:
+            warning = notify("STAGE_A", target, "NO_N_SCAN", "WARNING", warning_message(target, "Stage A", "N_SCAN_NOT_SEALED"))
+        except Exception:
+            warning = {"status": "FAILED_LOCAL_LOG_ONLY"}
+        return {"status": "N_SCAN_NOT_SEALED", "warning": warning}
+    if prepared is None or not prepared.ready:
+        try:
+            warning = notify("STAGE_A", target, scan["record_hash"], "WARNING", warning_message(target, "Stage A", "OFFICIAL_INPUT_NOT_READY"))
+        except Exception:
+            warning = {"status": "FAILED_LOCAL_LOG_ONLY"}
+        return {"status": "STAGE_A_INPUT_NOT_READY", "warning": warning}
+    try:
+        stage_python = os.environ.get(
+            "WARRANTSCOPE_STAGE_A_PYTHON",
+            "/Users/linyunyan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        )
+        if not Path(stage_python).is_file():
+            raise RuntimeError("Stage A Python with frozen model dependencies is unavailable")
+        stage = _run_json([
+            stage_python, "-B", "-m", "stage_a_prospective_watchlist_v01.main",
+            "seal-current", "--archives", *[str(path) for path in prepared.archives],
+            "--trading-calendar", str(prepared.calendar_path),
+            "--expected-input-hash", scan["input_manifest_hash"],
+        ], cfg)
+        if stage["signal_date"] != target:
+            raise RuntimeError("Stage A seal date differs from N seal")
+    except Exception as exc:
+        # N seal remains authoritative.  The next scheduled attempt may retry
+        # Stage A without rerunning or rewriting the sealed N scan.
+        append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "STAGE_A", "traceback": traceback.format_exc()})
+        message = warning_message(target, "Stage A", type(exc).__name__, str(exc))
+        try:
+            warning = notify("STAGE_A", target, scan["record_hash"], "WARNING", message, providers=("TELEGRAM", "MACOS_LOCAL_NOTIFICATION"))
+        except Exception:
+            warning = {"status": "FAILED_LOCAL_LOG_ONLY"}
+        return {"status": "STAGE_A_FAILED_N_REMAINS_SEALED", "error_type": type(exc).__name__, "warning": warning}
+    stage_summary = {key: stage[key] for key in ("status", "signal_date", "seal_hash", "count")}
+    try:
+        compact_rows = [row for row in _read_csv(cfg.shadow_store_dir / "prospective_signals.csv") if row.get("signal_date") == target]
+        message = daily_message(target, {**scan, "compact_candidates": compact_rows}, stage)
+        notification = notify("WARRANTSCOPE_DAILY", target, f"{scan['record_hash']}:{stage['seal_hash']}", "SEALED_DAILY", message)
+    except Exception as exc:
+        append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "NOTIFICATION", "traceback": traceback.format_exc()})
+        notification = {"status": "FAILED_AFTER_SEAL", "error_type": type(exc).__name__}
+    return {"status": "SEALED", "stage_a": stage_summary, "notification": notification}
 
 
 LEDGER_FILENAMES = (
@@ -51,10 +109,25 @@ def _record_attempt(cfg: RunnerConfig, payload: dict) -> None:
 
 def _finish_attempt(result: dict, local: datetime, cfg: RunnerConfig) -> dict:
     _record_attempt(cfg, result)
-    return {
+    postseal = result.get("postseal", {})
+    combined_delivery = isinstance(postseal, dict) and postseal.get("status") == "SEALED"
+    finished = {
         **result,
-        "notification": safe_notify_attempt_result(result, local, cfg),
+        "notification": {"status": "COMBINED_POSTSEAL_DELIVERY"} if combined_delivery else safe_notify_attempt_result(result, local, cfg),
     }
+    if result.get("status") == "READINESS_FAILED_NO_LEDGER_WRITE" and result.get("target_date", "") >= "20260916":
+        try:
+            from prospective_notifications_v01.notifier import notify, warning_message
+            reason = result.get("readiness", {}).get("audit", {}).get("reason", "official input/readiness failed")
+            finished["telegram_warning"] = notify(
+                "N_PROSPECTIVE", result["target_date"],
+                sha256_file(cfg.runner_state_path) if cfg.runner_state_path.is_file() else "NO_RUNNER_STATE",
+                "WARNING", warning_message(result["target_date"], "N prospective", "READINESS_FAILED", str(reason)),
+                providers=("TELEGRAM",),
+            )
+        except Exception:
+            finished["telegram_warning"] = {"status": "FAILED_LOCAL_LOG_ONLY"}
+    return finished
 
 
 def _inside_attempt_window(local: datetime, cfg: RunnerConfig) -> bool:
@@ -166,6 +239,14 @@ def attempt(
                 "actual_fills": 0,
                 "broker_connections": 0,
             }
+            if target >= "20260916" and _inside_attempt_window(local, cfg):
+                try:
+                    retry_inputs = prepare(now=now, cfg=cfg)
+                    result["postseal"] = _postseal_notifications(target, retry_inputs, cfg, local)
+                except Exception as exc:
+                    result["postseal"] = {"status": "RETRY_NOT_READY", "error_type": type(exc).__name__}
+                if result["postseal"].get("status") != "SEALED":
+                    result["status"] = "STAGE_A_PENDING_N_SEALED"
             return _finish_attempt(result, local, cfg)
         if target < cfg.first_scheduled_target:
             result = {
@@ -260,6 +341,10 @@ def attempt(
             "actual_fills": 0,
             "broker_connections": 0,
         }
+        if target >= "20260916":
+            result["postseal"] = _postseal_notifications(target, prepared, cfg, local)
+            if result["postseal"].get("status") != "SEALED":
+                result["status"] = "STAGE_A_PENDING_N_SEALED"
         return _finish_attempt(result, local, cfg)
 
 
