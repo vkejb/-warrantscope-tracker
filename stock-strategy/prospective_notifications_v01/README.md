@@ -9,11 +9,26 @@ An already-completed N target can retry Stage A without rerunning N.
 
 Telegram credentials are read only from
 `WARRANTSCOPE_TELEGRAM_BOT_TOKEN` and `WARRANTSCOPE_TELEGRAM_CHAT_ID`.
-They are not stored in this repository or the notification ledger. A launchd
-process does not automatically inherit shell-only environment settings; set
-them privately for the launchd process if Telegram is desired. Missing
-credentials yield `NOT_CONFIGURED` while sealing continues. Do not put secrets
-in a committed plist. Notification ledger records only digest/status/code.
+They are not stored in this repository, launchd plist, or the notification
+ledger. The current user-level launchd job keeps calling the same runner; at
+attempt startup a best-effort Keychain adapter loads both values into those
+environment variables. A missing/locked Keychain never blocks sealing. Do not
+put secrets in a committed plist or use `launchctl setenv` for the bot token.
+Notification ledger records only digest/status/code.
+
+On the user's own Mac Terminal, run
+`python3 -B -m prospective_notifications_v01.main configure-keychain`.
+It uses `/usr/bin/security add-generic-password ... -w` with `-w` last, so
+the token is entered at a hidden Keychain prompt rather than passed in argv.
+The setup verifies the bot with official `getMe`, checks webhook status, and
+requires exactly one private chat in official `getUpdates`; it then displays
+that chat ID locally and asks the user to enter it at a second Keychain
+prompt. It refuses multiple recipients. No credential is ever requested in
+Codex chat. A non-reversible Keychain verification marker binds token and chat
+ID; a partial reconfiguration fails closed instead of messaging an old
+recipient. Afterward run the `test` command below and confirm the Telegram
+message on the phone. If no update exists, send a new message to the bot and
+rerun setup; it safely updates the same Keychain item.
 
 Run `python3 -B -m prospective_notifications_v01.main test` to test Telegram
 and macOS without sealing, and `... status` for the latest N/Stage A seals and

@@ -126,6 +126,13 @@ def main(argv: list[str] | None = None) -> int:
             }
             code = 0 if health.ready else 3
         elif args.command == "attempt":
+            # Keychain is notification-only. Missing/locked items may never
+            # block official readiness, the N scan, or any Stage A seal.
+            try:
+                from prospective_notifications_v01.keychain import load_into_environment
+                load_into_environment()
+            except Exception:
+                pass
             result = attempt(cfg=CFG)
             code = 0 if result["status"] in {
                 "SUCCESS",

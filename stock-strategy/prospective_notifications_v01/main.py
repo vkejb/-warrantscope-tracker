@@ -3,11 +3,13 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import secrets
 
 from shadow_daily_runner.config import CFG as RUNNER_CFG
 from stage_a_prospective_watchlist_v01.seal_store import latest_seal
 
 from .notifier import latest_status, notify
+from .keychain import configure_interactive, load_into_environment
 
 
 def _scan_status(recent_notifications: list[dict] | None = None) -> dict:
@@ -29,10 +31,17 @@ def _scan_status(recent_notifications: list[dict] | None = None) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Post-seal notification test/status; never creates a signal")
-    parser.add_argument("command", choices=("test", "status"))
+    parser.add_argument("command", choices=("test", "status", "configure-keychain"))
     args = parser.parse_args(argv)
-    if args.command == "test":
-        result = {"test": notify("NOTIFICATION_TEST", "00000000", "TEST", "TEST", "WarrantScope notification test")}
+    if args.command == "configure-keychain":
+        result = configure_interactive()
+        code = 0 if result.get("status") == "KEYCHAIN_CONFIGURED" else 3
+    elif args.command == "test":
+        credential_status = load_into_environment()
+        delivery = notify("NOTIFICATION_TEST", "00000000", secrets.token_hex(8), "TEST", "WarrantScope notification test")
+        result = {"credential_status": credential_status, "test": delivery}
+        telegram = delivery.get("TELEGRAM")
+        code = 0 if (telegram == "SUCCESS" or (telegram == "NOT_CONFIGURED" and delivery.get("MACOS_LOCAL_NOTIFICATION") == "SUCCESS")) else 3
     else:
         stage = latest_seal()
         notifications = latest_status()
@@ -43,8 +52,9 @@ def main(argv: list[str] | None = None) -> int:
             "notifications": notifications,
             "actual_orders": 0, "actual_fills": 0, "broker_connections": 0,
         }
+        code = 0
     print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
-    return 0
+    return code
 
 
 if __name__ == "__main__":
