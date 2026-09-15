@@ -1,7 +1,7 @@
 window.WS_DATA = {
   "meta": {
     "title": "WarrantScope Tracker",
-    "generated": "2026-09-14 19:16 +08:00",
+    "generated": "2026-09-15 19:24 +08:00",
     "dates": [
       "2026-08-24",
       "2026-08-25",
@@ -18,14 +18,16 @@ window.WS_DATA = {
       "2026-09-09",
       "2026-09-10",
       "2026-09-11",
-      "2026-09-14"
+      "2026-09-14",
+      "2026-09-15"
     ],
     "months": [
       "2026-08",
       "2026-09"
     ],
-    "defaultDate": "2026-09-14",
+    "defaultDate": "2026-09-15",
     "notes": {
+      "2026-09-15": "9/15 Raw 5 張 / 4 檔母股（研華、南亞×2、緯穎、景碩），BUY / SELL Top20 完整。觀察中 34、歷史 64；未收到人工確認的新進觀察或退出。Raw 截圖未提供 30 分量、流通量與倍數，全部保留缺值。",
       "2026-09-14": "9/14 Raw 2 張（3260 威剛、2454 聯發科），BUY / SELL Top20 均完整。觀察中 34、歷史 64；使用者確認今日沒有新進觀察與退出。Raw 截圖未提供 30 分量、流通量與倍數，全部保留缺值。",
       "2026-09-11": "9/11 Raw 4 張（汎銓、精材、光頡、穩懋），BUY / SELL Top20 均完整。使用者確認新增 3105 穩懋；觀察中 34、歷史 64，今日無已知退出。Raw 截圖未提供 30 分量、流通量與倍數，全部保留缺值。",
       "2026-09-10": "9/10 Raw 6 張，BUY / SELL Top20 均完整。更正：使用者確認 5536 聖暉* 已於 9/10 列入觀察，因此觀察中為 33、歷史 64；先前 V1 的 32 為漏記。Raw 截圖未提供 30 分量、流通量與倍數，全部保留缺值。",
@@ -103,6 +105,18 @@ window.WS_DATA = {
         "knownExits": 0,
         "source": "2026-09-14 V1 更新包與使用者確認",
         "completeness": "Raw 2、BUY 20、SELL 20 完整；觀察中 34、歷史 64 維持不變。既有 1 檔未解析觀察標的仍維持缺值。"
+      },
+      "2026-09-15": {
+        "raw": 5,
+        "rawUnderlyings": 4,
+        "activeWatch": 34,
+        "history": 64,
+        "knownWatchDetails": 33,
+        "knownEpisodeDetails": 37,
+        "newWatch": 0,
+        "knownExits": 0,
+        "source": "2026-09-15 V1 更新包",
+        "completeness": "Raw 5 張／4 檔母股、BUY 20、SELL 20 完整；觀察中 34、歷史 64 維持不變，既有 1 檔未解析觀察標的仍維持缺值。"
       }
     }
   },
@@ -5840,6 +5854,212 @@ window.WS_DATA = {
     "狀態": "觀察中",
     "今日Raw張數": rawCountByCode[row["母股代號"]] ?? 0,
     "Episode Age": row["母股代號"] === "3260" ? "Active Raw bullish cross" : row["Episode Age"],
+    "備註": currentNote(row["母股代號"])
+  }));
+})();
+
+(() => {
+  const data = window.WS_DATA;
+  const date = "2026-09-15";
+  const raw = [
+    {
+      "Date": date,
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "2395",
+      "Underlying_Name": "研華",
+      "Warrant_Code": "074455",
+      "Warrant_Name": "研華群益61購01",
+      "Issuer": "群益",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Fresh Raw / Bullish cross",
+      "Prior_Buy_Rank": 4,
+      "Prior_Sell_Rank": null,
+      "Notes": "Raw + BUY #4，SELL 未進 Top20；方向偏多，但尚未人工加入觀察。"
+    },
+    {
+      "Date": date,
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "1303",
+      "Underlying_Name": "南亞",
+      "Warrant_Code": "053810",
+      "Warrant_Name": "南亞兆豐61購01",
+      "Issuer": "兆豐",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "SELL",
+      "Episode_Type": "Cross-Warrant / Sell-side Raw",
+      "Prior_Buy_Rank": null,
+      "Prior_Sell_Rank": 14,
+      "Notes": "南亞同日兩張 Raw；SELL #14、BUY 未進 Top20，偏空。"
+    },
+    {
+      "Date": date,
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "6669",
+      "Underlying_Name": "緯穎",
+      "Warrant_Code": "076856",
+      "Warrant_Name": "緯穎永豐67購01",
+      "Issuer": "永豐",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "BUY",
+      "Episode_Type": "Raw / Bullish reversal",
+      "Prior_Buy_Rank": 1,
+      "Prior_Sell_Rank": null,
+      "Notes": "Raw + BUY #1，SELL 未進 Top20；相較前一交易日賣方前段，屬明顯資金方向改善。"
+    },
+    {
+      "Date": date,
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "1303",
+      "Underlying_Name": "南亞",
+      "Warrant_Code": "052771",
+      "Warrant_Name": "南亞統一61購04",
+      "Issuer": "統一",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "SELL",
+      "Episode_Type": "Cross-Warrant / Sell-side Raw",
+      "Prior_Buy_Rank": null,
+      "Prior_Sell_Rank": 14,
+      "Notes": "南亞同日第二張 Raw；SELL #14、BUY 未進 Top20，偏空。"
+    },
+    {
+      "Date": date,
+      "Time_LastSeen": "收盤彙整",
+      "Underlying_Code": "3189",
+      "Underlying_Name": "景碩",
+      "Warrant_Code": "052673",
+      "Warrant_Name": "景碩統一5C購01",
+      "Issuer": "統一",
+      "30m_Volume": null,
+      "Circulation": null,
+      "Displayed_Multiple": null,
+      "Raw_Status": "Raw",
+      "Trade_Direction": "Unknown",
+      "Episode_Type": "Fresh Raw / Direction unknown",
+      "Prior_Buy_Rank": null,
+      "Prior_Sell_Rank": null,
+      "Notes": "Raw 但 BUY/SELL Top20 均未出現，方向尚未確認。"
+    }
+  ];
+  data.raw = data.raw.filter(row => row.Date !== date);
+  data.raw.push(...raw);
+
+  const mainforceGroups = {
+    BUY: [
+      [1, "6669", "緯穎", "元大-台南", 861, "台新-台北", 668, true],
+      [2, "2301", "光寶科", "永豐金-內湖", 781, "群益金鼎-高盛", 615, false],
+      [3, "3324", "雙鴻", "永豐金-內湖", 522, "台新-台北", 460, false],
+      [4, "2395", "研華", "元大-大直", 678, "國票-內壢", 53, true],
+      [5, "2049", "上銀", "台新-台北", 450, "國票-內壢", 165, false],
+      [6, "3008", "大立光", "台新-台北", 337, "國票-內壢", 275, false],
+      [7, "3406", "玉晶光", "福邦", 280, "國票-內壢", 253, false],
+      [8, "3653", "健策", "永豐金-內湖", 472, "群益金鼎-忠孝", 56, false],
+      [9, "6223", "旺矽", "元大-板橋", 419, "台新-吉利", 47, false],
+      [10, "0050", "台灣50", "第一金-華江", 332, "群益金鼎-台南", 113, false],
+      [11, "4958", "臻鼎-KY", "國票-內壢", 227, "元大-台南", 216, false],
+      [12, "2464", "盟立", "富邦-公益", 401, "凱基-竹科", 25, false],
+      [13, "3042", "晶技", "台新-城東", 292, "台新-吉利", 74, false],
+      [14, "2454", "聯發科", "華南永昌-岡山", 269, "合庫-基隆", 96, false],
+      [15, "3105", "穩懋", "元大-淡水", 239, "國泰-桃園", 119, false],
+      [16, "2308", "台達電", "永豐金-內湖", 213, "凱基-城中", 132, false],
+      [17, "2404", "漢唐", "台新-台北", 294, "國票-內壢", 47, false],
+      [18, "6811", "宏碁資訊", "元大-淡水", 294, "元大-板橋三民", 32, false],
+      [19, "3624", "光頡", "凱基-城中", 164, "國票-安和", 158, false],
+      [20, "2408", "南亞科", "國票-內壢", 210, "永豐金-天母", 101, false]
+    ],
+    SELL: [
+      [1, "6147", "頎邦", "永豐金-內湖", 2706, "永興-大墩", 339, false],
+      [2, "3324", "雙鴻", "凱基-城中", 1663, "華南永昌-台中", 996, false],
+      [3, "3016", "嘉晶", "華南永昌-台中", 1677, "台新-城東", 316, false],
+      [4, "2368", "金像電", "凱基-城中", 854, "台新-台北", 529, false],
+      [5, "2308", "台達電", "富邦-公益", 990, "國票-內壢", 217, false],
+      [6, "3443", "創意", "新光-新竹", 1040, "統一-基隆", 13, false],
+      [7, "2454", "聯發科", "永豐金-新竹", 442, "台新-台北", 384, false],
+      [8, "3260", "威剛", "元大-板橋", 564, "國票-內壢", 218, false],
+      [9, "3105", "穩懋", "元大-台南", 614, "富邦-竹科", 134, false],
+      [10, "2303", "聯電", "台新-台北", 539, "富邦-中壢", 145, false],
+      [11, "2324", "仁寶", "元大-淡水", 520, "國票-內壢", 49, false],
+      [12, "6770", "力積電", "國票-內壢", 245, "台新-台北", 222, false],
+      [13, "6505", "台塑化", "富邦-仁愛", 325, "元大-斗六", 136, false],
+      [14, "1303", "南亞", "台新-台北", 371, "第一金-彰化", 84, true],
+      [15, "2345", "智邦", "台新-台北", 272, "國票-內壢", 167, false],
+      [16, "3711", "日月光投控", "台新-台北", 257, "國票-內壢", 169, false],
+      [17, "1802", "台玻", "元大-台南", 382, "台新-台北", 42, false],
+      [18, "2327", "國巨", "台新-台北", 346, "統一-新竹", 76, false],
+      [19, "2305", "全友", "富邦-永和", 240, "光和-田中", 181, false],
+      [20, "3533", "嘉澤", "台新-台北", 245, "國票-內壢", 175, false]
+    ]
+  };
+  data.mainforce = data.mainforce.filter(row => row["日期"] !== date);
+  Object.entries(mainforceGroups).forEach(([direction, rows]) => {
+    data.mainforce.push(...rows.map(([rank, code, name, branch1, amount1, branch2, amount2, isRaw]) => ({
+      "日期": date,
+      "方向": direction,
+      "排名": rank,
+      "母股代號": code,
+      "母股名稱": name,
+      "分點1": branch1,
+      "分點1可見金額(萬)": amount1,
+      "分點2": branch2,
+      "分點2可見金額(萬)": amount2,
+      "可見金額(萬)": amount1 + amount2,
+      "當日Raw": isRaw,
+      "資料完整度": "Complete",
+      "備註": "可見金額為截圖中兩個分點加總近似值；BUY/SELL 依頁面方向原樣收錄。"
+    })));
+  });
+
+  const rawCountByCode = raw.reduce((map, row) => {
+    map[row.Underlying_Code] = (map[row.Underlying_Code] ?? 0) + 1;
+    return map;
+  }, {});
+  const currentNote = code => {
+    if (code === "6669") return "9/15 076856 Raw + BUY #1、SELL 未進 Top20；多方 cross，保留既有 Watch / Episode，不新增。";
+    if (code === "1303") return "9/15 053810、052771 同母股兩張 Raw + SELL #14，BUY 未進 Top20；偏空 Cross-Warrant，保留既有觀察。";
+    if (code === "6147") return "9/15 SELL #1 可見 3,045 萬；與當日價格強勢形成價格／籌碼 divergence，仍需後續確認，不自動退出。";
+    if (code === "2408") return "9/15 BUY #20 可見 311 萬、SELL 未進 Top20；僅輕度改善，不等同強勢確認。";
+    if (code === "2409") return "9/15 BUY / SELL 均未進 Top20；9/14 SELL #1 後賣壓冷卻，但尚無買方回補確認。";
+    if (code === "3260") return "9/15 BUY 未進 Top20、SELL #8 可見 782 萬；保留既有觀察，沒有人工確認退出。";
+    const ranks = data.mainforce
+      .filter(row => row["日期"] === date && row["母股代號"] === code)
+      .map(row => `${row["方向"]} #${row["排名"]} 可見 ${row["可見金額(萬)"].toLocaleString("zh-TW")} 萬`);
+    return ranks.length
+      ? `9/15 ${ranks.join("、")}；可見金額僅為兩個分點加總近似值，沒有人工確認退出。`
+      : "9/15 沒有人工確認新進或退出；延續既有觀察與 Episode。";
+  };
+  const previousSnapshot = data.observationSnapshots.filter(row => row["日期"] === "2026-09-14");
+  data.observationSnapshots = data.observationSnapshots.filter(row => row["日期"] !== date);
+  data.observationSnapshots.push(...previousSnapshot.map(row => ({
+    ...row,
+    "日期": date,
+    "狀態": "觀察中",
+    "當日Raw張數": rawCountByCode[row["母股代號"]] ?? 0,
+    "Episode類型": row["母股代號"] === "6669" ? "Raw / Bullish reversal"
+      : row["母股代號"] === "1303" ? "Cross-Warrant / Sell-side Raw"
+      : row["Episode類型"],
+    "確認程度": "Carry-forward / no watch change",
+    "備註": currentNote(row["母股代號"]),
+    "完整度": "Known row confirmed; screenshot count 34, identified rows 33"
+  })));
+  data.currentObservation = data.currentObservation.map(row => ({
+    ...row,
+    "狀態": "觀察中",
+    "今日Raw張數": rawCountByCode[row["母股代號"]] ?? 0,
+    "Episode Age": row["母股代號"] === "6669" ? "Raw / Bullish reversal"
+      : row["母股代號"] === "1303" ? "Cross-Warrant / Sell-side Raw"
+      : row["Episode Age"],
     "備註": currentNote(row["母股代號"])
   }));
 })();
