@@ -102,9 +102,9 @@ def daily_message(date: str, scan: dict, stage: dict) -> str:
         "今日封存完成",
         f"N 結構掃描：Raw N_RETEST {raw}｜N Compact {compact}｜seal {str(scan.get('record_hash', ''))[:12]}",
         f"Stage A：完整 Top30 已封存｜seal {stage['seal_hash'][:12]}",
-        "以下僅列 Top10 摘要（完整名單共 30 檔）：",
+        "Stage A Top30 完整名單：",
     ]
-    for row in stage["stocks"][:10]:
+    for row in stage["stocks"]:
         lines.append(f"{row['rank']}. {row['stock_id']} {row['stock_name']} {row['score']:.4f}")
     if int(compact) > 0:
         lines.append("N Compact candidates：")
@@ -117,7 +117,7 @@ def daily_message(date: str, scan: dict, stage: dict) -> str:
             )
     else:
         lines.append("N Compact status：NO_SIGNAL")
-    lines.append("SHADOW_ONLY｜無下單")
+    lines.append("觀察名單，不是買進訊號｜SHADOW_ONLY｜無下單")
     return "\n".join(lines)
 
 
