@@ -55,6 +55,9 @@ class RunnerConfig:
 
     runtime_dir: Path = MODULE_DIR / "runtime"
     shadow_store_dir: Path = STOCK_STRATEGY_DIR / "prospective_shadow_v01" / "data"
+    stage_a_runtime_dir: Path = (
+        STOCK_STRATEGY_DIR / "stage_a_prospective_watchlist_v01" / "runtime"
+    )
 
     @property
     def raw_dir(self) -> Path:

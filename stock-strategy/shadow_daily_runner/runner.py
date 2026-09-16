@@ -19,6 +19,7 @@ from .pipeline import PreparedInputs, prepare_inputs, public_result, taipei_now
 def _postseal_notifications(target: str, prepared: PreparedInputs | None, cfg: RunnerConfig, local: datetime) -> dict:
     """Side effects only after the N ledger has sealed; never alter N records."""
     from prospective_notifications_v01.notifier import daily_message, notify, warning_message
+    from stage_a_prospective_watchlist_v01.seal_store import latest_seal
     activation_date = "20260916"
 
     if target < activation_date:
@@ -31,37 +32,56 @@ def _postseal_notifications(target: str, prepared: PreparedInputs | None, cfg: R
         except Exception:
             warning = {"status": "FAILED_LOCAL_LOG_ONLY"}
         return {"status": "N_SCAN_NOT_SEALED", "warning": warning}
-    if prepared is None or not prepared.ready:
+
+    # A later scheduled attempt may observe a newly refreshed official archive
+    # manifest even though both N and Stage A were already sealed from the same
+    # earlier snapshot.  Validate and reuse that immutable Stage A seal before
+    # considering the newly prepared inputs; never recompute or emit a false
+    # input-mismatch warning for an already completed day.
+    sealed = latest_seal(cfg.stage_a_runtime_dir)
+    if sealed is not None and sealed.get("signal_date") == target:
+        if sealed.get("input_hash") != scan.get("input_manifest_hash"):
+            raise RuntimeError("existing Stage A seal input differs from sealed N input")
+        stage = {
+            "status": "ALREADY_SEALED",
+            "signal_date": target,
+            "seal_hash": sealed["seal_hash"],
+            "input_hash": sealed["input_hash"],
+            "count": len(sealed["stocks"]),
+            "stocks": sealed["stocks"],
+        }
+    elif prepared is None or not prepared.ready:
         try:
             warning = notify("STAGE_A", target, scan["record_hash"], "WARNING", warning_message(target, "Stage A", "OFFICIAL_INPUT_NOT_READY"))
         except Exception:
             warning = {"status": "FAILED_LOCAL_LOG_ONLY"}
         return {"status": "STAGE_A_INPUT_NOT_READY", "warning": warning}
-    try:
-        stage_python = os.environ.get(
-            "WARRANTSCOPE_STAGE_A_PYTHON",
-            "/Users/linyunyan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
-        )
-        if not Path(stage_python).is_file():
-            raise RuntimeError("Stage A Python with frozen model dependencies is unavailable")
-        stage = _run_json([
-            stage_python, "-B", "-m", "stage_a_prospective_watchlist_v01.main",
-            "seal-current", "--archives", *[str(path) for path in prepared.archives],
-            "--trading-calendar", str(prepared.calendar_path),
-            "--expected-input-hash", scan["input_manifest_hash"],
-        ], cfg)
-        if stage["signal_date"] != target:
-            raise RuntimeError("Stage A seal date differs from N seal")
-    except Exception as exc:
-        # N seal remains authoritative.  The next scheduled attempt may retry
-        # Stage A without rerunning or rewriting the sealed N scan.
-        append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "STAGE_A", "traceback": traceback.format_exc()})
-        message = warning_message(target, "Stage A", type(exc).__name__, str(exc))
+    else:
         try:
-            warning = notify("STAGE_A", target, scan["record_hash"], "WARNING", message, providers=("TELEGRAM", "MACOS_LOCAL_NOTIFICATION"))
-        except Exception:
-            warning = {"status": "FAILED_LOCAL_LOG_ONLY"}
-        return {"status": "STAGE_A_FAILED_N_REMAINS_SEALED", "error_type": type(exc).__name__, "warning": warning}
+            stage_python = os.environ.get(
+                "WARRANTSCOPE_STAGE_A_PYTHON",
+                "/Users/linyunyan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+            )
+            if not Path(stage_python).is_file():
+                raise RuntimeError("Stage A Python with frozen model dependencies is unavailable")
+            stage = _run_json([
+                stage_python, "-B", "-m", "stage_a_prospective_watchlist_v01.main",
+                "seal-current", "--archives", *[str(path) for path in prepared.archives],
+                "--trading-calendar", str(prepared.calendar_path),
+                "--expected-input-hash", scan["input_manifest_hash"],
+            ], cfg)
+            if stage["signal_date"] != target:
+                raise RuntimeError("Stage A seal date differs from N seal")
+        except Exception as exc:
+            # N seal remains authoritative.  The next scheduled attempt may retry
+            # Stage A without rerunning or rewriting the sealed N scan.
+            append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "STAGE_A", "traceback": traceback.format_exc()})
+            message = warning_message(target, "Stage A", type(exc).__name__, str(exc))
+            try:
+                warning = notify("STAGE_A", target, scan["record_hash"], "WARNING", message, providers=("TELEGRAM", "MACOS_LOCAL_NOTIFICATION"))
+            except Exception:
+                warning = {"status": "FAILED_LOCAL_LOG_ONLY"}
+            return {"status": "STAGE_A_FAILED_N_REMAINS_SEALED", "error_type": type(exc).__name__, "warning": warning}
     stage_summary = {key: stage[key] for key in ("status", "signal_date", "seal_hash", "count")}
     try:
         compact_rows = [row for row in _read_csv(cfg.shadow_store_dir / "prospective_signals.csv") if row.get("signal_date") == target]

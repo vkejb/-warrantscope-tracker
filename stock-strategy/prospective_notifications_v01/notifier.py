@@ -97,7 +97,13 @@ def daily_message(date: str, scan: dict, stage: dict) -> str:
     label = f"{date[:4]}-{date[4:6]}-{date[6:]}"
     raw = scan.get("raw_n_retest_count", scan.get("raw_n_count", 0))
     compact = scan.get("compact_count", scan.get("compact_signal_count", 0))
-    lines = [f"【WarrantScope Daily｜{label}】", "今日封存完成", f"N Compact：Raw N {raw}｜Compact {compact}｜seal {str(scan.get('record_hash', ''))[:12]}", f"Stage A：Top30 SEALED｜seal {stage['seal_hash'][:12]}", "Top10："]
+    lines = [
+        f"【WarrantScope Daily｜{label}】",
+        "今日封存完成",
+        f"N 結構掃描：Raw N_RETEST {raw}｜N Compact {compact}｜seal {str(scan.get('record_hash', ''))[:12]}",
+        f"Stage A：完整 Top30 已封存｜seal {stage['seal_hash'][:12]}",
+        "以下僅列 Top10 摘要（完整名單共 30 檔）：",
+    ]
     for row in stage["stocks"][:10]:
         lines.append(f"{row['rank']}. {row['stock_id']} {row['stock_name']} {row['score']:.4f}")
     if int(compact) > 0:

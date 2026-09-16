@@ -31,6 +31,8 @@ class NotificationTests(unittest.TestCase):
         stage = {"status": "SEALED", "count": 30, "seal_hash": "abc123", "stocks": [{"rank": i, "stock_id": str(2000+i), "stock_name": "測試", "score": 0.1} for i in range(1, 31)]}
         text = daily_message("20260916", {"raw_n_retest_count": "1", "compact_count": "0", "record_hash": "nhash"}, stage)
         self.assertIn("Top10", text)
+        self.assertIn("完整名單共 30 檔", text)
+        self.assertIn("Raw N_RETEST 1", text)
         self.assertNotIn("30. ", text)
         self.assertIn("NO_SIGNAL", text)
         with self.assertRaises(ValueError):
