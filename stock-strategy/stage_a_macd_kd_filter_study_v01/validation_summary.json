@@ -1,0 +1,54 @@
+{
+  "status": "COMPLETE",
+  "study_id": "STAGE_A_MACD_KD_FILTER_STUDY_V0_1",
+  "interpretation": "DESCRIPTIVE_FIXED_FILTER_BACKTEST_NOT_VALIDATED_STRATEGY",
+  "final_classification": "NO_MACD_KD_INCREMENTAL_EDGE",
+  "rules": {
+    "macd": "EMA12 minus EMA26 > EMA9 signal and DIF > 0; first-close EMA seed; 60-session warmup",
+    "kd": "9-session RSV, 3/3 recursive smoothing from 50; K > D and K < 80",
+    "execution": "T close filter; T+1 open; 0.1% one-way slippage; discounted commission min TWD1; 0.3% sell tax",
+    "portfolio": "TWD30000 start; entry budget min(NAV/30,TWD2000); integer odd-lot shares; no repeat add; filter entry-only; exit T+1 open after Stage A disappearance"
+  },
+  "baseline": {
+    "strategy": "STAGE_A_BASELINE",
+    "starting_capital": 30000.0,
+    "ending_equity": 93509.68135000151,
+    "total_return": 2.116989378333384,
+    "cagr": 0.20866601033050824,
+    "max_drawdown": -0.48630838262817566,
+    "closed_trades": 8898,
+    "win_rate": 0.35221398066981346,
+    "average_net_trade_return": 0.004696163333924911,
+    "median_net_trade_return": -0.018767083309245973,
+    "net_profit_factor": 1.1124099775925966,
+    "average_holding_sessions": 4.880310182063385,
+    "actual_orders": 0,
+    "actual_fills": 0,
+    "broker_connections": 0,
+    "evaluable_stage_a_signal_rows": 43596,
+    "plus8_before_minus5_rate": 0.3487017157537389,
+    "common_outcome_gross_mean": -0.0008395327274548399,
+    "common_outcome_net_mean": -0.006621355568564048,
+    "entry_filter_retained_pct": 1.0
+  },
+  "fixed_filter_diagnostics": {
+    "macd_and_kd_vs_stage_a": {
+      "ending_equity_delta": -36586.99780000104,
+      "win_rate_delta": -0.028755213656202594,
+      "path_success_delta": -0.03856782840378503
+    },
+    "foreign_and_macd_and_kd_vs_foreign": {
+      "ending_equity_delta": -52209.58715000044,
+      "win_rate_delta": -0.02670642795787198,
+      "path_success_delta": -0.03818395468118957
+    }
+  },
+  "hard_filter_recommendation": "DO_NOT_ADD_MACD_KD_TO_FROZEN_DAILY_SELECTOR",
+  "best_ending_equity_strategy": "FOREIGN_POSITIVE_LAG1",
+  "best_win_rate_strategy": "FOREIGN_POSITIVE_LAG1",
+  "stage_a_refit_count": 0,
+  "threshold_optimization_count": 0,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0
+}
