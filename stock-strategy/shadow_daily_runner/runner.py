@@ -83,6 +83,30 @@ def _postseal_notifications(target: str, prepared: PreparedInputs | None, cfg: R
                 warning = {"status": "FAILED_LOCAL_LOG_ONLY"}
             return {"status": "STAGE_A_FAILED_N_REMAINS_SEALED", "error_type": type(exc).__name__, "warning": warning}
     stage_summary = {key: stage[key] for key in ("status", "signal_date", "seal_hash", "count")}
+    entry_state_result = {"status": "INPUT_NOT_READY"}
+    outcome_result = {"status": "INPUT_NOT_READY"}
+    if prepared is not None and prepared.ready:
+        # Both ledgers are independent post-Stage-A-seal effects. An error must
+        # never roll back or rewrite the N or Stage A signal seals.
+        try:
+            from stage_a_t1_extreme_upside_study_v01.seal import seal_entry_state
+            entry_state_result = seal_entry_state(
+                cfg.stage_a_runtime_dir / "seals" / f"{target}.json",
+                list(prepared.archives), prepared.calendar_path, now=local,
+            )
+        except Exception as exc:
+            append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "STAGE_A_ENTRY_STATE", "traceback": traceback.format_exc()})
+            entry_state_result = {"status": "FAILED_AFTER_STAGE_A_SEAL", "error_type": type(exc).__name__}
+        try:
+            from stage_a_t1_outcomes_v01.ledger import update as update_t1_outcomes
+            outcome_result = update_t1_outcomes(
+                cfg.active_inputs_path,
+                cfg.audit_dir / f"official_eod_through_{target}.json",
+                now=local,
+            )
+        except Exception as exc:
+            append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "STAGE_A_T1_OUTCOMES", "traceback": traceback.format_exc()})
+            outcome_result = {"status": "FAILED_AFTER_STAGE_A_SEAL", "error_type": type(exc).__name__}
     try:
         compact_rows = [row for row in _read_csv(cfg.shadow_store_dir / "prospective_signals.csv") if row.get("signal_date") == target]
         message = daily_message(target, {**scan, "compact_candidates": compact_rows}, stage)
@@ -90,7 +114,7 @@ def _postseal_notifications(target: str, prepared: PreparedInputs | None, cfg: R
     except Exception as exc:
         append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "NOTIFICATION", "traceback": traceback.format_exc()})
         notification = {"status": "FAILED_AFTER_SEAL", "error_type": type(exc).__name__}
-    return {"status": "SEALED", "stage_a": stage_summary, "notification": notification}
+    return {"status": "SEALED", "stage_a": stage_summary, "entry_state": entry_state_result, "t1_outcomes": outcome_result, "notification": notification}
 
 
 LEDGER_FILENAMES = (
