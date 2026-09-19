@@ -285,14 +285,30 @@
     $$("#observation-list [data-stock]").forEach(button => button.addEventListener("click", () => openStock(button.dataset.stock)));
   }
 
-  function renderHistoryKpis() {
-    const completed = D.episodes.filter(row => isNumeric(row["歷史報酬%"]));
+  function episodesForDate(date) {
+    return D.episodes.filter(row => !row["進觀察日"] || row["進觀察日"] <= date).map(row => {
+      const futureExit = row["退出日"] && row["退出日"] > date;
+      const futureUncertainty = row["目前狀態"] === "Unresolved" && row["狀態截至"] > date;
+      if (!futureExit && !futureUncertainty) return row;
+      return {
+        ...row,
+        "退出日": futureExit ? null : row["退出日"],
+        "目前狀態": "Active",
+        "歷史報酬%": futureExit ? null : row["歷史報酬%"],
+        "資料用途": row["原資料用途"] || "Active Episode",
+        "確認程度": futureExit ? row["原確認程度"] || row["確認程度"] : row["確認程度"]
+      };
+    });
+  }
+
+  function renderHistoryKpis(episodes) {
+    const completed = episodes.filter(row => isNumeric(row["歷史報酬%"]));
     const wins = completed.filter(row => row["歷史報酬%"] > 0);
     const average = completed.length ? completed.reduce((sum, row) => sum + row["歷史報酬%"], 0) / completed.length : null;
     const reported = D.meta.reportedCounts?.[dateSelect.value];
     const items = [
       ...(reported?.history != null ? [["截圖歷史計數", reported.history, "筆"]] : []),
-      [reported?.history != null ? "已收錄 Episode" : "全部 Episode", D.episodes.length, reported?.history != null ? "筆明細" : "筆"],
+      [reported?.history != null ? "已收錄 Episode" : "全部 Episode", episodes.length, reported?.history != null ? "筆明細" : "筆"],
       ["已完成", completed.length, "筆"],
       ["勝率", completed.length ? `${Math.round(wins.length / completed.length * 100)}%` : "—", `${wins.length} 勝`],
       ["平均報酬", formatReturn(average), "已完成"],
@@ -302,11 +318,11 @@
     `).join("");
   }
 
-  function historyRows() {
+  function historyRows(episodes) {
     const query = $("#history-search").value.trim().toLowerCase();
     const filter = $("#history-outcome").value;
     const sort = $("#history-sort").value;
-    const rows = D.episodes.filter(row => {
+    const rows = episodes.filter(row => {
       const matchesQuery = !query || textMatch(query, row["母股代號"], row["母股名稱"]);
       const matchesOutcome = filter === "all" || outcome(row["歷史報酬%"]) === filter;
       return matchesQuery && matchesOutcome;
@@ -324,19 +340,21 @@
   }
 
   function renderHistory() {
-    renderHistoryKpis();
-    const rows = historyRows();
+    const episodes = episodesForDate(dateSelect.value);
+    renderHistoryKpis(episodes);
+    const rows = historyRows(episodes);
     const pageCount = Math.max(1, Math.ceil(rows.length / HISTORY_PAGE_SIZE));
     state.historyPage = Math.min(state.historyPage, pageCount);
     const start = (state.historyPage - 1) * HISTORY_PAGE_SIZE;
     const pageRows = rows.slice(start, start + HISTORY_PAGE_SIZE);
     $("#episode-list").innerHTML = pageRows.length ? pageRows.map(row => {
       const result = outcome(row["歷史報酬%"]);
-      const resultLabel = result === "win" ? "勝" : result === "loss" ? "敗" : result === "flat" ? "持平" : "進行中";
+      const unresolved = row["目前狀態"] === "Unresolved";
+      const resultLabel = unresolved ? "狀態待核對" : result === "win" ? "勝" : result === "loss" ? "敗" : result === "flat" ? "持平" : "進行中";
       return `<button type="button" class="episode-card" data-stock="${esc(row["母股代號"])}">
         <div class="card-title-row">
           <div><span class="stock-code">${esc(clean(row["母股代號"]))}</span><h3>${esc(clean(row["母股名稱"]))}</h3></div>
-          <span class="outcome ${result}">${resultLabel}</span>
+          <span class="outcome ${unresolved ? "unresolved" : result}">${resultLabel}</span>
         </div>
         <div class="episode-period"><span>進場 <b>${esc(clean(row["進觀察日"]))}</b></span><span>退出 <b>${esc(clean(row["退出日"]))}</b></span></div>
         <div class="return-line"><span>歷史報酬</span><strong class="${result}">${formatReturn(row["歷史報酬%"])}</strong></div>
@@ -420,13 +438,14 @@
     state.selectedStockKey = selected.code;
     const events = stockEvents(selected.code);
     const activeEpisode = D.episodes.find(row => String(row["母股代號"]) === selected.code && row["目前狀態"] === "Active");
+    const unresolvedEpisode = D.episodes.find(row => String(row["母股代號"]) === selected.code && row["目前狀態"] === "Unresolved");
     const rawCount = D.raw.filter(row => String(row.Underlying_Code) === selected.code).length;
     const episodeCount = D.episodes.filter(row => String(row["母股代號"]) === selected.code).length;
     const suggestions = matches.length > 1 ? `<div class="stock-suggestions">${matches.map(stock => `<button type="button" class="${stock.code === selected.code ? "active" : ""}" data-select-stock="${esc(stock.code)}">${esc(stock.code)} ${esc(stock.name)}</button>`).join("")}</div>` : "";
     box.innerHTML = `${suggestions}
       <article class="stock-summary panel">
         <div><span class="stock-code">${esc(selected.code)}</span><h3>${esc(selected.name)}</h3></div>
-        <span class="badge ${activeEpisode ? "active-status" : "neutral"}">${activeEpisode ? "目前觀察中" : "非目前觀察"}</span>
+        <span class="badge ${activeEpisode ? "active-status" : "neutral"}">${activeEpisode ? "目前觀察中" : unresolvedEpisode ? "觀察狀態待核對" : "非目前觀察"}</span>
         <dl><div><dt>歷史 Raw</dt><dd>${rawCount} 張</dd></div><div><dt>Episode</dt><dd>${episodeCount} 段</dd></div><div><dt>事件</dt><dd>${events.length} 筆</dd></div></dl>
       </article>
       <div class="timeline" aria-label="${esc(selected.code)} ${esc(selected.name)} 事件時間線">

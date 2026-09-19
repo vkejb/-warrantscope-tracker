@@ -1,7 +1,7 @@
 window.WS_DATA = {
   "meta": {
     "title": "WarrantScope Tracker",
-    "generated": "2026-09-17 22:39 +08:00",
+    "generated": "2026-09-20 03:49 +08:00",
     "dates": [
       "2026-08-24",
       "2026-08-25",
@@ -21,14 +21,16 @@ window.WS_DATA = {
       "2026-09-14",
       "2026-09-15",
       "2026-09-16",
-      "2026-09-17"
+      "2026-09-17",
+      "2026-09-18"
     ],
     "months": [
       "2026-08",
       "2026-09"
     ],
-    "defaultDate": "2026-09-17",
+    "defaultDate": "2026-09-18",
     "notes": {
+      "2026-09-18": "9/18 收盤資料（來源網站 9/19 12:48 刷新，9/19 週六並非交易日）：Raw 5 張 / 5 檔母股，BUY / SELL Top20 完整。觀察中 27、歷史 77；新增聯電、金像電、奇鋐，已辨識研華與華通兩筆退出，其餘 11 筆退出名稱未提供，不自行猜測。Raw 的 30 分量、流通量與倍數維持缺值。",
       "2026-09-17": "9/17 V3 正式資料：Raw 5 張 / 4 檔母股（華通、南亞×2、聖暉*、瑞軒），BUY / SELL Top20 完整。新增華通、瑞軒觀察與 Active Episode；觀察中 37、歷史 64。Raw 未提供 30 分量、流通量與倍數，全部保留缺值。",
       "2026-09-16": "9/16 Raw 12 張 / 7 檔母股（聯發科×3、南亞×3、川湖×2、鴻海、精材、大立光、南亞科），BUY / SELL Top20 完整。觀察中 35、歷史 64；今日沒有人工確認的新進觀察或退出。Raw 未提供 30 分量、流通量與倍數，全部保留缺值。",
       "2026-09-15": "9/15 Raw 5 張 / 4 檔母股（研華、南亞×2、緯穎、景碩），BUY / SELL Top20 完整。回補使用者確認 2395 研華於當日列入觀察；觀察中 35、歷史 64。Raw 截圖未提供 30 分量、流通量與倍數，全部保留缺值。",
@@ -145,6 +147,21 @@ window.WS_DATA = {
         "knownExits": 0,
         "source": "2026-09-17 V3 更新包",
         "completeness": "V3 正式取代同日 V1／V2；Raw 5 張／4 檔母股、BUY 20、SELL 20 完整。新增華通與瑞軒後觀察中 37、歷史 64，共有 36 筆可辨識觀察明細，既有 1 檔未解析觀察標的仍維持缺值。"
+      },
+      "2026-09-18": {
+        "raw": 5,
+        "rawUnderlyings": 5,
+        "activeWatch": 27,
+        "history": 77,
+        "knownWatchDetails": 3,
+        "knownEpisodeDetails": 43,
+        "newWatch": 3,
+        "reportedExits": 13,
+        "knownExits": 2,
+        "unidentifiedExits": 11,
+        "sourceRefreshedAt": "2026-09-19 12:48 Asia/Taipei",
+        "source": "2026-09-18 CLOSE V2 更新包",
+        "completeness": "來源計數顯示觀察 37→27 且新增 3，推得退出 13；已辨識研華、華通兩筆及報酬，其餘 11 筆退出名稱未提供。無法確定先前其他標的哪些仍在觀察，因此目前只列 3 筆已確認新進，另 24 檔現況未解析；不猜測明細。頎邦 Raw 備註稱 9/15 已轉歷史，與既有 9/17 觀察快照矛盾，未據此改寫舊日期。"
       }
     }
   },
@@ -6480,4 +6497,167 @@ delete window.applySeptember16Update;
     "Episode Age": episodeType(row["母股代號"]) ?? row["Episode Age"],
     "備註": currentNote(row["母股代號"])
   }));
+})();
+
+(() => {
+  const data = window.WS_DATA;
+  const date = "2026-09-18";
+  const rawRows = [
+    ["6147", "頎邦", "711816", "頎邦國泰63購02", "國泰", "History Retrigger", "Mixed/slight BUY", "12:48盤中Raw；公開觀察Episode已於9/15移入歷史，今日未重新加入觀察。BUY#17 / SELL#15。"],
+    ["5274", "信驊", "703396", "信驊元富5A購02", "元富", "Fresh Raw", "Unknown", "12:48盤中Raw；BUY/SELL Top20均未見，未加入觀察。"],
+    ["2303", "聯電", "086428", "聯電台新63購09", "台新", "Fresh Raw", "Mixed/slight SELL", "12:48盤中Raw；今日人工加入觀察。BUY#13 636 vs SELL#7 710。"],
+    ["3017", "奇鋐", "077601", "奇鋐台新61購06", "台新", "Fresh Raw", "BUY-confirmed", "12:48盤中Raw；今日人工加入觀察。BUY#5 961，SELL未榜。"],
+    ["2368", "金像電", "079242", "金像電凱基63購07", "凱基", "Fresh Raw", "BUY-confirmed", "12:48盤中Raw；今日人工加入觀察。BUY#9 802，SELL未榜。"]
+  ];
+  const raw = rawRows.map(([code, name, warrantCode, warrantName, issuer, episodeType, direction, notes]) => ({
+    "Date": date,
+    "Time_LastSeen": null,
+    "Underlying_Code": code,
+    "Underlying_Name": name,
+    "Warrant_Code": warrantCode,
+    "Warrant_Name": warrantName,
+    "Issuer": issuer,
+    "30m_Volume": null,
+    "Circulation": null,
+    "Displayed_Multiple": null,
+    "Raw_Status": "Raw",
+    "Episode_Type": episodeType,
+    "Trade_Direction": direction,
+    "Prior_Buy_Rank": null,
+    "Prior_Sell_Rank": null,
+    "Notes": notes
+  }));
+  data.raw = data.raw.filter(row => row.Date !== date);
+  data.raw.push(...raw);
+
+  const mainforceRows = [
+    ["BUY", 1, "2449", "京元電子", 1287, 267, 1554],
+    ["BUY", 2, "2454", "聯發科", 976, 183, 1159],
+    ["BUY", 3, "2330", "台積電", 879, 232, 1111],
+    ["BUY", 4, "1815", "富喬", 571, 435, 1006],
+    ["BUY", 5, "3017", "奇鋐", 681, 280, 961],
+    ["BUY", 6, "3016", "嘉晶", 712, 209, 921],
+    ["BUY", 7, "2404", "漢唐", 472, 437, 909],
+    ["BUY", 8, "3661", "世芯-KY", 578, 304, 882],
+    ["BUY", 9, "2368", "金像電", 460, 342, 802],
+    ["BUY", 10, "3008", "大立光", 495, 302, 797],
+    ["BUY", 11, "6706", "惠特", 439, 258, 697],
+    ["BUY", 12, "7769", "鴻勁", 528, 156, 684],
+    ["BUY", 13, "2303", "聯電", 448, 188, 636],
+    ["BUY", 14, "5289", "宜鼎", 519, 37, 556],
+    ["BUY", 15, "2408", "南亞科", 415, 122, 537],
+    ["BUY", 16, "6139", "亞翔", 333, 202, 535],
+    ["BUY", 17, "6147", "頎邦", 301, 231, 532],
+    ["BUY", 18, "3711", "日月光投控", 396, 133, 529],
+    ["BUY", 19, "6488", "環球晶", 291, 231, 522],
+    ["BUY", 20, "2345", "智邦", 406, 110, 516],
+    ["SELL", 1, "2330", "台積電", 591, 520, 1111],
+    ["SELL", 2, "2615", "萬海", 762, 347, 1109],
+    ["SELL", 3, "3324", "雙鴻", 664, 219, 883],
+    ["SELL", 4, "2308", "台達電", 624, 205, 829],
+    ["SELL", 5, "2313", "華通", 682, 81, 763],
+    ["SELL", 6, "2395", "研華", 624, 136, 760],
+    ["SELL", 7, "2303", "聯電", 431, 279, 710],
+    ["SELL", 8, "5347", "世界", 494, 115, 609],
+    ["SELL", 9, "1303", "南亞", 297, 231, 528],
+    ["SELL", 10, "2408", "南亞科", 293, 230, 523],
+    ["SELL", 11, "1560", "中砂", 311, 198, 509],
+    ["SELL", 12, "3231", "緯創", 386, 113, 499],
+    ["SELL", 13, "2376", "技嘉", 416, 74, 490],
+    ["SELL", 14, "3675", "德微", 439, 27, 466],
+    ["SELL", 15, "6147", "頎邦", 273, 190, 463],
+    ["SELL", 16, "1326", "台化", 381, 69, 450],
+    ["SELL", 17, "6257", "矽格", 217, 195, 412],
+    ["SELL", 18, "3665", "貿聯-KY", 270, 108, 378],
+    ["SELL", 19, "2603", "長榮", 330, 41, 371],
+    ["SELL", 20, "6620", "漢達", 258, 109, 367]
+  ];
+  const rawCodes = new Set(raw.map(row => row.Underlying_Code));
+  data.mainforce = data.mainforce.filter(row => row["日期"] !== date);
+  data.mainforce.push(...mainforceRows.map(([direction, rank, code, name, first, second, total]) => ({
+    "日期": date,
+    "方向": direction,
+    "排名": rank,
+    "母股代號": code,
+    "母股名稱": name,
+    "分點1": null,
+    "分點1可見金額(萬)": first,
+    "分點2": null,
+    "分點2可見金額(萬)": second,
+    "可見金額(萬)": total,
+    "當日Raw": rawCodes.has(code),
+    "資料完整度": "CLOSE_CONFIRMED",
+    "As_Of": "CLOSE",
+    "備註": "9/18 收盤排行；可見金額僅為來源中兩個分點加總的近似值，不代表完整主力淨額；BUY/SELL 依紅／綠字原樣收錄。"
+  })));
+
+  const exits = [
+    ["2395", "2026-09-15", 0.7],
+    ["2313", "2026-09-17", 4.6]
+  ];
+  data.episodes.forEach(row => {
+    const confirmedExit = exits.find(([code, entry]) => row["母股代號"] === code && row["進觀察日"] === entry);
+    if (confirmedExit) {
+      row["退出日"] = date;
+      row["目前狀態"] = "Exited";
+      row["原確認程度"] = row["確認程度"];
+      row["原資料用途"] = row["資料用途"];
+      row["確認程度"] = "9/18 history visible";
+      row["歷史報酬%"] = confirmedExit[2];
+      row["資料用途"] = "Historical Episode";
+      row["退出來源日期"] = date;
+    } else if (row["目前狀態"] === "Active") {
+      row["目前狀態"] = "Unresolved";
+      row["原資料用途"] = row["資料用途"];
+      row["資料用途"] = "Episode status unresolved";
+      row["狀態截至"] = date;
+      row["狀態說明"] = "9/18 共有 13 筆退出，其中 11 筆名稱未提供；無法確認本 Episode 是否仍在觀察。";
+    }
+  });
+
+  const additions = [
+    ["2303", "聯電", "086428", "Mixed/slight SELL"],
+    ["2368", "金像電", "079242", "BUY-confirmed"],
+    ["3017", "奇鋐", "077601", "BUY-confirmed"]
+  ];
+  data.episodes = data.episodes.filter(row => !(row["來源日期"] === date && additions.some(([code]) => code === row["母股代號"])));
+  data.episodes.push(...additions.map(([code, name, warrantCode, direction]) => ({
+    "母股代號": code,
+    "母股名稱": name,
+    "進觀察日": date,
+    "退出日": null,
+    "目前狀態": "Active",
+    "確認程度": "9/18 user confirmed",
+    "進場參考價": null,
+    "退出參考價": null,
+    "歷史報酬%": null,
+    "資料用途": "Active Episode",
+    "來源日期": date,
+    "備註": `9/18 ${warrantCode} Raw；人工加入觀察。方向 ${direction}，未提供價格。`
+  })));
+
+  data.currentObservation = additions.map(([code, name, warrantCode, direction]) => ({
+    "母股代號": code,
+    "母股名稱": name,
+    "列入觀察日": date,
+    "狀態": "觀察中／新進",
+    "今日Raw張數": 1,
+    "Episode Age": "Fresh Raw → KEEP",
+    "資料來源": "2026-09-18 CLOSE V2 更新包",
+    "備註": `9/18 ${warrantCode} Raw；人工加入觀察。方向 ${direction}。`
+  }));
+
+  data.observationSnapshots = data.observationSnapshots.filter(row => row["日期"] !== date);
+  data.observationSnapshots.push(...data.currentObservation.map(row => ({
+    "日期": date,
+    "母股代號": row["母股代號"],
+    "母股名稱": row["母股名稱"],
+    "進觀察日期": date,
+    "狀態": "觀察中／新進",
+    "當日Raw張數": 1,
+    "Episode類型": "Fresh Raw → KEEP",
+    "確認程度": "User confirmed / 9/18 CLOSE V2",
+    "備註": row["備註"],
+    "完整度": "Only 3 entries identified from screenshot count 27; other 24 current names unresolved"
+  })));
 })();
