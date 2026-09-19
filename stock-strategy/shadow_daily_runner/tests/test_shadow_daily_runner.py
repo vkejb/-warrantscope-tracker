@@ -6,6 +6,7 @@ from datetime import datetime
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import plistlib
 import tempfile
@@ -35,7 +36,7 @@ from shadow_daily_runner.preflight import (
     run_historical_preflight,
 )
 from shadow_daily_runner.runner import attempt
-from shadow_daily_runner.sources import SourceSnapshot
+from shadow_daily_runner.sources import OfficialSourceClient, SourceSnapshot
 
 
 def snapshot(path: Path, payload: bytes, source: str = "fixture") -> SourceSnapshot:
@@ -64,6 +65,39 @@ def release_payload(rows: list[list[str]]) -> bytes:
 
 
 class NormalizationTests(unittest.TestCase):
+    def test_cached_source_selection_skips_newer_parser_invalid_payload(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = replace(CFG, runtime_dir=root / "runtime")
+            source_dir = cfg.raw_dir / "tpex_eod_20260917"
+            source_dir.mkdir(parents=True)
+            header = [
+                "上櫃股票每日收盤行情(不含定價)",
+                "產業類別:所有證券",
+                "資料日期:115/09/17",
+                "代號,名稱,收盤 ,漲跌,開盤 ,最高 ,最低,成交股數  ,成交金額(元),成交筆數",
+            ]
+            row = '"6488","環球晶","500","+1","495","505","490","1,000","500,000","100"'
+            valid_payload = "\n".join([*header, row]).encode("big5")
+            invalid_payload = "\n".join([*header, row, row]).encode("big5")
+            valid_hash = hashlib.sha256(valid_payload).hexdigest()
+            invalid_hash = hashlib.sha256(invalid_payload).hexdigest()
+            valid_path = source_dir / f"{valid_hash}.csv"
+            invalid_path = source_dir / f"{invalid_hash}.csv"
+            valid_path.write_bytes(valid_payload)
+            invalid_path.write_bytes(invalid_payload)
+            os.utime(valid_path, (1, 1))
+            os.utime(invalid_path, (2, 2))
+
+            client = OfficialSourceClient(cfg)
+            selected = client.tpex_eod(
+                "20260917",
+                refresh=False,
+                cache_validator=lambda item: not parse_tpex(item, "20260917").errors,
+            )
+            self.assertEqual(valid_hash, selected.sha256)
+            self.assertEqual(1, len(parse_tpex(selected, "20260917").rows))
+
     def test_direct_official_universe_keeps_established_name_suffix_filter(self):
         self.assertTrue(eligible_security("2330", "台積電"))
         self.assertTrue(eligible_security("0050", "元大台灣50"))

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 import time
+from typing import Callable
 from urllib.parse import urlencode
 
 from .config import CFG, RunnerConfig
@@ -73,6 +74,7 @@ class OfficialSourceClient:
         suffix: str | None = None,
         refresh: bool = True,
         expected_kind: str | None = None,
+        cache_validator: Callable[[SourceSnapshot], bool] | None = None,
     ) -> SourceSnapshot:
         query = urlencode(params or {})
         request_url = f"{url}?{query}" if query else url
@@ -88,8 +90,11 @@ class OfficialSourceClient:
                 for path in candidates
                 if self._payload_matches(path.read_bytes(), expected_kind)
             ]
-            if valid_candidates:
-                path = max(valid_candidates, key=lambda item: item.stat().st_mtime_ns)
+            for path in sorted(
+                valid_candidates,
+                key=lambda item: item.stat().st_mtime_ns,
+                reverse=True,
+            ):
                 payload = path.read_bytes()
                 digest = sha256_bytes(payload)
                 if path.stem != digest:
@@ -121,7 +126,7 @@ class OfficialSourceClient:
                             + "\n"
                         ).encode("utf-8"),
                     )
-                return SourceSnapshot(
+                snapshot = SourceSnapshot(
                     source=source,
                     request_url=request_url,
                     retrieved_at_utc=str(metadata.get("retrieved_at_utc", "CACHED")),
@@ -129,6 +134,13 @@ class OfficialSourceClient:
                     path=path,
                     payload=payload,
                 )
+                if cache_validator is not None:
+                    try:
+                        if not cache_validator(snapshot):
+                            continue
+                    except (RuntimeError, ValueError, UnicodeError):
+                        continue
+                return snapshot
         payload = b""
         last_error = ""
         for attempt in range(4):
@@ -222,16 +234,29 @@ class OfficialSourceClient:
             expected_kind="zip",
         )
 
-    def twse_eod(self, day: str, *, refresh: bool = True) -> SourceSnapshot:
+    def twse_eod(
+        self,
+        day: str,
+        *,
+        refresh: bool = True,
+        cache_validator: Callable[[SourceSnapshot], bool] | None = None,
+    ) -> SourceSnapshot:
         return self._get(
             f"twse_eod_{day}",
             self.cfg.twse_eod_url,
             {"date": day, "type": "ALLBUT0999", "response": "json"},
             refresh=refresh,
             expected_kind="json",
+            cache_validator=cache_validator,
         )
 
-    def tpex_eod(self, day: str, *, refresh: bool = True) -> SourceSnapshot:
+    def tpex_eod(
+        self,
+        day: str,
+        *,
+        refresh: bool = True,
+        cache_validator: Callable[[SourceSnapshot], bool] | None = None,
+    ) -> SourceSnapshot:
         roc_year = int(day[:4]) - 1911
         slash = f"{roc_year:03d}/{day[4:6]}/{day[6:]}"
         return self._get(
@@ -248,6 +273,7 @@ class OfficialSourceClient:
             suffix=".csv",
             refresh=refresh,
             expected_kind="tpex_csv",
+            cache_validator=cache_validator,
         )
 
     def calendar(self) -> SourceSnapshot:

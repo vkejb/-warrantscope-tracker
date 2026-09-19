@@ -74,6 +74,28 @@ def _source_from_path(path: Path, request_url: str = "LOCAL_CLEAN_ARCHIVE") -> S
     )
 
 
+def _twse_eod(
+    client: OfficialSourceClient, day: str, *, refresh: bool
+) -> ParsedSource:
+    validator = None
+    if not refresh:
+        validator = lambda snapshot: not parse_twse(snapshot, day).errors
+    return parse_twse(
+        client.twse_eod(day, refresh=refresh, cache_validator=validator), day
+    )
+
+
+def _tpex_eod(
+    client: OfficialSourceClient, day: str, *, refresh: bool
+) -> ParsedSource:
+    validator = None
+    if not refresh:
+        validator = lambda snapshot: not parse_tpex(snapshot, day).errors
+    return parse_tpex(
+        client.tpex_eod(day, refresh=refresh, cache_validator=validator), day
+    )
+
+
 def _archive_path(
     cfg: RunnerConfig,
     stem: str,
@@ -125,8 +147,7 @@ def _reconcile_positive_rows(
     resolutions: dict[tuple[str, str], dict] = {}
     source_audit: list[dict] = []
     for day, wanted in sorted(by_date.items()):
-        twse_snapshot = client.twse_eod(day, refresh=False)
-        twse = parse_twse(twse_snapshot, day)
+        twse = _twse_eod(client, day, refresh=False)
         source_audit.append(
             {
                 "date": day,
@@ -141,8 +162,7 @@ def _reconcile_positive_rows(
         resolutions.update({key: value for key, value in evidence.items() if key[1] in wanted})
         remaining = wanted - {key[1] for key in resolutions if key[0] == day}
         if remaining:
-            tpex_snapshot = client.tpex_eod(day, refresh=False)
-            tpex = parse_tpex(tpex_snapshot, day)
+            tpex = _tpex_eod(client, day, refresh=False)
             source_audit.append(
                 {
                     "date": day,
@@ -291,8 +311,8 @@ def _prepare_direct_official(
         for day in days:
             refresh = day == target
             try:
-                twse = parse_twse(client.twse_eod(day, refresh=refresh), day)
-                tpex = parse_tpex(client.tpex_eod(day, refresh=refresh), day)
+                twse = _twse_eod(client, day, refresh=refresh)
+                tpex = _tpex_eod(client, day, refresh=refresh)
             except Exception as exc:
                 failures.append(
                     {
