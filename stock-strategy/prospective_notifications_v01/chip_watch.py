@@ -201,7 +201,8 @@ def select_observation_candidates(stage: dict, entry_state: dict, chip_rows: dic
         if trust is not None:
             tags.append(flow_tag("投信", int(trust)))
         if chip.get("margin_balance") is not None:
-            tags.append(f"融資餘額 {int(chip['margin_balance']):,}股")
+            # Official TWSE/TPEx margin balance tables report trading lots.
+            tags.append(f"融資餘額 {int(chip['margin_balance']):,}張")
         selected.append({
             "stock_id": code,
             "stock_name": stock["stock_name"],
@@ -251,7 +252,7 @@ def prepare_chip_watch(date: str, stage: dict, entry_state: dict, *, runtime: Pa
             identities[code] = identity
             rows.setdefault(code, {}).update({key: row[key] for key in ("foreign", "investment_trust", "dealer", "margin_balance", "short_balance") if key in row})
     status = "COMPLETE" if len(hashes) == len(SOURCE_ORDER) else "PARTIAL_READY"
-    source_hash = hashlib.sha256(_canonical({"schema_version": 3, "date": date, "sources": hashes, "missing_sources": sorted(unavailable), "stage_a_seal": stage["seal_hash"], "entry_state_seal": entry_state["seal_hash"]})).hexdigest()
+    source_hash = hashlib.sha256(_canonical({"schema_version": 4, "date": date, "sources": hashes, "missing_sources": sorted(unavailable), "stage_a_seal": stage["seal_hash"], "entry_state_seal": entry_state["seal_hash"]})).hexdigest()
     snapshot_path = runtime / date / "snapshots" / f"{source_hash}.json"
     if snapshot_path.is_file():
         existing = json.loads(snapshot_path.read_text(encoding="utf-8"))
@@ -259,7 +260,7 @@ def prepare_chip_watch(date: str, stage: dict, entry_state: dict, *, runtime: Pa
             raise RuntimeError("immutable chip-watch snapshot identity mismatch")
         return existing
     snapshot = {
-        "schema_version": 3,
+        "schema_version": 4,
         "signal_date": date,
         "status": status,
         "rule": "TOP5_BY_FROZEN_STAGE_A_RANK_AMONG_POSITIVE_COMBINED_INSTITUTIONAL_NET_BUY",

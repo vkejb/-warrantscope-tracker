@@ -39,6 +39,13 @@ class ChipWatchTests(unittest.TestCase):
         selected = select_observation_candidates(stage, entry, {"2330": {"foreign": -1, "investment_trust": 0, "dealer": 0}})
         self.assertEqual(selected, [])
 
+    def test_margin_balance_keeps_official_lot_unit(self):
+        stage = {"stocks": [{"rank": 1, "stock_id": "2330", "stock_name": "台積電"}]}
+        entry = {"stocks": [{"stock_id": "2330", "classification": "READY"}]}
+        chip = {"2330": {"foreign": 1000, "investment_trust": 0, "dealer": 0, "margin_balance": 8878}}
+        selected = select_observation_candidates(stage, entry, chip)
+        self.assertIn("融資餘額 8,878張", selected[0]["chip_tags"])
+
 
 if __name__ == "__main__":
     unittest.main()
