@@ -11,7 +11,7 @@ from shadow_daily_runner.config import CFG as RUNNER_CFG
 from stage_a_prospective_watchlist_v01.seal_store import latest_seal
 
 from .chip_watch import prepare_chip_watch
-from .notifier import chip_watch_message, entry_state_message, latest_status, load_entry_state, notify
+from .notifier import chip_not_ready_message, chip_watch_message, entry_state_message, latest_status, load_entry_state, notify
 from .keychain import configure_interactive, load_into_environment
 
 
@@ -72,6 +72,16 @@ def main(argv: list[str] | None = None) -> int:
             snapshot = prepare_chip_watch(target_date, stage, entry_state)
             if snapshot["status"] != "COMPLETE":
                 result = snapshot
+                local_time = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%H:%M")
+                if args.command == "attempt-chip-watch" and local_time >= "22:15":
+                    credential_status = load_into_environment()
+                    delivery = notify(
+                        "STAGE_A_CHIP_WATCH", target_date,
+                        f"{entry_state['seal_hash']}:NOT_READY",
+                        "CHIP_WATCH_NOT_READY",
+                        chip_not_ready_message(target_date, snapshot.get("reason", "")),
+                    )
+                    result = {**result, "credential_status": credential_status, "delivery": delivery}
                 code = 0 if args.command == "attempt-chip-watch" else 3
             else:
                 credential_status = load_into_environment()

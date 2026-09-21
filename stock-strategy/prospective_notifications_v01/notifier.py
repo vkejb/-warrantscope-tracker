@@ -207,6 +207,27 @@ def chip_watch_message(date: str, candidates: list[dict], source_hash: str) -> s
     return "\n".join(lines)
 
 
+def chip_not_ready_message(date: str, reason: str) -> str:
+    label = f"{date[:4]}-{date[4:6]}-{date[6:]}"
+    source = "官方四來源尚未全部就緒"
+    for name, display in (
+        ("TWSE_INSTITUTIONAL", "TWSE 法人"),
+        ("TPEX_INSTITUTIONAL", "TPEx 法人"),
+        ("TWSE_MARGIN", "TWSE 融資融券"),
+        ("TPEX_MARGIN", "TPEx 融資融券"),
+    ):
+        if name in reason:
+            source = display
+            break
+    return "\n".join([
+        f"【籌碼更新尚未完成｜{label}】",
+        "晚間有限次排程已執行。",
+        f"未完成來源：{source}",
+        "基於 fail-closed，未產生或發送明日漲停觀察候選。",
+        "沒有使用舊資料，也沒有修改 Stage A／Entry State 封存。",
+    ])
+
+
 def warning_message(date: str, module: str, error_type: str, detail: str = "") -> str:
     clean = " ".join(str(detail).split())[:180]
     for marker in ("/Users/", "bot", "token", "chat_id", "Traceback"):

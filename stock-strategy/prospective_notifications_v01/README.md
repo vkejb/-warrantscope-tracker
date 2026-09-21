@@ -50,3 +50,7 @@ then sends an explicitly unvalidated watchlist.  Its fixed list is the first
 five Stage-A-ranked `OVERHEATED` names; chip values are annotations only because
 the published chip study found no stable incremental next-day edge.  Missing or
 partial official chip data sends no Telegram message and never affects sealing.
+Checks run at 18:15, 19:15, 20:15, 21:15, and 22:15 Taipei time.  If the final
+attempt is still incomplete, a single idempotent status message explains that
+no watch candidates were produced, so silence cannot be confused with a failed
+scheduler.

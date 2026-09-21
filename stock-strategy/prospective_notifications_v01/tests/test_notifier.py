@@ -6,7 +6,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from prospective_notifications_v01.notifier import chip_watch_message, daily_message, entry_state_message, notify, warning_message
+from prospective_notifications_v01.notifier import chip_not_ready_message, chip_watch_message, daily_message, entry_state_message, notify, warning_message
 
 
 class NotificationTests(unittest.TestCase):
@@ -55,6 +55,12 @@ class NotificationTests(unittest.TestCase):
         text = chip_watch_message("20260921", [{"stock_id": "3605", "stock_name": "宏致", "classification": "OVERHEATED", "chip_tags": ["外資買超"]}], "a" * 64)
         self.assertIn("未驗證、非交易訊號", text)
         self.assertIn("未證明籌碼可穩定預測隔日漲停", text)
+
+    def test_final_not_ready_message_explains_no_candidate_was_sent(self):
+        text = chip_not_ready_message("20260921", "OfficialNotReady: TWSE_MARGIN not published")
+        self.assertIn("TWSE 融資融券", text)
+        self.assertIn("未產生或發送", text)
+        self.assertIn("fail-closed", text)
 
 
 if __name__ == "__main__":
