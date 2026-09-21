@@ -207,7 +207,7 @@ def chip_watch_message(
         "已取得：" + ("、".join(display.get(value, value) for value in ready_sources) or "未標示"),
         "缺少：" + ("、".join(display.get(value, value) for value in missing_sources) or "無"),
         "明日漲停觀察候選（未驗證、非交易訊號）：",
-        "固定規則：Stage A 排名最前的 5 檔 OVERHEATED；籌碼只作註記、不改名單。",
+        "固定規則：三大法人合計買超的 Stage A 股票中，依原排名取前 5 檔。",
     ]
     if candidates:
         for index, row in enumerate(candidates, 1):
@@ -217,7 +217,7 @@ def chip_watch_message(
         lines.append("無符合事前固定觀察規則的候選")
     lines.extend([
         f"chip source hash：{source_hash[:12]}",
-        "缺少來源不以舊資料補值；籌碼不改候選順位或既有封存。",
+        "缺少來源不以舊資料補值；Entry State 分類只顯示、不決定入選。",
         "歷史研究未證明籌碼可穩定預測隔日漲停；請以開盤價差與盤中量價再確認。",
     ])
     return "\n".join(lines)

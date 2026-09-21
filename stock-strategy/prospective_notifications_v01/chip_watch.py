@@ -165,25 +165,33 @@ def _load_source(source: str, date: str, wanted: set[str], runtime: Path) -> tup
 
 
 def select_observation_candidates(stage: dict, entry_state: dict, chip_rows: dict[str, dict]) -> list[dict]:
-    """Fixed, unvalidated watch rule: first five Stage-A-ranked OVERHEATED names.
+    """Fixed, unvalidated watch rule using current institutional flow.
 
-    Chip values annotate the list; they never alter membership or sealed classifications.
+    Keep positive combined institutional net-buy names, then preserve Stage A rank.
+    Entry-state classification remains descriptive and never changes the seal.
     """
     states = {str(row["stock_id"]): row for row in entry_state["stocks"]}
     selected = []
     for stock in sorted(stage["stocks"], key=lambda row: int(row["rank"])):
         code = str(stock["stock_id"])
         state = states.get(code)
-        if state is None or state["classification"] != "OVERHEATED":
+        if state is None:
             continue
         chip = chip_rows.get(code, {})
         foreign = chip.get("foreign")
         trust = chip.get("investment_trust")
         dealer = chip.get("dealer")
         combined = None if None in (foreign, trust, dealer) else int(foreign) + int(trust) + int(dealer)
+        if combined is None or combined <= 0:
+            continue
+
+        def format_lots(value: int) -> str:
+            text = f"{abs(value) / 1000:,.3f}".rstrip("0").rstrip(".")
+            return text
+
         def flow_tag(label: str, value: int) -> str:
             direction = "買超" if value > 0 else "賣超" if value < 0 else "持平"
-            return f"{label}{direction} {abs(value):,}股"
+            return f"{label}{direction} {format_lots(value)}張"
 
         tags = []
         if combined is not None:
@@ -199,6 +207,7 @@ def select_observation_candidates(stage: dict, entry_state: dict, chip_rows: dic
             "stock_name": stock["stock_name"],
             "stage_a_rank": int(stock["rank"]),
             "classification": state["classification"],
+            "institutional_net_shares": combined,
             "chip_tags": tags or ["官方資料無該檔可用列"],
         })
         if len(selected) == 5:
@@ -242,7 +251,7 @@ def prepare_chip_watch(date: str, stage: dict, entry_state: dict, *, runtime: Pa
             identities[code] = identity
             rows.setdefault(code, {}).update({key: row[key] for key in ("foreign", "investment_trust", "dealer", "margin_balance", "short_balance") if key in row})
     status = "COMPLETE" if len(hashes) == len(SOURCE_ORDER) else "PARTIAL_READY"
-    source_hash = hashlib.sha256(_canonical({"schema_version": 2, "date": date, "sources": hashes, "missing_sources": sorted(unavailable), "stage_a_seal": stage["seal_hash"], "entry_state_seal": entry_state["seal_hash"]})).hexdigest()
+    source_hash = hashlib.sha256(_canonical({"schema_version": 3, "date": date, "sources": hashes, "missing_sources": sorted(unavailable), "stage_a_seal": stage["seal_hash"], "entry_state_seal": entry_state["seal_hash"]})).hexdigest()
     snapshot_path = runtime / date / "snapshots" / f"{source_hash}.json"
     if snapshot_path.is_file():
         existing = json.loads(snapshot_path.read_text(encoding="utf-8"))
@@ -250,10 +259,10 @@ def prepare_chip_watch(date: str, stage: dict, entry_state: dict, *, runtime: Pa
             raise RuntimeError("immutable chip-watch snapshot identity mismatch")
         return existing
     snapshot = {
-        "schema_version": 2,
+        "schema_version": 3,
         "signal_date": date,
         "status": status,
-        "rule": "TOP5_BY_FROZEN_STAGE_A_RANK_WITHIN_FROZEN_OVERHEATED__CHIP_ANNOTATION_ONLY",
+        "rule": "TOP5_BY_FROZEN_STAGE_A_RANK_AMONG_POSITIVE_COMBINED_INSTITUTIONAL_NET_BUY",
         "evidence_status": "UNVALIDATED_RESEARCH_WATCHLIST_NOT_TRADING_SIGNAL",
         "stage_a_seal_hash": stage["seal_hash"],
         "entry_state_seal_hash": entry_state["seal_hash"],

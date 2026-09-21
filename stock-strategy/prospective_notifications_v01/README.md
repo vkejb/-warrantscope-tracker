@@ -48,12 +48,14 @@ never rewritten when institutional or margin data arrive.  A separate
 institutional and margin sources, keeps exact string security identities, and
 then sends an explicitly unvalidated watchlist.  Both TWSE and TPEx institutional
 sources form the minimum viable input; unavailable margin sources are disclosed
-in the message and never filled from an older date.  Its fixed list is the first
-five Stage-A-ranked `OVERHEATED` names; chip values are annotations only because
-the published chip study found no stable incremental next-day edge.  Missing or
+in the message and never filled from an older date.  Its fixed operational rule
+keeps Stage A names with positive combined institutional net buying and takes the
+first five in the already-sealed Stage A rank.  Entry-state classification is
+display-only.  This remains unvalidated because the published chip study found
+no stable incremental next-day edge.  Missing or
 Partial official chip data never affects sealing or masquerades as full coverage.
 Buy/sell flow labels carry the direction in words (for example `外資買超`) and
-display absolute share counts without redundant plus/minus signs.
+display lots (`張`, one lot = 1,000 shares) without redundant plus/minus signs.
 Checks run at 18:15, 19:15, 20:15, 21:15, and 22:15 Taipei time.  If the final
 attempt is still incomplete, a single idempotent status message explains that
 no watch candidates were produced, so silence cannot be confused with a failed
