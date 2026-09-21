@@ -7,13 +7,79 @@ global.window = {};
 require("../data.js");
 const data = global.window.WS_DATA;
 
-test("2026-09-18 CLOSE 是最新交易日，9/19 不建成交易日", () => {
-  assert.equal(data.meta.defaultDate, "2026-09-18");
-  assert.equal(data.meta.dates.at(-1), "2026-09-18");
+test("2026-09-21 V1 是最新交易日，9/19 不建成交易日", () => {
+  assert.equal(data.meta.defaultDate, "2026-09-21");
+  assert.equal(data.meta.dates.at(-1), "2026-09-21");
   assert.ok(!data.meta.dates.includes("2026-09-19"));
   assert.equal(data.raw.filter(row => row.Date === "2026-09-19").length, 0);
   assert.equal(data.raw.filter(row => row.Date === "2026-09-04").length, 0);
   assert.match(data.meta.notes["2026-09-04"], /No-Trigger Day.*Raw 0 張.*0 檔母股.*0 issuer/);
+});
+
+test("2026-09-21 Raw 8 張／6 檔母股，代號、券商與缺值原樣保留", () => {
+  const raw = data.raw.filter(row => row.Date === "2026-09-21");
+
+  assert.equal(raw.length, 8);
+  assert.equal(new Set(raw.map(row => row.Underlying_Code)).size, 6);
+  assert.deepEqual(raw.map(row => row.Warrant_Code), [
+    "081969", "086086", "077591", "082838", "086436", "712291", "712185", "713225"
+  ]);
+  assert.deepEqual(raw.map(row => row.Underlying_Code), [
+    "3605", "2360", "2301", "2360", "2409", "3324", "3260", "3260"
+  ]);
+  assert.deepEqual(raw.map(row => row.Issuer), ["群益", "凱基", "台新", "群益", "台新", "台新", "元大", "國票"]);
+  assert.ok(raw.every(row => (
+    row["30m_Volume"] === null && row.Circulation === null && row.Displayed_Multiple === null
+    && row.Time_LastSeen === null && row.Prior_Buy_Rank === null && row.Prior_Sell_Rank === null
+  )));
+  assert.ok(raw.filter(row => ["2360", "3260"].includes(row.Underlying_Code)).every(row => /兩張 Raw/.test(row.Notes)));
+  assert.match(raw.find(row => row.Underlying_Code === "3324").Notes, /SELL #3.*偏空/);
+  assert.ok(raw.every(row => /不自動加入觀察/.test(row.Notes)));
+});
+
+test("2026-09-21 BUY／SELL 各 20 筆，分點加總、方向與 Raw 交叉正確", () => {
+  const rows = data.mainforce.filter(row => row["日期"] === "2026-09-21");
+  const buy = rows.filter(row => row["方向"] === "BUY");
+  const sell = rows.filter(row => row["方向"] === "SELL");
+
+  assert.equal(buy.length, 20);
+  assert.equal(sell.length, 20);
+  assert.deepEqual(buy.map(row => [row["母股代號"], row["可見金額(萬)"]]), [
+    ["2449", 1554], ["2454", 1159], ["2330", 1111], ["1815", 1006], ["3017", 961],
+    ["3016", 921], ["2404", 909], ["3661", 882], ["2368", 802], ["3008", 797],
+    ["6706", 697], ["7769", 684], ["2303", 636], ["5289", 556], ["2408", 537],
+    ["6139", 535], ["6147", 532], ["3711", 529], ["6488", 522], ["2345", 516]
+  ]);
+  assert.deepEqual(sell.map(row => [row["母股代號"], row["可見金額(萬)"]]), [
+    ["2330", 1111], ["2615", 1109], ["3324", 883], ["2308", 829], ["2313", 763],
+    ["2395", 760], ["2303", 710], ["5347", 609], ["1303", 528], ["2408", 523],
+    ["1560", 509], ["3231", 499], ["2376", 490], ["3675", 466], ["6147", 463],
+    ["1326", 450], ["6257", 412], ["3665", 378], ["2603", 371], ["6620", 367]
+  ]);
+  assert.ok(rows.every(row => (
+    row["分點1"] === null && row["分點2"] === null
+    && row["分點1可見金額(萬)"] + row["分點2可見金額(萬)"] === row["可見金額(萬)"]
+    && row["As_Of"] === "2026-09-21 V1" && row["資料完整度"] === "V1_CONFIRMED"
+  )));
+  assert.deepEqual(rows.filter(row => row["當日Raw"]).map(row => `${row["方向"]}:${row["母股代號"]}`), ["SELL:3324"]);
+});
+
+test("2026-09-21 觀察與 Episode 不變，不因 Raw 自動新增", () => {
+  const counts = data.meta.reportedCounts["2026-09-21"];
+  const previous = data.observationSnapshots.filter(row => row["日期"] === "2026-09-18");
+  const snapshot = data.observationSnapshots.filter(row => row["日期"] === "2026-09-21");
+
+  assert.deepEqual(
+    [counts.raw, counts.rawUnderlyings, counts.activeWatch, counts.history, counts.newWatch, counts.knownExits,
+      counts.knownWatchDetails, counts.knownEpisodeDetails],
+    [8, 6, 27, 77, 0, 0, 3, 43]
+  );
+  assert.deepEqual(snapshot.map(row => row["母股代號"]), previous.map(row => row["母股代號"]));
+  assert.ok(snapshot.every(row => row["當日Raw張數"] === 0 && /NO_CHANGE/.test(row["確認程度"])));
+  assert.deepEqual(data.currentObservation.map(row => row["母股代號"]), ["2303", "2368", "3017"]);
+  assert.equal(data.episodes.length, 43);
+  assert.equal(data.episodes.filter(row => row["來源日期"] === "2026-09-21").length, 0);
+  assert.ok(!snapshot.some(row => ["3605", "2360", "2301", "2409", "3324", "3260"].includes(row["母股代號"])));
 });
 
 test("2026-09-18 Raw 5 張，方向、備註與未提供數值原樣保留", () => {
