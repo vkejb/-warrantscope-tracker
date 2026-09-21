@@ -44,12 +44,14 @@ then lists every frozen Entry State category underneath it.  The standalone
 Entry State supplement uses the same rank-first, classification-second layout.
 These categories use only the sealed price/ATR/moving-average contract and are
 never rewritten when institutional or margin data arrive.  A separate
-`send-chip-watch --date YYYYMMDD` command waits for all four official TWSE/TPEx
+`send-chip-watch --date YYYYMMDD` command checks all four official TWSE/TPEx
 institutional and margin sources, keeps exact string security identities, and
-then sends an explicitly unvalidated watchlist.  Its fixed list is the first
+then sends an explicitly unvalidated watchlist.  Both TWSE and TPEx institutional
+sources form the minimum viable input; unavailable margin sources are disclosed
+in the message and never filled from an older date.  Its fixed list is the first
 five Stage-A-ranked `OVERHEATED` names; chip values are annotations only because
 the published chip study found no stable incremental next-day edge.  Missing or
-partial official chip data sends no Telegram message and never affects sealing.
+Partial official chip data never affects sealing or masquerades as full coverage.
 Checks run at 18:15, 19:15, 20:15, 21:15, and 22:15 Taipei time.  If the final
 attempt is still incomplete, a single idempotent status message explains that
 no watch candidates were produced, so silence cannot be confused with a failed

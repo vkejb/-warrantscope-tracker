@@ -210,13 +210,22 @@ def prepare_chip_watch(date: str, stage: dict, entry_state: dict, *, runtime: Pa
     wanted = {str(row["stock_id"]) for row in stage["stocks"]}
     parsed_sources: list[dict] = []
     hashes: dict[str, str] = {}
-    try:
-        for source in SOURCE_ORDER:
+    unavailable: dict[str, str] = {}
+    for source in SOURCE_ORDER:
+        try:
             parsed, raw_hash = _load_source(source, date, wanted, runtime)
             parsed_sources.append(parsed)
             hashes[source] = raw_hash
-    except (OfficialNotReady, RuntimeError, KeyError, ValueError) as exc:
-        return {"status": "NOT_READY", "signal_date": date, "reason": f"{type(exc).__name__}: {exc}"}
+        except (OfficialNotReady, RuntimeError, KeyError, ValueError) as exc:
+            unavailable[source] = f"{type(exc).__name__}: {exc}"
+
+    minimum_sources = {"TWSE_INSTITUTIONAL", "TPEX_INSTITUTIONAL"}
+    if not minimum_sources.issubset(hashes):
+        return {
+            "status": "NOT_READY", "signal_date": date,
+            "ready_sources": sorted(hashes), "missing_sources": sorted(unavailable),
+            "reason": "; ".join(f"{source}={unavailable[source]}" for source in sorted(unavailable)),
+        }
 
     rows: dict[str, dict] = {}
     identities: dict[str, tuple[str, str]] = {}
@@ -228,16 +237,19 @@ def prepare_chip_watch(date: str, stage: dict, entry_state: dict, *, runtime: Pa
                 raise RuntimeError(f"cross-market identity collision for {code}")
             identities[code] = identity
             rows.setdefault(code, {}).update({key: row[key] for key in ("foreign", "investment_trust", "dealer", "margin_balance", "short_balance") if key in row})
-    source_hash = hashlib.sha256(_canonical({"date": date, "sources": hashes, "stage_a_seal": stage["seal_hash"], "entry_state_seal": entry_state["seal_hash"]})).hexdigest()
+    status = "COMPLETE" if len(hashes) == len(SOURCE_ORDER) else "PARTIAL_READY"
+    source_hash = hashlib.sha256(_canonical({"date": date, "sources": hashes, "missing_sources": sorted(unavailable), "stage_a_seal": stage["seal_hash"], "entry_state_seal": entry_state["seal_hash"]})).hexdigest()
     snapshot = {
         "schema_version": 1,
         "signal_date": date,
-        "status": "COMPLETE",
+        "status": status,
         "rule": "TOP5_BY_FROZEN_STAGE_A_RANK_WITHIN_FROZEN_OVERHEATED__CHIP_ANNOTATION_ONLY",
         "evidence_status": "UNVALIDATED_RESEARCH_WATCHLIST_NOT_TRADING_SIGNAL",
         "stage_a_seal_hash": stage["seal_hash"],
         "entry_state_seal_hash": entry_state["seal_hash"],
         "source_hashes": hashes,
+        "ready_sources": sorted(hashes),
+        "missing_sources": sorted(unavailable),
         "source_hash": source_hash,
         "candidates": select_observation_candidates(stage, entry_state, rows),
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -245,6 +257,6 @@ def prepare_chip_watch(date: str, stage: dict, entry_state: dict, *, runtime: Pa
         "actual_fills": 0,
         "broker_connections": 0,
     }
-    snapshot_path = runtime / date / "snapshot.json"
+    snapshot_path = runtime / date / "snapshots" / f"{source_hash}.json"
     _write_immutable(snapshot_path, _canonical(snapshot))
     return snapshot

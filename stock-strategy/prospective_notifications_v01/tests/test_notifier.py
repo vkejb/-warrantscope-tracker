@@ -52,9 +52,14 @@ class NotificationTests(unittest.TestCase):
         self.assertIn("30. 2030 測試 0.1000", supplement)
 
     def test_chip_watch_is_never_presented_as_validated_prediction(self):
-        text = chip_watch_message("20260921", [{"stock_id": "3605", "stock_name": "宏致", "classification": "OVERHEATED", "chip_tags": ["外資買超"]}], "a" * 64)
+        text = chip_watch_message(
+            "20260921", [{"stock_id": "3605", "stock_name": "宏致", "classification": "OVERHEATED", "chip_tags": ["外資買超"]}], "a" * 64,
+            ready_sources=["TWSE_INSTITUTIONAL", "TPEX_INSTITUTIONAL"], missing_sources=["TWSE_MARGIN"],
+        )
         self.assertIn("未驗證、非交易訊號", text)
         self.assertIn("未證明籌碼可穩定預測隔日漲停", text)
+        self.assertIn("資料狀態：部分來源", text)
+        self.assertIn("缺少：TWSE 融資融券", text)
 
     def test_final_not_ready_message_explains_no_candidate_was_sent(self):
         text = chip_not_ready_message("20260921", "OfficialNotReady: TWSE_MARGIN not published")

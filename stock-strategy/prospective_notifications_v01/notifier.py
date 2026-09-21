@@ -184,12 +184,28 @@ def daily_message(date: str, scan: dict, stage: dict, entry_state: dict | None =
     return "\n".join(lines)
 
 
-def chip_watch_message(date: str, candidates: list[dict], source_hash: str) -> str:
+def chip_watch_message(
+    date: str,
+    candidates: list[dict],
+    source_hash: str,
+    *,
+    ready_sources: list[str] | None = None,
+    missing_sources: list[str] | None = None,
+) -> str:
     """Clearly-labelled research watchlist; never call chip data a validated limit predictor."""
     label = f"{date[:4]}-{date[4:6]}-{date[6:]}"
+    display = {
+        "TWSE_INSTITUTIONAL": "TWSE 法人", "TPEX_INSTITUTIONAL": "TPEx 法人",
+        "TWSE_MARGIN": "TWSE 融資融券", "TPEX_MARGIN": "TPEx 融資融券",
+    }
+    ready_sources = ready_sources or []
+    missing_sources = missing_sources or []
+    coverage = "完整四來源" if not missing_sources else "部分來源"
     lines = [
         f"【籌碼更新｜{label}】",
-        "官方法人／融資資料已完整取得",
+        f"資料狀態：{coverage}",
+        "已取得：" + ("、".join(display.get(value, value) for value in ready_sources) or "未標示"),
+        "缺少：" + ("、".join(display.get(value, value) for value in missing_sources) or "無"),
         "明日漲停觀察候選（未驗證、非交易訊號）：",
         "固定規則：Stage A 排名最前的 5 檔 OVERHEATED；籌碼只作註記、不改名單。",
     ]
@@ -201,7 +217,7 @@ def chip_watch_message(date: str, candidates: list[dict], source_hash: str) -> s
         lines.append("無符合事前固定觀察規則的候選")
     lines.extend([
         f"chip source hash：{source_hash[:12]}",
-        "籌碼不改候選順位，也不改 Stage A 或 Entry State seal。",
+        "缺少來源不以舊資料補值；籌碼不改候選順位或既有封存。",
         "歷史研究未證明籌碼可穩定預測隔日漲停；請以開盤價差與盤中量價再確認。",
     ])
     return "\n".join(lines)

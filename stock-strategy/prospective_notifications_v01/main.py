@@ -70,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
             code = 0 if delivery.get("TELEGRAM") in {"SUCCESS", "ALREADY_SENT"} else 3
         else:
             snapshot = prepare_chip_watch(target_date, stage, entry_state)
-            if snapshot["status"] != "COMPLETE":
+            if snapshot["status"] not in {"COMPLETE", "PARTIAL_READY"}:
                 result = snapshot
                 local_time = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%H:%M")
                 if args.command == "attempt-chip-watch" and local_time >= "22:15":
@@ -87,7 +87,11 @@ def main(argv: list[str] | None = None) -> int:
                 credential_status = load_into_environment()
                 delivery = notify(
                     "STAGE_A_CHIP_WATCH", target_date, snapshot["source_hash"],
-                    "CHIP_WATCH_READY", chip_watch_message(target_date, snapshot["candidates"], snapshot["source_hash"]),
+                    "CHIP_WATCH_READY" if snapshot["status"] == "COMPLETE" else "CHIP_WATCH_PARTIAL_READY",
+                    chip_watch_message(
+                        target_date, snapshot["candidates"], snapshot["source_hash"],
+                        ready_sources=snapshot["ready_sources"], missing_sources=snapshot["missing_sources"],
+                    ),
                 )
                 result = {"credential_status": credential_status, **snapshot, "delivery": delivery}
                 code = 0 if delivery.get("TELEGRAM") in {"SUCCESS", "ALREADY_SENT"} else 3
