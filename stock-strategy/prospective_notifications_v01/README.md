@@ -39,7 +39,9 @@ attempt`. No system-level launchd installation is performed here.
 If official data are missing, the existing readiness gate refuses N and Stage A
 seals. No retrospective date override, broker connection, order, or fill exists.
 
-The combined daily message now also lists every frozen Entry State category.
+The combined daily message preserves the complete Stage A rank order first and
+then lists every frozen Entry State category underneath it.  The standalone
+Entry State supplement uses the same rank-first, classification-second layout.
 These categories use only the sealed price/ATR/moving-average contract and are
 never rewritten when institutional or margin data arrive.  A separate
 `send-chip-watch --date YYYYMMDD` command waits for all four official TWSE/TPEx

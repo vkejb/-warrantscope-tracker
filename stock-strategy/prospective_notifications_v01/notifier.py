@@ -131,7 +131,16 @@ def _classification_lines(entry_state: dict) -> list[str]:
 
 def entry_state_message(date: str, entry_state: dict) -> str:
     label = f"{date[:4]}-{date[4:6]}-{date[6:]}"
-    lines = [f"【Stage A Entry State｜{label}】", "分類封存完成"]
+    lines = [
+        f"【Stage A Entry State｜{label}】",
+        "分類封存完成",
+        "Stage A Top30 排行：",
+    ]
+    for row in sorted(entry_state["stocks"], key=lambda item: int(item["stage_a_rank"])):
+        lines.append(
+            f"{int(row['stage_a_rank'])}. {row['stock_id']} {row['stock_name']} "
+            f"{float(row['stage_a_score']):.4f}"
+        )
     lines.extend(_classification_lines(entry_state))
     lines.extend([
         f"classification seal：{entry_state['seal_hash'][:12]}",

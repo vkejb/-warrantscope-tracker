@@ -42,11 +42,14 @@ class NotificationTests(unittest.TestCase):
     def test_frozen_classifications_are_in_daily_message(self):
         stage = {"status": "SEALED", "count": 30, "seal_hash": "abc123", "stocks": [{"rank": i, "stock_id": str(2000+i), "stock_name": "測試", "score": 0.1} for i in range(1, 31)]}
         states = ("READY", "WATCH", "COOLING_BUT_WEAK", "OVERHEATED")
-        entry = {"stage_a_seal_hash": "abc123", "seal_hash": "statehash", "stocks": [{"stock_id": str(2000+i), "stock_name": "測試", "classification": states[(i-1) % 4]} for i in range(1, 31)]}
+        entry = {"stage_a_seal_hash": "abc123", "seal_hash": "statehash", "stocks": [{"stock_id": str(2000+i), "stock_name": "測試", "classification": states[(i-1) % 4], "stage_a_rank": i, "stage_a_score": 0.1} for i in range(1, 31)]}
         text = daily_message("20260921", {"raw_n_retest_count": 0, "compact_count": 0}, stage, entry)
         for label in states:
             self.assertIn(label, text)
-        self.assertIn("不受籌碼影響", entry_state_message("20260921", entry))
+        supplement = entry_state_message("20260921", entry)
+        self.assertIn("不受籌碼影響", supplement)
+        self.assertLess(supplement.index("Stage A Top30 排行"), supplement.index("固定 Entry State"))
+        self.assertIn("30. 2030 測試 0.1000", supplement)
 
     def test_chip_watch_is_never_presented_as_validated_prediction(self):
         text = chip_watch_message("20260921", [{"stock_id": "3605", "stock_name": "宏致", "classification": "OVERHEATED", "chip_tags": ["外資買超"]}], "a" * 64)
