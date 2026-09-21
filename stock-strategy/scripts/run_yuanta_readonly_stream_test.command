@@ -10,7 +10,11 @@ export YUANTA_SPARK_API_DIR="${vendor_dir}"
 export DOTNET_ROOT="${vendor_dir}/.dotnet"
 export DOTNET_ROOT_ARM64="${vendor_dir}/.dotnet"
 
-"${vendor_dir}/.venv/bin/python" -m yuanta_intraday_shadow_v01.main --seconds 60
+"${vendor_dir}/.venv/bin/python" -m yuanta_intraday_shadow_v01.main \
+  --seconds 60 \
+  --prod \
+  --market twse \
+  --symbol 2330
 test_status=$?
 
 print ""

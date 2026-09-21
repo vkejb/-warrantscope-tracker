@@ -118,25 +118,51 @@ def _book_side(result, attr: str):
     return prices, volumes
 
 
-def run_stream_test(api_types, seconds: int) -> int:
-    print("\n連線環境：")
-    print("  1. UAT測試環境")
-    print("  2. PROD正式環境（只讀，預設）")
-    choice = input("請選擇 [預設 2]：").strip() or "2"
-    if choice not in {"1", "2"}:
-        print("環境選項不正確。")
-        return 2
-    environment = api_types["Environment"].PROD if choice == "2" else api_types["Environment"].UAT
-    if choice == "2" and input("請輸入 PROD 確認只讀正式環境：").strip() != "PROD":
-        print("未確認PROD，已安全取消。")
-        return 2
+def run_stream_test(
+    api_types,
+    seconds: int,
+    *,
+    force_prod: bool = False,
+    fixed_market: str | None = None,
+    fixed_symbol: str | None = None,
+) -> int:
+    if force_prod:
+        environment = api_types["Environment"].PROD
+        print("\n連線環境已固定：PROD正式環境（只讀）")
+    else:
+        print("\n連線環境：")
+        print("  1. UAT測試環境")
+        print("  2. PROD正式環境（只讀，預設）")
+        choice = input("請選擇 [預設 2]：").strip() or "2"
+        if choice not in {"1", "2"}:
+            print("環境選項不正確。")
+            return 2
+        environment = api_types["Environment"].PROD if choice == "2" else api_types["Environment"].UAT
+        if choice == "2" and input("請輸入 PROD 確認只讀正式環境：").strip() != "PROD":
+            print("未確認PROD，已安全取消。")
+            return 2
 
-    try:
-        market_name, market = _market_choice(api_types["Market"])
-    except ValueError as exc:
-        print(exc)
-        return 2
-    symbol = input("股票代碼 [預設 2330]：").strip().upper() or "2330"
+    if fixed_market:
+        market_choices = {
+            "twse": ("上市整股", api_types["Market"].TWSE),
+            "twotc": ("上櫃整股", api_types["Market"].TWOTC),
+            "twseodd": ("上市盤中零股", api_types["Market"].TWSEODD),
+            "twotcodd": ("上櫃盤中零股", api_types["Market"].TWOTCODD),
+        }
+        market_name, market = market_choices[fixed_market]
+        print(f"行情市場已固定：{market_name}")
+    else:
+        try:
+            market_name, market = _market_choice(api_types["Market"])
+        except ValueError as exc:
+            print(exc)
+            return 2
+
+    if fixed_symbol:
+        symbol = fixed_symbol.strip().upper()
+        print(f"股票代碼已固定：{symbol}")
+    else:
+        symbol = input("股票代碼 [預設 2330]：").strip().upper() or "2330"
     if not re.fullmatch(r"[0-9A-Z]{2,12}", symbol):
         print("股票代碼格式不正確。")
         return 2
@@ -319,6 +345,13 @@ def run_stream_test(api_types, seconds: int) -> int:
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="元大SPARK只讀逐筆與五檔測試")
     parser.add_argument("--seconds", type=int, default=60, help="監看秒數，預設60")
+    parser.add_argument("--prod", action="store_true", help="固定使用只讀PROD，不顯示環境選單")
+    parser.add_argument(
+        "--market",
+        choices=("twse", "twotc", "twseodd", "twotcodd"),
+        help="固定行情市場，不顯示市場選單",
+    )
+    parser.add_argument("--symbol", help="固定股票代碼，不顯示代碼提示")
     parser.add_argument(
         "--vendor-dir",
         type=Path,
@@ -340,7 +373,13 @@ def main(argv=None) -> int:
         print(f"環境載入失敗：{type(exc).__name__}: {exc}")
         return 1
     print(f"環境載入成功：Python {platform.python_version()}／{platform.machine()}／.NET 8")
-    return run_stream_test(api_types, args.seconds)
+    return run_stream_test(
+        api_types,
+        args.seconds,
+        force_prod=args.prod,
+        fixed_market=args.market,
+        fixed_symbol=args.symbol,
+    )
 
 
 if __name__ == "__main__":
