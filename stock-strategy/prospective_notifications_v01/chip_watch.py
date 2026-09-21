@@ -181,13 +181,17 @@ def select_observation_candidates(stage: dict, entry_state: dict, chip_rows: dic
         trust = chip.get("investment_trust")
         dealer = chip.get("dealer")
         combined = None if None in (foreign, trust, dealer) else int(foreign) + int(trust) + int(dealer)
+        def flow_tag(label: str, value: int) -> str:
+            direction = "買超" if value > 0 else "賣超" if value < 0 else "持平"
+            return f"{label}{direction} {abs(value):,}股"
+
         tags = []
         if combined is not None:
-            tags.append(f"三大法人合計{'買超' if combined > 0 else '賣超' if combined < 0 else '持平'} {combined:+,}股")
+            tags.append(flow_tag("三大法人合計", combined))
         if foreign is not None:
-            tags.append(f"外資 {int(foreign):+,}股")
+            tags.append(flow_tag("外資", int(foreign)))
         if trust is not None:
-            tags.append(f"投信 {int(trust):+,}股")
+            tags.append(flow_tag("投信", int(trust)))
         if chip.get("margin_balance") is not None:
             tags.append(f"融資餘額 {int(chip['margin_balance']):,}股")
         selected.append({
@@ -238,9 +242,15 @@ def prepare_chip_watch(date: str, stage: dict, entry_state: dict, *, runtime: Pa
             identities[code] = identity
             rows.setdefault(code, {}).update({key: row[key] for key in ("foreign", "investment_trust", "dealer", "margin_balance", "short_balance") if key in row})
     status = "COMPLETE" if len(hashes) == len(SOURCE_ORDER) else "PARTIAL_READY"
-    source_hash = hashlib.sha256(_canonical({"date": date, "sources": hashes, "missing_sources": sorted(unavailable), "stage_a_seal": stage["seal_hash"], "entry_state_seal": entry_state["seal_hash"]})).hexdigest()
+    source_hash = hashlib.sha256(_canonical({"schema_version": 2, "date": date, "sources": hashes, "missing_sources": sorted(unavailable), "stage_a_seal": stage["seal_hash"], "entry_state_seal": entry_state["seal_hash"]})).hexdigest()
+    snapshot_path = runtime / date / "snapshots" / f"{source_hash}.json"
+    if snapshot_path.is_file():
+        existing = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        if existing.get("source_hash") != source_hash or existing.get("signal_date") != date:
+            raise RuntimeError("immutable chip-watch snapshot identity mismatch")
+        return existing
     snapshot = {
-        "schema_version": 1,
+        "schema_version": 2,
         "signal_date": date,
         "status": status,
         "rule": "TOP5_BY_FROZEN_STAGE_A_RANK_WITHIN_FROZEN_OVERHEATED__CHIP_ANNOTATION_ONLY",
@@ -257,6 +267,5 @@ def prepare_chip_watch(date: str, stage: dict, entry_state: dict, *, runtime: Pa
         "actual_fills": 0,
         "broker_connections": 0,
     }
-    snapshot_path = runtime / date / "snapshots" / f"{source_hash}.json"
     _write_immutable(snapshot_path, _canonical(snapshot))
     return snapshot

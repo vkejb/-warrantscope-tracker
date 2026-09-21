@@ -52,6 +52,8 @@ in the message and never filled from an older date.  Its fixed list is the first
 five Stage-A-ranked `OVERHEATED` names; chip values are annotations only because
 the published chip study found no stable incremental next-day edge.  Missing or
 Partial official chip data never affects sealing or masquerades as full coverage.
+Buy/sell flow labels carry the direction in words (for example `外資買超`) and
+display absolute share counts without redundant plus/minus signs.
 Checks run at 18:15, 19:15, 20:15, 21:15, and 22:15 Taipei time.  If the final
 attempt is still incomplete, a single idempotent status message explains that
 no watch candidates were produced, so silence cannot be confused with a failed
