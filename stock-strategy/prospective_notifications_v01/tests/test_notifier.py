@@ -6,7 +6,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from prospective_notifications_v01.notifier import daily_message, notify, warning_message
+from prospective_notifications_v01.notifier import chip_watch_message, daily_message, entry_state_message, notify, warning_message
 
 
 class NotificationTests(unittest.TestCase):
@@ -38,6 +38,20 @@ class NotificationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             daily_message("20260916", {}, {**stage, "count": 29})
         self.assertNotIn("secret", warning_message("20260916", "M", "ERR", "/Users/a secret token"))
+
+    def test_frozen_classifications_are_in_daily_message(self):
+        stage = {"status": "SEALED", "count": 30, "seal_hash": "abc123", "stocks": [{"rank": i, "stock_id": str(2000+i), "stock_name": "測試", "score": 0.1} for i in range(1, 31)]}
+        states = ("READY", "WATCH", "COOLING_BUT_WEAK", "OVERHEATED")
+        entry = {"stage_a_seal_hash": "abc123", "seal_hash": "statehash", "stocks": [{"stock_id": str(2000+i), "stock_name": "測試", "classification": states[(i-1) % 4]} for i in range(1, 31)]}
+        text = daily_message("20260921", {"raw_n_retest_count": 0, "compact_count": 0}, stage, entry)
+        for label in states:
+            self.assertIn(label, text)
+        self.assertIn("不受籌碼影響", entry_state_message("20260921", entry))
+
+    def test_chip_watch_is_never_presented_as_validated_prediction(self):
+        text = chip_watch_message("20260921", [{"stock_id": "3605", "stock_name": "宏致", "classification": "OVERHEATED", "chip_tags": ["外資買超"]}], "a" * 64)
+        self.assertIn("未驗證、非交易訊號", text)
+        self.assertIn("未證明籌碼可穩定預測隔日漲停", text)
 
 
 if __name__ == "__main__":

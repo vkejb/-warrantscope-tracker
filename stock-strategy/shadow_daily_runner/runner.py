@@ -109,7 +109,13 @@ def _postseal_notifications(target: str, prepared: PreparedInputs | None, cfg: R
             outcome_result = {"status": "FAILED_AFTER_STAGE_A_SEAL", "error_type": type(exc).__name__}
     try:
         compact_rows = [row for row in _read_csv(cfg.shadow_store_dir / "prospective_signals.csv") if row.get("signal_date") == target]
-        message = daily_message(target, {**scan, "compact_candidates": compact_rows}, stage)
+        entry_state_seal = None
+        try:
+            from prospective_notifications_v01.notifier import load_entry_state
+            entry_state_seal = load_entry_state(target, stage["seal_hash"])
+        except Exception as exc:
+            append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "ENTRY_STATE_NOTIFICATION", "traceback": traceback.format_exc()})
+        message = daily_message(target, {**scan, "compact_candidates": compact_rows}, stage, entry_state_seal)
         notification = notify("WARRANTSCOPE_DAILY", target, f"{scan['record_hash']}:{stage['seal_hash']}", "SEALED_DAILY", message)
     except Exception as exc:
         append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "NOTIFICATION", "traceback": traceback.format_exc()})

@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import argparse
 import csv
+from datetime import datetime
 import json
 import secrets
+from zoneinfo import ZoneInfo
 
 from shadow_daily_runner.config import CFG as RUNNER_CFG
 from stage_a_prospective_watchlist_v01.seal_store import latest_seal
 
-from .notifier import latest_status, notify
+from .chip_watch import prepare_chip_watch
+from .notifier import chip_watch_message, entry_state_message, latest_status, load_entry_state, notify
 from .keychain import configure_interactive, load_into_environment
 
 
@@ -31,7 +34,8 @@ def _scan_status(recent_notifications: list[dict] | None = None) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Post-seal notification test/status; never creates a signal")
-    parser.add_argument("command", choices=("test", "status", "configure-keychain"))
+    parser.add_argument("command", choices=("test", "status", "configure-keychain", "send-entry-state", "send-chip-watch", "attempt-chip-watch"))
+    parser.add_argument("--date", help="YYYYMMDD; required for send-entry-state/send-chip-watch")
     args = parser.parse_args(argv)
     if args.command == "configure-keychain":
         result = configure_interactive()
@@ -42,6 +46,41 @@ def main(argv: list[str] | None = None) -> int:
         result = {"credential_status": credential_status, "test": delivery}
         telegram = delivery.get("TELEGRAM")
         code = 0 if (telegram == "SUCCESS" or (telegram == "NOT_CONFIGURED" and delivery.get("MACOS_LOCAL_NOTIFICATION") == "SUCCESS")) else 3
+    elif args.command in {"send-entry-state", "send-chip-watch", "attempt-chip-watch"}:
+        target_date = args.date
+        if args.command == "attempt-chip-watch":
+            target_date = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y%m%d")
+        if not target_date or len(target_date) != 8 or not target_date.isdigit():
+            parser.error(f"{args.command} requires --date YYYYMMDD")
+        stage = latest_seal()
+        if stage is None or stage["signal_date"] != target_date:
+            if args.command == "attempt-chip-watch":
+                result = {"status": "NO_CURRENT_DAY_STAGE_A_SEAL", "signal_date": target_date}
+                print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
+                return 0
+            raise RuntimeError("requested date is not the latest verified Stage A seal")
+        entry_state = load_entry_state(target_date, stage["seal_hash"])
+        if args.command == "send-entry-state":
+            credential_status = load_into_environment()
+            delivery = notify(
+                "STAGE_A_ENTRY_STATE", target_date, entry_state["seal_hash"],
+                "SEALED_ENTRY_STATE", entry_state_message(target_date, entry_state),
+            )
+            result = {"credential_status": credential_status, "signal_date": target_date, "seal_hash": entry_state["seal_hash"], "delivery": delivery}
+            code = 0 if delivery.get("TELEGRAM") in {"SUCCESS", "ALREADY_SENT"} else 3
+        else:
+            snapshot = prepare_chip_watch(target_date, stage, entry_state)
+            if snapshot["status"] != "COMPLETE":
+                result = snapshot
+                code = 0 if args.command == "attempt-chip-watch" else 3
+            else:
+                credential_status = load_into_environment()
+                delivery = notify(
+                    "STAGE_A_CHIP_WATCH", target_date, snapshot["source_hash"],
+                    "CHIP_WATCH_READY", chip_watch_message(target_date, snapshot["candidates"], snapshot["source_hash"]),
+                )
+                result = {"credential_status": credential_status, **snapshot, "delivery": delivery}
+                code = 0 if delivery.get("TELEGRAM") in {"SUCCESS", "ALREADY_SENT"} else 3
     else:
         stage = latest_seal()
         notifications = latest_status()

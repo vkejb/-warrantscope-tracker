@@ -38,3 +38,13 @@ attempt`. No system-level launchd installation is performed here.
 
 If official data are missing, the existing readiness gate refuses N and Stage A
 seals. No retrospective date override, broker connection, order, or fill exists.
+
+The combined daily message now also lists every frozen Entry State category.
+These categories use only the sealed price/ATR/moving-average contract and are
+never rewritten when institutional or margin data arrive.  A separate
+`send-chip-watch --date YYYYMMDD` command waits for all four official TWSE/TPEx
+institutional and margin sources, keeps exact string security identities, and
+then sends an explicitly unvalidated watchlist.  Its fixed list is the first
+five Stage-A-ranked `OVERHEATED` names; chip values are annotations only because
+the published chip study found no stable incremental next-day edge.  Missing or
+partial official chip data sends no Telegram message and never affects sealing.

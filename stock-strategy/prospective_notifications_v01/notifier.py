@@ -14,6 +14,8 @@ from shadow_daily_runner.io_utils import process_lock
 
 RUNTIME_DIR = Path(__file__).resolve().parent / "runtime"
 LEDGER = RUNTIME_DIR / "notification_ledger.jsonl"
+ENTRY_STATE_RUNTIME = Path(__file__).resolve().parents[1] / "stage_a_t1_extreme_upside_study_v01" / "runtime" / "seals"
+ENTRY_STATE_ORDER = ("READY", "WATCH", "COOLING_BUT_WEAK", "OVERHEATED")
 
 
 def _digest(message: str) -> str:
@@ -91,7 +93,55 @@ def notify(module: str, signal_date: str, seal_hash: str, notification_type: str
     return results
 
 
-def daily_message(date: str, scan: dict, stage: dict) -> str:
+def load_entry_state(date: str, stage_seal_hash: str, *, runtime: Path = ENTRY_STATE_RUNTIME) -> dict:
+    from stage_a_t1_extreme_upside_study_v01.entry_state import digest
+
+    path = runtime / f"{date}.json"
+    if not path.is_file():
+        raise FileNotFoundError(f"entry-state seal absent for {date}")
+    value = json.loads(path.read_text(encoding="utf-8"))
+    fields = (
+        "schema_version", "signal_date", "mode", "evidence_label", "rules",
+        "config_hash", "input_hash", "stage_a_seal_hash", "stocks",
+        "actual_orders", "actual_fills", "broker_connections",
+    )
+    content = {key: value.get(key) for key in fields}
+    if value.get("seal_hash") != digest(content):
+        raise RuntimeError("entry-state seal hash mismatch")
+    if value.get("signal_date") != date or value.get("stage_a_seal_hash") != stage_seal_hash:
+        raise RuntimeError("entry-state seal does not match Stage A signal seal")
+    if len(value.get("stocks", [])) != 30:
+        raise RuntimeError("entry-state seal must contain exactly 30 stocks")
+    return value
+
+
+def _classification_lines(entry_state: dict) -> list[str]:
+    groups = {label: [] for label in ENTRY_STATE_ORDER}
+    for row in entry_state["stocks"]:
+        label = row.get("classification")
+        if label not in groups:
+            raise RuntimeError(f"unknown frozen entry-state classification: {label}")
+        groups[label].append(f"{row['stock_id']} {row['stock_name']}")
+    lines = ["固定 Entry State（不受籌碼影響）："]
+    for label in ENTRY_STATE_ORDER:
+        names = "、".join(groups[label]) if groups[label] else "無"
+        lines.append(f"{label}（{len(groups[label])}）：{names}")
+    return lines
+
+
+def entry_state_message(date: str, entry_state: dict) -> str:
+    label = f"{date[:4]}-{date[4:6]}-{date[6:]}"
+    lines = [f"【Stage A Entry State｜{label}】", "分類封存完成"]
+    lines.extend(_classification_lines(entry_state))
+    lines.extend([
+        f"classification seal：{entry_state['seal_hash'][:12]}",
+        "分類只由封存價量／ATR／均線決定；籌碼更新不會回寫分類。",
+        "SHADOW_ONLY｜觀察分類，不是買進或放空訊號",
+    ])
+    return "\n".join(lines)
+
+
+def daily_message(date: str, scan: dict, stage: dict, entry_state: dict | None = None) -> str:
     if stage.get("count") != 30 or stage.get("status") not in ("SEALED", "ALREADY_SEALED"):
         raise ValueError("Stage A Top30 must be sealed with exactly 30 rows")
     label = f"{date[:4]}-{date[4:6]}-{date[6:]}"
@@ -106,6 +156,10 @@ def daily_message(date: str, scan: dict, stage: dict) -> str:
     ]
     for row in stage["stocks"]:
         lines.append(f"{row['rank']}. {row['stock_id']} {row['stock_name']} {row['score']:.4f}")
+    if entry_state is not None:
+        if entry_state.get("stage_a_seal_hash") != stage["seal_hash"]:
+            raise ValueError("entry-state classification does not match Stage A seal")
+        lines.extend(_classification_lines(entry_state))
     if int(compact) > 0:
         lines.append("N Compact candidates：")
         for row in scan.get("compact_candidates", []):
@@ -118,6 +172,29 @@ def daily_message(date: str, scan: dict, stage: dict) -> str:
     else:
         lines.append("N Compact status：NO_SIGNAL")
     lines.append("觀察名單，不是買進訊號｜SHADOW_ONLY｜無下單")
+    return "\n".join(lines)
+
+
+def chip_watch_message(date: str, candidates: list[dict], source_hash: str) -> str:
+    """Clearly-labelled research watchlist; never call chip data a validated limit predictor."""
+    label = f"{date[:4]}-{date[4:6]}-{date[6:]}"
+    lines = [
+        f"【籌碼更新｜{label}】",
+        "官方法人／融資資料已完整取得",
+        "明日漲停觀察候選（未驗證、非交易訊號）：",
+        "固定規則：Stage A 排名最前的 5 檔 OVERHEATED；籌碼只作註記、不改名單。",
+    ]
+    if candidates:
+        for index, row in enumerate(candidates, 1):
+            tags = "、".join(row.get("chip_tags", [])) or "籌碼中性"
+            lines.append(f"{index}. {row['stock_id']} {row['stock_name']}｜{row['classification']}｜{tags}")
+    else:
+        lines.append("無符合事前固定觀察規則的候選")
+    lines.extend([
+        f"chip source hash：{source_hash[:12]}",
+        "籌碼不改候選順位，也不改 Stage A 或 Entry State seal。",
+        "歷史研究未證明籌碼可穩定預測隔日漲停；請以開盤價差與盤中量價再確認。",
+    ])
     return "\n".join(lines)
 
 
