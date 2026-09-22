@@ -30,6 +30,17 @@ class CollectorContractTests(unittest.TestCase):
             two.finalize(status="COMPLETE", started_at="a", ended_at="b")
             self.assertNotEqual(one.run_dir, two.run_dir)
 
+    def test_gzip_run_is_readable_and_hashed(self):
+        seal, stocks = self._fixture()
+        with tempfile.TemporaryDirectory() as temp:
+            run = AppendOnlyRun(Path(temp), seal, stocks, {}, compress=True)
+            run.append("ticks", {"stock_id": "1001", "price": "10"})
+            manifest = run.finalize(status="COMPLETE", started_at="a", ended_at="b")
+            self.assertIn("ticks.jsonl.gz", manifest["artifacts"])
+            import gzip
+            with gzip.open(run.tick_path, "rt", encoding="utf-8") as handle:
+                self.assertEqual(__import__("json").loads(handle.readline())["stock_id"], "1001")
+
     def test_snapshot_contains_no_credentials(self):
         seal, stocks = self._fixture()
         with tempfile.TemporaryDirectory() as temp:

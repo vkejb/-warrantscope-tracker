@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 from datetime import datetime
+import gzip
 import hashlib
 import json
 import math
@@ -59,7 +60,8 @@ def _number(value) -> float | None:
 
 def _read_jsonl(path: Path) -> list[dict]:
     rows = []
-    with path.open(encoding="utf-8") as handle:
+    opener = gzip.open if path.suffix == ".gz" else Path.open
+    with opener(path, mode="rt", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, 1):
             try:
                 rows.append(json.loads(line))
@@ -116,11 +118,13 @@ def analyze_run(run_dir: Path) -> tuple[list[dict], dict]:
         raise RuntimeError("source run manifest hash mismatch")
     if manifest.get("status") != "COMPLETE" or manifest.get("watchlist_count") != 30:
         raise RuntimeError("source quote run is not a complete 30-stock run")
-    for filename in ("watchlist.json", "ticks.jsonl", "books.jsonl"):
+    tick_name = "ticks.jsonl.gz" if "ticks.jsonl.gz" in manifest["artifacts"] else "ticks.jsonl"
+    book_name = "books.jsonl.gz" if "books.jsonl.gz" in manifest["artifacts"] else "books.jsonl"
+    for filename in ("watchlist.json", tick_name, book_name):
         if sha256_file(run_dir / filename) != manifest["artifacts"][filename]:
             raise RuntimeError(f"source artifact hash mismatch: {filename}")
-    ticks = _read_jsonl(run_dir / "ticks.jsonl")
-    books = _read_jsonl(run_dir / "books.jsonl")
+    ticks = _read_jsonl(run_dir / tick_name)
+    books = _read_jsonl(run_dir / book_name)
     tick_by: dict[str, list[dict]] = {}
     book_by: dict[str, list[dict]] = {}
     for row in ticks:

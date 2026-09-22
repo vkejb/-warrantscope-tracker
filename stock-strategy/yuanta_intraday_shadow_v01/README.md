@@ -34,6 +34,16 @@ cd stock-strategy
 open scripts/run_yuanta_stage_a_top30_collector.command
 ```
 
+開啟本機圖形介面：
+
+```bash
+open scripts/open_yuanta_intraday_gui.command
+```
+
+圖形介面提供五分鐘測試、早盤至 10:30、全天至 13:35 與自訂分鐘。
+全天模式會以 gzip 直接寫入不可覆寫的逐筆／五檔資料，並在完成後產生
+09:05、09:15、09:30、10:00、10:30 固定時間快照與收盤後路徑結果。
+
 即時資料只寫入 gitignored 的 `runtime/runs/<run_id>/`。目前沒有紙上撮合，
 也沒有任何元大委託函式；帳號與兩組密碼仍由當次互動輸入且不落盤。
 

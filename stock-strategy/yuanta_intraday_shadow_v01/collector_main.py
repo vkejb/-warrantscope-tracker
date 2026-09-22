@@ -43,28 +43,46 @@ def _book_payload(value) -> dict:
     return payload
 
 
-def run(api_types, *, seconds: int, runtime_dir: Path) -> int:
+def run(
+    api_types,
+    *,
+    seconds: int,
+    runtime_dir: Path,
+    credentials: dict[str, str] | None = None,
+    stop_event: threading.Event | None = None,
+    progress_callback=None,
+    compress: bool = False,
+) -> int:
     seal, items, provenance = load_stage_a_watchlist()
     print(f"Stage A seal：{seal['signal_date']}｜{seal['seal_hash'][:12]}｜30檔")
     print(f"市場別：TWSE {sum(x.market == 'TWSE' for x in items)}｜TPEx {sum(x.market == 'TPEX' for x in items)}")
     print("模式：PROD只讀行情；不含任何委託類別或下單函式。")
 
-    pfx = _dragged_path(input("請把.pfx憑證拖到此視窗後按Enter："))
+    if credentials is None:
+        pfx_text = input("請把.pfx憑證拖到此視窗後按Enter：")
+        pfx_password = getpass.getpass("憑證密碼（不會顯示）：")
+        account_text = input("元大證券帳號（不是CMA帳號）：")
+        trading_password = getpass.getpass("證券電子交易密碼（不會顯示）：")
+    else:
+        pfx_text = credentials.get("pfx", "")
+        pfx_password = credentials.get("pfx_password", "")
+        account_text = credentials.get("account", "")
+        trading_password = credentials.get("trading_password", "")
+        credentials.update({"pfx_password": "", "trading_password": ""})
+    pfx = _dragged_path(pfx_text)
     if not pfx.is_file() or pfx.suffix.lower() != ".pfx":
         print("找不到有效的.pfx憑證。")
         return 2
-    pfx_password = getpass.getpass("憑證密碼（不會顯示）：")
     try:
-        account = _normalise_account(input("元大證券帳號（不是CMA帳號）："))
+        account = _normalise_account(account_text)
     except ValueError as exc:
         print(exc)
         return 2
-    trading_password = getpass.getpass("證券電子交易密碼（不會顯示）：")
     if not pfx_password or not trading_password:
         print("密碼不可空白。")
         return 2
 
-    artifact = AppendOnlyRun(runtime_dir, seal, items, provenance)
+    artifact = AppendOnlyRun(runtime_dir, seal, items, provenance, compress=compress)
     meta = {x.stock_id: x for x in items}
     login_event = threading.Event()
     login_ok = False
@@ -83,6 +101,8 @@ def run(api_types, *, seconds: int, runtime_dir: Path) -> int:
                 code = _safe_text(value.LoginStatus.MsgCode)
                 login_ok = code in {"0001", "00001"}
                 print(f"登入結果：{code}｜{_safe_text(value.LoginStatus.MsgContent)}｜帳戶筆數 {_safe_text(value.LoginStatus.Count)}")
+                if progress_callback:
+                    progress_callback({"type": "LOGIN", "ok": login_ok, "code": code})
                 login_event.set()
                 return
             if int(int_mark) != 2:
@@ -137,12 +157,20 @@ def run(api_types, *, seconds: int, runtime_dir: Path) -> int:
         api.SubscribeFiveTickA(account, book_list, api_types["Language"].UTF8)
         subscribed_book = True
         print(f"30檔逐筆與五檔訂閱已送出，收集 {seconds} 秒。按 Control-C 可安全停止。")
+        if progress_callback:
+            progress_callback({"type": "SUBSCRIBED", "watchlist_count": len(items), "seconds": seconds})
         deadline = time.monotonic() + seconds
         next_report = time.monotonic() + 30
         while time.monotonic() < deadline:
+            if stop_event is not None and stop_event.is_set():
+                final_status = "STOPPED_BY_USER"
+                print("收到停止要求，正在安全解除訂閱並封存本次資料。")
+                return 130
             time.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
             if time.monotonic() >= next_report:
                 print(f"目前事件：逐筆 {artifact.counts['ticks']}｜五檔 {artifact.counts['books']}")
+                if progress_callback:
+                    progress_callback({"type": "PROGRESS", **artifact.counts, "remaining_seconds": max(0, int(deadline - time.monotonic()))})
                 next_report += 30
         final_status = "COMPLETE"
         return 0
@@ -173,6 +201,8 @@ def run(api_types, *, seconds: int, runtime_dir: Path) -> int:
             except Exception: pass
         manifest = artifact.finalize(status=final_status, started_at=started_at, ended_at=utc_now(), error_type=error_type)
         print(json.dumps(manifest, ensure_ascii=False, indent=2))
+        if progress_callback:
+            progress_callback({"type": "FINAL", "manifest": manifest, "run_dir": str(artifact.run_dir)})
 
 
 def parse_args(argv=None):

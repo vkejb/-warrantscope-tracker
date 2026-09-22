@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
+import gzip
+import io
 import json
 from pathlib import Path
 import threading
@@ -119,14 +121,23 @@ def load_stage_a_watchlist(stage_a_runtime: Path = DEFAULT_STAGE_A_RUNTIME, audi
 class AppendOnlyRun:
     """Exclusive run directory with line-flushed append-only event files."""
 
-    def __init__(self, runtime_dir: Path, seal: dict, items: list[WatchItem], provenance: dict):
+    def __init__(self, runtime_dir: Path, seal: dict, items: list[WatchItem], provenance: dict, *, compress: bool = False):
         self.run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ") + "_" + uuid.uuid4().hex[:8]
         self.run_dir = runtime_dir / "runs" / self.run_id
         self.run_dir.mkdir(parents=True, exist_ok=False)
-        self.tick_path = self.run_dir / "ticks.jsonl"
-        self.book_path = self.run_dir / "books.jsonl"
-        self._tick = self.tick_path.open("x", encoding="utf-8", buffering=1)
-        self._book = self.book_path.open("x", encoding="utf-8", buffering=1)
+        self.compressed = compress
+        self.tick_path = self.run_dir / ("ticks.jsonl.gz" if compress else "ticks.jsonl")
+        self.book_path = self.run_dir / ("books.jsonl.gz" if compress else "books.jsonl")
+        self._raw_files = []
+        if compress:
+            tick_raw = self.tick_path.open("xb")
+            book_raw = self.book_path.open("xb")
+            self._raw_files = [tick_raw, book_raw]
+            self._tick = io.TextIOWrapper(gzip.GzipFile(fileobj=tick_raw, mode="wb", mtime=0), encoding="utf-8", write_through=True)
+            self._book = io.TextIOWrapper(gzip.GzipFile(fileobj=book_raw, mode="wb", mtime=0), encoding="utf-8", write_through=True)
+        else:
+            self._tick = self.tick_path.open("x", encoding="utf-8", buffering=1)
+            self._book = self.book_path.open("x", encoding="utf-8", buffering=1)
         self._lock = threading.Lock()
         self.counts = {"ticks": 0, "books": 0, "callback_errors": 0}
         self.snapshot = {
@@ -134,7 +145,8 @@ class AppendOnlyRun:
             "signal_date": seal["signal_date"], "stage_a_seal_hash": seal["seal_hash"],
             "market_provenance": provenance,
             "stocks": [{"stock_id": x.stock_id, "stock_name": x.stock_name, "rank": x.rank, "score": x.score, "market": x.market} for x in items],
-            "mode": "SHADOW_ONLY_READ_ONLY_QUOTES",
+            "mode": "SHADOW_ONLY_READ_ONLY_QUOTES", "compression": "gzip" if compress else "none",
+            "compressed_flush_interval_events": 100 if compress else 1,
         }
         (self.run_dir / "watchlist.json").write_bytes(canonical_bytes(self.snapshot) + b"\n")
 
@@ -145,8 +157,9 @@ class AppendOnlyRun:
         with self._lock:
             handle = self._tick if kind == "ticks" else self._book
             handle.write(payload)
-            handle.flush()
             self.counts[kind] += 1
+            if not self.compressed or self.counts[kind] % 100 == 0:
+                handle.flush()
 
     def callback_error(self) -> None:
         with self._lock:
@@ -155,12 +168,14 @@ class AppendOnlyRun:
     def finalize(self, *, status: str, started_at: str, ended_at: str, error_type: str = "") -> dict:
         with self._lock:
             self._tick.flush(); self._book.flush(); self._tick.close(); self._book.close()
+            for raw in self._raw_files:
+                raw.close()
         manifest = {
             "schema_version": 1, "run_id": self.run_id, "status": status,
             "started_at": started_at, "ended_at": ended_at,
             "signal_date": self.snapshot["signal_date"], "stage_a_seal_hash": self.snapshot["stage_a_seal_hash"],
             "watchlist_count": len(self.snapshot["stocks"]), "event_counts": dict(self.counts),
-            "artifacts": {"watchlist.json": sha256_file(self.run_dir / "watchlist.json"), "ticks.jsonl": sha256_file(self.tick_path), "books.jsonl": sha256_file(self.book_path)},
+            "artifacts": {"watchlist.json": sha256_file(self.run_dir / "watchlist.json"), self.tick_path.name: sha256_file(self.tick_path), self.book_path.name: sha256_file(self.book_path)},
             "error_type": error_type, "actual_orders": 0, "actual_fills": 0, "broker_order_calls": 0,
         }
         manifest["manifest_hash"] = hashlib.sha256(canonical_bytes(manifest)).hexdigest()
