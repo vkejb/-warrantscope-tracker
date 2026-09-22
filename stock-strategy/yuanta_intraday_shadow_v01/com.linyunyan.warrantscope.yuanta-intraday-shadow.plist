@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.linyunyan.warrantscope.yuanta-intraday-shadow</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/.venv/bin/python</string>
+    <string>-B</string>
+    <string>-m</string>
+    <string>yuanta_intraday_shadow_v01.auto_runner</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONPATH</key>
+    <string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy</string>
+    <key>YUANTA_SPARK_API_DIR</key>
+    <string>/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python</string>
+    <key>DOTNET_ROOT</key>
+    <string>/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/.dotnet</string>
+    <key>DOTNET_ROOT_ARM64</key>
+    <string>/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/.dotnet</string>
+    <key>PYTHONDONTWRITEBYTECODE</key>
+    <string>1</string>
+    <key>TZ</key>
+    <string>Asia/Taipei</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>50</integer></dict>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>50</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>50</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>50</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>50</integer></dict>
+  </array>
+  <key>ProcessType</key><string>Background</string>
+  <key>ThrottleInterval</key><integer>60</integer>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/launchd.stdout.log</string>
+  <key>StandardErrorPath</key><string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/launchd.stderr.log</string>
+</dict>
+</plist>

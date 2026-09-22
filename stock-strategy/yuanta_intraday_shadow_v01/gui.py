@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from datetime import datetime, time
-import json
 import queue
 import threading
 from pathlib import Path
@@ -12,14 +11,10 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from zoneinfo import ZoneInfo
 
-from prospective_notifications_v01.keychain import load_into_environment
-from prospective_notifications_v01.notifier import notify
-
-from .analysis import publish_analysis
 from .collector import DEFAULT_RUNTIME_DIR, load_stage_a_watchlist
 from .collector_main import run
 from .main import DEFAULT_VENDOR_DIR, _load_api
-from .session_analysis import publish_session_analysis
+from .postprocess import process_run
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -144,23 +139,8 @@ class IntradayApp:
                 self.events.put({"type": "DONE", "code": code}); return
             if not self.run_dir:
                 raise RuntimeError("collector completed without run directory")
-            quality_dir = publish_analysis(self.run_dir, DEFAULT_RUNTIME_DIR / "analyses")
-            session_dir = publish_session_analysis(self.run_dir, DEFAULT_RUNTIME_DIR / "session_analyses")
-            quality = json.loads((quality_dir / "analysis_manifest.json").read_text())
-            session = json.loads((session_dir / "session_manifest.json").read_text())
-            message = "\n".join([
-                f"【Stage A 盤中資料｜{session['session_date']}】", "只讀行情封存完成",
-                f"逐筆／五檔：{quality['source_run_id']}", f"Coverage：{session['coverage_status']}",
-                "狀態：" + "、".join(f"{key} {value}" for key, value in quality["state_counts"].items() if value),
-                f"analysis hash：{quality['analysis_hash'][:12]}", "SHADOW_ONLY｜不是買賣訊號｜無下單",
-            ])
-            try:
-                keychain = load_into_environment()
-                delivery = notify("YUANTA_INTRADAY_SHADOW", session["session_date"], quality["analysis_hash"], "INTRADAY_COMPLETE", message)
-            except Exception as exc:
-                keychain = "NOTIFICATION_LOAD_FAILED"
-                delivery = {"status": "FAILED_AFTER_SEAL", "error_type": type(exc).__name__}
-            self.events.put({"type": "ANALYSIS_COMPLETE", "quality": quality, "session": session, "notification": delivery, "keychain": keychain})
+            result = process_run(self.run_dir)
+            self.events.put({"type": "ANALYSIS_COMPLETE", **result})
             self.events.put({"type": "DONE", "code": 0})
         except Exception as exc:
             credentials.clear()

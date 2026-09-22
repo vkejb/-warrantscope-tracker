@@ -22,6 +22,7 @@ SPEC = {
     "feature_window_start": "09:00",
     "full_session_start_deadline": "09:00:30",
     "outcome_maturity_time": "13:30",
+    "market_wide_max_gap_seconds": 120,
     "features_use_events_received_at_or_before_checkpoint": True,
     "outcomes_use_events_after_checkpoint": True,
     "partial_runs_never_mark_outcomes_mature": True,
@@ -70,7 +71,6 @@ def build_session_rows(run_dir: Path) -> tuple[list[dict], list[dict], dict]:
     started = _local_stamp(manifest["started_at"])
     ended = _local_stamp(manifest["ended_at"])
     session_date = ended.strftime("%Y%m%d")
-    full_session = started.time() <= _clock("09:00:30") and ended.time() >= _clock("13:30") and manifest["status"] == "COMPLETE"
     by_tick: dict[str, list[dict]] = {}
     by_book: dict[str, list[dict]] = {}
     for row in ticks:
@@ -79,6 +79,25 @@ def build_session_rows(run_dir: Path) -> tuple[list[dict], list[dict], dict]:
     for row in books:
         row = {**row, "_stamp": _local_stamp(row["received_at"])}
         by_book.setdefault(str(row["stock_id"]), []).append(row)
+
+    session_open = datetime.combine(ended.date(), _clock("09:00"), tzinfo=TAIPEI)
+    maturity = datetime.combine(ended.date(), _clock("13:30"), tzinfo=TAIPEI)
+    market_stamps = sorted(
+        row["_stamp"]
+        for grouped in (by_tick, by_book)
+        for rows in grouped.values()
+        for row in rows
+        if session_open <= row["_stamp"] <= maturity
+    )
+    gaps = [(right - left).total_seconds() for left, right in zip(market_stamps, market_stamps[1:])]
+    max_market_gap = max(gaps, default=float("inf"))
+    stream_coverage = (
+        bool(market_stamps)
+        and market_stamps[0] <= datetime.combine(ended.date(), _clock("09:02"), tzinfo=TAIPEI)
+        and market_stamps[-1] >= datetime.combine(ended.date(), _clock("13:29"), tzinfo=TAIPEI)
+        and max_market_gap <= 120
+    )
+    full_session = started.time() <= _clock("09:00:30") and ended.time() >= _clock("13:30") and manifest["status"] == "COMPLETE" and stream_coverage
 
     features, outcomes = [], []
     for checkpoint in CHECKPOINTS:
@@ -130,6 +149,8 @@ def build_session_rows(run_dir: Path) -> tuple[list[dict], list[dict], dict]:
         "source_run_id": manifest["run_id"], "source_manifest_hash": manifest["manifest_hash"],
         "signal_date": watch["signal_date"], "session_date": session_date,
         "coverage_status": "FULL_SESSION" if full_session else "PARTIAL_SESSION",
+        "stream_coverage_pass": stream_coverage,
+        "max_market_event_gap_seconds": max_market_gap if max_market_gap != float("inf") else None,
         "started_at_taipei": started.isoformat(), "ended_at_taipei": ended.isoformat(),
         "feature_rows": len(features), "outcome_rows": len(outcomes),
         "mature_outcome_rows": sum(row["outcome_status"] == "MATURE" for row in outcomes),

@@ -49,3 +49,22 @@ open scripts/open_yuanta_intraday_gui.command
 
 衍生分析寫入獨立的 `runtime/analyses/<run_id>/`，不修改原始行情。V0.1
 狀態只屬於 prospective shadow diagnostics，不是進出場建議，也尚未經歷史驗證。
+
+## 交易日全自動模式
+
+執行一次本機安裝器：
+
+```bash
+open scripts/install_yuanta_intraday_automation.command
+```
+
+安裝器以隱藏輸入將 PFX 路徑、PFX 密碼、證券帳號與電子交易密碼存入
+macOS Keychain，安裝使用者層級 LaunchAgent，並設定週一至週五 08:45
+喚醒。08:50 runner 仍會先查正式交易日曆與前一交易日 Stage A seal；假日
+不登入。收集期間由 `caffeinate` 防止休眠，13:35 後才分析及通知。
+
+Keychain、LaunchAgent 與喚醒狀態可用下列命令檢查，輸出不含秘密：
+
+```bash
+open scripts/check_yuanta_intraday_automation.command
+```
