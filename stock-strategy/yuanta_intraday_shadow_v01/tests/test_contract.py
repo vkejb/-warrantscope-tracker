@@ -27,6 +27,12 @@ class ReadOnlyContractTests(unittest.TestCase):
         for token in forbidden:
             self.assertNotIn(token, source)
 
+    def test_void_subscription_is_not_cast_to_bool(self):
+        source = (Path(__file__).parents[1] / "main.py").read_text(encoding="utf-8")
+        self.assertNotIn("bool(api.SubscribeStockTick", source)
+        self.assertNotIn("bool(api.SubscribeFiveTickA", source)
+        self.assertIn("逐筆 REQUESTED｜五檔 REQUESTED", source)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -283,14 +283,17 @@ def run_stream_test(
         book.StockCode = symbol
         book_list.Add(book)
 
-        subscribed_tick = bool(api.SubscribeStockTick(account, stock_list, api_types["Language"].UTF8))
-        subscribed_book = bool(api.SubscribeFiveTickA(account, book_list, api_types["Language"].UTF8))
+        # YuantaSparkAPI.dll 2.0.0.1 exposes these methods as System.Void even
+        # though the bundled Word specification labels them bool.  A successful
+        # call therefore returns Python None; absence of an exception means the
+        # request was sent, while actual delivery is verified by event counts.
+        api.SubscribeStockTick(account, stock_list, api_types["Language"].UTF8)
+        subscribed_tick = True
+        api.SubscribeFiveTickA(account, book_list, api_types["Language"].UTF8)
+        subscribed_book = True
         print(
-            f"\n訂閱請求：{market_name} {symbol}｜逐筆 {'ACCEPTED' if subscribed_tick else 'REJECTED'}｜"
-            f"五檔 {'ACCEPTED' if subscribed_book else 'REJECTED'}"
+            f"\n訂閱請求：{market_name} {symbol}｜逐筆 REQUESTED｜五檔 REQUESTED"
         )
-        if not subscribed_tick or not subscribed_book:
-            return 1
 
         print(f"只讀監看 {seconds} 秒；不寫檔、不模擬下單、不送正式委託。\n")
         deadline = time.monotonic() + seconds
