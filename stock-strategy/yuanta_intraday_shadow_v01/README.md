@@ -1,6 +1,7 @@
 # Yuanta Intraday Shadow V0.1
 
-這個模組目前只提供元大 SPARK API 的逐筆成交與五檔訂閱 smoke test。
+這個模組提供元大 SPARK API 的逐筆成交與五檔訂閱 smoke test，以及
+Stage A Top30 append-only 即時行情收集器。
 
 安全契約：
 
@@ -9,6 +10,8 @@
 - 不保存帳號、憑證密碼或電子交易密碼。
 - 不建立正式或模擬委託。
 - 測試結束一定嘗試解訂閱、登出及關閉連線。
+- Top30 市場別只從同日 immutable 官方 TWSE／TPEx EOD 判定，不以代碼猜測。
+- 每次收集建立獨立 run 目錄，保存逐筆、五檔、輸入 seal 與 SHA-256 摘要。
 
 元大 `YuantaSparkAPI.dll` 2.0.0.1 的逐筆與五檔訂閱函式實際回傳
 `System.Void`；工具以「呼叫未拋出例外」表示 `REQUESTED`，並以後續收到的
@@ -24,4 +27,11 @@ cd stock-strategy
 
 正式環境只用於讀取即時行情。輸入的是證券交易帳號，不是 CMA 交割帳號。
 
-目前尚未實作資料落盤與紙上撮合；必須先通過此 smoke test，才進入下一階段。
+執行 Top30 五分鐘收集：
+
+```bash
+open scripts/run_yuanta_stage_a_top30_collector.command
+```
+
+即時資料只寫入 gitignored 的 `runtime/runs/<run_id>/`。目前沒有紙上撮合，
+也沒有任何元大委託函式；帳號與兩組密碼仍由當次互動輸入且不落盤。
