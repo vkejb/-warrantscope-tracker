@@ -35,11 +35,13 @@ SPEC = {
     "volume_delta_threshold": 0.35,
     "large_trade_delta_threshold": 0.25,
     "book_imbalance_threshold": 0.10,
-    "consecutive_confirmations": 2,
+    "entry_confirmations": 1,
+    "reversal_confirmations": 2,
     "entry_start": "09:35",
     "last_entry_time": "13:10",
     "hard_exit_time": "13:20",
-    "stop_loss": 0.05,
+    "maximum_hard_exit_quote_staleness_seconds": 60,
+    "stop_loss_net_twd": 5000,
     "trailing_profit_activation": 0.02,
     "trailing_profit_drawdown": 0.02,
     "portfolio_notional_cap_twd": 190000,
@@ -299,25 +301,37 @@ def _exit_quote(side: str, row: dict) -> float:
     return row["ask"] + _tick_size(row["ask"])
 
 
+def _projected_net_pnl(side: str, entry_price: float, exit_price: float, quantity: int) -> tuple[float, int, int, float]:
+    buy_notional = entry_price * quantity if side == "LONG" else exit_price * quantity
+    sell_notional = exit_price * quantity if side == "LONG" else entry_price * quantity
+    buy_fee, sell_fee = _commission(buy_notional), _commission(sell_notional)
+    sell_tax = math.ceil(sell_notional * SPEC["day_trade_sell_tax_rate"])
+    gross = round(sell_notional - buy_notional, 2)
+    return gross, buy_fee + sell_fee, sell_tax, round(gross - buy_fee - sell_fee - sell_tax, 2)
+
+
 def _reversal_exit_tick(data: dict, signal: DirectionSignal, entry_time: datetime, hard_exit: datetime) -> dict | None:
     prior_time = None
+    streak = 0
     for decision in _decision_times(signal.decision_time.strftime("%Y%m%d"), signal.decision_time.strftime("%H:%M"), SPEC["hard_exit_time"]):
         if decision <= entry_time:
             continue
         current = signal_at(signal.stock_id, data, decision)
         if current and current.side != signal.side:
-            if prior_time is not None and decision - prior_time == timedelta(seconds=SPEC["decision_interval_seconds"]):
+            streak = streak + 1 if prior_time is not None and decision - prior_time == timedelta(seconds=SPEC["decision_interval_seconds"]) else 1
+            if streak >= SPEC["reversal_confirmations"]:
                 row = _entry_tick(data, decision)
                 return row if row and row["time"] <= hard_exit else None
             prior_time = decision
         else:
             prior_time = None
+            streak = 0
     return None
 
 
 def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 190000) -> tuple[DirectionTrade | None, dict]:
     session_date = coverage["session_date"]
-    previous: dict[str, tuple[str, datetime]] = {}
+    previous: dict[str, tuple[str, int, datetime]] = {}
     selected = None
     diagnostics = {"session_date": session_date, "raw_signal_windows": 0, "confirmed_signal_windows": 0,
                    "confirmed_but_unaffordable": 0, "selected_trade": False}
@@ -328,7 +342,15 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
             if signal:
                 diagnostics["raw_signal_windows"] += 1
             prior = previous.get(stock_id)
-            if signal and prior and prior[0] == signal.side and decision - prior[1] == timedelta(seconds=SPEC["decision_interval_seconds"]):
+            if signal:
+                streak = (
+                    prior[1] + 1
+                    if prior and prior[0] == signal.side and decision - prior[2] == timedelta(seconds=SPEC["decision_interval_seconds"])
+                    else 1
+                )
+            else:
+                streak = 0
+            if signal and streak >= SPEC["entry_confirmations"]:
                 diagnostics["confirmed_signal_windows"] += 1
                 entry_tick = _entry_tick(data, decision)
                 if entry_tick:
@@ -344,7 +366,7 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
                         confirmed.append((signal.score, notional, signal, entry_tick, entry_price, quantity))
                     else:
                         diagnostics["confirmed_but_unaffordable"] += 1
-            previous[stock_id] = (signal.side, decision) if signal else ("", decision)
+            previous[stock_id] = (signal.side, streak, decision) if signal else ("", 0, decision)
         if confirmed:
             selected = max(confirmed, key=lambda item: (item[0], item[1]))
             break
@@ -359,15 +381,13 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
     reversal_row = _reversal_exit_tick(data, signal, entry_tick["time"], hard_exit)
     exit_row, exit_reason = None, "HARD_EXIT"
     peak_return = 0.0
+    entry_notional = entry_price * quantity
     for row in future:
         executable = _exit_quote(signal.side, row)
-        current_return = (
-            executable / entry_price - 1
-            if signal.side == "LONG"
-            else (entry_price - executable) / entry_price
-        )
+        _, _, _, projected_net = _projected_net_pnl(signal.side, entry_price, executable, quantity)
+        current_return = projected_net / entry_notional
         peak_return = max(peak_return, current_return)
-        if current_return <= -SPEC["stop_loss"]:
+        if projected_net <= -SPEC["stop_loss_net_twd"]:
             exit_row, exit_reason = row, "STOP_LOSS"; break
         if (
             peak_return >= SPEC["trailing_profit_activation"]
@@ -377,17 +397,15 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
         if reversal_row is not None and row["time"] >= reversal_row["time"]:
             exit_row, exit_reason = row, "SIGNAL_REVERSAL"; break
     if exit_row is None:
-        if not future:
+        hard_exit_staleness = (hard_exit - future[-1]["time"]).total_seconds() if future else float("inf")
+        if not future or hard_exit_staleness > SPEC["maximum_hard_exit_quote_staleness_seconds"]:
             diagnostics["selected_trade"] = False
-            diagnostics["no_exit_quote"] = True
+            diagnostics["exit_data_insufficient"] = True
+            diagnostics["last_exit_quote_staleness_seconds"] = hard_exit_staleness if future else None
             return None, diagnostics
         exit_row = future[-1]
     exit_price = _exit_quote(signal.side, exit_row)
-    buy_notional = entry_price * quantity if signal.side == "LONG" else exit_price * quantity
-    sell_notional = exit_price * quantity if signal.side == "LONG" else entry_price * quantity
-    buy_fee, sell_fee = _commission(buy_notional), _commission(sell_notional)
-    sell_tax = math.ceil(sell_notional * SPEC["day_trade_sell_tax_rate"])
-    gross = round(sell_notional - buy_notional, 2)
+    gross, commission, sell_tax, net_pnl = _projected_net_pnl(signal.side, entry_price, exit_price, quantity)
     return DirectionTrade(
         session_date=session_date, stock_id=signal.stock_id, stock_name=signal.stock_name, side=signal.side,
         decision_time=signal.decision_time.isoformat(), entry_time=entry_tick["time"].isoformat(),
@@ -395,8 +413,7 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
         volume_delta=signal.volume_delta, large_trade_delta=signal.large_trade_delta,
         vwap_gap=signal.vwap_gap, book_imbalance=signal.book_imbalance, spread_bps=signal.spread_bps,
         entry_price=entry_price, exit_price=exit_price, quantity=quantity, notional_used=entry_price * quantity,
-        gross_pnl=gross, commission=buy_fee + sell_fee, sell_tax=sell_tax,
-        net_pnl=round(gross - buy_fee - sell_fee - sell_tax, 2),
+        gross_pnl=gross, commission=commission, sell_tax=sell_tax, net_pnl=net_pnl,
     ), diagnostics
 
 

@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem
-from yuanta_intraday_shadow_v01.direction_follow_backtest import build_report
+from yuanta_intraday_shadow_v01.direction_follow_backtest import SPEC, build_report
 
 
 class DirectionFollowBacktestTests(unittest.TestCase):
@@ -44,6 +44,8 @@ class DirectionFollowBacktestTests(unittest.TestCase):
             self.assertEqual(report["trades"][0]["quantity"], 4000)
             self.assertEqual(report["trades"][0]["exit_reason"], "TRAILING_PROFIT")
             self.assertLessEqual(report["trades"][0]["notional_used"], 190000)
+            self.assertEqual(SPEC["entry_confirmations"], 1)
+            self.assertEqual(SPEC["stop_loss_net_twd"], 5000)
             self.assertEqual(report["actual_orders"], 0)
             self.assertEqual(report["actual_fills"], 0)
             self.assertEqual(report["broker_order_calls"], 0)
