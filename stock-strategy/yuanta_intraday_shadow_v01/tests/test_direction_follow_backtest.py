@@ -1,0 +1,46 @@
+from datetime import datetime, timezone
+from pathlib import Path
+import tempfile
+import unittest
+
+from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem
+from yuanta_intraday_shadow_v01.direction_follow_backtest import build_report
+
+
+class DirectionFollowBacktestTests(unittest.TestCase):
+    def _run(self, root: Path) -> Path:
+        run = AppendOnlyRun(
+            root, {"signal_date": "20260921", "seal_hash": "a" * 64},
+            [WatchItem("1001", "測試股", 1, 0.1, "TWSE")], {}, compress=True,
+        )
+        start = datetime(2026, 9, 22, 1, 31, tzinfo=timezone.utc)
+        for index in range(280):
+            stamp = start.timestamp() + index
+            received = datetime.fromtimestamp(stamp, timezone.utc).isoformat().replace("+00:00", "Z")
+            price = 100.0 if index < 180 else 100.0 + (index - 179) * 0.03
+            run.append("ticks", {
+                "received_at": received, "stock_id": "1001", "deal_price": str(price),
+                "deal_volume": "20", "buy_price": str(price - 0.1), "sell_price": str(price),
+                "in_out_flag": "1", "serial_no": index,
+            })
+            run.append("books", {
+                "received_at": received, "stock_id": "1001", "buy_prices": [str(price - 0.1)] * 5,
+                "sell_prices": [str(price)] * 5, "buy_volumes": ["100"] * 5, "sell_volumes": ["20"] * 5,
+            })
+        run.finalize(status="COMPLETE", started_at="2026-09-22T01:30:00.000Z", ended_at="2026-09-22T05:30:00.000Z")
+        return run.run_dir
+
+    def test_causal_direction_replay_stays_read_only(self):
+        with tempfile.TemporaryDirectory() as temp:
+            run_dir = self._run(Path(temp))
+            report = build_report({"20260922": [run_dir]})
+            self.assertEqual(report["trade_count"], 1)
+            self.assertEqual(report["trades"][0]["side"], "LONG")
+            self.assertLessEqual(report["trades"][0]["notional_used"], 190000)
+            self.assertEqual(report["actual_orders"], 0)
+            self.assertEqual(report["actual_fills"], 0)
+            self.assertEqual(report["broker_order_calls"], 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
