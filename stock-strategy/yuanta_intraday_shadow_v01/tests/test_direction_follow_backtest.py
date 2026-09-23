@@ -5,6 +5,7 @@ import unittest
 
 from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem
 from yuanta_intraday_shadow_v01.direction_follow_backtest import SPEC, _loss_recovery_exit, build_report
+from yuanta_intraday_shadow_v01.direction_signal_validation import build_validation_report
 
 
 class DirectionFollowBacktestTests(unittest.TestCase):
@@ -54,6 +55,14 @@ class DirectionFollowBacktestTests(unittest.TestCase):
             self.assertEqual(report["actual_orders"], 0)
             self.assertEqual(report["actual_fills"], 0)
             self.assertEqual(report["broker_order_calls"], 0)
+
+    def test_independent_signal_validation_is_not_a_portfolio(self):
+        with tempfile.TemporaryDirectory() as temp:
+            run_dir = self._run(Path(temp))
+            report = build_validation_report({"20260922": [run_dir]})
+            self.assertEqual(report["scored_trade_count"], 1)
+            self.assertIn("NOT_AN_EXECUTABLE_190K_PORTFOLIO", report["interpretation"])
+            self.assertEqual(report["actual_orders"], 0)
 
 
 if __name__ == "__main__":

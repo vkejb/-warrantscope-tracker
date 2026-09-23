@@ -338,6 +338,56 @@ def _reversal_exit_tick(data: dict, signal: DirectionSignal, entry_time: datetim
     return None
 
 
+def simulate_signal_trade(
+    session_date: str, data: dict, signal: DirectionSignal, entry_tick: dict,
+    entry_price: float, quantity: int,
+) -> tuple[DirectionTrade | None, dict]:
+    diagnostics: dict = {}
+    hard_hour, hard_minute = map(int, SPEC["hard_exit_time"].split(":"))
+    hard_exit = entry_tick["time"].replace(hour=hard_hour, minute=hard_minute, second=0, microsecond=0)
+    future = [row for row in data["ticks"] if entry_tick["time"] < row["time"] <= hard_exit]
+    reversal_row = _reversal_exit_tick(data, signal, entry_tick["time"], hard_exit)
+    exit_row, exit_reason = None, "HARD_EXIT"
+    peak_return = 0.0
+    worst_return = 0.0
+    entry_notional = entry_price * quantity
+    for row in future:
+        executable = _exit_quote(signal.side, row)
+        _, _, _, projected_net = _projected_net_pnl(signal.side, entry_price, executable, quantity)
+        current_return = projected_net / entry_notional
+        peak_return = max(peak_return, current_return)
+        worst_return = min(worst_return, current_return)
+        if projected_net <= -SPEC["stop_loss_net_twd"]:
+            exit_row, exit_reason = row, "STOP_LOSS"; break
+        if (
+            peak_return >= SPEC["trailing_profit_activation"]
+            and current_return <= peak_return - SPEC["trailing_profit_drawdown"]
+        ):
+            exit_row, exit_reason = row, "TRAILING_PROFIT"; break
+        if _loss_recovery_exit(worst_return, current_return):
+            exit_row, exit_reason = row, "LOSS_RECOVERY_TO_PROFIT"; break
+        if reversal_row is not None and row["time"] >= reversal_row["time"]:
+            exit_row, exit_reason = row, "SIGNAL_REVERSAL"; break
+    if exit_row is None:
+        hard_exit_staleness = (hard_exit - future[-1]["time"]).total_seconds() if future else float("inf")
+        if not future or hard_exit_staleness > SPEC["maximum_hard_exit_quote_staleness_seconds"]:
+            diagnostics["exit_data_insufficient"] = True
+            diagnostics["last_exit_quote_staleness_seconds"] = hard_exit_staleness if future else None
+            return None, diagnostics
+        exit_row = future[-1]
+    exit_price = _exit_quote(signal.side, exit_row)
+    gross, commission, sell_tax, net_pnl = _projected_net_pnl(signal.side, entry_price, exit_price, quantity)
+    return DirectionTrade(
+        session_date=session_date, stock_id=signal.stock_id, stock_name=signal.stock_name, side=signal.side,
+        decision_time=signal.decision_time.isoformat(), entry_time=entry_tick["time"].isoformat(),
+        exit_time=exit_row["time"].isoformat(), exit_reason=exit_reason, score=signal.score,
+        volume_delta=signal.volume_delta, large_trade_delta=signal.large_trade_delta,
+        vwap_gap=signal.vwap_gap, book_imbalance=signal.book_imbalance, spread_bps=signal.spread_bps,
+        entry_price=entry_price, exit_price=exit_price, quantity=quantity, notional_used=entry_price * quantity,
+        gross_pnl=gross, commission=commission, sell_tax=sell_tax, net_pnl=net_pnl,
+    ), diagnostics
+
+
 def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 190000) -> tuple[DirectionTrade | None, dict]:
     session_date = coverage["session_date"]
     previous: dict[str, tuple[str, int, datetime]] = {}
@@ -381,53 +431,13 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
             break
     if selected is None:
         return None, diagnostics
-    diagnostics["selected_trade"] = True
     _, _, signal, entry_tick, entry_price, quantity = selected
-    data = stocks[signal.stock_id]
-    hard_hour, hard_minute = map(int, SPEC["hard_exit_time"].split(":"))
-    hard_exit = entry_tick["time"].replace(hour=hard_hour, minute=hard_minute, second=0, microsecond=0)
-    future = [row for row in data["ticks"] if entry_tick["time"] < row["time"] <= hard_exit]
-    reversal_row = _reversal_exit_tick(data, signal, entry_tick["time"], hard_exit)
-    exit_row, exit_reason = None, "HARD_EXIT"
-    peak_return = 0.0
-    worst_return = 0.0
-    entry_notional = entry_price * quantity
-    for row in future:
-        executable = _exit_quote(signal.side, row)
-        _, _, _, projected_net = _projected_net_pnl(signal.side, entry_price, executable, quantity)
-        current_return = projected_net / entry_notional
-        peak_return = max(peak_return, current_return)
-        worst_return = min(worst_return, current_return)
-        if projected_net <= -SPEC["stop_loss_net_twd"]:
-            exit_row, exit_reason = row, "STOP_LOSS"; break
-        if (
-            peak_return >= SPEC["trailing_profit_activation"]
-            and current_return <= peak_return - SPEC["trailing_profit_drawdown"]
-        ):
-            exit_row, exit_reason = row, "TRAILING_PROFIT"; break
-        if _loss_recovery_exit(worst_return, current_return):
-            exit_row, exit_reason = row, "LOSS_RECOVERY_TO_PROFIT"; break
-        if reversal_row is not None and row["time"] >= reversal_row["time"]:
-            exit_row, exit_reason = row, "SIGNAL_REVERSAL"; break
-    if exit_row is None:
-        hard_exit_staleness = (hard_exit - future[-1]["time"]).total_seconds() if future else float("inf")
-        if not future or hard_exit_staleness > SPEC["maximum_hard_exit_quote_staleness_seconds"]:
-            diagnostics["selected_trade"] = False
-            diagnostics["exit_data_insufficient"] = True
-            diagnostics["last_exit_quote_staleness_seconds"] = hard_exit_staleness if future else None
-            return None, diagnostics
-        exit_row = future[-1]
-    exit_price = _exit_quote(signal.side, exit_row)
-    gross, commission, sell_tax, net_pnl = _projected_net_pnl(signal.side, entry_price, exit_price, quantity)
-    return DirectionTrade(
-        session_date=session_date, stock_id=signal.stock_id, stock_name=signal.stock_name, side=signal.side,
-        decision_time=signal.decision_time.isoformat(), entry_time=entry_tick["time"].isoformat(),
-        exit_time=exit_row["time"].isoformat(), exit_reason=exit_reason, score=signal.score,
-        volume_delta=signal.volume_delta, large_trade_delta=signal.large_trade_delta,
-        vwap_gap=signal.vwap_gap, book_imbalance=signal.book_imbalance, spread_bps=signal.spread_bps,
-        entry_price=entry_price, exit_price=exit_price, quantity=quantity, notional_used=entry_price * quantity,
-        gross_pnl=gross, commission=commission, sell_tax=sell_tax, net_pnl=net_pnl,
-    ), diagnostics
+    trade, exit_diagnostics = simulate_signal_trade(
+        session_date, stocks[signal.stock_id], signal, entry_tick, entry_price, quantity,
+    )
+    diagnostics.update(exit_diagnostics)
+    diagnostics["selected_trade"] = trade is not None
+    return trade, diagnostics
 
 
 def build_report(session_runs: dict[str, list[Path]], capital: int = 190000) -> dict:
