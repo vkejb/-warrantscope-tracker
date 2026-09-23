@@ -1,0 +1,6 @@
+__pycache__/
+runtime/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.pfx
