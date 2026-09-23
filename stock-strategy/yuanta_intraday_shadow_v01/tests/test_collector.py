@@ -2,8 +2,50 @@ from pathlib import Path
 import hashlib
 import tempfile
 import unittest
+from unittest.mock import Mock
 
 from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem, canonical_bytes
+from yuanta_intraday_shadow_v01.collector_main import _connect_and_login
+
+
+class _EventHook:
+    def __iadd__(self, callback):
+        self.callback = callback
+        return self
+
+
+class _LoginEvent:
+    def clear(self):
+        pass
+
+    def wait(self, _timeout):
+        return True
+
+
+class _FakeAPI:
+    def __init__(self, accepted, login_state):
+        self.accepted = accepted
+        self.login_state = login_state
+        self.OnResponse = _EventHook()
+        self.closed = False
+        self.disposed = False
+
+    def SetLogType(self, _value):
+        pass
+
+    def Open(self, _environment):
+        pass
+
+    def Login(self, *_args):
+        if self.accepted:
+            self.login_state.update({"ok": True, "code": "0001"})
+        return self.accepted
+
+    def Close(self):
+        self.closed = True
+
+    def Dispose(self):
+        self.disposed = True
 
 
 class CollectorContractTests(unittest.TestCase):
@@ -58,6 +100,68 @@ class CollectorContractTests(unittest.TestCase):
         source = (root / "collector.py").read_text() + (root / "collector_main.py").read_text()
         for forbidden in ("SendStockOrder", "SendFutureOrder", "StockOrder(", "FutureOrder("):
             self.assertNotIn(forbidden, source)
+
+    def test_login_rebuilds_connection_and_retries_three_times(self):
+        outcomes = iter((False, False, False, True))
+        login_state = {"ok": False, "code": ""}
+        apis = []
+
+        def trader():
+            api = _FakeAPI(next(outcomes), login_state)
+            apis.append(api)
+            return api
+
+        sleeps = []
+        result = _connect_and_login(
+            {
+                "Trader": trader,
+                "LogType": Mock(NONE="NONE"),
+                "Environment": Mock(PROD="PROD"),
+            },
+            on_response=lambda *_: None,
+            pfx=Path("certificate.pfx"),
+            pfx_password="secret-a",
+            account="S12341234567",
+            trading_password="secret-b",
+            login_event=_LoginEvent(),
+            login_state=login_state,
+            sleep=sleeps.append,
+        )
+
+        self.assertIs(result, apis[-1])
+        self.assertEqual(len(apis), 4)
+        self.assertTrue(all(api.closed and api.disposed for api in apis[:3]))
+        self.assertFalse(apis[-1].closed)
+        self.assertEqual(sleeps, [5, 5, 5, 10, 5, 20, 5])
+
+    def test_login_fails_closed_after_bounded_retries(self):
+        login_state = {"ok": False, "code": ""}
+        apis = []
+
+        def trader():
+            api = _FakeAPI(False, login_state)
+            apis.append(api)
+            return api
+
+        with self.assertRaisesRegex(RuntimeError, "已重試3次"):
+            _connect_and_login(
+                {
+                    "Trader": trader,
+                    "LogType": Mock(NONE="NONE"),
+                    "Environment": Mock(PROD="PROD"),
+                },
+                on_response=lambda *_: None,
+                pfx=Path("certificate.pfx"),
+                pfx_password="secret-a",
+                account="S12341234567",
+                trading_password="secret-b",
+                login_event=_LoginEvent(),
+                login_state=login_state,
+                sleep=lambda _seconds: None,
+            )
+
+        self.assertEqual(len(apis), 4)
+        self.assertTrue(all(api.closed and api.disposed for api in apis))
 
 
 if __name__ == "__main__":

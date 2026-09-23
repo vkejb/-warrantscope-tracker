@@ -15,6 +15,76 @@ from .collector import AppendOnlyRun, DEFAULT_RUNTIME_DIR, load_stage_a_watchlis
 from .main import DEFAULT_VENDOR_DIR, _dragged_path, _load_api, _normalise_account, _safe_text
 
 
+LOGIN_CONNECT_WAIT_SECONDS = 5
+LOGIN_RETRY_DELAYS = (5, 10, 20)
+
+
+def _close_failed_connection(api) -> None:
+    try:
+        api.Close()
+    except Exception:
+        pass
+    try:
+        api.Dispose()
+    except Exception:
+        pass
+
+
+def _connect_and_login(
+    api_types,
+    *,
+    on_response,
+    pfx: Path,
+    pfx_password: str,
+    account: str,
+    trading_password: str,
+    login_event: threading.Event,
+    login_state: dict[str, object],
+    progress_callback=None,
+    sleep=time.sleep,
+):
+    """Open a fresh API connection for every bounded login attempt."""
+    attempts = len(LOGIN_RETRY_DELAYS) + 1
+    last_reason = "登入未成功"
+    for attempt in range(1, attempts + 1):
+        api = None
+        login_event.clear()
+        login_state.update({"ok": False, "code": ""})
+        try:
+            api = api_types["Trader"]()
+            api.SetLogType(api_types["LogType"].NONE)
+            api.OnResponse += on_response
+            print(f"正在開啟連線……（登入嘗試 {attempt}/{attempts}）")
+            api.Open(api_types["Environment"].PROD)
+            sleep(LOGIN_CONNECT_WAIT_SECONDS)
+            accepted = bool(api.Login(str(pfx), pfx_password, account, trading_password))
+            if not accepted:
+                last_reason = "API未接受登入請求"
+            elif not login_event.wait(20):
+                last_reason = "登入回應逾時"
+            elif not bool(login_state["ok"]):
+                code = str(login_state.get("code") or "UNKNOWN")
+                last_reason = f"登入回應失敗 code={code}"
+            else:
+                return api
+        except Exception as exc:
+            last_reason = f"{type(exc).__name__}: {exc}"
+
+        if api is not None:
+            _close_failed_connection(api)
+        if attempt < attempts:
+            delay = LOGIN_RETRY_DELAYS[attempt - 1]
+            print(f"登入未成功：{last_reason}；{delay}秒後重建連線再試。")
+            if progress_callback:
+                progress_callback({
+                    "type": "LOGIN_RETRY", "attempt": attempt,
+                    "next_attempt": attempt + 1, "delay_seconds": delay,
+                    "reason": last_reason,
+                })
+            sleep(delay)
+    raise RuntimeError(f"{last_reason}（已重試{len(LOGIN_RETRY_DELAYS)}次）")
+
+
 def _quote_time(value) -> str:
     try:
         return f"{int(value.bytHour):02d}:{int(value.bytMin):02d}:{int(value.bytSec):02d}.{int(value.ushtMSec):03d}"
@@ -85,7 +155,7 @@ def run(
     artifact = AppendOnlyRun(runtime_dir, seal, items, provenance, compress=compress)
     meta = {x.stock_id: x for x in items}
     login_event = threading.Event()
-    login_ok = False
+    login_state: dict[str, object] = {"ok": False, "code": ""}
     api = None
     opened = logged_in = subscribed_tick = subscribed_book = False
     stock_list = book_list = None
@@ -94,15 +164,14 @@ def run(
     error_type = ""
 
     def on_response(int_mark, _index, response_name, _handle, value):
-        nonlocal login_ok
         name = _safe_text(response_name)
         try:
             if int(int_mark) == 1 and name == "Login":
                 code = _safe_text(value.LoginStatus.MsgCode)
-                login_ok = code in {"0001", "00001"}
+                login_state.update({"ok": code in {"0001", "00001"}, "code": code})
                 print(f"登入結果：{code}｜{_safe_text(value.LoginStatus.MsgContent)}｜帳戶筆數 {_safe_text(value.LoginStatus.Count)}")
                 if progress_callback:
-                    progress_callback({"type": "LOGIN", "ok": login_ok, "code": code})
+                    progress_callback({"type": "LOGIN", "ok": login_state["ok"], "code": code})
                 login_event.set()
                 return
             if int(int_mark) != 2:
@@ -131,19 +200,19 @@ def run(
             artifact.callback_error()
 
     try:
-        api = api_types["Trader"]()
-        api.SetLogType(api_types["LogType"].NONE)
-        api.OnResponse += on_response
-        print("正在開啟連線……")
-        api.Open(api_types["Environment"].PROD)
+        api = _connect_and_login(
+            api_types,
+            on_response=on_response,
+            pfx=pfx,
+            pfx_password=pfx_password,
+            account=account,
+            trading_password=trading_password,
+            login_event=login_event,
+            login_state=login_state,
+            progress_callback=progress_callback,
+        )
         opened = True
-        time.sleep(2)
-        accepted = bool(api.Login(str(pfx), pfx_password, account, trading_password))
         pfx_password = trading_password = ""
-        if not accepted:
-            raise RuntimeError("API未接受登入請求")
-        if not login_event.wait(20) or not login_ok:
-            raise RuntimeError("登入未成功或逾時")
         logged_in = True
 
         stock_list = api_types["List"][api_types["StockTick"]]()
