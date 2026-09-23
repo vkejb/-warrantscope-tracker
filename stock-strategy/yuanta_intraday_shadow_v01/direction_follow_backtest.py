@@ -44,6 +44,7 @@ SPEC = {
     "stop_loss_net_twd": 5000,
     "trailing_profit_activation": 0.02,
     "trailing_profit_drawdown": 0.02,
+    "loss_recovery_required": 0.02,
     "portfolio_notional_cap_twd": 190000,
     "position_size": "maximum_whole_1000_share_board_lots_within_cap",
     "maximum_trades_per_session": 1,
@@ -310,6 +311,14 @@ def _projected_net_pnl(side: str, entry_price: float, exit_price: float, quantit
     return gross, buy_fee + sell_fee, sell_tax, round(gross - buy_fee - sell_fee - sell_tax, 2)
 
 
+def _loss_recovery_exit(worst_return: float, current_return: float) -> bool:
+    return (
+        worst_return < 0
+        and current_return > 0
+        and current_return - worst_return >= SPEC["loss_recovery_required"]
+    )
+
+
 def _reversal_exit_tick(data: dict, signal: DirectionSignal, entry_time: datetime, hard_exit: datetime) -> dict | None:
     prior_time = None
     streak = 0
@@ -381,12 +390,14 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
     reversal_row = _reversal_exit_tick(data, signal, entry_tick["time"], hard_exit)
     exit_row, exit_reason = None, "HARD_EXIT"
     peak_return = 0.0
+    worst_return = 0.0
     entry_notional = entry_price * quantity
     for row in future:
         executable = _exit_quote(signal.side, row)
         _, _, _, projected_net = _projected_net_pnl(signal.side, entry_price, executable, quantity)
         current_return = projected_net / entry_notional
         peak_return = max(peak_return, current_return)
+        worst_return = min(worst_return, current_return)
         if projected_net <= -SPEC["stop_loss_net_twd"]:
             exit_row, exit_reason = row, "STOP_LOSS"; break
         if (
@@ -394,6 +405,8 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
             and current_return <= peak_return - SPEC["trailing_profit_drawdown"]
         ):
             exit_row, exit_reason = row, "TRAILING_PROFIT"; break
+        if _loss_recovery_exit(worst_return, current_return):
+            exit_row, exit_reason = row, "LOSS_RECOVERY_TO_PROFIT"; break
         if reversal_row is not None and row["time"] >= reversal_row["time"]:
             exit_row, exit_reason = row, "SIGNAL_REVERSAL"; break
     if exit_row is None:

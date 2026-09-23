@@ -4,10 +4,15 @@ import tempfile
 import unittest
 
 from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem
-from yuanta_intraday_shadow_v01.direction_follow_backtest import SPEC, build_report
+from yuanta_intraday_shadow_v01.direction_follow_backtest import SPEC, _loss_recovery_exit, build_report
 
 
 class DirectionFollowBacktestTests(unittest.TestCase):
+    def test_loss_recovery_requires_two_points_and_positive_pnl(self):
+        self.assertTrue(_loss_recovery_exit(-0.025, 0.001))
+        self.assertFalse(_loss_recovery_exit(-0.015, 0.001))
+        self.assertFalse(_loss_recovery_exit(-0.025, -0.001))
+
     def _run(self, root: Path) -> Path:
         run = AppendOnlyRun(
             root, {"signal_date": "20260921", "seal_hash": "a" * 64},
@@ -42,7 +47,7 @@ class DirectionFollowBacktestTests(unittest.TestCase):
             self.assertEqual(report["trade_count"], 1)
             self.assertEqual(report["trades"][0]["side"], "LONG")
             self.assertEqual(report["trades"][0]["quantity"], 4000)
-            self.assertEqual(report["trades"][0]["exit_reason"], "TRAILING_PROFIT")
+            self.assertEqual(report["trades"][0]["exit_reason"], "LOSS_RECOVERY_TO_PROFIT")
             self.assertLessEqual(report["trades"][0]["notional_used"], 190000)
             self.assertEqual(SPEC["entry_confirmations"], 1)
             self.assertEqual(SPEC["stop_loss_net_twd"], 5000)
