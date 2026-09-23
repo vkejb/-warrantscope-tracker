@@ -500,7 +500,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     risk = RiskManager(RiskLimits(
         max_daily_loss=Decimal(str(args.max_daily_loss)),
         max_order_value=Decimal(str(args.max_order_value)),
-        max_position_per_stock=int(args.max_position_per_stock),
+        max_position_per_stock=(
+            None if int(args.max_position_per_stock) <= 0
+            else int(args.max_position_per_stock)
+        ),
         max_concurrent_positions=int(args.max_concurrent_positions),
         max_trades_per_day=int(args.max_trades_per_day),
         stale_quote_seconds=Decimal(str(args.entry_quote_staleness)),
@@ -1147,7 +1150,12 @@ def _start_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--reconnect-cooldown", type=float, default=60.0)
     parser.add_argument("--max-daily-loss", type=int, default=5_000)
     parser.add_argument("--max-order-value", type=int, default=190_000)
-    parser.add_argument("--max-position-per-stock", type=int, default=1_000)
+    parser.add_argument(
+        "--max-position-per-stock",
+        type=int,
+        default=0,
+        help="share cap per stock; 0 disables this cap while MAX_ORDER_VALUE still applies",
+    )
     parser.add_argument("--max-concurrent-positions", type=int, default=1)
     parser.add_argument("--max-trades-per-day", type=int, default=1)
     parser.add_argument("--recover-emergency", action="store_true", help="allow exit-only restart while the persistent emergency marker exists")

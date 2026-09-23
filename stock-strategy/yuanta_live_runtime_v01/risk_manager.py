@@ -11,7 +11,7 @@ from typing import Any, Mapping, Sequence
 class RiskLimits:
     max_daily_loss: Decimal = Decimal("5000")
     max_order_value: Decimal = Decimal("190000")
-    max_position_per_stock: int = 1000
+    max_position_per_stock: int | None = None
     max_concurrent_positions: int = 1
     max_trades_per_day: int = 1
     stale_quote_seconds: Decimal = Decimal("5")
@@ -20,13 +20,14 @@ class RiskLimits:
         numeric = (
             self.max_daily_loss,
             self.max_order_value,
-            self.max_position_per_stock,
             self.max_concurrent_positions,
             self.max_trades_per_day,
             self.stale_quote_seconds,
         )
         if any(Decimal(str(value)) <= 0 for value in numeric):
             raise ValueError("all risk limits must be positive")
+        if self.max_position_per_stock is not None and self.max_position_per_stock <= 0:
+            raise ValueError("max_position_per_stock must be positive or disabled")
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,9 +60,10 @@ class RiskManager:
     ) -> RiskDecision:
         reasons: list[str] = []
         requested_quantity = int(signal.quantity)
-        quantity = min(requested_quantity, self.limits.max_position_per_stock)
         price = Decimal(str(signal.entry_price))
         stock_id = str(signal.stock_id).strip().upper()
+        if requested_quantity <= 0 or not price.is_finite() or price <= 0:
+            return RiskDecision(False, ("INVALID_ORDER_SIZE",))
         active_symbols = {
             str(key).split("|", 1)[0]
             for key, value in broker_positions.items()
@@ -72,11 +74,25 @@ class RiskManager:
             for key, value in broker_positions.items()
             if str(key).split("|", 1)[0] == stock_id
         )
+        max_value_quantity = int(
+            self.limits.max_order_value // (price * Decimal("1000"))
+        ) * 1000
+        quantity = min(requested_quantity, max_value_quantity)
+        if self.limits.max_position_per_stock is not None:
+            remaining_stock_limit = max(
+                0, self.limits.max_position_per_stock - stock_quantity
+            )
+            quantity = min(quantity, remaining_stock_limit)
         if halted:
             reasons.append("BROKER_HALTED")
         if quote_age_seconds < 0 or Decimal(str(quote_age_seconds)) > self.limits.stale_quote_seconds:
             reasons.append("STALE_QUOTE")
-        if quantity <= 0 or quantity + stock_quantity > self.limits.max_position_per_stock:
+        if quantity <= 0:
+            reasons.append("MAX_ORDER_VALUE")
+        if (
+            self.limits.max_position_per_stock is not None
+            and quantity + stock_quantity > self.limits.max_position_per_stock
+        ):
             reasons.append("MAX_POSITION_PER_STOCK")
         if stock_id not in active_symbols and len(active_symbols) >= self.limits.max_concurrent_positions:
             reasons.append("MAX_CONCURRENT_POSITIONS")
@@ -103,7 +119,11 @@ class RiskManager:
             "risk_limits": {
                 "MAX_DAILY_LOSS": str(self.limits.max_daily_loss),
                 "MAX_ORDER_VALUE": str(self.limits.max_order_value),
-                "MAX_POSITION_PER_STOCK": self.limits.max_position_per_stock,
+                "MAX_POSITION_PER_STOCK": (
+                    "DISABLED"
+                    if self.limits.max_position_per_stock is None
+                    else self.limits.max_position_per_stock
+                ),
                 "MAX_CONCURRENT_POSITIONS": self.limits.max_concurrent_positions,
                 "MAX_TRADES_PER_DAY": self.limits.max_trades_per_day,
                 "STALE_QUOTE_SECONDS": str(self.limits.stale_quote_seconds),

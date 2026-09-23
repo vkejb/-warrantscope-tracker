@@ -37,10 +37,34 @@ class RiskManagerTests(unittest.TestCase):
         values.update(overrides)
         return self.manager.evaluate_entry(**values)
 
-    def test_entry_is_clamped_to_one_lot(self):
+    def test_entry_uses_multiple_lots_within_order_value(self):
         result = self.evaluate()
         self.assertTrue(result.approved)
+        self.assertEqual(result.intent["quantity_lots"], "5")
+
+    def test_optional_share_cap_can_still_limit_to_one_lot(self):
+        manager = RiskManager(RiskLimits(max_position_per_stock=1000))
+        result = manager.evaluate_entry(
+            signal=self.signal,
+            quote_age_seconds=0.5,
+            broker_positions={},
+            open_orders=[],
+            trades_today=0,
+        )
+        self.assertTrue(result.approved)
         self.assertEqual(result.intent["quantity_lots"], "1")
+
+    def test_order_value_cap_resizes_requested_quantity(self):
+        self.signal.quantity = 10000
+        result = self.evaluate()
+        self.assertTrue(result.approved)
+        self.assertEqual(result.intent["quantity_lots"], "6")
+        self.assertLessEqual(
+            Decimal(result.intent["suggested_limit_price"])
+            * Decimal(result.intent["quantity_lots"])
+            * Decimal("1000"),
+            Decimal("190000"),
+        )
 
     def test_stale_quote_is_rejected(self):
         result = self.evaluate(quote_age_seconds=5.1)
