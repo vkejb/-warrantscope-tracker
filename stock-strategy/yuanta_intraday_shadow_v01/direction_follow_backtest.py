@@ -42,7 +42,7 @@ SPEC = {
     "stop_loss": 0.01,
     "take_profit": 0.02,
     "portfolio_notional_cap_twd": 190000,
-    "position_size": "one_1000_share_board_lot",
+    "position_size": "maximum_whole_1000_share_board_lots_within_cap",
     "maximum_trades_per_session": 1,
     "fill_proxy": "displayed_bid_or_ask_plus_one_adverse_tick",
     "commission_rate_each_side": 0.000855,
@@ -337,7 +337,10 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
                         else max(_tick_size(entry_tick["bid"]), entry_tick["bid"] - _tick_size(entry_tick["bid"]))
                     )
                     if entry_price * 1000 <= capital:
-                        confirmed.append((signal.score, entry_price, signal, entry_tick))
+                        lots = math.floor(capital / (entry_price * 1000))
+                        quantity = lots * 1000
+                        notional = entry_price * quantity
+                        confirmed.append((signal.score, notional, signal, entry_tick, entry_price, quantity))
                     else:
                         diagnostics["confirmed_but_unaffordable"] += 1
             previous[stock_id] = (signal.side, decision) if signal else ("", decision)
@@ -347,7 +350,7 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
     if selected is None:
         return None, diagnostics
     diagnostics["selected_trade"] = True
-    _, entry_price, signal, entry_tick = selected
+    _, _, signal, entry_tick, entry_price, quantity = selected
     data = stocks[signal.stock_id]
     hard_hour, hard_minute = map(int, SPEC["hard_exit_time"].split(":"))
     hard_exit = entry_tick["time"].replace(hour=hard_hour, minute=hard_minute, second=0, microsecond=0)
@@ -373,7 +376,6 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
             return None, diagnostics
         exit_row = future[-1]
     exit_price = _exit_quote(signal.side, exit_row)
-    quantity = 1000
     buy_notional = entry_price * quantity if signal.side == "LONG" else exit_price * quantity
     sell_notional = exit_price * quantity if signal.side == "LONG" else entry_price * quantity
     buy_fee, sell_fee = _commission(buy_notional), _commission(sell_notional)

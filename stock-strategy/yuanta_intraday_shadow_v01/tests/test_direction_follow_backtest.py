@@ -17,7 +17,7 @@ class DirectionFollowBacktestTests(unittest.TestCase):
         for index in range(280):
             stamp = start.timestamp() + index
             received = datetime.fromtimestamp(stamp, timezone.utc).isoformat().replace("+00:00", "Z")
-            price = 100.0 if index < 180 else 100.0 + (index - 179) * 0.03
+            price = 40.0 if index < 180 else 40.0 + (index - 179) * 0.015
             run.append("ticks", {
                 "received_at": received, "stock_id": "1001", "deal_price": str(price),
                 "deal_volume": "20", "buy_price": str(price - 0.1), "sell_price": str(price),
@@ -36,6 +36,7 @@ class DirectionFollowBacktestTests(unittest.TestCase):
             report = build_report({"20260922": [run_dir]})
             self.assertEqual(report["trade_count"], 1)
             self.assertEqual(report["trades"][0]["side"], "LONG")
+            self.assertEqual(report["trades"][0]["quantity"], 4000)
             self.assertLessEqual(report["trades"][0]["notional_used"], 190000)
             self.assertEqual(report["actual_orders"], 0)
             self.assertEqual(report["actual_fills"], 0)
