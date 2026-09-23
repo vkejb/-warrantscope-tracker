@@ -59,6 +59,15 @@ class ExitDecision:
     current_return: float
 
 
+@dataclass(frozen=True, slots=True)
+class SafeExitQuote:
+    price: float
+    received_at: datetime
+    age_seconds: float
+    best_bid: float
+    best_ask: float
+
+
 @dataclass(slots=True)
 class _StockState:
     stock_name: str
@@ -371,6 +380,11 @@ class LiveDirectionEngine:
         gross = sell_notional - buy_notional
         return round(gross - buy_fee - sell_fee - sell_tax, 2)
 
+    def projected_net(self, position: ManagedPosition, exit_price: float) -> float:
+        return self._projected_net(
+            position.side, position.entry_price, exit_price, position.quantity
+        )
+
     def latest_exit_price(self, position: ManagedPosition) -> float | None:
         state = self._states.get(position.stock_id)
         if state is None or not state.ticks:
@@ -380,10 +394,56 @@ class LiveDirectionEngine:
             return max(_tick_size(row["bid"]), row["bid"] - _tick_size(row["bid"]))
         return row["ask"] + _tick_size(row["ask"])
 
-    def evaluate_exit(self, position: ManagedPosition, now: datetime, *, reversal: bool = False) -> ExitDecision | None:
-        price = self.latest_exit_price(position)
-        if price is None:
+    def quote_age_seconds(self, symbol: str, now: datetime) -> float | None:
+        state = self._states.get(str(symbol))
+        if state is None or not state.ticks:
             return None
+        return (now.astimezone(TAIPEI) - state.ticks[-1]["time"]).total_seconds()
+
+    def safe_exit_quote(
+        self,
+        position: ManagedPosition,
+        now: datetime,
+        *,
+        max_age_seconds: float = 3.0,
+        max_spread_bps: float = 300.0,
+    ) -> SafeExitQuote | None:
+        """Return a fresh, bounded executable quote or fail closed."""
+        state = self._states.get(position.stock_id)
+        if state is None or not state.ticks:
+            return None
+        row = state.ticks[-1]
+        age = (now.astimezone(TAIPEI) - row["time"]).total_seconds()
+        bid, ask = float(row["bid"]), float(row["ask"])
+        if age < 0 or age > max_age_seconds or bid <= 0 or ask <= 0 or ask < bid:
+            return None
+        midpoint = (bid + ask) / 2
+        if midpoint <= 0 or (ask - bid) / midpoint * 10_000 > max_spread_bps:
+            return None
+        raw = (
+            max(_tick_size(bid), bid - _tick_size(bid))
+            if position.side == "LONG"
+            else ask + _tick_size(ask)
+        )
+        price = raw
+        if price <= 0:
+            return None
+        return SafeExitQuote(price, row["time"], age, bid, ask)
+
+    def evaluate_exit(
+        self,
+        position: ManagedPosition,
+        now: datetime,
+        *,
+        reversal: bool = False,
+        max_quote_age_seconds: float = 3.0,
+    ) -> ExitDecision | None:
+        quote = self.safe_exit_quote(
+            position, now, max_age_seconds=max_quote_age_seconds
+        )
+        if quote is None:
+            return None
+        price = quote.price
         projected = self._projected_net(position.side, position.entry_price, price, position.quantity)
         denominator = position.entry_price * position.quantity
         current_return = projected / denominator if denominator else 0.0

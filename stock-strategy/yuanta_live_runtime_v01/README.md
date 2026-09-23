@@ -24,6 +24,7 @@
 - 09:35 起進場，13:10 後不再新開倉
 - 單日最多一次進場嘗試
 - 預設資金上限 190,000 元，以整張 1,000 股 sizing
+- 第一階段每檔最多 1 張、同時最多 1 個策略部位、每日最多 1 次進場
 - 淨損失 -5,000 元停損
 - 2% 啟動移動停利、2% 回撤出場
 - 虧損後回正達規則門檻出場
@@ -87,7 +88,17 @@ python3 -m yuanta_live_runtime_v01.main start-prod --live \
 python3 -m yuanta_live_runtime_v01.main kill --reason "manual stop"
 ```
 
-running process 看到 persistent `EMERGENCY_STOP` marker 後會停止新開倉、取消尚未完成的 entry，並對已成交策略部位送出平倉。平倉後 broker store 進入 halt。
+running process 看到 persistent `EMERGENCY_STOP` marker 後會停止新開倉、取消尚未完成的 entry，並對已成交策略部位送出平倉。平倉後 broker store 進入 halt。這個不帶 `--live` 的形式只建立持久停止標記，不會自行建立第二條券商連線。
+
+若原 runtime 已停止，需要由獨立控制程序實際登入券商、對帳並執行 exit-only 救援，仍須三重 LIVE 授權：
+
+```bash
+EXECUTION_MODE=LIVE ENABLE_LIVE_TRADING=YES \
+python3 -m yuanta_live_runtime_v01.main kill --live --environment PROD \
+  --reason "independent emergency recovery"
+```
+
+若 heartbeat 顯示原 runtime 仍存活，控制指令只留下停止標記，避免兩個程序同時管理同一帳戶；若原 runtime 已停止，才由控制程序進入獨立救援。
 
 如果原本的 runtime 已經中斷，marker 仍會阻止普通啟動。要做「只准退場、不准新開倉」的復原啟動：
 
@@ -96,7 +107,7 @@ EXECUTION_MODE=LIVE ENABLE_LIVE_TRADING=YES \
 python3 -m yuanta_live_runtime_v01.main start-prod --live --recover-emergency
 ```
 
-確認 broker 無未決委託、策略部位已平，再解除：
+確認 broker 無未決委託、策略部位已平，再解除。`clear-halt` 會重新登入並以元大實際委託／庫存核對 baseline，不再只相信本機 SQLite：
 
 ```bash
 python3 -m yuanta_live_runtime_v01.main clear-halt --reason "manual verification complete"
@@ -107,5 +118,16 @@ python3 -m yuanta_live_runtime_v01.main clear-halt --reason "manual verification
 - 目前策略本身仍是從研究規則搬到 live runtime；「可以下單」不等於已證明有正期望值。
 - SHORT 不自動猜 `StockOrderType`。
 - 任一送單結果不明會沿用 adapter 的 UNKNOWN + persistent halt，不自動重送。
+- UNKNOWN／REJECTED／CANCELED／EXPIRED 的退場單會先重新對帳實際剩餘股數，再以新的 deterministic rescue intent 繼續處理；每次都寫入 CRITICAL 通知紀錄。
 - 無持倉時若即時行情長時間中斷，runtime 會重建 SPARK session 並重新 reconciliation 後才繼續；有曝險時不會盲目重連送單，而會轉成退場優先。
 - 行情在持倉期間長時間 stale 會 fail closed，不會用猜測價格繼續操作。
+
+## Watchdog
+
+runtime 每一輪都更新 `runtime/heartbeat.json`。可由另一個程序監看：
+
+```bash
+python3 -m yuanta_live_runtime_v01.main watchdog
+```
+
+heartbeat 遺失、超時或不安全停止會寫入持久 CRITICAL ledger，並嘗試沿用既有 Telegram／macOS 通知系統。

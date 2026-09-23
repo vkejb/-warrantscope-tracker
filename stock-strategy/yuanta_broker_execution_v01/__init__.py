@@ -1,6 +1,7 @@
 """Yuanta SPARK live broker execution adapter."""
 
 from .adapter import (
+    BrokerStateSnapshot,
     BrokerAdapterError,
     LiveExecutionDisabled,
     ReconciliationMismatch,
@@ -33,6 +34,7 @@ __all__ = [
     "APCode",
     "BrokerAdapterError",
     "BrokerOrderStatus",
+    "BrokerStateSnapshot",
     "BrokerStateHalted",
     "DuplicateIntentConflict",
     "ExecutionIntent",

@@ -55,6 +55,13 @@ class ReconciliationResult:
     order_mismatches: list[dict[str, Any]]
 
 
+@dataclass(frozen=True, slots=True)
+class BrokerStateSnapshot:
+    orders: list[dict[str, Any]]
+    open_orders: list[dict[str, Any]]
+    positions: dict[str, int]
+
+
 def _safe(value: Any, name: str, default: Any = None) -> Any:
     try:
         return getattr(value, name)
@@ -280,7 +287,7 @@ class YuantaSparkExecutionAdapter:
     def __exit__(self, *_: object) -> None:
         self.close()
 
-    def _require_live(self) -> None:
+    def _require_live(self, *, allow_halted: bool = False) -> None:
         if self._closed:
             raise BrokerAdapterError("adapter is closed")
         if not self.live_gate.authorized:
@@ -292,7 +299,8 @@ class YuantaSparkExecutionAdapter:
             raise ReconciliationRequired(
                 "startup reconciliation has not passed; call reconcile() before broker sends"
             )
-        self.store.assert_not_halted()
+        if not allow_halted:
+            self.store.assert_not_halted()
 
     def _stock_list(self, order: Any) -> Any:
         factory = self.api_types["List"][self.api_types["StockOrder"]]
@@ -384,8 +392,14 @@ class YuantaSparkExecutionAdapter:
         self._send(stored, stock, operation="submit")
         return self.store.get(stored.client_order_id)
 
-    def cancel(self, client_order_id: str, reason: str = "strategy cancel") -> StoredOrder:
-        self._require_live()
+    def cancel(
+        self,
+        client_order_id: str,
+        reason: str = "strategy cancel",
+        *,
+        emergency: bool = False,
+    ) -> StoredOrder:
+        self._require_live(allow_halted=emergency)
         stored = self.store.get(client_order_id)
         inflight = self.store.pending_mutation(client_order_id)
         if inflight is not None:
@@ -418,8 +432,32 @@ class YuantaSparkExecutionAdapter:
         self._send(pending, stock, operation="cancel")
         return self.store.get(client_order_id)
 
-    def modify_price(self, client_order_id: str, new_price: Any) -> StoredOrder:
-        self._require_live()
+    def submit_rescue(self, intent: ExecutionIntent) -> StoredOrder:
+        """Submit only an exposure-reducing EXIT while the persistent halt is active."""
+        if not isinstance(intent, ExecutionIntent) or intent.purpose.value != "EXIT":
+            raise BrokerAdapterError("rescue submission accepts EXIT intents only")
+        signed_position = int(self.store.positions().get(intent.symbol, 0))
+        reduces_long = signed_position > 0 and intent.side.value == "SELL"
+        reduces_short = signed_position < 0 and intent.side.value == "BUY"
+        if not (reduces_long or reduces_short):
+            raise BrokerAdapterError("rescue order must reduce an existing local position")
+        if intent.quantity > abs(signed_position):
+            raise BrokerAdapterError("rescue order exceeds remaining local position")
+        self._require_live(allow_halted=True)
+        stored, created = self.store.reserve(intent, allow_halted=True)
+        if not created:
+            return stored
+        identify = self.store.create_request(stored.client_order_id, "NEW")
+        self.store.mark_send_pending(stored.client_order_id)
+        stored = self.store.get(stored.client_order_id)
+        stock = self._build_stock_order(stored, identify=identify, trade_kind=0)
+        self._send(stored, stock, operation="rescue-submit")
+        return self.store.get(stored.client_order_id)
+
+    def modify_price(
+        self, client_order_id: str, new_price: Any, *, emergency: bool = False
+    ) -> StoredOrder:
+        self._require_live(allow_halted=emergency)
         stored = self.store.get(client_order_id)
         inflight = self.store.pending_mutation(client_order_id)
         if inflight is not None:
@@ -554,6 +592,34 @@ class YuantaSparkExecutionAdapter:
                 expected_broker_positions=expected_positions,
                 broker_positions=broker_positions,
                 order_mismatches=[],
+            )
+
+    def inspect_broker_state(self, *, timeout: float = 20.0) -> BrokerStateSnapshot:
+        """Query actual broker orders and inventory without trusting local SQLite."""
+        with self._reconcile_lock:
+            self.request_reconciliation()
+            if not self._detail_event.wait(timeout):
+                self.store.halt("BROKER_INSPECTION_DETAIL_TIMEOUT")
+                raise BrokerAdapterError("GetRealReport timed out")
+            if not self._merge_event.wait(timeout):
+                self.store.halt("BROKER_INSPECTION_ORDER_TIMEOUT")
+                raise BrokerAdapterError("GetRealReportMerge timed out")
+            if not self._position_event.wait(timeout):
+                self.store.halt("BROKER_INSPECTION_POSITION_TIMEOUT")
+                raise BrokerAdapterError("GetStoreSummary timed out")
+            self._queue.join()
+            orders = list(self._latest_merge or [])
+            terminal = {
+                BrokerOrderStatus.FILLED,
+                BrokerOrderStatus.CANCELED,
+                BrokerOrderStatus.EXPIRED,
+                BrokerOrderStatus.REJECTED,
+            }
+            open_orders = [row for row in orders if _remote_status(row) not in terminal]
+            return BrokerStateSnapshot(
+                orders=orders,
+                open_orders=open_orders,
+                positions=dict(self._latest_positions or {}),
             )
 
     def _compare_orders(self, merge: list[dict[str, Any]]) -> list[dict[str, Any]]:

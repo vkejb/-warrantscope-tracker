@@ -8,6 +8,7 @@ from yuanta_broker_execution_v01 import (
     BrokerOrderStatus,
     BrokerStateHalted,
     ExecutionIntent,
+    IntentPurpose,
     LiveExecutionDisabled,
     LiveTradingGate,
     LiveOrderStore,
@@ -216,6 +217,50 @@ class AdapterTests(unittest.TestCase):
                 "price": 171.5,
             })
         self.assertEqual(len(self.api.sent), 0)
+
+    def test_rescue_exit_is_allowed_while_halted_but_entry_is_not(self):
+        entry = self.adapter.submit(self.intent("filled-entry"))
+        self.store.record_fill(
+            entry.client_order_id,
+            fill_id="filled-entry-1",
+            quantity=1000,
+            price="171.5",
+        )
+        self.api.sent.clear()
+        self.store.halt("emergency")
+        with self.assertRaises(BrokerStateHalted):
+            self.adapter.submit(self.intent("blocked-entry"))
+        rescue = ExecutionIntent(
+            intent_id="rescue-exit-1",
+            symbol="3605",
+            side=Side.SELL,
+            quantity=1000,
+            price=Decimal("171.0"),
+            order_type=StockOrderType.CASH,
+            purpose=IntentPurpose.EXIT,
+        )
+        order = self.adapter.submit_rescue(rescue)
+        self.assertEqual(order.status, BrokerOrderStatus.SEND_PENDING)
+        self.assertEqual(len(self.api.sent), 1)
+
+    def test_rescue_exit_cannot_create_exposure_from_flat(self):
+        self.store.halt("emergency")
+        rescue = ExecutionIntent(
+            intent_id="unsafe-rescue",
+            symbol="3605",
+            side=Side.SELL,
+            quantity=1000,
+            price=Decimal("171.0"),
+            purpose=IntentPurpose.EXIT,
+        )
+        with self.assertRaisesRegex(Exception, "reduce an existing"):
+            self.adapter.submit_rescue(rescue)
+
+    def test_broker_inspection_uses_actual_remote_positions(self):
+        self.api.positions = {"3605": 1000}
+        snapshot = self.adapter.inspect_broker_state(timeout=1)
+        self.assertEqual(snapshot.positions, {"3605|0": 1000})
+        self.assertEqual(snapshot.open_orders, [])
 
     def test_send_result_binds_order_number(self):
         stored = self.adapter.submit(self.intent())

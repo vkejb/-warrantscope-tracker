@@ -37,7 +37,10 @@ from yuanta_intraday_shadow_v01.collector_main import _book_payload
 from yuanta_intraday_shadow_v01.main import DEFAULT_VENDOR_DIR as SHADOW_DEFAULT_VENDOR_DIR, _safe_text
 from yuanta_intraday_shadow_v01.yuanta_keychain import load_credentials, status as credential_status
 
+from .notifications import RuntimeNotifier
+from .risk_manager import RiskLimits, RiskManager
 from .strategy import LiveDirectionEngine, ManagedPosition
+from .watchdog import Heartbeat, monitor as watchdog_monitor
 
 TAIPEI = ZoneInfo("Asia/Taipei")
 MODULE_DIR = Path(__file__).resolve().parent
@@ -128,6 +131,7 @@ class _Session:
         self.book_list = None
         self.subscribed = False
         self.last_quote_at: datetime | None = None
+        self.quote_started_at: datetime | None = None
 
     def _on_response(self, int_mark, _index, response_name, _handle, value) -> None:
         name = _safe_text(response_name)
@@ -250,10 +254,17 @@ class _Session:
             book.MarketType = markets[item.market]
             book.StockCode = item.stock_id
             self.book_list.Add(book)
-        self.api.SubscribeStockTick(self.account, self.stock_list, self.api_types["Language"].UTF8)
-        self.api.SubscribeFiveTickA(self.account, self.book_list, self.api_types["Language"].UTF8)
+        stock_ok = self.api.SubscribeStockTick(
+            self.account, self.stock_list, self.api_types["Language"].UTF8
+        )
+        book_ok = self.api.SubscribeFiveTickA(
+            self.account, self.book_list, self.api_types["Language"].UTF8
+        )
+        if stock_ok is False or book_ok is False:
+            raise RuntimeError("quote subscription was rejected by broker API")
         self.subscribed = True
-        self.last_quote_at = datetime.now(TAIPEI)  # grace period until real callbacks arrive
+        self.last_quote_at = None
+        self.quote_started_at = datetime.now(TAIPEI)
         self.logger("QUOTES_SUBSCRIBED", count=len(items))
 
     def close(self) -> None:
@@ -290,11 +301,63 @@ class _Session:
         self.subscribed = False
         self.stock_list = None
         self.book_list = None
+        self.last_quote_at = None
+        self.quote_started_at = None
 
 
 
 def _stamp(value: str) -> datetime:
     return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(TAIPEI)
+
+
+def _realized_pnl_today(store: LiveOrderStore, engine: LiveDirectionEngine, now: datetime) -> Decimal:
+    today = now.astimezone(TAIPEI).date()
+    entries = [
+        order for order in store.orders()
+        if order.purpose.value == "ENTRY"
+        and order.status == BrokerOrderStatus.FILLED
+        and order.average_fill_price is not None
+        and _stamp(order.created_at).date() == today
+    ]
+    exits = [
+        order for order in store.orders()
+        if order.purpose.value == "EXIT"
+        and order.status == BrokerOrderStatus.FILLED
+        and order.average_fill_price is not None
+        and _stamp(order.created_at).date() == today
+    ]
+    total = Decimal("0")
+    unused = list(exits)
+    for entry in entries:
+        match = next(
+            (
+                order for order in unused
+                if order.symbol == entry.symbol
+                and order.side != entry.side
+                and _stamp(order.created_at) >= _stamp(entry.created_at)
+            ),
+            None,
+        )
+        if match is None:
+            continue
+        unused.remove(match)
+        quantity = min(entry.filled_quantity, match.filled_quantity)
+        side = "LONG" if entry.side.value == "BUY" else "SHORT"
+        total += Decimal(str(engine._projected_net(
+            side,
+            float(entry.average_fill_price),
+            float(match.average_fill_price),
+            quantity,
+        )))
+    return total
+
+
+def _trades_today(store: LiveOrderStore, now: datetime) -> int:
+    today = now.astimezone(TAIPEI).date()
+    return sum(
+        1 for order in store.orders()
+        if order.purpose.value == "ENTRY" and _stamp(order.created_at).date() == today
+    )
 
 
 def _recover_runtime_state(store: LiveOrderStore, metadata: dict[str, str], now: datetime) -> dict[str, Any]:
@@ -400,26 +463,6 @@ def _order_type(value: str | None) -> StockOrderType | None:
     return StockOrderType(str(value))
 
 
-def _strategy_raw(*, signal, purpose: str, quantity: int, price: float, reason: str = "") -> dict[str, Any]:
-    if purpose == "ENTRY":
-        side = "BUY" if signal.side == "LONG" else "SELL"
-        stamp = signal.decision_time.strftime("%Y%m%d-%H%M%S")
-        intent_id = f"realtime-{stamp}-{signal.stock_id}-{signal.side.lower()}-entry"
-    else:
-        side = "SELL" if signal.side == "LONG" else "BUY"
-        stamp = datetime.now(TAIPEI).strftime("%Y%m%d-%H%M%S")
-        intent_id = f"realtime-{stamp}-{signal.stock_id}-{signal.side.lower()}-exit-{reason.lower()}"
-    return {
-        "status": "APPROVED",
-        "intent_id": intent_id,
-        "stock_id": signal.stock_id,
-        "side": side,
-        "intent_type": purpose,
-        "quantity_lots": str(Decimal(quantity) / Decimal(1000)),
-        "suggested_limit_price": str(Decimal(str(price))),
-    }
-
-
 def _decision_floor(now: datetime) -> datetime:
     step = 30
     second = (now.second // step) * step
@@ -433,6 +476,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     kill_path = runtime_dir / "EMERGENCY_STOP"
     baseline_path = args.baseline.resolve()
     db_path = runtime_dir / "live-orders.sqlite"
+    notifier = RuntimeNotifier(runtime_dir)
+    heartbeat = Heartbeat(runtime_dir)
+    gate = LiveTradingGate.from_environment(cli_live=bool(args.live))
+    if submit_live and not gate.authorized:
+        raise RuntimeError("LIVE start requested but broker gate is not authorized")
 
     def log(event: str, **payload: Any) -> None:
         row = {"at": utc_now(), "event": event, **payload}
@@ -449,6 +497,14 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     _validate_watchlist_day(str(seal["signal_date"]))
     metadata = {item.stock_id: item.stock_name for item in items}
     engine = LiveDirectionEngine(metadata, capital_twd=args.capital)
+    risk = RiskManager(RiskLimits(
+        max_daily_loss=Decimal(str(args.max_daily_loss)),
+        max_order_value=Decimal(str(args.max_order_value)),
+        max_position_per_stock=int(args.max_position_per_stock),
+        max_concurrent_positions=int(args.max_concurrent_positions),
+        max_trades_per_day=int(args.max_trades_per_day),
+        stale_quote_seconds=Decimal(str(args.entry_quote_staleness)),
+    ))
     credentials = load_credentials()
     api_types = _extend_quote_types(load_api_types(args.vendor_dir.resolve()))
     session = _Session(api_types=api_types, environment=environment, credentials=credentials, engine=engine, logger=log)
@@ -456,7 +512,6 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     short_cover = _order_type(args.short_cover_order_type)
     allow_short = short_entry is not None and short_cover is not None
     baseline = _load_baseline(baseline_path)
-    gate = LiveTradingGate.from_environment(cli_live=bool(args.live))
     stop_event = threading.Event()
 
     def stop_handler(_signum, _frame):
@@ -482,6 +537,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     trade_attempted = False
     quote_stale_triggered = False
     last_reconnect_at: datetime | None = None
+    exit_attempt = 0
+    next_exit_retry_at: datetime | None = None
+    exit_quote_alerted = False
+    clean_shutdown = False
     try:
         session.connect()
         assert session.api is not None
@@ -495,10 +554,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         )
         reconciliation = adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
         log("RECONCILIATION_PASSED", result=asdict(reconciliation), gate=gate.public_snapshot())
-        if store.control_state()["halted"]:
+        if store.control_state()["halted"] and not (
+            submit_live and args.recover_emergency and kill_path.exists()
+        ):
             raise RuntimeError(f"broker execution store is halted: {store.control_state().get('reason')}")
-        if submit_live and not gate.authorized:
-            raise RuntimeError("LIVE start requested but broker gate is not authorized")
         recovered = _recover_runtime_state(store, metadata, datetime.now(TAIPEI))
         entry_order_id = recovered["entry_order_id"]
         entry_signal = recovered["entry_signal"]
@@ -525,10 +584,19 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             short_enabled=allow_short,
             gate=gate.public_snapshot(),
         )
+        heartbeat.beat("RUNNING", environment=environment, submit_live=submit_live)
 
         while True:
             now = datetime.now(TAIPEI)
             emergency = kill_path.exists() or stop_event.is_set()
+            heartbeat.beat(
+                "EMERGENCY_EXIT" if emergency else "RUNNING",
+                environment=environment,
+                submit_live=submit_live,
+                position=None if position is None else position.stock_id,
+                entry_order_id=entry_order_id,
+                exit_order_id=exit_order_id,
+            )
             decision = _decision_floor(now)
             decision_changed = engine.last_decision is None or decision > engine.last_decision
 
@@ -539,6 +607,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 if submit_live:
                     store.halt("MANUAL_EMERGENCY_STOP_NO_EXPOSURE")
                 log("EMERGENCY_STOP_COMPLETE", exposure="NONE")
+                clean_shutdown = True
                 return 0
 
             # Entry lifecycle and actual fill state.
@@ -592,11 +661,28 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 elif not trade_attempted and not emergency and entry_order_id is None:
                     candidate = engine.choose_entry(decision, allow_short=allow_short)
                     if candidate is not None:
-                        log("APPROVED_CANDIDATE", candidate=asdict(candidate))
+                        age = engine.quote_age_seconds(candidate.stock_id, now)
+                        decision_result = risk.evaluate_entry(
+                            signal=candidate,
+                            quote_age_seconds=float("inf") if age is None else age,
+                            broker_positions=store.positions(),
+                            open_orders=store.orders(open_only=True),
+                            trades_today=_trades_today(store, now),
+                            realized=_realized_pnl_today(store, engine, now),
+                            halted=bool(store.control_state()["halted"]),
+                        )
+                        if not decision_result.approved:
+                            log(
+                                "RISK_REJECTED_CANDIDATE",
+                                candidate=asdict(candidate),
+                                reasons=decision_result.reasons,
+                            )
+                            continue
+                        log("RISK_APPROVED_CANDIDATE", candidate=asdict(candidate))
                         if submit_live:
-                            raw = _strategy_raw(signal=candidate, purpose="ENTRY", quantity=candidate.quantity, price=candidate.entry_price)
+                            assert decision_result.intent is not None
                             intent = bridge_strategy_intent(
-                                raw,
+                                decision_result.intent,
                                 short_entry_order_type=short_entry,
                                 short_cover_order_type=short_cover,
                             )
@@ -611,37 +697,85 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
 
             # Exit rule may trigger only after an actual fill exists. If entry still has a live remainder,
             # cancel it first so the exit quantity cannot race against later entry fills.
-            if position is not None and not position.exit_submitted:
-                exit_decision = engine.evaluate_exit(position, now, reversal=reversal)
+            if (
+                position is not None
+                and not position.exit_submitted
+                and (next_exit_retry_at is None or now >= next_exit_retry_at)
+            ):
+                safe_quote = engine.safe_exit_quote(
+                    position, now, max_age_seconds=args.exit_quote_staleness
+                )
+                if safe_quote is not None:
+                    exit_quote_alerted = False
+                if safe_quote is not None and risk.loss_kill_required(
+                    realized=_realized_pnl_today(store, engine, now),
+                    unrealized=Decimal(str(engine.projected_net(position, safe_quote.price))),
+                ):
+                    pending_exit_reason = "MAX_DAILY_LOSS"
+                    kill_path.write_text(f"{utc_now()} MAX_DAILY_LOSS\n", encoding="utf-8")
+                    emergency = True
+                    notifier.critical(
+                        "MAX_DAILY_LOSS",
+                        "Daily loss boundary reached; entry is disabled and exit recovery is active",
+                        stock_id=position.stock_id,
+                    )
+                exit_decision = engine.evaluate_exit(
+                    position,
+                    now,
+                    reversal=reversal,
+                    max_quote_age_seconds=args.exit_quote_staleness,
+                )
                 if emergency and exit_decision is None:
-                    price = engine.latest_exit_price(position)
-                    if price is not None:
+                    if safe_quote is not None:
                         from .strategy import ExitDecision
-                        exit_decision = ExitDecision("EMERGENCY_STOP", price, 0.0, 0.0)
+                        projected = engine.projected_net(position, safe_quote.price)
+                        exit_decision = ExitDecision(
+                            pending_exit_reason or "EMERGENCY_STOP",
+                            safe_quote.price,
+                            projected,
+                            projected / (position.entry_price * position.quantity),
+                        )
+                    elif not exit_quote_alerted:
+                        exit_quote_alerted = True
+                        notifier.critical(
+                            "EXIT_QUOTE_UNAVAILABLE",
+                            "Exposure exists but no fresh bounded quote is available; no stale-price order was sent",
+                            stock_id=position.stock_id,
+                        )
                 if exit_decision is not None:
                     pending_exit_reason = exit_decision.reason
                     entry_terminal = entry_order_id is None or store.get(entry_order_id).status in TERMINAL
                     if not entry_terminal:
                         if not entry_cancel_requested and store.get(entry_order_id).broker_order_no:
-                            adapter.cancel(entry_order_id, f"exit:{exit_decision.reason}")
+                            adapter.cancel(
+                                entry_order_id,
+                                f"exit:{exit_decision.reason}",
+                                emergency=emergency,
+                            )
                             entry_cancel_requested = True
                             log("ENTRY_CANCEL_SENT", client_order_id=entry_order_id, reason=exit_decision.reason)
                     elif submit_live:
-                        raw = _strategy_raw(
-                            signal=position,
-                            purpose="EXIT",
+                        exit_attempt += 1
+                        raw = risk.approve_exit(
+                            position=position,
                             quantity=position.quantity,
                             price=exit_decision.price,
                             reason=exit_decision.reason,
+                            attempt=exit_attempt,
                         )
                         intent = bridge_strategy_intent(
                             raw,
                             short_entry_order_type=short_entry,
                             short_cover_order_type=short_cover,
                         )
-                        order = adapter.submit(intent)
+                        order = (
+                            adapter.submit_rescue(intent)
+                            if emergency or store.control_state()["halted"] or exit_attempt > 1
+                            else adapter.submit(intent)
+                        )
                         exit_order_id = order.client_order_id
                         position.exit_submitted = True
+                        next_exit_retry_at = None
                         last_exit_reprice = now
                         log("EXIT_SUBMITTED", client_order_id=exit_order_id, reason=exit_decision.reason, quantity=intent.quantity, price=str(intent.price), projected_net_pnl=exit_decision.projected_net_pnl)
 
@@ -651,16 +785,31 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 and pending_exit_reason is not None
                 and position is not None
                 and not position.exit_submitted
+                and (next_exit_retry_at is None or now >= next_exit_retry_at)
                 and entry_order_id is not None
                 and store.get(entry_order_id).status in TERMINAL
             ):
-                price = engine.latest_exit_price(position)
-                if price is not None:
-                    raw = _strategy_raw(signal=position, purpose="EXIT", quantity=position.quantity, price=price, reason=pending_exit_reason)
+                safe_quote = engine.safe_exit_quote(
+                    position, now, max_age_seconds=args.exit_quote_staleness
+                )
+                if safe_quote is not None:
+                    exit_attempt += 1
+                    raw = risk.approve_exit(
+                        position=position,
+                        quantity=position.quantity,
+                        price=safe_quote.price,
+                        reason=pending_exit_reason,
+                        attempt=exit_attempt,
+                    )
                     intent = bridge_strategy_intent(raw, short_entry_order_type=short_entry, short_cover_order_type=short_cover)
-                    order = adapter.submit(intent)
+                    order = (
+                        adapter.submit_rescue(intent)
+                        if emergency or store.control_state()["halted"] or exit_attempt > 1
+                        else adapter.submit(intent)
+                    )
                     exit_order_id = order.client_order_id
                     position.exit_submitted = True
+                    next_exit_retry_at = None
                     last_exit_reprice = now
                     log("EXIT_SUBMITTED", client_order_id=exit_order_id, reason=pending_exit_reason, quantity=intent.quantity, price=str(intent.price))
 
@@ -670,33 +819,68 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     log("POSITION_CLOSED", client_order_id=exit_order_id, average_fill_price=str(exit_order.average_fill_price), quantity=exit_order.filled_quantity)
                     if emergency:
                         store.halt("MANUAL_EMERGENCY_STOP_FLAT")
+                    clean_shutdown = True
                     return 0
                 if exit_order.status in {BrokerOrderStatus.CANCELED, BrokerOrderStatus.REJECTED, BrokerOrderStatus.EXPIRED, BrokerOrderStatus.UNKNOWN}:
-                    store.halt(f"EXIT_NOT_FILLED:{exit_order.status.value}")
+                    reason = f"EXIT_NOT_FILLED:{exit_order.status.value}"
+                    store.halt(reason)
                     kill_path.write_text(f"{utc_now()} EXIT_NOT_FILLED:{exit_order.status.value}\n", encoding="utf-8")
-                    raise RuntimeError(f"exit order entered terminal unsafe state: {exit_order.status.value}")
+                    notifier.critical(
+                        "EXIT_RESCUE_REQUIRED",
+                        "Exit order did not fully close the position; reconciling and retrying remaining exposure",
+                        status=exit_order.status.value,
+                        client_order_id=exit_order_id,
+                    )
+                    adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
+                    remaining = abs(int(store.positions().get(position.stock_id, 0))) if position is not None else 0
+                    if remaining == 0:
+                        log("POSITION_CLOSED_AFTER_RECONCILIATION", client_order_id=exit_order_id)
+                        clean_shutdown = True
+                        return 0
+                    position.quantity = remaining
+                    position.exit_submitted = False
+                    exit_order_id = None
+                    last_exit_reprice = None
+                    pending_exit_reason = pending_exit_reason or reason
+                    delay = min(
+                        args.exit_retry_max_seconds,
+                        args.exit_retry_base_seconds * (2 ** max(0, exit_attempt - 1)),
+                    )
+                    next_exit_retry_at = now + timedelta(seconds=delay)
+                    log("EXIT_RETRY_SCHEDULED", delay_seconds=delay, attempt=exit_attempt + 1)
+                    continue
                 if (
                     exit_order.broker_order_no
                     and last_exit_reprice is not None
                     and (now - last_exit_reprice).total_seconds() >= args.exit_reprice_seconds
                     and store.pending_mutation(exit_order_id) is None
                 ):
-                    new_price = engine.latest_exit_price(position) if position is not None else None
+                    safe_quote = (
+                        engine.safe_exit_quote(position, now, max_age_seconds=args.exit_quote_staleness)
+                        if position is not None else None
+                    )
+                    new_price = None if safe_quote is None else safe_quote.price
                     if new_price is not None and (exit_order.price is None or Decimal(str(new_price)) != exit_order.price):
-                        adapter.modify_price(exit_order_id, Decimal(str(new_price)))
+                        adapter.modify_price(
+                            exit_order_id,
+                            Decimal(str(new_price)),
+                            emergency=emergency or store.control_state()["halted"],
+                        )
                         last_exit_reprice = now
                         log("EXIT_REPRICE_SENT", client_order_id=exit_order_id, price=new_price)
 
             # End normally after hard-exit window if no trade was taken.
             if now.time() >= time_from_text("13:25") and entry_order_id is None and position is None:
                 log("NO_TRADE_SESSION_COMPLETE")
+                clean_shutdown = True
                 return 0
 
             # Quote outage: with no exposure it is safe to rebuild the quote/broker
             # session and reconcile before doing anything else. With exposure, keep
             # the existing broker session alive and turn the outage into an exit trigger.
-            if session.last_quote_at is not None and time_from_text("09:05") <= now.time() <= time_from_text("13:25"):
-                stale = (now - session.last_quote_at).total_seconds()
+            quote_reference = session.last_quote_at or session.quote_started_at
+            if quote_reference is not None and time_from_text("09:05") <= now.time() <= time_from_text("13:25"):
+                stale = (now - quote_reference).total_seconds()
                 if stale > args.max_quote_staleness:
                     exposed = entry_order_id is not None or position is not None
                     if exposed:
@@ -704,6 +888,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             quote_stale_triggered = True
                             pending_exit_reason = pending_exit_reason or "QUOTE_STALE"
                             log("LIVE_QUOTE_STALE_WITH_EXPOSURE", stale_seconds=round(stale, 1))
+                            notifier.critical(
+                                "LIVE_QUOTE_STALE_WITH_EXPOSURE",
+                                "Market data is stale while exposure exists; stale-price submissions are blocked",
+                                stale_seconds=round(stale, 1),
+                            )
                     elif last_reconnect_at is None or (now - last_reconnect_at).total_seconds() >= args.reconnect_cooldown:
                         last_reconnect_at = now
                         log("QUOTE_RECONNECT_BEGIN", stale_seconds=round(stale, 1))
@@ -735,6 +924,24 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
 
             time.sleep(0.10)
     finally:
+        try:
+            heartbeat.stopped(
+                clean_shutdown,
+                environment=environment,
+                submit_live=submit_live,
+            )
+        except Exception:
+            pass
+        if not clean_shutdown:
+            try:
+                notifier.critical(
+                    "RUNTIME_STOPPED_UNSAFE",
+                    "Live runtime stopped without a confirmed clean terminal state",
+                    environment=environment,
+                    submit_live=submit_live,
+                )
+            except Exception:
+                pass
         credentials.update({"pfx_password": "", "trading_password": ""})
         if adapter is not None:
             try:
@@ -772,14 +979,51 @@ def _connect_for_control(args, environment: str, *, baseline: dict[str, int], cl
 
 def _preflight(args, environment: str) -> int:
     baseline = _load_baseline(args.baseline.resolve())
-    credentials, session, store, adapter = _connect_for_control(args, environment, baseline=baseline, cli_live=False)
+    seal, items, _provenance = load_stage_a_watchlist()
+    _validate_watchlist_day(str(seal["signal_date"]))
+    metadata = {item.stock_id: item.stock_name for item in items}
+    engine = LiveDirectionEngine(metadata)
+    credentials = load_credentials()
+    api_types = _extend_quote_types(load_api_types(args.vendor_dir.resolve()))
+    logger = lambda event, **payload: print(json.dumps(
+        {"at": utc_now(), "event": event, **payload}, ensure_ascii=False, default=str
+    ))
+    session = _Session(
+        api_types=api_types,
+        environment=environment,
+        credentials=credentials,
+        engine=engine,
+        logger=logger,
+    )
+    store = LiveOrderStore(args.runtime_dir.resolve() / "live-orders.sqlite")
+    adapter = None
     try:
+        session.connect()
+        assert session.api is not None
+        adapter = YuantaSparkExecutionAdapter(
+            api=session.api,
+            api_types=api_types,
+            account=session.account,
+            store=store,
+            live_gate=LiveTradingGate.from_environment(cli_live=False),
+            position_baseline=baseline,
+        )
         result = adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
-        print(json.dumps({"status": "READY", "environment": environment, "reconciliation": asdict(result), "gate": adapter.live_gate.public_snapshot()}, ensure_ascii=False, indent=2, default=str))
+        session.subscribe(items)
+        print(json.dumps({
+            "status": "READY",
+            "environment": environment,
+            "signal_date": seal["signal_date"],
+            "quote_subscription": "ACCEPTED",
+            "reconciliation": asdict(result),
+            "gate": adapter.live_gate.public_snapshot(),
+        }, ensure_ascii=False, indent=2, default=str))
         return 0
     finally:
         credentials.update({"pfx_password": "", "trading_password": ""})
-        adapter.close(); session.close(); store.close()
+        if adapter is not None:
+            adapter.close()
+        session.close(); store.close()
 
 
 def _capture_baseline(args, environment: str) -> int:
@@ -803,15 +1047,54 @@ def _kill(args) -> int:
     marker = runtime / "EMERGENCY_STOP"
     marker.write_text(f"{utc_now()} {args.reason}\n", encoding="utf-8")
     print(json.dumps({"status": "EMERGENCY_STOP_REQUESTED", "marker": str(marker)}, ensure_ascii=False, indent=2))
-    return 0
+    if not args.live:
+        return 0
+    heartbeat_path = runtime / "heartbeat.json"
+    if heartbeat_path.is_file():
+        try:
+            payload = json.loads(heartbeat_path.read_text(encoding="utf-8"))
+            pid = int(payload.get("pid", 0))
+            stamp = datetime.fromisoformat(str(payload["at"]).replace("Z", "+00:00"))
+            heartbeat_age = (
+                datetime.now(TAIPEI) - stamp.astimezone(TAIPEI)
+            ).total_seconds()
+            if pid > 0:
+                os.kill(pid, 0)
+                if heartbeat_age <= 5.0:
+                    print(json.dumps({
+                        "status": "RUNNING_RUNTIME_WILL_EXECUTE_EMERGENCY_EXIT",
+                        "pid": pid,
+                    }, ensure_ascii=False, indent=2))
+                    return 0
+                RuntimeNotifier(runtime).critical(
+                    "STALE_RUNTIME_DURING_KILL",
+                    "Runtime process exists but heartbeat is stale; refusing a second broker controller",
+                    pid=pid,
+                    heartbeat_age_seconds=round(heartbeat_age, 3),
+                )
+                raise RuntimeError(
+                    "runtime PID is still alive but heartbeat is stale; stop that process before independent recovery"
+                )
+        except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+            pass
+    args.recover_emergency = True
+    return _run_realtime(args, environment=args.environment, submit_live=True)
 
 
 def _clear_halt(args) -> int:
     runtime = args.runtime_dir.resolve()
-    store = LiveOrderStore(runtime / "live-orders.sqlite")
+    baseline = _load_baseline(args.baseline.resolve())
+    credentials, session, store, adapter = _connect_for_control(
+        args, args.environment, baseline=baseline, cli_live=False
+    )
     try:
+        snapshot = adapter.inspect_broker_state(timeout=args.reconcile_timeout)
+        if snapshot.open_orders:
+            raise RuntimeError("cannot clear halt while actual broker orders are open")
+        if snapshot.positions != baseline:
+            raise RuntimeError("cannot clear halt while actual broker positions differ from reviewed baseline")
         if store.orders(open_only=True):
-            raise RuntimeError("cannot clear halt while broker orders are open")
+            raise RuntimeError("cannot clear halt while local broker orders are open")
         if store.positions():
             raise RuntimeError("cannot clear halt while strategy positions are non-flat")
         store.clear_halt(args.reason)
@@ -820,7 +1103,8 @@ def _clear_halt(args) -> int:
         print(json.dumps({"status": "HALT_CLEARED", "reason": args.reason}, ensure_ascii=False, indent=2))
         return 0
     finally:
-        store.close()
+        credentials.update({"pfx_password": "", "trading_password": ""})
+        adapter.close(); session.close(); store.close()
 
 
 def _status(args) -> int:
@@ -855,8 +1139,17 @@ def _start_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--capital", type=int, default=190_000)
     parser.add_argument("--entry-timeout", type=float, default=15.0)
     parser.add_argument("--exit-reprice-seconds", type=float, default=5.0)
+    parser.add_argument("--exit-retry-base-seconds", type=float, default=2.0)
+    parser.add_argument("--exit-retry-max-seconds", type=float, default=30.0)
     parser.add_argument("--max-quote-staleness", type=float, default=30.0)
+    parser.add_argument("--entry-quote-staleness", type=float, default=5.0)
+    parser.add_argument("--exit-quote-staleness", type=float, default=3.0)
     parser.add_argument("--reconnect-cooldown", type=float, default=60.0)
+    parser.add_argument("--max-daily-loss", type=int, default=5_000)
+    parser.add_argument("--max-order-value", type=int, default=190_000)
+    parser.add_argument("--max-position-per-stock", type=int, default=1_000)
+    parser.add_argument("--max-concurrent-positions", type=int, default=1)
+    parser.add_argument("--max-trades-per-day", type=int, default=1)
     parser.add_argument("--recover-emergency", action="store_true", help="allow exit-only restart while the persistent emergency marker exists")
     parser.add_argument("--short-entry-order-type", choices=["4", "5", "6", "9"], default=None)
     parser.add_argument("--short-cover-order-type", choices=["4", "5", "6", "9"], default=None)
@@ -883,12 +1176,19 @@ def parse_args(argv=None):
         _start_options(cmd)
 
     kill = sub.add_parser("kill")
-    kill.add_argument("--runtime-dir", type=Path, default=DEFAULT_RUNTIME_DIR)
+    _start_options(kill)
     kill.add_argument("--reason", required=True)
+    kill.add_argument("--environment", choices=["UAT", "PROD"], default="PROD")
 
     clear = sub.add_parser("clear-halt")
-    clear.add_argument("--runtime-dir", type=Path, default=DEFAULT_RUNTIME_DIR)
+    _common(clear)
     clear.add_argument("--reason", required=True)
+    clear.add_argument("--environment", choices=["UAT", "PROD"], default="PROD")
+
+    watchdog = sub.add_parser("watchdog")
+    watchdog.add_argument("--runtime-dir", type=Path, default=DEFAULT_RUNTIME_DIR)
+    watchdog.add_argument("--stale-seconds", type=float, default=15.0)
+    watchdog.add_argument("--interval-seconds", type=float, default=5.0)
 
     return parser.parse_args(argv)
 
@@ -902,6 +1202,12 @@ def main(argv=None) -> int:
             return _kill(args)
         if args.command == "clear-halt":
             return _clear_halt(args)
+        if args.command == "watchdog":
+            return watchdog_monitor(
+                args.runtime_dir,
+                stale_seconds=args.stale_seconds,
+                interval_seconds=args.interval_seconds,
+            )
         if args.command.startswith("preflight-"):
             return _preflight(args, args.command.rsplit("-", 1)[1].upper())
         if args.command.startswith("baseline-"):

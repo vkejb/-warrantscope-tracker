@@ -302,7 +302,9 @@ class LiveOrderStore:
                 return [x for x in orders if x.status not in TERMINAL_STATUSES]
             return orders
 
-    def reserve(self, intent: ExecutionIntent) -> tuple[StoredOrder, bool]:
+    def reserve(
+        self, intent: ExecutionIntent, *, allow_halted: bool = False
+    ) -> tuple[StoredOrder, bool]:
         fingerprint = self._fingerprint(intent)
         with self._lock:
             existing_row = self.connection.execute(
@@ -316,7 +318,8 @@ class LiveOrderStore:
                     )
                 return self.get(existing_row["client_order_id"]), False
 
-            self.assert_not_halted()
+            if not allow_halted:
+                self.assert_not_halted()
             client_order_id = uuid.uuid4().hex
             basket = basket_no_for(intent.intent_id)
             stamp = utc_now()
