@@ -14,10 +14,15 @@ class DirectionFollowBacktestTests(unittest.TestCase):
             [WatchItem("1001", "測試股", 1, 0.1, "TWSE")], {}, compress=True,
         )
         start = datetime(2026, 9, 22, 1, 31, tzinfo=timezone.utc)
-        for index in range(280):
+        for index in range(340):
             stamp = start.timestamp() + index
             received = datetime.fromtimestamp(stamp, timezone.utc).isoformat().replace("+00:00", "Z")
-            price = 40.0 if index < 180 else 40.0 + (index - 179) * 0.015
+            if index < 180:
+                price = 40.0
+            elif index <= 300:
+                price = 40.0 + (index - 179) * 0.05
+            else:
+                price = 46.05 - (index - 300) * 0.1
             run.append("ticks", {
                 "received_at": received, "stock_id": "1001", "deal_price": str(price),
                 "deal_volume": "20", "buy_price": str(price - 0.1), "sell_price": str(price),
@@ -37,6 +42,7 @@ class DirectionFollowBacktestTests(unittest.TestCase):
             self.assertEqual(report["trade_count"], 1)
             self.assertEqual(report["trades"][0]["side"], "LONG")
             self.assertEqual(report["trades"][0]["quantity"], 4000)
+            self.assertEqual(report["trades"][0]["exit_reason"], "TRAILING_PROFIT")
             self.assertLessEqual(report["trades"][0]["notional_used"], 190000)
             self.assertEqual(report["actual_orders"], 0)
             self.assertEqual(report["actual_fills"], 0)

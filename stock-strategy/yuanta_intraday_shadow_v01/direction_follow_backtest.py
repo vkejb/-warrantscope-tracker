@@ -39,8 +39,9 @@ SPEC = {
     "entry_start": "09:35",
     "last_entry_time": "13:10",
     "hard_exit_time": "13:20",
-    "stop_loss": 0.01,
-    "take_profit": 0.02,
+    "stop_loss": 0.05,
+    "trailing_profit_activation": 0.02,
+    "trailing_profit_drawdown": 0.02,
     "portfolio_notional_cap_twd": 190000,
     "position_size": "maximum_whole_1000_share_board_lots_within_cap",
     "maximum_trades_per_session": 1,
@@ -357,16 +358,22 @@ def replay_session(stocks: dict[str, dict], coverage: dict, capital: int = 19000
     future = [row for row in data["ticks"] if entry_tick["time"] < row["time"] <= hard_exit]
     reversal_row = _reversal_exit_tick(data, signal, entry_tick["time"], hard_exit)
     exit_row, exit_reason = None, "HARD_EXIT"
+    peak_return = 0.0
     for row in future:
         executable = _exit_quote(signal.side, row)
-        if signal.side == "LONG" and executable <= entry_price * (1 - SPEC["stop_loss"]):
+        current_return = (
+            executable / entry_price - 1
+            if signal.side == "LONG"
+            else (entry_price - executable) / entry_price
+        )
+        peak_return = max(peak_return, current_return)
+        if current_return <= -SPEC["stop_loss"]:
             exit_row, exit_reason = row, "STOP_LOSS"; break
-        if signal.side == "LONG" and executable >= entry_price * (1 + SPEC["take_profit"]):
-            exit_row, exit_reason = row, "TAKE_PROFIT"; break
-        if signal.side == "SHORT" and executable >= entry_price * (1 + SPEC["stop_loss"]):
-            exit_row, exit_reason = row, "STOP_LOSS"; break
-        if signal.side == "SHORT" and executable <= entry_price * (1 - SPEC["take_profit"]):
-            exit_row, exit_reason = row, "TAKE_PROFIT"; break
+        if (
+            peak_return >= SPEC["trailing_profit_activation"]
+            and current_return <= peak_return - SPEC["trailing_profit_drawdown"]
+        ):
+            exit_row, exit_reason = row, "TRAILING_PROFIT"; break
         if reversal_row is not None and row["time"] >= reversal_row["time"]:
             exit_row, exit_reason = row, "SIGNAL_REVERSAL"; break
     if exit_row is None:
