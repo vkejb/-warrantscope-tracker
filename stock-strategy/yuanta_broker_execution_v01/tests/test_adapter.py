@@ -393,6 +393,28 @@ class AdapterTests(unittest.TestCase):
         result = self.adapter.reconcile(timeout=1)
         self.assertEqual(result.status, "MATCH")
 
+    def test_reconciliation_ignores_prior_day_terminal_order_history(self):
+        stored = self.adapter.submit(self.intent(intent_id="historical-terminal"))
+        self.store.bind_broker_order(stored.client_order_id, "f-old")
+        self.store.acknowledge(stored.client_order_id)
+        self.store.record_fill(
+            stored.client_order_id,
+            fill_id="f-old:1",
+            quantity=1000,
+            price="171.5",
+            broker_order_no="f-old",
+            seq_no="1",
+        )
+        with self.store._lock, self.store.connection:
+            self.store.connection.execute(
+                "UPDATE live_orders SET created_at=?, updated_at=? WHERE client_order_id=?",
+                ("2020-01-01T00:00:00.000Z", "2020-01-01T00:00:00.000Z", stored.client_order_id),
+            )
+        self.api.merge_rows = []
+        self.api.positions = {"3605": 1000}
+        result = self.adapter.reconcile(timeout=1)
+        self.assertEqual(result.status, "MATCH")
+
     def test_reconciliation_position_mismatch_halts(self):
         stored = self.adapter.submit(self.intent())
         self.store.bind_broker_order(stored.client_order_id, "f0006")

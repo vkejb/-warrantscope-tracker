@@ -20,6 +20,7 @@ from .models import (
     PRICE_FLAG,
     TIF_CODE,
     StoredOrder,
+    TERMINAL_STATUSES,
 )
 from .gate import LiveTradingGate
 from .store import LiveOrderStore
@@ -559,8 +560,20 @@ class YuantaSparkExecutionAdapter:
         by_basket = {row.get("basket_no"): row for row in merge if row.get("basket_no")}
         by_order = {row.get("order_no"): row for row in merge if row.get("order_no")}
         mismatches: list[dict[str, Any]] = []
+        today = datetime.now(TAIPEI).date()
 
         for local in self.store.orders():
+            # GetRealReportMerge is a current-session broker view. Historical
+            # terminal orders are durable audit history and must not make the
+            # next trading day fail reconciliation merely because the broker no
+            # longer returns yesterday's completed order. Non-terminal/UNKNOWN
+            # history is intentionally *not* ignored.
+            try:
+                created_day = datetime.fromisoformat(local.created_at.replace("Z", "+00:00")).astimezone(TAIPEI).date()
+            except (TypeError, ValueError):
+                created_day = today
+            if created_day < today and local.status in TERMINAL_STATUSES:
+                continue
             remote = by_basket.get(local.basket_no)
             if remote is None and local.broker_order_no:
                 remote = by_order.get(local.broker_order_no)
