@@ -5,6 +5,7 @@ import unittest
 from intraday_paper_execution_v01.engine import (
     DuplicateOrderConflict,
     EmergencyStopActive,
+    ExecutionDisabled,
     InvalidTransition,
     OrderStatus,
     PaperExecutionEngine,
@@ -17,6 +18,7 @@ class PaperExecutionEngineTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.db = Path(self.temp.name) / "orders.sqlite"
         self.engine = PaperExecutionEngine(self.db)
+        self.engine.set_execution_mode("PAPER_ONLY", "test setup")
 
     def tearDown(self):
         self.engine.close()
@@ -139,9 +141,35 @@ class PaperExecutionEngineTests(unittest.TestCase):
     def test_snapshot_proves_zero_live_execution(self):
         snapshot = self.engine.snapshot()
         self.assertEqual(snapshot["mode"], "PAPER_ONLY")
+        self.assertFalse(snapshot["live_send_available"])
         self.assertEqual(snapshot["actual_orders"], 0)
         self.assertEqual(snapshot["actual_fills"], 0)
         self.assertEqual(snapshot["broker_connections"], 0)
+
+    def test_default_is_disabled_live_is_rejected_and_mode_persists(self):
+        other_db = Path(self.temp.name) / "mode.sqlite"
+        with PaperExecutionEngine(other_db) as engine:
+            self.assertEqual(engine.snapshot()["mode"], "DISABLED")
+            with self.assertRaises(ExecutionDisabled):
+                engine.submit_order(
+                    idempotency_key="blocked",
+                    symbol="3605",
+                    side="BUY",
+                    quantity=1000,
+                    limit_price="171",
+                )
+            with self.assertRaises(ValueError):
+                engine.set_execution_mode("LIVE", "must reject")
+            engine.set_execution_mode("PAPER_ONLY", "approved paper session")
+        with PaperExecutionEngine(other_db) as recovered:
+            self.assertEqual(recovered.snapshot()["mode"], "PAPER_ONLY")
+
+    def test_disabling_requests_cancel_and_blocks_new_entries(self):
+        order = self._entry()
+        changed = self.engine.set_execution_mode("DISABLED", "operator off")
+        self.assertEqual(changed[0].status, OrderStatus.CANCEL_PENDING)
+        with self.assertRaises(ExecutionDisabled):
+            self._entry(key="blocked-after-off")
 
 
 if __name__ == "__main__":

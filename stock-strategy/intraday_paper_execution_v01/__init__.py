@@ -3,6 +3,8 @@
 from .engine import (
     DuplicateOrderConflict,
     EmergencyStopActive,
+    ExecutionDisabled,
+    ExecutionMode,
     InvalidTransition,
     Order,
     OrderStatus,
@@ -14,6 +16,8 @@ from .engine import (
 __all__ = [
     "DuplicateOrderConflict",
     "EmergencyStopActive",
+    "ExecutionDisabled",
+    "ExecutionMode",
     "InvalidTransition",
     "Order",
     "OrderStatus",

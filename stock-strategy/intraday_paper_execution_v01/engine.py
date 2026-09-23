@@ -38,6 +38,11 @@ class Side(str, Enum):
     SELL = "SELL"
 
 
+class ExecutionMode(str, Enum):
+    DISABLED = "DISABLED"
+    PAPER_ONLY = "PAPER_ONLY"
+
+
 class OrderStatus(str, Enum):
     SUBMITTED = "SUBMITTED"
     ACKNOWLEDGED = "ACKNOWLEDGED"
@@ -70,6 +75,10 @@ class DuplicateOrderConflict(ExecutionError):
 
 
 class EmergencyStopActive(ExecutionError):
+    pass
+
+
+class ExecutionDisabled(ExecutionError):
     pass
 
 
@@ -169,6 +178,7 @@ class PaperExecutionEngine:
                     emergency_stop INTEGER NOT NULL,
                     reason TEXT,
                     generation INTEGER NOT NULL,
+                    execution_mode TEXT NOT NULL DEFAULT 'DISABLED',
                     updated_at TEXT NOT NULL
                 );
                 INSERT OR IGNORE INTO control
@@ -176,6 +186,13 @@ class PaperExecutionEngine:
                     VALUES (1, 0, NULL, 0, 'INITIAL');
                 """
             )
+            columns = {
+                row[1] for row in self.connection.execute("PRAGMA table_info(control)")
+            }
+            if "execution_mode" not in columns:
+                self.connection.execute(
+                    "ALTER TABLE control ADD COLUMN execution_mode TEXT NOT NULL DEFAULT 'DISABLED'"
+                )
 
     def _event(
         self, event_type: str, order_id: str | None, payload: Mapping[str, object]
@@ -247,8 +264,41 @@ class PaperExecutionEngine:
             "emergency_stop": bool(row["emergency_stop"]),
             "reason": row["reason"],
             "generation": int(row["generation"]),
+            "execution_mode": ExecutionMode(row["execution_mode"]).value,
             "updated_at": row["updated_at"],
         }
+
+    def set_execution_mode(self, mode: ExecutionMode | str, reason: str) -> list[Order]:
+        """Persistently enable paper execution or disable all new entries.
+
+        No LIVE enum exists by design.  Disabling also requests cancellation of
+        every open paper order; risk-reducing EXIT orders may still be created.
+        """
+        clean_reason = reason.strip()
+        if not clean_reason:
+            raise ValueError("mode-change reason is required")
+        try:
+            parsed = ExecutionMode(mode)
+        except ValueError as exc:
+            raise ValueError("only DISABLED and PAPER_ONLY are supported") from exc
+        current = self.control_state()["execution_mode"]
+        if current != parsed.value:
+            with self.connection:
+                self.connection.execute(
+                    """
+                    UPDATE control SET execution_mode = ?, reason = ?, updated_at = ?
+                    WHERE singleton = 1
+                    """,
+                    (parsed.value, clean_reason, _now()),
+                )
+                self._event(
+                    "EXECUTION_MODE_CHANGED",
+                    None,
+                    {"from": current, "to": parsed.value, "reason": clean_reason},
+                )
+        if parsed == ExecutionMode.DISABLED:
+            return self.cancel_all(f"EXECUTION_DISABLED: {clean_reason}")
+        return []
 
     def submit_order(
         self,
@@ -281,8 +331,12 @@ class PaperExecutionEngine:
                     "idempotency key already belongs to a different order payload"
                 )
             return existing
-        if self.control_state()["emergency_stop"] and parsed_intent == "ENTRY":
-            raise EmergencyStopActive("new entry blocked by persistent emergency stop")
+        control = self.control_state()
+        if parsed_intent == "ENTRY":
+            if control["execution_mode"] != ExecutionMode.PAPER_ONLY.value:
+                raise ExecutionDisabled("new entry blocked because execution is disabled")
+            if control["emergency_stop"]:
+                raise EmergencyStopActive("new entry blocked by persistent emergency stop")
         order_id = uuid.uuid4().hex
         stamp = _now()
         with self.connection:
@@ -597,7 +651,8 @@ class PaperExecutionEngine:
 
     def snapshot(self) -> dict[str, object]:
         return {
-            "mode": "PAPER_ONLY",
+            "mode": self.control_state()["execution_mode"],
+            "live_send_available": False,
             "control": self.control_state(),
             "orders": [order.to_dict() for order in self.orders()],
             "positions": self.position_quantities(),

@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .engine import PaperExecutionEngine, Side
+from .engine import ExecutionMode, PaperExecutionEngine, Side
 
 
 def _prices(values: list[str]) -> dict[str, str]:
@@ -24,6 +24,15 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--db", type=Path, required=True)
     commands = result.add_subparsers(dest="command", required=True)
     commands.add_parser("status")
+
+    mode = commands.add_parser("mode")
+    mode.add_argument(
+        "--set",
+        dest="execution_mode",
+        choices=[item.value for item in ExecutionMode],
+        required=True,
+    )
+    mode.add_argument("--reason", required=True)
 
     submit = commands.add_parser("submit")
     submit.add_argument("--key", required=True)
@@ -72,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
                 limit_price=args.price,
                 intent=args.intent,
             )
+        elif args.command == "mode":
+            engine.set_execution_mode(args.execution_mode, args.reason)
         elif args.command == "acknowledge":
             engine.acknowledge(args.order_id)
         elif args.command == "fill":
