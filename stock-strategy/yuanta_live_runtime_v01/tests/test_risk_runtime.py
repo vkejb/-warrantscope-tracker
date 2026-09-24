@@ -204,6 +204,139 @@ class RuntimeGateTests(unittest.TestCase):
 
 
 class WatchdogTests(unittest.TestCase):
+    def test_unknown_exit_reconciliation_recovers_original_order_without_rescue(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            store = LiveOrderStore(Path(temporary) / "orders.sqlite")
+            try:
+                entry, _ = store.reserve(
+                    ExecutionIntent(
+                        intent_id="entry-recovery-integration",
+                        symbol="3605",
+                        side=Side.BUY,
+                        quantity=1000,
+                        price=Decimal("100"),
+                        purpose=IntentPurpose.ENTRY,
+                    )
+                )
+                store.record_fill(
+                    entry.client_order_id,
+                    fill_id="entry-recovery-fill",
+                    quantity=1000,
+                    price="100",
+                )
+
+                exit_order, _ = store.reserve(
+                    ExecutionIntent(
+                        intent_id="exit-recovery-integration",
+                        symbol="3605",
+                        side=Side.SELL,
+                        quantity=1000,
+                        price=Decimal("99"),
+                        purpose=IntentPurpose.EXIT,
+                    ),
+                    allow_halted=True,
+                )
+                store.mark_send_pending(exit_order.client_order_id)
+                store.bind_broker_order(exit_order.client_order_id, "broker-exit-1")
+                store.mark_unknown(
+                    exit_order.client_order_id,
+                    "simulated broker timeout",
+                )
+
+                position = ManagedPosition(
+                    "3605",
+                    "宏致",
+                    "LONG",
+                    1000,
+                    100.0,
+                    entry.client_order_id,
+                    datetime.now(TAIPEI) - timedelta(minutes=5),
+                )
+                position.exit_submitted = True
+
+                adapter = SimpleNamespace()
+                adapter.submit_rescue = unittest.mock.Mock()
+
+                def reconcile(*, timeout, strict_positions):
+                    self.assertEqual(timeout, 1)
+                    self.assertTrue(strict_positions)
+                    # Simulate authoritative broker reconciliation discovering
+                    # that the original EXIT really exists and is still active.
+                    store.acknowledge(exit_order.client_order_id)
+                    return SimpleNamespace(status="MATCH")
+
+                adapter.reconcile = reconcile
+
+                action, status, remaining = runtime_main._reconcile_failed_exit(
+                    adapter=adapter,
+                    store=store,
+                    exit_order_id=exit_order.client_order_id,
+                    position=position,
+                    reconcile_timeout=1,
+                )
+
+                self.assertEqual(action, "TRACK_EXISTING")
+                self.assertEqual(
+                    status,
+                    runtime_main.BrokerOrderStatus.ACKNOWLEDGED,
+                )
+                self.assertEqual(remaining, 1000)
+                self.assertTrue(position.exit_submitted)
+                self.assertEqual(position.quantity, 1000)
+
+                # The recovered original broker EXIT remains responsible for
+                # the exposure. A second rescue order must not be submitted.
+                adapter.submit_rescue.assert_not_called()
+            finally:
+                store.close()
+
+    def test_reconciled_active_exit_keeps_tracking_original_order(self):
+        for status in (
+            runtime_main.BrokerOrderStatus.SEND_PENDING,
+            runtime_main.BrokerOrderStatus.ACKNOWLEDGED,
+            runtime_main.BrokerOrderStatus.PARTIALLY_FILLED,
+            runtime_main.BrokerOrderStatus.CANCEL_PENDING,
+        ):
+            with self.subTest(status=status):
+                self.assertEqual(
+                    runtime_main._classify_reconciled_exit(status, 1000),
+                    "TRACK_EXISTING",
+                )
+
+    def test_reconciled_terminal_exit_with_remaining_exposure_allows_rescue(self):
+        for status in (
+            runtime_main.BrokerOrderStatus.FILLED,
+            runtime_main.BrokerOrderStatus.CANCELED,
+            runtime_main.BrokerOrderStatus.REJECTED,
+            runtime_main.BrokerOrderStatus.EXPIRED,
+        ):
+            with self.subTest(status=status):
+                self.assertEqual(
+                    runtime_main._classify_reconciled_exit(status, 1000),
+                    "RETRY_RESCUE",
+                )
+
+    def test_reconciled_exit_with_no_remaining_exposure_is_closed(self):
+        for status in (
+            runtime_main.BrokerOrderStatus.FILLED,
+            runtime_main.BrokerOrderStatus.ACKNOWLEDGED,
+            runtime_main.BrokerOrderStatus.UNKNOWN,
+        ):
+            with self.subTest(status=status):
+                self.assertEqual(
+                    runtime_main._classify_reconciled_exit(status, 0),
+                    "CLOSED",
+                )
+
+    def test_unresolved_reconciled_exit_fails_closed(self):
+        self.assertEqual(
+            runtime_main._classify_reconciled_exit(
+                runtime_main.BrokerOrderStatus.UNKNOWN,
+                1000,
+            ),
+            "UNKNOWN",
+        )
+
     def test_clean_heartbeat_is_healthy(self):
         with tempfile.TemporaryDirectory() as temporary:
             heartbeat = Heartbeat(Path(temporary))

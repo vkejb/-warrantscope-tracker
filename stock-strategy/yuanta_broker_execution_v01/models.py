@@ -127,8 +127,9 @@ def _read(obj: Any, *names: str, default: Any = None) -> Any:
 class ExecutionIntent:
     """Canonical execution contract accepted by the adapter.
 
-    Quantity is always expressed in shares, matching Yuanta stock execution and
-    report quantities.  The adapter intentionally does not convert lots to shares.
+    Quantity is always expressed internally in shares. Broker report quantities
+    are also normalized as shares. Where Yuanta's outbound order contract uses a
+    different unit, the adapter converts only at the broker boundary.
     """
 
     intent_id: str

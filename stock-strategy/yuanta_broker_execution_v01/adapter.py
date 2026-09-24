@@ -217,6 +217,7 @@ class YuantaSparkExecutionAdapter:
         live_gate: LiveTradingGate | None = None,
         language: Any | None = None,
         position_baseline: Mapping[str, int] | None = None,
+        pre_order_reconcile_timeout: float = 20.0,
     ):
         clean_account = account.strip().upper()
         if not clean_account.startswith("S") or len(clean_account) != 12:
@@ -227,6 +228,9 @@ class YuantaSparkExecutionAdapter:
         self.store = store
         self.live_gate = live_gate or LiveTradingGate.from_environment(cli_live=False)
         self._reconciled = False
+        self.pre_order_reconcile_timeout = float(pre_order_reconcile_timeout)
+        if self.pre_order_reconcile_timeout <= 0:
+            raise ValueError("pre_order_reconcile_timeout must be positive")
         self.position_baseline = {}
         for raw_key, raw_quantity in dict(position_baseline or {}).items():
             key = str(raw_key).strip().upper()
@@ -318,6 +322,32 @@ class YuantaSparkExecutionAdapter:
         else:
             raise AttributeError("StockOrder exposes neither Identify nor Identity")
 
+    @staticmethod
+    def _broker_order_quantity(
+        *,
+        ap_code: int,
+        trade_kind: int,
+        quantity_shares: int,
+    ) -> int:
+        quantity = int(quantity_shares)
+        if quantity <= 0:
+            raise ValueError("quantity_shares must be positive")
+
+        # Canonical runtime/store quantities stay in shares.
+        # Yuanta regular-board-lot NEW orders (APCode=0, TradeKind=0)
+        # require OrderQty in lots, so convert only at this broker boundary.
+        #
+        # Do NOT apply this conversion to cancel / modify-price /
+        # reduce-quantity until their SDK quantity contract is verified.
+        if int(trade_kind) == 0 and int(ap_code) == 0:
+            if quantity % 1000 != 0:
+                raise BrokerAdapterError(
+                    "regular-board-lot NEW quantity must be a multiple of 1000 shares"
+                )
+            return quantity // 1000
+
+        return quantity
+
     def _build_stock_order(
         self,
         order: StoredOrder,
@@ -342,7 +372,12 @@ class YuantaSparkExecutionAdapter:
         effective_price = order.price if price is None else price
         stock.Price = float(effective_price or 0)
         stock.BasketNo = order.basket_no
-        stock.OrderQty = int(order.quantity if quantity is None else quantity)
+        quantity_shares = int(order.quantity if quantity is None else quantity)
+        stock.OrderQty = self._broker_order_quantity(
+            ap_code=int(order.ap_code),
+            trade_kind=int(trade_kind),
+            quantity_shares=quantity_shares,
+        )
         stock.Time_in_force = TIF_CODE[order.time_in_force]
         return stock
 
@@ -375,11 +410,26 @@ class YuantaSparkExecutionAdapter:
             raise TypeError(
                 "submit accepts only canonical ExecutionIntent; use the reviewed intent bridge"
             )
+        # Validate broker NEW quantity before mutating the durable order store.
+        self._broker_order_quantity(
+            ap_code=int(intent.ap_code),
+            trade_kind=0,
+            quantity_shares=int(intent.quantity),
+        )
+
         stored, created = self.store.reserve(intent)
         if not created:
             # Never resend a persisted intent automatically. A detailed broker
             # query/reconciliation resolves SEND_PENDING/UNKNOWN after restart.
             return stored
+
+        # A newly-created NEW order must pass a fresh broker snapshot immediately
+        # before any broker request is created. The RESERVED local order is
+        # intentionally ignored when no remote order exists yet.
+        self.reconcile(
+            timeout=self.pre_order_reconcile_timeout,
+            strict_positions=True,
+        )
 
         identify = self.store.create_request(stored.client_order_id, "NEW")
         self.store.mark_send_pending(stored.client_order_id)
@@ -443,7 +493,58 @@ class YuantaSparkExecutionAdapter:
             raise BrokerAdapterError("rescue order must reduce an existing local position")
         if intent.quantity > abs(signed_position):
             raise BrokerAdapterError("rescue order exceeds remaining local position")
+
+        # Rescue is also a NEW broker order, so validate its board-lot
+        # quantity before reserving any durable local request.
+        self._broker_order_quantity(
+            ap_code=int(intent.ap_code),
+            trade_kind=0,
+            quantity_shares=int(intent.quantity),
+        )
+
         self._require_live(allow_halted=True)
+
+        # Rescue EXIT must re-confirm the broker's current authoritative state.
+        # This protects against:
+        #   - a previous EXIT that actually reached the broker,
+        #   - partial fills that changed remaining exposure,
+        #   - manual/external inventory changes,
+        #   - another live order for the same symbol.
+        #
+        # Reconciliation is intentionally allowed while the store is halted.
+        self.reconcile(
+            timeout=self.pre_order_reconcile_timeout,
+            strict_positions=True,
+        )
+
+        # Detailed report replay during reconciliation may have changed the
+        # strategy's remaining filled position, so never trust the earlier copy.
+        signed_position = int(self.store.positions().get(intent.symbol, 0))
+        reduces_long = signed_position > 0 and intent.side.value == "SELL"
+        reduces_short = signed_position < 0 and intent.side.value == "BUY"
+        if not (reduces_long or reduces_short):
+            raise BrokerAdapterError(
+                "rescue order no longer reduces an existing reconciled position"
+            )
+        if intent.quantity > abs(signed_position):
+            raise BrokerAdapterError(
+                "rescue order exceeds reconciled remaining local position"
+            )
+
+        # Even a locally-known older EXIT may still be alive at the broker.
+        # Never create a second NEW order for the same symbol until the old one
+        # is terminal. This is the final adapter-level duplicate-exit barrier.
+        active_same_symbol = [
+            row
+            for row in list(self._latest_merge or [])
+            if str(row.get("symbol", "") or "") == intent.symbol
+            and _remote_status(row) not in TERMINAL_STATUSES
+        ]
+        if active_same_symbol:
+            raise BrokerAdapterError(
+                "rescue blocked: existing open broker order for symbol"
+            )
+
         stored, created = self.store.reserve(intent, allow_halted=True)
         if not created:
             return stored
@@ -744,6 +845,45 @@ class YuantaSparkExecutionAdapter:
                         "remote": remote_status.value,
                     }
                 )
+
+        # Reverse reconciliation: an OPEN broker order that cannot be
+        # matched to a locally-owned basket/order number is external/manual
+        # intervention. Terminal broker history is intentionally ignored.
+        local_orders = self.store.orders()
+        known_baskets = {
+            str(order.basket_no)
+            for order in local_orders
+            if order.basket_no
+        }
+        known_order_nos = {
+            str(order.broker_order_no)
+            for order in local_orders
+            if order.broker_order_no
+        }
+
+        for remote in merge:
+            remote_status = _remote_status(remote)
+            if remote_status in TERMINAL_STATUSES:
+                continue
+
+            basket_no = str(remote.get("basket_no", "") or "")
+            order_no = str(remote.get("order_no", "") or "")
+
+            if basket_no and basket_no in known_baskets:
+                continue
+            if order_no and order_no in known_order_nos:
+                continue
+
+            mismatches.append(
+                {
+                    "reason": "unexpected_remote_open_order",
+                    "symbol": str(remote.get("symbol", "") or ""),
+                    "side": str(remote.get("side", "") or ""),
+                    "order_no": order_no,
+                    "basket_no": basket_no,
+                    "remote_status": remote_status.value,
+                }
+            )
 
         return mismatches
 

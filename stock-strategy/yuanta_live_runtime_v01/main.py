@@ -55,6 +55,93 @@ TERMINAL = {
     BrokerOrderStatus.REJECTED,
 }
 
+ACTIVE_EXIT_STATUSES = {
+    BrokerOrderStatus.SEND_PENDING,
+    BrokerOrderStatus.ACKNOWLEDGED,
+    BrokerOrderStatus.PARTIALLY_FILLED,
+    BrokerOrderStatus.CANCEL_PENDING,
+}
+
+
+def _classify_reconciled_exit(
+    status: BrokerOrderStatus,
+    remaining_quantity: int,
+) -> str:
+    """Decide what to do with an EXIT after authoritative reconciliation.
+
+    CLOSED:
+        No strategy exposure remains.
+
+    TRACK_EXISTING:
+        The original EXIT is still alive at the broker. Keep tracking it and
+        never create a second NEW EXIT.
+
+    RETRY_RESCUE:
+        The old EXIT is definitely terminal but strategy exposure remains.
+
+    UNKNOWN:
+        Broker reconciliation still did not resolve the order safely.
+    """
+    remaining = int(remaining_quantity)
+
+    if remaining <= 0:
+        return "CLOSED"
+
+    if status in ACTIVE_EXIT_STATUSES:
+        return "TRACK_EXISTING"
+
+    if status in {
+        BrokerOrderStatus.FILLED,
+        BrokerOrderStatus.CANCELED,
+        BrokerOrderStatus.REJECTED,
+        BrokerOrderStatus.EXPIRED,
+    }:
+        return "RETRY_RESCUE"
+
+    return "UNKNOWN"
+
+
+
+def _reconcile_failed_exit(
+    *,
+    adapter,
+    store: LiveOrderStore,
+    exit_order_id: str,
+    position: ManagedPosition | None,
+    reconcile_timeout: float,
+) -> tuple[str, BrokerOrderStatus, int]:
+    """Reconcile one failed/UNKNOWN EXIT against authoritative broker state.
+
+    Returns:
+        (action, reconciled_status, remaining_quantity)
+
+    This function never submits another broker order. The caller may only
+    schedule a rescue when action == "RETRY_RESCUE".
+    """
+    adapter.reconcile(
+        timeout=reconcile_timeout,
+        strict_positions=True,
+    )
+
+    reconciled_exit = store.get(exit_order_id)
+
+    remaining = (
+        abs(int(store.positions().get(position.stock_id, 0)))
+        if position is not None
+        else 0
+    )
+
+    action = _classify_reconciled_exit(
+        reconciled_exit.status,
+        remaining,
+    )
+
+    if action == "TRACK_EXISTING" and position is not None:
+        position.quantity = remaining
+        position.exit_submitted = True
+
+    return action, reconciled_exit.status, remaining
+
 
 def _append_jsonl(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -542,6 +629,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     last_reconnect_at: datetime | None = None
     exit_attempt = 0
     next_exit_retry_at: datetime | None = None
+    next_exit_reconcile_at: datetime | None = None
     exit_quote_alerted = False
     clean_shutdown = False
     try:
@@ -825,6 +913,14 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     clean_shutdown = True
                     return 0
                 if exit_order.status in {BrokerOrderStatus.CANCELED, BrokerOrderStatus.REJECTED, BrokerOrderStatus.EXPIRED, BrokerOrderStatus.UNKNOWN}:
+                    if (
+                        exit_order.status == BrokerOrderStatus.UNKNOWN
+                        and next_exit_reconcile_at is not None
+                        and now < next_exit_reconcile_at
+                    ):
+                        time.sleep(0.10)
+                        continue
+
                     reason = f"EXIT_NOT_FILLED:{exit_order.status.value}"
                     store.halt(reason)
                     kill_path.write_text(f"{utc_now()} EXIT_NOT_FILLED:{exit_order.status.value}\n", encoding="utf-8")
@@ -834,23 +930,102 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         status=exit_order.status.value,
                         client_order_id=exit_order_id,
                     )
-                    adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
-                    remaining = abs(int(store.positions().get(position.stock_id, 0))) if position is not None else 0
-                    if remaining == 0:
-                        log("POSITION_CLOSED_AFTER_RECONCILIATION", client_order_id=exit_order_id)
+                    # The original SendStockOrder may have timed out locally
+                    # even though the broker accepted it. Reconcile and re-read
+                    # the SAME exit order before another NEW EXIT is allowed.
+                    recovery_action, reconciled_status, remaining = (
+                        _reconcile_failed_exit(
+                            adapter=adapter,
+                            store=store,
+                            exit_order_id=exit_order_id,
+                            position=position,
+                            reconcile_timeout=args.reconcile_timeout,
+                        )
+                    )
+
+                    if recovery_action == "CLOSED":
+                        log(
+                            "POSITION_CLOSED_AFTER_RECONCILIATION",
+                            client_order_id=exit_order_id,
+                            reconciled_status=reconciled_status.value,
+                        )
                         clean_shutdown = True
                         return 0
-                    position.quantity = remaining
-                    position.exit_submitted = False
+
+                    if recovery_action == "TRACK_EXISTING":
+                        next_exit_reconcile_at = None
+                        if position is not None:
+                            position.quantity = remaining
+                            position.exit_submitted = True
+
+                        log(
+                            "EXIT_RECOVERED_ACTIVE_AFTER_RECONCILIATION",
+                            client_order_id=exit_order_id,
+                            status=reconciled_status.value,
+                            remaining_quantity=remaining,
+                        )
+
+                        # Keep exit_order_id intact. The existing broker order
+                        # is still responsible for this exposure.
+                        continue
+
+                    if recovery_action == "UNKNOWN":
+                        store.halt("EXIT_RECONCILIATION_UNRESOLVED")
+
+                        reconcile_delay = max(
+                            1.0,
+                            min(
+                                float(args.exit_retry_max_seconds),
+                                float(args.exit_retry_base_seconds),
+                            ),
+                        )
+                        next_exit_reconcile_at = now + timedelta(
+                            seconds=reconcile_delay
+                        )
+
+                        notifier.critical(
+                            "EXIT_RECONCILIATION_UNRESOLVED",
+                            "Exit state remained unresolved after broker reconciliation; no retry order was sent",
+                            client_order_id=exit_order_id,
+                        )
+
+                        log(
+                            "EXIT_RECONCILIATION_UNRESOLVED",
+                            client_order_id=exit_order_id,
+                            status=reconciled_status.value,
+                            remaining_quantity=remaining,
+                        )
+
+                        # Fail closed. Never invent a second EXIT while the
+                        # original broker state is still ambiguous.
+                        continue
+
+                    # Only a terminal old EXIT plus real remaining exposure may
+                    # create a brand-new rescue order.
+                    next_exit_reconcile_at = None
+                    if position is not None:
+                        position.quantity = remaining
+                        position.exit_submitted = False
+
                     exit_order_id = None
                     last_exit_reprice = None
                     pending_exit_reason = pending_exit_reason or reason
+
                     delay = min(
                         args.exit_retry_max_seconds,
-                        args.exit_retry_base_seconds * (2 ** max(0, exit_attempt - 1)),
+                        args.exit_retry_base_seconds
+                        * (2 ** max(0, exit_attempt - 1)),
                     )
+
                     next_exit_retry_at = now + timedelta(seconds=delay)
-                    log("EXIT_RETRY_SCHEDULED", delay_seconds=delay, attempt=exit_attempt + 1)
+
+                    log(
+                        "EXIT_RETRY_SCHEDULED",
+                        delay_seconds=delay,
+                        attempt=exit_attempt + 1,
+                        reconciled_status=reconciled_status.value,
+                        remaining_quantity=remaining,
+                    )
                     continue
                 if (
                     exit_order.broker_order_no

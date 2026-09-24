@@ -197,7 +197,7 @@ class AdapterTests(unittest.TestCase):
         stock = self.api.sent[0][1][0]
         self.assertEqual(stock.Account, "S12341234567")
         self.assertEqual(stock.StkCode, "3605")
-        self.assertEqual(stock.OrderQty, 1000)
+        self.assertEqual(stock.OrderQty, 1)
         self.assertEqual(stock.TradeKind, 0)
         self.assertEqual(stock.Price, 171.5)
         self.assertEqual(stock.PriceFlag, " ")
@@ -206,6 +206,16 @@ class AdapterTests(unittest.TestCase):
         second = self.adapter.submit(self.intent())
         self.assertEqual(first.client_order_id, second.client_order_id)
         self.assertEqual(len(self.api.sent), 1)
+
+    def test_regular_new_converts_internal_shares_to_board_lots(self):
+        self.adapter.submit(self.intent(intent_id="two-lots", quantity=2000))
+        stock = self.api.sent[-1][1][0]
+        self.assertEqual(stock.OrderQty, 2)
+
+    def test_regular_new_rejects_non_board_lot_quantity_before_send(self):
+        with self.assertRaisesRegex(Exception, "multiple of 1000 shares"):
+            self.adapter.submit(self.intent(intent_id="bad-lot", quantity=1500))
+        self.assertEqual(len(self.api.sent), 0)
 
     def test_submit_rejects_raw_signal_or_mapping(self):
         with self.assertRaises(TypeError):
@@ -226,6 +236,31 @@ class AdapterTests(unittest.TestCase):
             quantity=1000,
             price="171.5",
         )
+
+        # Rescue safety now verifies the broker's authoritative state, so the
+        # fake broker must reflect the filled entry and actual inventory.
+        self.api.merge_rows = [
+            {
+                "Account": "S12341234567",
+                "RptType": 1,
+                "OrderNo": "filled-entry-broker",
+                "CompanyNo": "3605",
+                "BS": "B",
+                "Price": 171.5,
+                "LastDealPrice": 171.5,
+                "AvgDealPrice": 171.5,
+                "BeforeQty": 0,
+                "OrderQty": 1000,
+                "OkQty": 1000,
+                "APCode": 0,
+                "OrderStatus": 20,
+                "LastOrderStatus": 8,
+                "BasketNo": entry.basket_no,
+                "StkErrorNo": "",
+            }
+        ]
+        self.api.positions = {"3605": 1000}
+
         self.api.sent.clear()
         self.store.halt("emergency")
         with self.assertRaises(BrokerStateHalted):
@@ -242,6 +277,73 @@ class AdapterTests(unittest.TestCase):
         order = self.adapter.submit_rescue(rescue)
         self.assertEqual(order.status, BrokerOrderStatus.SEND_PENDING)
         self.assertEqual(len(self.api.sent), 1)
+
+    def test_rescue_exit_blocks_when_broker_has_another_open_order(self):
+        entry = self.adapter.submit(self.intent("filled-entry-open-order-test"))
+        self.store.record_fill(
+            entry.client_order_id,
+            fill_id="filled-entry-open-order-fill",
+            quantity=1000,
+            price="171.5",
+        )
+
+        self.api.positions = {"3605": 1000}
+        self.api.merge_rows = [
+            {
+                "Account": "S12341234567",
+                "RptType": 1,
+                "OrderNo": "filled-entry-remote",
+                "CompanyNo": "3605",
+                "BS": "B",
+                "Price": 171.5,
+                "LastDealPrice": 171.5,
+                "AvgDealPrice": 171.5,
+                "BeforeQty": 0,
+                "OrderQty": 1000,
+                "OkQty": 1000,
+                "APCode": 0,
+                "OrderStatus": 20,
+                "LastOrderStatus": 8,
+                "BasketNo": entry.basket_no,
+                "StkErrorNo": "",
+            },
+            {
+                "Account": "S12341234567",
+                "RptType": 1,
+                "OrderNo": "other-live-sell",
+                "CompanyNo": "3605",
+                "BS": "S",
+                "Price": 171.0,
+                "LastDealPrice": 0,
+                "AvgDealPrice": 0,
+                "BeforeQty": 0,
+                "OrderQty": 1000,
+                "OkQty": 0,
+                "APCode": 0,
+                "OrderStatus": 20,
+                "LastOrderStatus": 0,
+                "BasketNo": "external-live-sell",
+                "StkErrorNo": "",
+            },
+        ]
+
+        self.api.sent.clear()
+        self.store.halt("emergency")
+
+        rescue = ExecutionIntent(
+            intent_id="blocked-rescue-existing-open-order",
+            symbol="3605",
+            side=Side.SELL,
+            quantity=1000,
+            price=Decimal("171.0"),
+            order_type=StockOrderType.CASH,
+            purpose=IntentPurpose.EXIT,
+        )
+
+        with self.assertRaises(Exception):
+            self.adapter.submit_rescue(rescue)
+
+        self.assertEqual(len(self.api.sent), 0)
 
     def test_rescue_exit_cannot_create_exposure_from_flat(self):
         self.store.halt("emergency")
@@ -401,6 +503,82 @@ class AdapterTests(unittest.TestCase):
         reduced = self.api.sent[-1][1][0]
         self.assertEqual(reduced.TradeKind, 3)
         self.assertEqual(reduced.OrderQty, 200)
+
+    def test_reconciliation_rejects_unknown_remote_open_order(self):
+        self.api.merge_rows = [
+            {
+                "Account": "S12341234567",
+                "RptType": 1,
+                "OrderNo": "manual0001",
+                "CompanyNo": "2330",
+                "BS": "B",
+                "Price": 100.0,
+                "LastDealPrice": 0,
+                "AvgDealPrice": 0,
+                "BeforeQty": 0,
+                "OrderQty": 1000,
+                "OkQty": 0,
+                "APCode": 0,
+                "OrderStatus": 20,
+                "LastOrderStatus": 0,
+                "BasketNo": "external-manual-order",
+                "StkErrorNo": "",
+            }
+        ]
+        self.api.positions = {}
+
+        with self.assertRaises(ReconciliationMismatch):
+            self.adapter.reconcile(timeout=1)
+
+        self.assertTrue(self.store.control_state()["halted"])
+
+    def test_pre_order_reconciliation_blocks_manual_position_change_before_send(self):
+        self.api.positions = {"2330": 1000}
+
+        with self.assertRaises(ReconciliationMismatch):
+            self.adapter.submit(
+                self.intent(
+                    intent_id="blocked-by-manual-position",
+                    quantity=1000,
+                )
+            )
+
+        self.assertEqual(len(self.api.sent), 0)
+        self.assertTrue(self.store.control_state()["halted"])
+
+    def test_pre_order_reconciliation_blocks_unknown_open_order_before_send(self):
+        self.api.merge_rows = [
+            {
+                "Account": "S12341234567",
+                "RptType": 1,
+                "OrderNo": "manual0002",
+                "CompanyNo": "2317",
+                "BS": "B",
+                "Price": 200.0,
+                "LastDealPrice": 0,
+                "AvgDealPrice": 0,
+                "BeforeQty": 0,
+                "OrderQty": 1000,
+                "OkQty": 0,
+                "APCode": 0,
+                "OrderStatus": 20,
+                "LastOrderStatus": 0,
+                "BasketNo": "external-before-submit",
+                "StkErrorNo": "",
+            }
+        ]
+        self.api.positions = {}
+
+        with self.assertRaises(ReconciliationMismatch):
+            self.adapter.submit(
+                self.intent(
+                    intent_id="blocked-by-external-order",
+                    quantity=1000,
+                )
+            )
+
+        self.assertEqual(len(self.api.sent), 0)
+        self.assertTrue(self.store.control_state()["halted"])
 
     def test_reconciliation_matches_orders_and_positions(self):
         stored = self.adapter.submit(self.intent())
