@@ -1447,11 +1447,22 @@ def _kill(args) -> int:
 
 def _clear_halt(args) -> int:
     runtime = args.runtime_dir.resolve()
-    baseline = _load_baseline(args.baseline.resolve())
-    credentials, session, store, adapter = _connect_for_control(
-        args, args.environment, baseline=baseline, cli_live=False
-    )
+
+    # clear-halt opens an independent broker control connection, so it must
+    # never run alongside the realtime controller. Acquire the same kernel
+    # singleton lock before loading credentials or connecting to the broker.
+    runtime_lock = _acquire_runtime_instance_lock(runtime)
+
+    credentials = None
+    session = None
+    store = None
+    adapter = None
     try:
+        baseline = _load_baseline(args.baseline.resolve())
+        credentials, session, store, adapter = _connect_for_control(
+            args, args.environment, baseline=baseline, cli_live=False
+        )
+
         snapshot = adapter.inspect_broker_state(timeout=args.reconcile_timeout)
         if snapshot.open_orders:
             raise RuntimeError("cannot clear halt while actual broker orders are open")
@@ -1461,14 +1472,30 @@ def _clear_halt(args) -> int:
             raise RuntimeError("cannot clear halt while local broker orders are open")
         if store.positions():
             raise RuntimeError("cannot clear halt while strategy positions are non-flat")
+
         store.clear_halt(args.reason)
+
         marker = runtime / "EMERGENCY_STOP"
         marker.unlink(missing_ok=True)
-        print(json.dumps({"status": "HALT_CLEARED", "reason": args.reason}, ensure_ascii=False, indent=2))
+
+        print(json.dumps({
+            "status": "HALT_CLEARED",
+            "reason": args.reason,
+        }, ensure_ascii=False, indent=2))
         return 0
     finally:
-        credentials.update({"pfx_password": "", "trading_password": ""})
-        adapter.close(); session.close(); store.close()
+        if credentials is not None:
+            credentials.update({
+                "pfx_password": "",
+                "trading_password": "",
+            })
+        if adapter is not None:
+            adapter.close()
+        if session is not None:
+            session.close()
+        if store is not None:
+            store.close()
+        _release_runtime_instance_lock(runtime_lock)
 
 
 def _status(args) -> int:

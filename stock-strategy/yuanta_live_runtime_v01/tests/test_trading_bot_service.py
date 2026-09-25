@@ -411,5 +411,89 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             popen.assert_not_called()
 
 
+    def test_remote_clear_halt_requires_confirmation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            controls = _RemoteControl(runtime, confirm_ttl_seconds=120)
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.secrets.randbelow",
+                return_value=2468,
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service._invoke_runtime_control",
+                return_value=(True, "HALT_CLEARED"),
+            ) as invoke:
+                request = controls.handle({"text": "/clear-halt"}, 800)
+                self.assertIn("/confirm 2468", request)
+                self.assertIn("解除交易 HALT", request)
+                invoke.assert_not_called()
+
+                confirmed = controls.handle({"text": "/confirm 2468"}, 801)
+                self.assertIn("HALT 已解除", confirmed)
+                invoke.assert_called_once_with("clear-halt", runtime)
+
+    def test_clear_halt_cli_uses_prod_baseline_and_never_live_flag(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+
+            completed = SimpleNamespace(
+                returncode=0,
+                stdout='{"status":"HALT_CLEARED","reason":"telegram_clear-halt"}',
+                stderr="",
+            )
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
+                return_value=completed,
+            ) as run:
+                ok, status = _invoke_runtime_control("clear-halt", runtime)
+
+            self.assertTrue(ok)
+            self.assertEqual(status, "HALT_CLEARED")
+
+            command = run.call_args.args[0]
+            self.assertIn("clear-halt", command)
+            self.assertIn("--runtime-dir", command)
+            self.assertIn("--baseline", command)
+            self.assertIn(
+                str(runtime.resolve() / "position_baseline.json"),
+                command,
+            )
+            self.assertIn("--environment", command)
+            self.assertIn("PROD", command)
+
+            self.assertNotIn("--live", command)
+            self.assertNotIn("start-prod", command)
+            self.assertNotIn("EXECUTION_MODE", command)
+            self.assertNotIn("ENABLE_LIVE_TRADING", command)
+            self.assertEqual(run.call_args.kwargs["timeout"], 60)
+
+
+    def test_clear_halt_status_is_found_after_diagnostic_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+
+            completed = SimpleNamespace(
+                returncode=0,
+                stdout=(
+                    '{"event":"CONNECTED","status":"INFO"}\n'
+                    '{\n'
+                    '  "status": "HALT_CLEARED",\n'
+                    '  "reason": "telegram_clear-halt"\n'
+                    '}\n'
+                ),
+                stderr="",
+            )
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
+                return_value=completed,
+            ):
+                ok, status = _invoke_runtime_control("clear-halt", runtime)
+
+            self.assertTrue(ok)
+            self.assertEqual(status, "HALT_CLEARED")
+
+
 if __name__ == "__main__":
     unittest.main()

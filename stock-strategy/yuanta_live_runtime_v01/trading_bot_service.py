@@ -443,22 +443,34 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
 def _invoke_runtime_control(action: str, runtime_dir: Path) -> tuple[bool, str]:
     """Invoke the existing guarded runtime CLI in a separate process.
 
-    Remote control is intentionally limited to marker-based stop/kill.
-    It never adds --live and never calls broker methods directly.
+    Remote control uses only existing guarded runtime CLI entry points.
+    It never calls broker methods directly. Only /start uses --live, through
+    its separate launcher; this synchronous path never does.
     """
-    if action not in {"stop", "kill"}:
+    if action not in {"stop", "kill", "clear-halt"}:
         raise ValueError(f"unsupported remote control action: {action}")
 
+    runtime_dir = Path(runtime_dir).resolve()
     command = [
         sys.executable,
         "-m",
         "yuanta_live_runtime_v01.main",
         action,
         "--runtime-dir",
-        str(Path(runtime_dir).resolve()),
+        str(runtime_dir),
         "--reason",
         f"telegram_{action}",
     ]
+
+    if action == "clear-halt":
+        command.extend([
+            "--baseline",
+            str(runtime_dir / "position_baseline.json"),
+            "--environment",
+            "PROD",
+        ])
+
+    control_timeout = 60 if action == "clear-halt" else 10
 
     try:
         completed = subprocess.run(
@@ -466,7 +478,7 @@ def _invoke_runtime_control(action: str, runtime_dir: Path) -> tuple[bool, str]:
             cwd=str(MODULE_DIR.parent),
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=control_timeout,
             check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
@@ -474,19 +486,19 @@ def _invoke_runtime_control(action: str, runtime_dir: Path) -> tuple[bool, str]:
 
     status = "UNKNOWN"
     stdout = str(completed.stdout or "").strip()
-    if stdout:
-        try:
-            value = json.loads(stdout)
-            if isinstance(value, dict):
-                candidate = str(value.get("status", "UNKNOWN"))
-                if candidate in {
-                    "GRACEFUL_STOP_REQUESTED",
-                    "RUNTIME_NOT_RUNNING",
-                    "EMERGENCY_STOP_REQUESTED",
-                }:
-                    status = candidate
-        except Exception:
-            pass
+    allowed_statuses = {
+        "GRACEFUL_STOP_REQUESTED",
+        "RUNTIME_NOT_RUNNING",
+        "EMERGENCY_STOP_REQUESTED",
+        "HALT_CLEARED",
+    }
+
+    # Control commands may emit diagnostic JSON lines before their final
+    # result. Do not require stdout to contain exactly one JSON document.
+    for candidate in allowed_statuses:
+        if f'"status": "{candidate}"' in stdout or f'"status":"{candidate}"' in stdout:
+            status = candidate
+            break
 
     return completed.returncode == 0, status
 
@@ -530,6 +542,12 @@ class _RemoteControl:
                 "會停止新進場、撤銷尚未完成的進場單，"
                 "若已有部位則走既有正常 EXIT 流程後停止。"
             )
+        elif action == "clear-halt":
+            title = "解除交易 HALT"
+            detail = (
+                "會連線券商重新檢查未成交單、實際部位、baseline、"
+                "local orders 與 strategy positions；只有全部安全一致才會解除 HALT。"
+            )
         else:
             title = "緊急停止"
             detail = (
@@ -561,7 +579,10 @@ class _RemoteControl:
                 update_id=update_id,
                 outcome="EXPIRED",
             )
-            return "確認已逾時，指令沒有執行。請重新送出 /start、/stop 或 /kill。"
+            return (
+                "確認已逾時，指令沒有執行。"
+                "請重新送出 /start、/stop、/kill 或 /clear-halt。"
+            )
 
         raw = str(message.get("text", "")).strip()
         parts = raw.split()
@@ -657,6 +678,18 @@ class _RemoteControl:
                 "Runtime 將停止新進場；若有曝險，會先依既有 EXIT 流程處理。"
             )
 
+        if action == "clear-halt":
+            if status == "HALT_CLEARED":
+                return (
+                    "✅ HALT 已解除。\n"
+                    "既有券商未成交單、實際部位、baseline 與 local strategy state "
+                    "已通過 clear-halt 的安全檢查。"
+                )
+            return (
+                "⚠️ HALT 沒有解除。\n"
+                "安全檢查未通過或控制程序失敗；原 HALT 狀態不應被繞過。"
+            )
+
         return (
             "🚨 已送出緊急停止要求。\n"
             "EMERGENCY_STOP 已建立；若 runtime 正在運作，"
@@ -675,6 +708,9 @@ class _RemoteControl:
         if command == "/kill":
             return self._request("kill", update_id)
 
+        if command == "/clear-halt":
+            return self._request("clear-halt", update_id)
+
         if command == "/confirm":
             return self._confirm(message, update_id)
 
@@ -687,7 +723,7 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
     controls = _RemoteControl(runtime_dir)
     print(
         "Trading Bot service started. Commands: "
-        "/status /start /stop /kill /confirm /help",
+        "/status /start /stop /kill /clear-halt /confirm /help",
         flush=True,
     )
 
@@ -757,6 +793,7 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
                             "/start：要求啟動 LIVE runtime（需要確認碼）\n"
                             "/stop：要求正常停止（需要確認碼）\n"
                             "/kill：要求緊急停止（需要確認碼）\n"
+                            "/clear-halt：安全檢查後解除 HALT（需要確認碼）\n"
                             "/confirm 1234：確認待執行的控制指令\n"
                             "/help：顯示指令\n\n"
                             "所有遠端控制都沿用既有 runtime 安全機制；"

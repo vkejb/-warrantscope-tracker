@@ -253,6 +253,29 @@ class RuntimeGateTests(unittest.TestCase):
             finally:
                 runtime_main._release_runtime_instance_lock(first)
 
+    def test_clear_halt_refuses_running_runtime_before_broker_connect(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            first = runtime_main._acquire_runtime_instance_lock(runtime)
+
+            try:
+                with patch.object(
+                    runtime_main,
+                    "_connect_for_control",
+                ) as connect:
+                    result = runtime_main.main([
+                        "clear-halt",
+                        "--runtime-dir",
+                        temporary,
+                        "--reason",
+                        "test",
+                    ])
+
+                self.assertEqual(result, 1)
+                connect.assert_not_called()
+            finally:
+                runtime_main._release_runtime_instance_lock(first)
+
     def test_persistent_stop_request_blocks_runtime_before_credentials(self):
         with tempfile.TemporaryDirectory() as temporary:
             runtime = Path(temporary)
