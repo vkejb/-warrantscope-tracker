@@ -38,8 +38,9 @@ from yuanta_intraday_shadow_v01.main import DEFAULT_VENDOR_DIR as SHADOW_DEFAULT
 from yuanta_intraday_shadow_v01.yuanta_keychain import load_credentials, status as credential_status
 
 from .notifications import RuntimeNotifier
+from .trading_bot_notifier import AsyncTradingNotifier
 from .risk_manager import RiskLimits, RiskManager
-from .strategy import LiveDirectionEngine, ManagedPosition
+from .strategy import LiveDirectionEngine, ManagedPosition, SPEC
 from .watchdog import Heartbeat, monitor as watchdog_monitor
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -564,6 +565,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     baseline_path = args.baseline.resolve()
     db_path = runtime_dir / "live-orders.sqlite"
     notifier = RuntimeNotifier(runtime_dir)
+    trading_notifier = AsyncTradingNotifier(runtime_dir)
     heartbeat = Heartbeat(runtime_dir)
     gate = LiveTradingGate.from_environment(cli_live=bool(args.live))
     if submit_live and not gate.authorized:
@@ -573,6 +575,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         row = {"at": utc_now(), "event": event, **payload}
         _append_jsonl(log_path, row)
         print(json.dumps(row, ensure_ascii=False, default=str), flush=True)
+        trading_notifier.emit(event, row)
 
     if kill_path.exists() and not args.recover_emergency:
         raise RuntimeError(
@@ -675,7 +678,17 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             short_enabled=allow_short,
             gate=gate.public_snapshot(),
         )
-        heartbeat.beat("RUNNING", environment=environment, submit_live=submit_live)
+        heartbeat.beat(
+            "RUNNING",
+            environment=environment,
+            submit_live=submit_live,
+            signal_date=seal["signal_date"],
+            watchlist_count=len(items),
+            entry_start=SPEC["entry_start"],
+            trade_attempted=trade_attempted,
+            last_quote_at=session.last_quote_at,
+            gate=gate.public_snapshot(),
+        )
 
         while True:
             now = datetime.now(TAIPEI)
@@ -684,7 +697,18 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 "EMERGENCY_EXIT" if emergency else "RUNNING",
                 environment=environment,
                 submit_live=submit_live,
-                position=None if position is None else position.stock_id,
+                signal_date=seal["signal_date"],
+                watchlist_count=len(items),
+                entry_start=SPEC["entry_start"],
+                trade_attempted=trade_attempted,
+                last_quote_at=session.last_quote_at,
+                gate=gate.public_snapshot(),
+                position=None if position is None else {
+                    "stock_id": position.stock_id,
+                    "side": position.side,
+                    "quantity": position.quantity,
+                    "entry_price": position.entry_price,
+                },
                 entry_order_id=entry_order_id,
                 exit_order_id=exit_order_id,
             )
@@ -735,7 +759,13 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
                             log("ENTRY_RECONCILED_AFTER_ACK_DELAY", client_order_id=entry_order_id)
                 elif order.status in TERMINAL and order.filled_quantity == 0 and position is None:
-                    log("ENTRY_NOT_FILLED", client_order_id=entry_order_id, status=order.status.value)
+                    log(
+                        "ENTRY_NOT_FILLED",
+                        client_order_id=entry_order_id,
+                        stock_id=order.symbol,
+                        status=order.status.value,
+                        last_error=order.last_error,
+                    )
                     entry_order_id = None
                     if emergency:
                         if submit_live:
@@ -1127,6 +1157,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             except Exception as exc:
                 log("ADAPTER_CLOSE_ERROR", error=f"{type(exc).__name__}: {exc}")
         session.close()
+        try:
+            trading_notifier.close(timeout=3.0)
+        except Exception:
+            pass
         store.close()
 
 
