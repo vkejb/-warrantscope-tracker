@@ -159,6 +159,10 @@ def load_session(run_dirs: list[Path]) -> tuple[dict[str, dict], dict]:
             buy_prices, sell_prices = _number_list(row.get("buy_prices", [])), _number_list(row.get("sell_prices", []))
             if not buys or not sells or not buy_prices or not sell_prices:
                 continue
+            # Match LiveDirectionEngine: an invalid top-of-book quote is not
+            # executable and must fail closed instead of entering the replay.
+            if buy_prices[0] <= 0 or sell_prices[0] <= 0:
+                continue
             stocks.setdefault(str(row["stock_id"]), {"ticks": [], "books": []})["books"].append({
                 "time": _stamp(row["received_at"]), "buy_volume": sum(buys), "sell_volume": sum(sells),
                 "best_bid": buy_prices[0], "best_ask": sell_prices[0],
@@ -214,6 +218,8 @@ def signal_at(stock_id: str, data: dict, decision: datetime) -> DirectionSignal 
         return None
     book = books[-1]
     spread_mid = (book["best_bid"] + book["best_ask"]) / 2
+    if spread_mid <= 0:
+        return None
     spread_bps = (book["best_ask"] - book["best_bid"]) / spread_mid * 10000
     if spread_bps > SPEC["maximum_spread_bps"]:
         return None

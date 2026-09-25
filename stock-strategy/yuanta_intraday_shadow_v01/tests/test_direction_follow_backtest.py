@@ -1,10 +1,15 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 import unittest
 
 from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem
-from yuanta_intraday_shadow_v01.direction_follow_backtest import SPEC, _loss_recovery_exit, build_report
+from yuanta_intraday_shadow_v01.direction_follow_backtest import (
+    SPEC,
+    _loss_recovery_exit,
+    build_report,
+    signal_at,
+)
 from yuanta_intraday_shadow_v01.direction_signal_validation import build_validation_report
 
 
@@ -13,6 +18,40 @@ class DirectionFollowBacktestTests(unittest.TestCase):
         self.assertTrue(_loss_recovery_exit(-0.025, 0.001))
         self.assertFalse(_loss_recovery_exit(-0.015, 0.001))
         self.assertFalse(_loss_recovery_exit(-0.025, -0.001))
+
+    def test_zero_top_of_book_fails_closed(self):
+        decision = datetime(2026, 9, 24, 1, 5, 30, tzinfo=timezone.utc)
+        ticks = []
+
+        for index in range(10):
+            stamp = decision - timedelta(seconds=9 - index)
+            ticks.append({
+                "time": stamp,
+                "price": 100.0,
+                "volume": 10.0,
+                "bid": 99.5,
+                "ask": 100.0,
+                "flag": "1",
+                "serial": index,
+            })
+
+        books = [{
+            "time": decision,
+            "buy_volume": 100.0,
+            "sell_volume": 100.0,
+            "best_bid": 0.0,
+            "best_ask": 0.0,
+        }]
+
+        data = {
+            "ticks": ticks,
+            "books": books,
+            "tick_times": [row["time"] for row in ticks],
+            "book_times": [row["time"] for row in books],
+            "meta": {"stock_name": "測試股"},
+        }
+
+        self.assertIsNone(signal_at("1001", data, decision))
 
     def _run(self, root: Path) -> Path:
         run = AppendOnlyRun(
