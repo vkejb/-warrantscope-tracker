@@ -4,6 +4,7 @@ import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import secrets
 import subprocess
@@ -365,6 +366,80 @@ def _audit_control(
         handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def _runtime_process_active(runtime_dir: Path) -> bool:
+    heartbeat = _read_json(Path(runtime_dir) / "heartbeat.json")
+    if not heartbeat:
+        return False
+
+    state = str(heartbeat.get("state", ""))
+    if state not in {"RUNNING", "STOPPING", "EMERGENCY_EXIT"}:
+        return False
+
+    age = _age_seconds(heartbeat.get("at"))
+    if age is None or age > 15:
+        return False
+
+    try:
+        pid = int(heartbeat.get("pid", 0))
+        if pid <= 0:
+            return False
+        os.kill(pid, 0)
+    except (OSError, TypeError, ValueError):
+        return False
+
+    return True
+
+
+def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
+    """Dispatch the existing guarded PROD runtime without modifying its gates."""
+    runtime_dir = Path(runtime_dir).resolve()
+
+    # Friendly pre-check only. The kernel-backed runtime singleton lock remains
+    # the authoritative protection against a second realtime controller.
+    if _runtime_process_active(runtime_dir):
+        return False, "RUNTIME_ALREADY_RUNNING"
+
+    if (runtime_dir / "STOP_REQUEST").exists():
+        return False, "STOP_REQUEST_ACTIVE"
+
+    command = [
+        sys.executable,
+        "-m",
+        "yuanta_live_runtime_v01.main",
+        "start-prod",
+        "--live",
+        "--runtime-dir",
+        str(runtime_dir),
+        "--baseline",
+        str(runtime_dir / "position_baseline.json"),
+    ]
+
+    try:
+        process = subprocess.Popen(
+            command,
+            cwd=str(MODULE_DIR.parent),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+            close_fds=True,
+        )
+    except OSError:
+        return False, "START_EXECUTION_ERROR"
+
+    # Gate/syntax failures happen before broker login and normally terminate
+    # immediately. Probe briefly, but never block the Telegram service on the
+    # long-running realtime process.
+    try:
+        return_code = process.wait(timeout=0.75)
+    except subprocess.TimeoutExpired:
+        return True, "START_DISPATCHED"
+
+    if return_code == 0:
+        return False, "START_EXITED_EARLY"
+    return False, "START_REJECTED"
+
+
 def _invoke_runtime_control(action: str, runtime_dir: Path) -> tuple[bool, str]:
     """Invoke the existing guarded runtime CLI in a separate process.
 
@@ -442,7 +517,14 @@ class _RemoteControl:
             update_id=update_id,
         )
 
-        if action == "stop":
+        if action == "start":
+            title = "啟動 LIVE Runtime"
+            detail = (
+                "會呼叫既有 start-prod --live；"
+                "Bot 不會設定或修改 EXECUTION_MODE / ENABLE_LIVE_TRADING。"
+                "既有 LIVE gate、singleton lock、reconciliation 與 halt 檢查仍全部有效。"
+            )
+        elif action == "stop":
             title = "正常停止"
             detail = (
                 "會停止新進場、撤銷尚未完成的進場單，"
@@ -479,7 +561,7 @@ class _RemoteControl:
                 update_id=update_id,
                 outcome="EXPIRED",
             )
-            return "確認已逾時，指令沒有執行。請重新送出 /stop 或 /kill。"
+            return "確認已逾時，指令沒有執行。請重新送出 /start、/stop 或 /kill。"
 
         raw = str(message.get("text", "")).strip()
         parts = raw.split()
@@ -528,15 +610,38 @@ class _RemoteControl:
             update_id=update_id,
         )
 
-        ok, status = _invoke_runtime_control(action, self.runtime_dir)
+        if action == "start":
+            ok, status = _launch_runtime_start(self.runtime_dir)
+        else:
+            ok, status = _invoke_runtime_control(action, self.runtime_dir)
 
         _audit_control(
             self.runtime_dir,
             "REMOTE_CONTROL_EXECUTED",
             action=action,
             update_id=update_id,
-            outcome="SUCCESS" if ok else "FAILED",
+            outcome=status if action == "start" else ("SUCCESS" if ok else "FAILED"),
         )
+
+        if action == "start":
+            if status == "RUNTIME_ALREADY_RUNNING":
+                return "ℹ️ Realtime runtime 已經在執行，沒有啟動第二個 instance。"
+            if status == "STOP_REQUEST_ACTIVE":
+                return (
+                    "⚠️ 偵測到尚未解除的 STOP_REQUEST，沒有啟動 LIVE runtime。\n"
+                    "請先用 /status 確認 runtime 狀態並處理停止要求。"
+                )
+            if not ok:
+                return (
+                    "⚠️ LIVE runtime 啟動要求被拒絕或立即結束。\n"
+                    "既有 LIVE gate、EMERGENCY_STOP、singleton lock、"
+                    "reconciliation / halt 等安全機制都沒有被繞過。"
+                )
+            return (
+                "✅ LIVE runtime 啟動要求已送出。\n"
+                "這不代表已通過交易授權；runtime 仍會自行驗證三道 LIVE gate、"
+                "singleton lock 與 reconciliation。稍後可用 /status 查看狀態。"
+            )
 
         if not ok:
             return (
@@ -561,6 +666,9 @@ class _RemoteControl:
     def handle(self, message: dict[str, Any], update_id: int) -> str | None:
         command = _command_text(message)
 
+        if command == "/start":
+            return self._request("start", update_id)
+
         if command == "/stop":
             return self._request("stop", update_id)
 
@@ -579,7 +687,7 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
     controls = _RemoteControl(runtime_dir)
     print(
         "Trading Bot service started. Commands: "
-        "/status /stop /kill /confirm /help",
+        "/status /start /stop /kill /confirm /help",
         flush=True,
     )
 
@@ -646,11 +754,13 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
                         (
                             "【WarrantScope Trading Bot】\n"
                             "/status：查看交易 runtime 即時狀態\n"
+                            "/start：要求啟動 LIVE runtime（需要確認碼）\n"
                             "/stop：要求正常停止（需要確認碼）\n"
                             "/kill：要求緊急停止（需要確認碼）\n"
                             "/confirm 1234：確認待執行的控制指令\n"
                             "/help：顯示指令\n\n"
-                            "所有遠端停止控制都沿用既有 runtime 安全機制。"
+                            "所有遠端控制都沿用既有 runtime 安全機制；"
+                            "Bot 不會自行開啟 LIVE gate。"
                         ),
                     )
 

@@ -630,6 +630,12 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             "use start-uat/start-prod --recover-emergency --live to run exit-only recovery"
         )
 
+    if stop_path.exists():
+        raise RuntimeError(
+            f"persistent graceful stop request is active: {stop_path}; "
+            "refusing realtime startup until the stop request is resolved"
+        )
+
     seal, items, _provenance = load_stage_a_watchlist()
     _validate_watchlist_day(str(seal["signal_date"]))
     metadata = {item.stock_id: item.stock_name for item in items}

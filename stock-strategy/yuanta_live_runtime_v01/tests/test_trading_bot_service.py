@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
+import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -11,6 +13,7 @@ from unittest.mock import patch
 from yuanta_live_runtime_v01.trading_bot_service import (
     _RemoteControl,
     _invoke_runtime_control,
+    _launch_runtime_start,
     build_status,
     render_status,
     serve,
@@ -290,6 +293,122 @@ class TradingBotRemoteControlTests(unittest.TestCase):
 
             self.assertEqual(result, 0)
             handle.assert_not_called()
+
+
+    def test_remote_start_requires_confirmation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            controls = _RemoteControl(runtime, confirm_ttl_seconds=120)
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.secrets.randbelow",
+                return_value=4321,
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service._launch_runtime_start",
+                return_value=(True, "START_DISPATCHED"),
+            ) as launch:
+                request = controls.handle({"text": "/start"}, 700)
+                self.assertIn("/confirm 4321", request)
+                launch.assert_not_called()
+
+                confirmed = controls.handle({"text": "/confirm 4321"}, 701)
+                self.assertIn("啟動要求已送出", confirmed)
+                launch.assert_called_once_with(runtime)
+
+    def test_start_launcher_uses_existing_live_gate_without_setting_environment(self):
+        class FakeProcess:
+            def wait(self, timeout):
+                raise subprocess.TimeoutExpired(cmd="start-prod", timeout=timeout)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.Popen",
+                return_value=FakeProcess(),
+            ) as popen:
+                ok, status = _launch_runtime_start(runtime)
+
+            self.assertTrue(ok)
+            self.assertEqual(status, "START_DISPATCHED")
+
+            command = popen.call_args.args[0]
+            kwargs = popen.call_args.kwargs
+
+            self.assertIn("start-prod", command)
+            self.assertIn("--live", command)
+            self.assertIn("--runtime-dir", command)
+            self.assertIn("--baseline", command)
+
+            self.assertNotIn("EXECUTION_MODE", command)
+            self.assertNotIn("ENABLE_LIVE_TRADING", command)
+
+            # Absence of env= means the launcher does not manufacture or
+            # override the LIVE authorization environment.
+            self.assertNotIn("env", kwargs)
+
+            self.assertIs(kwargs["stdin"], subprocess.DEVNULL)
+            self.assertIs(kwargs["stdout"], subprocess.DEVNULL)
+            self.assertIs(kwargs["stderr"], subprocess.DEVNULL)
+            self.assertTrue(kwargs["start_new_session"])
+
+    def test_start_launcher_refuses_fresh_existing_runtime_before_spawn(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            heartbeat = {
+                "at": datetime.now(timezone.utc).isoformat(),
+                "pid": os.getpid(),
+                "state": "RUNNING",
+                "submit_live": True,
+            }
+            (runtime / "heartbeat.json").write_text(
+                json.dumps(heartbeat),
+                encoding="utf-8",
+            )
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.Popen",
+            ) as popen:
+                ok, status = _launch_runtime_start(runtime)
+
+            self.assertFalse(ok)
+            self.assertEqual(status, "RUNTIME_ALREADY_RUNNING")
+            popen.assert_not_called()
+
+    def test_start_launcher_reports_immediate_gate_rejection(self):
+        class FakeProcess:
+            def wait(self, timeout):
+                return 1
+
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.Popen",
+                return_value=FakeProcess(),
+            ):
+                ok, status = _launch_runtime_start(runtime)
+
+            self.assertFalse(ok)
+            self.assertEqual(status, "START_REJECTED")
+
+
+    def test_start_launcher_refuses_persistent_stop_request_before_spawn(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            (runtime / "STOP_REQUEST").write_text(
+                "test\n",
+                encoding="utf-8",
+            )
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.Popen",
+            ) as popen:
+                ok, status = _launch_runtime_start(runtime)
+
+            self.assertFalse(ok)
+            self.assertEqual(status, "STOP_REQUEST_ACTIVE")
+            popen.assert_not_called()
 
 
 if __name__ == "__main__":

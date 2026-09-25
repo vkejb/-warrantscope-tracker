@@ -253,6 +253,27 @@ class RuntimeGateTests(unittest.TestCase):
             finally:
                 runtime_main._release_runtime_instance_lock(first)
 
+    def test_persistent_stop_request_blocks_runtime_before_credentials(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            (runtime / "STOP_REQUEST").write_text(
+                "test\n",
+                encoding="utf-8",
+            )
+
+            with patch.object(
+                runtime_main,
+                "load_credentials",
+            ) as credentials:
+                result = runtime_main.main([
+                    "observe-prod",
+                    "--runtime-dir",
+                    temporary,
+                ])
+
+            self.assertEqual(result, 1)
+            credentials.assert_not_called()
+
     def test_runtime_instance_lock_blocks_second_holder(self):
         with tempfile.TemporaryDirectory() as temporary:
             runtime = Path(temporary)
