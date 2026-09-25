@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
 import unittest
 
-from yuanta_live_runtime_v01.strategy import LiveDirectionEngine, ManagedPosition, TAIPEI
+from yuanta_live_runtime_v01.strategy import LiveDirectionEngine, ManagedPosition, SPEC, TAIPEI
 
 
 class StrategyTests(unittest.TestCase):
-    def _engine_with_long_signal(self):
+    def _engine_with_long_signal(self, decision=None):
         engine = LiveDirectionEngine({"2330": "台積電"}, capital_twd=190000)
-        decision = datetime(2026, 9, 24, 9, 35, 0, tzinfo=TAIPEI)
+        if decision is None:
+            decision = datetime(2026, 9, 24, 9, 35, 0, tzinfo=TAIPEI)
         start = decision - timedelta(seconds=250)
         for index in range(40):
             at = start + timedelta(seconds=index * 5)
@@ -31,6 +32,17 @@ class StrategyTests(unittest.TestCase):
         self.assertGreater(signal.quantity, 0)
         self.assertLessEqual(signal.entry_price * signal.quantity, 190000)
         self.assertEqual(signal.quantity % 1000, 0)
+
+    def test_entry_window_starts_at_0905(self):
+        self.assertEqual(SPEC["entry_start"], "09:05")
+
+        before_open = datetime(2026, 9, 24, 9, 4, 59, tzinfo=TAIPEI)
+        engine, decision = self._engine_with_long_signal(before_open)
+        self.assertIsNone(engine.choose_entry(decision, allow_short=False))
+
+        at_open = datetime(2026, 9, 24, 9, 5, 0, tzinfo=TAIPEI)
+        engine, decision = self._engine_with_long_signal(at_open)
+        self.assertIsNotNone(engine.choose_entry(decision, allow_short=False))
 
     def test_hard_exit_is_generated(self):
         engine, _ = self._engine_with_long_signal()

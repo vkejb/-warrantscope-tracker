@@ -37,7 +37,7 @@ SPEC = {
     "book_imbalance_threshold": 0.10,
     "entry_confirmations": 1,
     "reversal_confirmations": 2,
-    "entry_start": "09:35",
+    "entry_start": "09:05",
     "last_entry_time": "13:10",
     "hard_exit_time": "13:20",
     "maximum_hard_exit_quote_staleness_seconds": 60,
