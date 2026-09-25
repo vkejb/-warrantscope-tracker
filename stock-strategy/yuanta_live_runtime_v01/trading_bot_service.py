@@ -172,6 +172,7 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
 
     return {
         "runtime_state": runtime_state,
+        "emergency_stop_active": (runtime_dir / "EMERGENCY_STOP").exists(),
         "heartbeat_age_seconds": None if heartbeat_age is None else round(heartbeat_age, 1),
         "environment": (heartbeat or {}).get("environment"),
         "submit_live": bool((heartbeat or {}).get("submit_live", False)),
@@ -215,6 +216,11 @@ def render_status(status: dict[str, Any]) -> str:
     lines = [
         "【WarrantScope Trading】",
         f"Runtime：{runtime_text}",
+        (
+            "交易HALT：ACTIVE（EMERGENCY_STOP）"
+            if bool(status.get("emergency_stop_active"))
+            else "交易HALT：CLEAR"
+        ),
         f"環境：{status.get('environment') or '-'}｜模式：{mode}",
     ]
 

@@ -127,11 +127,46 @@ class TradingBotStatusTests(unittest.TestCase):
             self.assertIn("LIVE_STOPPING", rendered)
             self.assertIn("正常停止中", rendered)
 
+    def test_emergency_stop_marker_is_reported_without_overwriting_runtime_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            now = datetime.now(timezone.utc).isoformat()
+
+            (runtime / "heartbeat.json").write_text(
+                json.dumps({
+                    "at": now,
+                    "state": "STOPPED_CLEAN",
+                    "environment": "PROD",
+                    "submit_live": True,
+                }),
+                encoding="utf-8",
+            )
+            (runtime / "EMERGENCY_STOP").write_text(
+                "test emergency stop\n",
+                encoding="utf-8",
+            )
+
+            status = build_status(runtime)
+
+            self.assertEqual(status["runtime_state"], "STOPPED_CLEAN")
+            self.assertTrue(status["emergency_stop_active"])
+
+            rendered = render_status(status)
+            self.assertIn("Runtime：STOPPED_CLEAN", rendered)
+            self.assertIn(
+                "交易HALT：ACTIVE（EMERGENCY_STOP）",
+                rendered,
+            )
+
     def test_missing_runtime_is_safe(self):
         with tempfile.TemporaryDirectory() as tmp:
             status = build_status(Path(tmp))
             self.assertEqual(status["runtime_state"], "NOT_STARTED")
-            self.assertIn("NOT_STARTED", render_status(status))
+            self.assertFalse(status["emergency_stop_active"])
+
+            rendered = render_status(status)
+            self.assertIn("NOT_STARTED", rendered)
+            self.assertIn("交易HALT：CLEAR", rendered)
 
 
 
