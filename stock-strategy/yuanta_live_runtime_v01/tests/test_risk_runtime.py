@@ -166,6 +166,123 @@ class RuntimeGateTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             session.subscribe([SimpleNamespace(market="TWSE", stock_id="3605")])
 
+    def test_second_runtime_is_blocked_before_broker_connect(self):
+        class FakeSession:
+            def __init__(self):
+                self.connect_calls = 0
+                self.close_calls = 0
+
+            def connect(self):
+                self.connect_calls += 1
+
+            def close(self):
+                self.close_calls += 1
+
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            first = runtime_main._acquire_runtime_instance_lock(runtime)
+
+            fake_session = FakeSession()
+            fake_notifier = SimpleNamespace(close=lambda **_kwargs: None)
+
+            args = SimpleNamespace(
+                runtime_dir=runtime,
+                baseline=runtime / "position_baseline.json",
+                vendor_dir=runtime / "vendor",
+                live=False,
+                recover_emergency=False,
+                capital=190000,
+                max_daily_loss=5000,
+                max_order_value=190000,
+                max_position_per_stock=0,
+                max_concurrent_positions=1,
+                max_trades_per_day=1,
+                entry_quote_staleness=5.0,
+                short_entry_order_type=None,
+                short_cover_order_type=None,
+            )
+
+            try:
+                with patch.object(
+                    runtime_main,
+                    "load_stage_a_watchlist",
+                    return_value=({"signal_date": "20260925"}, [], None),
+                ), patch.object(
+                    runtime_main,
+                    "_validate_watchlist_day",
+                ), patch.object(
+                    runtime_main,
+                    "load_credentials",
+                    return_value={
+                        "pfx_password": "test",
+                        "trading_password": "test",
+                    },
+                ), patch.object(
+                    runtime_main,
+                    "load_api_types",
+                    return_value={},
+                ), patch.object(
+                    runtime_main,
+                    "_extend_quote_types",
+                    return_value={},
+                ), patch.object(
+                    runtime_main,
+                    "_load_baseline",
+                    return_value={},
+                ), patch.object(
+                    runtime_main,
+                    "_Session",
+                    return_value=fake_session,
+                ), patch.object(
+                    runtime_main,
+                    "AsyncTradingNotifier",
+                    return_value=fake_notifier,
+                ):
+                    with self.assertRaisesRegex(
+                        RuntimeError,
+                        "another realtime runtime already owns",
+                    ):
+                        runtime_main._run_realtime(
+                            args,
+                            environment="PROD",
+                            submit_live=False,
+                        )
+
+                self.assertEqual(fake_session.connect_calls, 0)
+                self.assertEqual(fake_session.close_calls, 1)
+            finally:
+                runtime_main._release_runtime_instance_lock(first)
+
+    def test_runtime_instance_lock_blocks_second_holder(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            first = runtime_main._acquire_runtime_instance_lock(runtime)
+            try:
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "another realtime runtime already owns",
+                ):
+                    runtime_main._acquire_runtime_instance_lock(runtime)
+            finally:
+                runtime_main._release_runtime_instance_lock(first)
+
+    def test_runtime_instance_lock_reacquires_after_release_with_stale_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+
+            first = runtime_main._acquire_runtime_instance_lock(runtime)
+            runtime_main._release_runtime_instance_lock(first)
+
+            lock_path = runtime / runtime_main.RUNTIME_LOCK_FILENAME
+            self.assertTrue(lock_path.is_file())
+
+            # The file remains, but no process owns the kernel lock anymore.
+            second = runtime_main._acquire_runtime_instance_lock(runtime)
+            try:
+                self.assertFalse(second.closed)
+            finally:
+                runtime_main._release_runtime_instance_lock(second)
+
     def test_local_stop_writes_graceful_marker_for_fresh_runtime(self):
         with tempfile.TemporaryDirectory() as temporary:
             heartbeat = Path(temporary) / "heartbeat.json"

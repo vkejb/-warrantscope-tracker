@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict
+import errno
+import fcntl
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
@@ -62,6 +64,50 @@ ACTIVE_EXIT_STATUSES = {
     BrokerOrderStatus.PARTIALLY_FILLED,
     BrokerOrderStatus.CANCEL_PENDING,
 }
+
+RUNTIME_LOCK_FILENAME = "runtime.lock"
+
+
+def _acquire_runtime_instance_lock(runtime_dir: Path):
+    """Hold one non-blocking OS lock for the lifetime of a realtime runtime.
+
+    The lock file itself is not authoritative. A stale file after a crash is
+    harmless because the kernel releases flock ownership when the process dies.
+    """
+    path = Path(runtime_dir) / RUNTIME_LOCK_FILENAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle = path.open("a+", encoding="utf-8")
+
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError as exc:
+        handle.close()
+        if exc.errno in {errno.EACCES, errno.EAGAIN}:
+            raise RuntimeError(
+                "another realtime runtime already owns the runtime instance lock"
+            ) from None
+        raise
+
+    handle.seek(0)
+    handle.truncate()
+    handle.write(
+        json.dumps(
+            {"pid": os.getpid(), "acquired_at": utc_now()},
+            sort_keys=True,
+        )
+        + "\n"
+    )
+    handle.flush()
+    return handle
+
+
+def _release_runtime_instance_lock(handle) -> None:
+    if handle is None:
+        return
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    finally:
+        handle.close()
 
 
 def _classify_reconciled_exit(
@@ -636,6 +682,24 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     next_exit_reconcile_at: datetime | None = None
     exit_quote_alerted = False
     clean_shutdown = False
+
+    # Acquire after local setup but before session.connect(), so a second
+    # start/observe process is rejected before it can touch the broker.
+    try:
+        runtime_lock = _acquire_runtime_instance_lock(runtime_dir)
+    except Exception:
+        credentials.update({"pfx_password": "", "trading_password": ""})
+        try:
+            trading_notifier.close(timeout=3.0)
+        except Exception:
+            pass
+        try:
+            session.close()
+        except Exception:
+            pass
+        store.close()
+        raise
+
     try:
         session.connect()
         assert session.api is not None
@@ -1206,6 +1270,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         except Exception:
             pass
         store.close()
+        _release_runtime_instance_lock(runtime_lock)
 
 
 def time_from_text(text: str):
