@@ -14,6 +14,7 @@ from yuanta_live_runtime_v01.trading_bot_service import (
     _RemoteControl,
     _invoke_runtime_control,
     _launch_runtime_start,
+    _run_start_preflight,
     build_status,
     render_status,
     serve,
@@ -339,10 +340,14 @@ class TradingBotRemoteControlTests(unittest.TestCase):
                 "yuanta_live_runtime_v01.trading_bot_service.secrets.randbelow",
                 return_value=4321,
             ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service._run_start_preflight",
+                return_value=(True, "START_PREFLIGHT_READY"),
+            ) as preflight, patch(
                 "yuanta_live_runtime_v01.trading_bot_service._launch_runtime_start",
                 return_value=(True, "START_DISPATCHED"),
             ) as launch:
                 request = controls.handle({"text": "/start"}, 700)
+                preflight.assert_called_once_with(runtime)
                 self.assertIn("/confirm 4321", request)
                 launch.assert_not_called()
 
@@ -350,7 +355,75 @@ class TradingBotRemoteControlTests(unittest.TestCase):
                 self.assertIn("啟動要求已送出", confirmed)
                 launch.assert_called_once_with(runtime)
 
-    def test_start_launcher_uses_existing_live_gate_without_setting_environment(self):
+    def test_remote_start_preflight_failure_never_issues_confirmation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            controls = _RemoteControl(runtime, confirm_ttl_seconds=120)
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service._run_start_preflight",
+                return_value=(False, "START_PREFLIGHT_FAILED"),
+            ) as preflight, patch(
+                "yuanta_live_runtime_v01.trading_bot_service._launch_runtime_start",
+            ) as launch:
+                result = controls.handle({"text": "/start"}, 702)
+
+            preflight.assert_called_once_with(runtime)
+            launch.assert_not_called()
+            self.assertIsNone(controls.pending)
+            self.assertIn("前置檢查未通過", result)
+            self.assertIn("未產生確認碼", result)
+
+
+    def test_start_preflight_forces_dry_run_child_environment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+
+            (runtime / "position_baseline.json").write_text(
+                "{}\n",
+                encoding="utf-8",
+            )
+
+            completed = SimpleNamespace(
+                returncode=0,
+                stdout='{"status":"READY"}',
+                stderr="",
+            )
+
+            with patch.dict(
+                os.environ,
+                {
+                    "EXECUTION_MODE": "LIVE",
+                    "ENABLE_LIVE_TRADING": "YES",
+                },
+                clear=False,
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
+                return_value=completed,
+            ) as run:
+                ok, status = _run_start_preflight(runtime)
+
+                self.assertEqual(os.environ["EXECUTION_MODE"], "LIVE")
+                self.assertEqual(os.environ["ENABLE_LIVE_TRADING"], "YES")
+
+            self.assertTrue(ok)
+            self.assertEqual(status, "START_PREFLIGHT_READY")
+
+            command = run.call_args.args[0]
+            kwargs = run.call_args.kwargs
+
+            self.assertIn("preflight-prod", command)
+            self.assertIn("--runtime-dir", command)
+            self.assertIn("--baseline", command)
+            self.assertNotIn("--live", command)
+
+            self.assertEqual(kwargs["env"]["EXECUTION_MODE"], "DRY_RUN")
+            self.assertEqual(kwargs["env"]["ENABLE_LIVE_TRADING"], "NO")
+            self.assertTrue(kwargs["capture_output"])
+            self.assertEqual(kwargs["timeout"], 90)
+
+
+    def test_start_launcher_sets_live_gates_only_in_child_environment(self):
         class FakeProcess:
             def wait(self, timeout):
                 raise subprocess.TimeoutExpired(cmd="start-prod", timeout=timeout)
@@ -378,9 +451,8 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             self.assertNotIn("EXECUTION_MODE", command)
             self.assertNotIn("ENABLE_LIVE_TRADING", command)
 
-            # Absence of env= means the launcher does not manufacture or
-            # override the LIVE authorization environment.
-            self.assertNotIn("env", kwargs)
+            self.assertEqual(kwargs["env"]["EXECUTION_MODE"], "LIVE")
+            self.assertEqual(kwargs["env"]["ENABLE_LIVE_TRADING"], "YES")
 
             self.assertIs(kwargs["stdin"], subprocess.DEVNULL)
             self.assertIs(kwargs["stdout"], subprocess.DEVNULL)

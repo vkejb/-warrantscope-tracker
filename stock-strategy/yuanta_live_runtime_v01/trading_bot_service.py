@@ -396,8 +396,76 @@ def _runtime_process_active(runtime_dir: Path) -> bool:
     return True
 
 
+def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
+    """Run sanitized PROD preflight before issuing a LIVE confirmation code.
+
+    The preflight subprocess is forced to DRY_RUN/NO. Its stdout/stderr are
+    never returned to Telegram because broker diagnostics may contain private
+    account or position information.
+
+    The actual LIVE runtime performs all critical checks again after the user
+    confirms the start request.
+    """
+    runtime_dir = Path(runtime_dir).resolve()
+
+    if _runtime_process_active(runtime_dir):
+        return False, "RUNTIME_ALREADY_RUNNING"
+
+    if (runtime_dir / "STOP_REQUEST").exists():
+        return False, "STOP_REQUEST_ACTIVE"
+
+    if (runtime_dir / "EMERGENCY_STOP").exists():
+        return False, "EMERGENCY_STOP_ACTIVE"
+
+    baseline = runtime_dir / "position_baseline.json"
+    if not baseline.is_file():
+        return False, "BASELINE_MISSING"
+
+    command = [
+        sys.executable,
+        "-m",
+        "yuanta_live_runtime_v01.main",
+        "preflight-prod",
+        "--runtime-dir",
+        str(runtime_dir),
+        "--baseline",
+        str(baseline),
+    ]
+
+    child_env = os.environ.copy()
+    child_env["EXECUTION_MODE"] = "DRY_RUN"
+    child_env["ENABLE_LIVE_TRADING"] = "NO"
+
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(MODULE_DIR.parent),
+            env=child_env,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False, "START_PREFLIGHT_EXECUTION_ERROR"
+
+    stdout = str(completed.stdout or "")
+    ready = (
+        completed.returncode == 0
+        and (
+            '"status": "READY"' in stdout
+            or '"status":"READY"' in stdout
+        )
+    )
+
+    if ready:
+        return True, "START_PREFLIGHT_READY"
+
+    return False, "START_PREFLIGHT_FAILED"
+
+
 def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
-    """Dispatch the existing guarded PROD runtime without modifying its gates."""
+    """Dispatch guarded PROD LIVE runtime with child-process-only LIVE gates."""
     runtime_dir = Path(runtime_dir).resolve()
 
     # Friendly pre-check only. The kernel-backed runtime singleton lock remains
@@ -420,10 +488,15 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
         str(runtime_dir / "position_baseline.json"),
     ]
 
+    child_env = os.environ.copy()
+    child_env["EXECUTION_MODE"] = "LIVE"
+    child_env["ENABLE_LIVE_TRADING"] = "YES"
+
     try:
         process = subprocess.Popen(
             command,
             cwd=str(MODULE_DIR.parent),
+            env=child_env,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -538,9 +611,11 @@ class _RemoteControl:
         if action == "start":
             title = "啟動 LIVE Runtime"
             detail = (
-                "會呼叫既有 start-prod --live；"
-                "Bot 不會設定或修改 EXECUTION_MODE / ENABLE_LIVE_TRADING。"
-                "既有 LIVE gate、singleton lock、reconciliation 與 halt 檢查仍全部有效。"
+                "PROD preflight 已通過。確認後 Bot 只會替這一次 runtime 子程序"
+                "注入 EXECUTION_MODE=LIVE、ENABLE_LIVE_TRADING=YES，並呼叫 "
+                "start-prod --live；不會永久修改系統環境。"
+                "Runtime 仍會再次驗證交易日、Stage A、singleton lock、"
+                "reconciliation、STOP/HALT 與 LIVE gate。"
             )
         elif action == "stop":
             title = "正常停止"
@@ -666,8 +741,9 @@ class _RemoteControl:
                 )
             return (
                 "✅ LIVE runtime 啟動要求已送出。\n"
-                "這不代表已通過交易授權；runtime 仍會自行驗證三道 LIVE gate、"
-                "singleton lock 與 reconciliation。稍後可用 /status 查看狀態。"
+                "這次子程序已帶入三道 LIVE gate；runtime 仍會再次驗證交易日、"
+                "Stage A、singleton lock、reconciliation 與 STOP/HALT。"
+                "稍後可用 /status 確認是否進入 LIVE_RUNNING。"
             )
 
         if not ok:
@@ -706,6 +782,44 @@ class _RemoteControl:
         command = _command_text(message)
 
         if command == "/start":
+            ok, status = _run_start_preflight(self.runtime_dir)
+
+            _audit_control(
+                self.runtime_dir,
+                "REMOTE_START_PREFLIGHT",
+                action="start",
+                update_id=update_id,
+                outcome=status,
+            )
+
+            if not ok:
+                if status == "RUNTIME_ALREADY_RUNNING":
+                    return "ℹ️ Realtime runtime 已經在執行，沒有啟動第二個 instance。"
+
+                if status == "STOP_REQUEST_ACTIVE":
+                    return (
+                        "⚠️ LIVE 啟動前置檢查未通過：STOP_REQUEST 仍有效。\n"
+                        "未產生確認碼，也沒有啟動 runtime。"
+                    )
+
+                if status == "EMERGENCY_STOP_ACTIVE":
+                    return (
+                        "⚠️ LIVE 啟動前置檢查未通過：EMERGENCY_STOP / HALT 仍有效。\n"
+                        "未產生確認碼，也沒有啟動 runtime。"
+                    )
+
+                if status == "BASELINE_MISSING":
+                    return (
+                        "⚠️ LIVE 啟動前置檢查未通過：position baseline 不存在。\n"
+                        "未產生確認碼，也沒有啟動 runtime。"
+                    )
+
+                return (
+                    "⚠️ LIVE 啟動前置檢查未通過。\n"
+                    "可能是非交易日、Stage A 日期不符、PROD 登入/行情/對帳失敗，"
+                    "或其他 fail-closed 條件。未產生確認碼，也沒有啟動 runtime。"
+                )
+
             return self._request("start", update_id)
 
         if command == "/stop":
@@ -796,14 +910,15 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
                         (
                             "【WarrantScope Trading Bot】\n"
                             "/status：查看交易 runtime 即時狀態\n"
-                            "/start：要求啟動 LIVE runtime（需要確認碼）\n"
+                            "/start：先跑 PROD preflight，通過後才提供 LIVE 確認碼\n"
                             "/stop：要求正常停止（需要確認碼）\n"
                             "/kill：要求緊急停止（需要確認碼）\n"
                             "/clear-halt：安全檢查後解除 HALT（需要確認碼）\n"
                             "/confirm 1234：確認待執行的控制指令\n"
                             "/help：顯示指令\n\n"
                             "所有遠端控制都沿用既有 runtime 安全機制；"
-                            "Bot 不會自行開啟 LIVE gate。"
+                            "只有 /start 通過 PROD preflight 並完成確認後，"
+                            "才會對該次 runtime 子程序暫時開啟三道 LIVE gate。"
                         ),
                     )
 
