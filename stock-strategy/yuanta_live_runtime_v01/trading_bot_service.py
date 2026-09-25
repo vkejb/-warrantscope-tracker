@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import secrets
+import subprocess
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -14,6 +18,10 @@ from .trading_bot_keychain import load_trading_bot_credentials
 
 MODULE_DIR = Path(__file__).resolve().parent
 DEFAULT_RUNTIME_DIR = MODULE_DIR / "runtime"
+
+CONTROL_CONFIRM_TTL_SECONDS = 120
+CONTROL_CONFIRM_MAX_ATTEMPTS = 3
+CONTROL_AUDIT_FILENAME = "trading_bot_audit.jsonl"
 
 
 def _read_json(path: Path) -> dict[str, Any] | None:
@@ -96,13 +104,20 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
     else:
         heartbeat_age = _age_seconds(heartbeat.get("at"))
         state = str(heartbeat.get("state", "UNKNOWN"))
-        if state in {"RUNNING", "EMERGENCY_EXIT"}:
+        if state in {"RUNNING", "EMERGENCY_EXIT", "STOPPING"}:
             if heartbeat_age is not None and heartbeat_age <= 15:
-                runtime_state = (
-                    "LIVE_RUNNING"
-                    if bool(heartbeat.get("submit_live"))
-                    else "OBSERVE_RUNNING"
-                )
+                if state == "STOPPING":
+                    runtime_state = (
+                        "LIVE_STOPPING"
+                        if bool(heartbeat.get("submit_live"))
+                        else "OBSERVE_STOPPING"
+                    )
+                else:
+                    runtime_state = (
+                        "LIVE_RUNNING"
+                        if bool(heartbeat.get("submit_live"))
+                        else "OBSERVE_RUNNING"
+                    )
             else:
                 runtime_state = "HEARTBEAT_STALE"
         elif state in {"STOPPED_CLEAN", "STOPPED_UNSAFE"}:
@@ -110,7 +125,12 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
         else:
             runtime_state = state
 
-    if runtime_state in {"LIVE_RUNNING", "OBSERVE_RUNNING"}:
+    if runtime_state in {
+        "LIVE_RUNNING",
+        "OBSERVE_RUNNING",
+        "LIVE_STOPPING",
+        "OBSERVE_STOPPING",
+    }:
         quote_age = _age_seconds((heartbeat or {}).get("last_quote_at"))
         if quote_age is None:
             quote_health = "NO_QUOTE_YET"
@@ -185,9 +205,15 @@ def _fmt_age(value: Any) -> str:
 
 def render_status(status: dict[str, Any]) -> str:
     mode = "LIVE" if status.get("submit_live") else "OBSERVE"
+    runtime_state = str(status.get("runtime_state", "UNKNOWN"))
+    runtime_text = (
+        f"{runtime_state}（正常停止中）"
+        if runtime_state in {"LIVE_STOPPING", "OBSERVE_STOPPING"}
+        else runtime_state
+    )
     lines = [
         "【WarrantScope Trading】",
-        f"Runtime：{status.get('runtime_state', 'UNKNOWN')}",
+        f"Runtime：{runtime_text}",
         f"環境：{status.get('environment') or '-'}｜模式：{mode}",
     ]
 
@@ -300,10 +326,262 @@ def _command_text(message: dict[str, Any]) -> str:
     return text.split()[0].split("@", 1)[0].lower()
 
 
+@dataclass
+class _PendingControl:
+    action: str
+    code: str
+    expires_at_monotonic: float
+    requested_update_id: int
+    attempts_remaining: int = CONTROL_CONFIRM_MAX_ATTEMPTS
+
+
+def _audit_control(
+    runtime_dir: Path,
+    event: str,
+    *,
+    action: str | None = None,
+    update_id: int | None = None,
+    outcome: str | None = None,
+) -> None:
+    """Append a deliberately minimal remote-control audit record.
+
+    Never include Telegram token/chat-id, confirmation code, account,
+    positions, balances, passwords, certificates, or broker payloads.
+    """
+    row: dict[str, Any] = {
+        "at": datetime.now(timezone.utc).isoformat(),
+        "event": str(event),
+    }
+    if action is not None:
+        row["action"] = str(action)
+    if update_id is not None:
+        row["update_id"] = int(update_id)
+    if outcome is not None:
+        row["outcome"] = str(outcome)
+
+    path = Path(runtime_dir) / CONTROL_AUDIT_FILENAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _invoke_runtime_control(action: str, runtime_dir: Path) -> tuple[bool, str]:
+    """Invoke the existing guarded runtime CLI in a separate process.
+
+    Remote control is intentionally limited to marker-based stop/kill.
+    It never adds --live and never calls broker methods directly.
+    """
+    if action not in {"stop", "kill"}:
+        raise ValueError(f"unsupported remote control action: {action}")
+
+    command = [
+        sys.executable,
+        "-m",
+        "yuanta_live_runtime_v01.main",
+        action,
+        "--runtime-dir",
+        str(Path(runtime_dir).resolve()),
+        "--reason",
+        f"telegram_{action}",
+    ]
+
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(MODULE_DIR.parent),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False, "CONTROL_EXECUTION_ERROR"
+
+    status = "UNKNOWN"
+    stdout = str(completed.stdout or "").strip()
+    if stdout:
+        try:
+            value = json.loads(stdout)
+            if isinstance(value, dict):
+                candidate = str(value.get("status", "UNKNOWN"))
+                if candidate in {
+                    "GRACEFUL_STOP_REQUESTED",
+                    "RUNTIME_NOT_RUNNING",
+                    "EMERGENCY_STOP_REQUESTED",
+                }:
+                    status = candidate
+        except Exception:
+            pass
+
+    return completed.returncode == 0, status
+
+
+class _RemoteControl:
+    def __init__(
+        self,
+        runtime_dir: Path,
+        *,
+        confirm_ttl_seconds: int = CONTROL_CONFIRM_TTL_SECONDS,
+    ) -> None:
+        self.runtime_dir = Path(runtime_dir)
+        self.confirm_ttl_seconds = max(1, int(confirm_ttl_seconds))
+        self.pending: _PendingControl | None = None
+
+    def _request(self, action: str, update_id: int) -> str:
+        code = f"{secrets.randbelow(10_000):04d}"
+        self.pending = _PendingControl(
+            action=action,
+            code=code,
+            expires_at_monotonic=time.monotonic() + self.confirm_ttl_seconds,
+            requested_update_id=update_id,
+        )
+        _audit_control(
+            self.runtime_dir,
+            "REMOTE_CONTROL_CONFIRMATION_REQUESTED",
+            action=action,
+            update_id=update_id,
+        )
+
+        if action == "stop":
+            title = "正常停止"
+            detail = (
+                "會停止新進場、撤銷尚未完成的進場單，"
+                "若已有部位則走既有正常 EXIT 流程後停止。"
+            )
+        else:
+            title = "緊急停止"
+            detail = (
+                "會建立 EMERGENCY_STOP；"
+                "若交易 runtime 正在運作，將由既有 emergency exit 流程處理。"
+            )
+
+        return (
+            f"⚠️【{title}確認】\n"
+            f"{detail}\n\n"
+            f"確認碼：{code}\n"
+            f"請在 {self.confirm_ttl_seconds} 秒內傳送：\n"
+            f"/confirm {code}\n\n"
+            "未確認前不會執行。"
+        )
+
+    def _confirm(self, message: dict[str, Any], update_id: int) -> str:
+        pending = self.pending
+        if pending is None:
+            return "目前沒有待確認的遠端控制指令。"
+
+        if time.monotonic() > pending.expires_at_monotonic:
+            action = pending.action
+            self.pending = None
+            _audit_control(
+                self.runtime_dir,
+                "REMOTE_CONTROL_CONFIRMATION_EXPIRED",
+                action=action,
+                update_id=update_id,
+                outcome="EXPIRED",
+            )
+            return "確認已逾時，指令沒有執行。請重新送出 /stop 或 /kill。"
+
+        raw = str(message.get("text", "")).strip()
+        parts = raw.split()
+
+        supplied = parts[1] if len(parts) == 2 else ""
+        if (
+            len(supplied) != 4
+            or not supplied.isdigit()
+            or supplied != pending.code
+        ):
+            pending.attempts_remaining -= 1
+            _audit_control(
+                self.runtime_dir,
+                "REMOTE_CONTROL_CONFIRMATION_FAILED",
+                action=pending.action,
+                update_id=update_id,
+                outcome="INVALID_CODE",
+            )
+
+            if pending.attempts_remaining <= 0:
+                action = pending.action
+                self.pending = None
+                _audit_control(
+                    self.runtime_dir,
+                    "REMOTE_CONTROL_CONFIRMATION_CANCELED",
+                    action=action,
+                    update_id=update_id,
+                    outcome="TOO_MANY_ATTEMPTS",
+                )
+                return "確認碼錯誤次數過多，這次控制要求已取消。"
+
+            return (
+                "確認碼不正確，指令尚未執行。"
+                f"剩餘 {pending.attempts_remaining} 次確認機會。"
+            )
+
+        # Consume the pending action before execution so the same
+        # confirmation can never execute a dangerous action twice.
+        action = pending.action
+        self.pending = None
+
+        _audit_control(
+            self.runtime_dir,
+            "REMOTE_CONTROL_CONFIRMED",
+            action=action,
+            update_id=update_id,
+        )
+
+        ok, status = _invoke_runtime_control(action, self.runtime_dir)
+
+        _audit_control(
+            self.runtime_dir,
+            "REMOTE_CONTROL_EXECUTED",
+            action=action,
+            update_id=update_id,
+            outcome="SUCCESS" if ok else "FAILED",
+        )
+
+        if not ok:
+            return (
+                "⚠️ 控制指令執行失敗。"
+                "安全機制沒有被繞過，請使用 /status 檢查 runtime 狀態。"
+            )
+
+        if action == "stop":
+            if status == "RUNTIME_NOT_RUNNING":
+                return "ℹ️ Runtime 目前沒有執行，因此沒有建立 STOP_REQUEST。"
+            return (
+                "✅ 已送出正常停止要求。\n"
+                "Runtime 將停止新進場；若有曝險，會先依既有 EXIT 流程處理。"
+            )
+
+        return (
+            "🚨 已送出緊急停止要求。\n"
+            "EMERGENCY_STOP 已建立；若 runtime 正在運作，"
+            "將由既有 emergency exit 流程接手。"
+        )
+
+    def handle(self, message: dict[str, Any], update_id: int) -> str | None:
+        command = _command_text(message)
+
+        if command == "/stop":
+            return self._request("stop", update_id)
+
+        if command == "/kill":
+            return self._request("kill", update_id)
+
+        if command == "/confirm":
+            return self._confirm(message, update_id)
+
+        return None
+
+
 def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
     token, configured_chat_id = load_trading_bot_credentials()
     offset = _load_offset(runtime_dir)
-    print("Trading Bot status service started. Commands: /status /help", flush=True)
+    controls = _RemoteControl(runtime_dir)
+    print(
+        "Trading Bot service started. Commands: "
+        "/status /stop /kill /confirm /help",
+        flush=True,
+    )
 
     while True:
         try:
@@ -329,7 +607,10 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
                 except Exception:
                     continue
 
-                offset = max(offset, update_id + 1)
+                if update_id < offset:
+                    continue
+
+                offset = update_id + 1
                 _save_offset(runtime_dir, offset)
 
                 message = update.get("message")
@@ -344,7 +625,15 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
                     continue
 
                 command = _command_text(message)
-                if command == "/status":
+
+                control_reply = controls.handle(message, update_id)
+                if control_reply is not None:
+                    _send_message(
+                        token,
+                        configured_chat_id,
+                        control_reply,
+                    )
+                elif command == "/status":
                     _send_message(
                         token,
                         configured_chat_id,
@@ -354,7 +643,15 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
                     _send_message(
                         token,
                         configured_chat_id,
-                        "【WarrantScope Trading Bot】\n/status：查看交易 runtime 即時狀態\n/help：顯示指令",
+                        (
+                            "【WarrantScope Trading Bot】\n"
+                            "/status：查看交易 runtime 即時狀態\n"
+                            "/stop：要求正常停止（需要確認碼）\n"
+                            "/kill：要求緊急停止（需要確認碼）\n"
+                            "/confirm 1234：確認待執行的控制指令\n"
+                            "/help：顯示指令\n\n"
+                            "所有遠端停止控制都沿用既有 runtime 安全機制。"
+                        ),
                     )
 
             time.sleep(0.05)
@@ -371,7 +668,7 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Read-only WarrantScope Trading Bot status service"
+        description="Guarded WarrantScope Trading Bot status and remote-control service"
     )
     parser.add_argument("command", choices=("serve", "status-local", "send-status"))
     parser.add_argument("--runtime-dir", type=Path, default=DEFAULT_RUNTIME_DIR)

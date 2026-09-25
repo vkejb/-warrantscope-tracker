@@ -166,6 +166,55 @@ class RuntimeGateTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             session.subscribe([SimpleNamespace(market="TWSE", stock_id="3605")])
 
+    def test_local_stop_writes_graceful_marker_for_fresh_runtime(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            heartbeat = Path(temporary) / "heartbeat.json"
+            heartbeat.write_text(
+                '{"pid": %d, "at": "%s"}'
+                % (
+                    runtime_main.os.getpid(),
+                    datetime.now(TAIPEI).isoformat(),
+                ),
+                encoding="utf-8",
+            )
+            with patch.object(runtime_main, "_run_realtime") as run:
+                result = runtime_main.main([
+                    "stop", "--runtime-dir", temporary, "--reason", "test"
+                ])
+            self.assertEqual(result, 0)
+            self.assertTrue((Path(temporary) / "STOP_REQUEST").is_file())
+            self.assertFalse((Path(temporary) / "EMERGENCY_STOP").exists())
+            run.assert_not_called()
+
+    def test_local_stop_refuses_stale_heartbeat_without_marker(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            heartbeat = Path(temporary) / "heartbeat.json"
+            heartbeat.write_text(
+                '{"pid": %d, "at": "%s"}'
+                % (
+                    runtime_main.os.getpid(),
+                    (datetime.now(TAIPEI) - timedelta(seconds=30)).isoformat(),
+                ),
+                encoding="utf-8",
+            )
+
+            result = runtime_main.main([
+                "stop", "--runtime-dir", temporary, "--reason", "test"
+            ])
+
+            self.assertEqual(result, 1)
+            self.assertFalse((Path(temporary) / "STOP_REQUEST").exists())
+            self.assertFalse((Path(temporary) / "EMERGENCY_STOP").exists())
+
+    def test_local_stop_without_runtime_does_not_leave_marker(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            result = runtime_main.main([
+                "stop", "--runtime-dir", temporary, "--reason", "test"
+            ])
+            self.assertEqual(result, 0)
+            self.assertFalse((Path(temporary) / "STOP_REQUEST").exists())
+            self.assertFalse((Path(temporary) / "EMERGENCY_STOP").exists())
+
     def test_local_kill_writes_marker_without_broker_connection(self):
         with tempfile.TemporaryDirectory() as temporary:
             with patch.object(runtime_main, "_run_realtime") as run:

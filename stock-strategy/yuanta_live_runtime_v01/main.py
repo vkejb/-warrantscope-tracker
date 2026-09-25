@@ -562,6 +562,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     runtime_dir.mkdir(parents=True, exist_ok=True)
     log_path = runtime_dir / "session.jsonl"
     kill_path = runtime_dir / "EMERGENCY_STOP"
+    stop_path = runtime_dir / "STOP_REQUEST"
     baseline_path = args.baseline.resolve()
     db_path = runtime_dir / "live-orders.sqlite"
     notifier = RuntimeNotifier(runtime_dir)
@@ -693,8 +694,20 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         while True:
             now = datetime.now(TAIPEI)
             emergency = kill_path.exists() or stop_event.is_set()
+            graceful_stop = stop_path.exists()
+
+            # Emergency always takes precedence over a graceful stop request.
+            if emergency and graceful_stop:
+                stop_path.unlink(missing_ok=True)
+                graceful_stop = False
+
+            runtime_state = (
+                "EMERGENCY_EXIT"
+                if emergency
+                else ("STOPPING" if graceful_stop else "RUNNING")
+            )
             heartbeat.beat(
-                "EMERGENCY_EXIT" if emergency else "RUNNING",
+                runtime_state,
                 environment=environment,
                 submit_live=submit_live,
                 signal_date=seal["signal_date"],
@@ -718,10 +731,27 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             if emergency and pending_exit_reason is None:
                 pending_exit_reason = "EMERGENCY_STOP"
                 log("EMERGENCY_STOP_REQUESTED")
+
+            if graceful_stop and not emergency and pending_exit_reason is None:
+                pending_exit_reason = "GRACEFUL_STOP"
+                log("GRACEFUL_STOP_REQUESTED")
+
             if emergency and entry_order_id is None and position is None and exit_order_id is None:
                 if submit_live:
                     store.halt("MANUAL_EMERGENCY_STOP_NO_EXPOSURE")
                 log("EMERGENCY_STOP_COMPLETE", exposure="NONE")
+                clean_shutdown = True
+                return 0
+
+            if (
+                graceful_stop
+                and not emergency
+                and entry_order_id is None
+                and position is None
+                and exit_order_id is None
+            ):
+                stop_path.unlink(missing_ok=True)
+                log("GRACEFUL_STOP_COMPLETE", exposure="NONE")
                 clean_shutdown = True
                 return 0
 
@@ -772,6 +802,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             store.halt("MANUAL_EMERGENCY_STOP_NO_EXPOSURE")
                         log("EMERGENCY_STOP_COMPLETE", exposure="NONE")
                         return 0
+                    if graceful_stop:
+                        stop_path.unlink(missing_ok=True)
+                        log("GRACEFUL_STOP_COMPLETE", exposure="NONE")
+                        clean_shutdown = True
+                        return 0
 
             # Strategy decision clock. Observe mode uses the exact same live state but never submits.
             reversal = False
@@ -779,7 +814,12 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 if position is not None:
                     reversal = engine.opposite_signal(position, decision)
                     engine.last_decision = decision
-                elif not trade_attempted and not emergency and entry_order_id is None:
+                elif (
+                    not trade_attempted
+                    and not emergency
+                    and pending_exit_reason is None
+                    and entry_order_id is None
+                ):
                     candidate = engine.choose_entry(decision, allow_short=allow_short)
                     if candidate is not None:
                         age = engine.quote_age_seconds(candidate.stock_id, now)
@@ -846,12 +886,13 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     reversal=reversal,
                     max_quote_age_seconds=args.exit_quote_staleness,
                 )
-                if emergency and exit_decision is None:
+                if (emergency or graceful_stop) and exit_decision is None:
                     if safe_quote is not None:
                         from .strategy import ExitDecision
                         projected = engine.projected_net(position, safe_quote.price)
                         exit_decision = ExitDecision(
-                            pending_exit_reason or "EMERGENCY_STOP",
+                            pending_exit_reason
+                            or ("EMERGENCY_STOP" if emergency else "GRACEFUL_STOP"),
                             safe_quote.price,
                             projected,
                             projected / (position.entry_price * position.quantity),
@@ -940,6 +981,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     log("POSITION_CLOSED", client_order_id=exit_order_id, average_fill_price=str(exit_order.average_fill_price), quantity=exit_order.filled_quantity)
                     if emergency:
                         store.halt("MANUAL_EMERGENCY_STOP_FLAT")
+                    elif graceful_stop:
+                        stop_path.unlink(missing_ok=True)
+                        log("GRACEFUL_STOP_COMPLETE", exposure="FLAT")
                     clean_shutdown = True
                     return 0
                 if exit_order.status in {BrokerOrderStatus.CANCELED, BrokerOrderStatus.REJECTED, BrokerOrderStatus.EXPIRED, BrokerOrderStatus.UNKNOWN}:
@@ -1253,6 +1297,43 @@ def _capture_baseline(args, environment: str) -> int:
         adapter.close(); session.close(); store.close()
 
 
+def _stop(args) -> int:
+    runtime = args.runtime_dir.resolve()
+    runtime.mkdir(parents=True, exist_ok=True)
+    marker = runtime / "STOP_REQUEST"
+    heartbeat_path = runtime / "heartbeat.json"
+
+    if not heartbeat_path.is_file():
+        marker.unlink(missing_ok=True)
+        print(json.dumps({"status": "RUNTIME_NOT_RUNNING"}, ensure_ascii=False, indent=2))
+        return 0
+
+    try:
+        payload = json.loads(heartbeat_path.read_text(encoding="utf-8"))
+        pid = int(payload.get("pid", 0))
+        stamp = datetime.fromisoformat(str(payload["at"]).replace("Z", "+00:00"))
+        heartbeat_age = (
+            datetime.now(TAIPEI) - stamp.astimezone(TAIPEI)
+        ).total_seconds()
+        if pid <= 0:
+            raise ValueError("invalid runtime pid")
+        os.kill(pid, 0)
+    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+        marker.unlink(missing_ok=True)
+        print(json.dumps({"status": "RUNTIME_NOT_RUNNING"}, ensure_ascii=False, indent=2))
+        return 0
+
+    if heartbeat_age > 5.0:
+        raise RuntimeError(
+            "runtime PID is alive but heartbeat is stale; refusing graceful stop; "
+            "review runtime state before using kill"
+        )
+
+    marker.write_text(f"{utc_now()} {args.reason}\n", encoding="utf-8")
+    print(json.dumps({"status": "GRACEFUL_STOP_REQUESTED"}, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _kill(args) -> int:
     runtime = args.runtime_dir.resolve()
     runtime.mkdir(parents=True, exist_ok=True)
@@ -1392,6 +1473,10 @@ def parse_args(argv=None):
         cmd = sub.add_parser(name)
         _start_options(cmd)
 
+    stop = sub.add_parser("stop")
+    _common(stop)
+    stop.add_argument("--reason", required=True)
+
     kill = sub.add_parser("kill")
     _start_options(kill)
     kill.add_argument("--reason", required=True)
@@ -1415,6 +1500,8 @@ def main(argv=None) -> int:
     try:
         if args.command == "status":
             return _status(args)
+        if args.command == "stop":
+            return _stop(args)
         if args.command == "kill":
             return _kill(args)
         if args.command == "clear-halt":
