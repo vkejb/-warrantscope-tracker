@@ -120,6 +120,48 @@ class SafeQuoteTests(unittest.TestCase):
 
 
 class ArchiveRuntimeTests(unittest.TestCase):
+    def test_signal_identifier_is_stable_and_non_sensitive(self):
+        candidate = SimpleNamespace(
+            stock_id="3605",
+            stock_name="宏致",
+            side="LONG",
+            decision_time=datetime(
+                2026,
+                9,
+                24,
+                9,
+                9,
+                tzinfo=TAIPEI,
+            ),
+        )
+
+        one = runtime_main._signal_identifier(
+            "20260924",
+            candidate,
+        )
+        two = runtime_main._signal_identifier(
+            "20260924",
+            candidate,
+        )
+
+        self.assertEqual(one, two)
+        self.assertIn("20260924", one)
+        self.assertIn("3605", one)
+        self.assertIn("LONG", one)
+
+        rendered = one.lower()
+        for forbidden in (
+            "account",
+            "password",
+            "token",
+            "pfx",
+            "baseline",
+        ):
+            self.assertNotIn(
+                forbidden,
+                rendered,
+            )
+
     def test_normal_trade_close_continues_archive(self):
         self.assertEqual(
             runtime_main._post_close_action(

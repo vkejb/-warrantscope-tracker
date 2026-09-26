@@ -783,10 +783,24 @@ def _post_close_action(
     return "CONTINUE_ARCHIVE"
 
 
+def _signal_identifier(signal_date: str, candidate) -> str:
+    decision = candidate.decision_time.astimezone(
+        TAIPEI
+    ).replace(microsecond=0)
+
+    return (
+        f"{signal_date}:"
+        f"{decision.isoformat()}:"
+        f"{candidate.stock_id}:"
+        f"{candidate.side}"
+    )
+
+
 def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     runtime_dir = args.runtime_dir.resolve()
     runtime_dir.mkdir(parents=True, exist_ok=True)
     log_path = runtime_dir / "session.jsonl"
+    signal_ledger_path = runtime_dir / "signal-ledger.jsonl"
     kill_path = runtime_dir / "EMERGENCY_STOP"
     stop_path = runtime_dir / "STOP_REQUEST"
     baseline_path = args.baseline.resolve()
@@ -801,7 +815,24 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     def log(event: str, **payload: Any) -> None:
         row = {"at": utc_now(), "event": event, **payload}
         _append_jsonl(log_path, row)
-        print(json.dumps(row, ensure_ascii=False, default=str), flush=True)
+
+        if event in {
+            "SIGNAL_DETECTED",
+            "SIGNAL_SKIPPED",
+        }:
+            _append_jsonl(
+                signal_ledger_path,
+                row,
+            )
+
+        print(
+            json.dumps(
+                row,
+                ensure_ascii=False,
+                default=str,
+            ),
+            flush=True,
+        )
         trading_notifier.emit(event, row)
 
     if kill_path.exists() and not args.recover_emergency:
@@ -1091,51 +1122,164 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         clean_shutdown = True
                         return 0
 
-            # Strategy decision clock. Observe mode uses the exact same live state but never submits.
+            # Strategy decision clock.
+            #
+            # Once the single LIVE trade allowance has been consumed, flat
+            # candidates are still evaluated by the same production signal
+            # engine for research/notification purposes, but they can never
+            # create a second broker order.
             reversal = False
             if decision_changed:
                 if position is not None:
-                    reversal = engine.opposite_signal(position, decision)
+                    reversal = engine.opposite_signal(
+                        position,
+                        decision,
+                    )
                     engine.last_decision = decision
+
                 elif (
-                    not trade_attempted
-                    and not emergency
+                    not emergency
                     and pending_exit_reason is None
                     and entry_order_id is None
                 ):
-                    candidate = engine.choose_entry(decision, allow_short=allow_short)
+                    candidate = engine.choose_entry(
+                        decision,
+                        allow_short=allow_short,
+                    )
+
                     if candidate is not None:
-                        age = engine.quote_age_seconds(candidate.stock_id, now)
+                        signal_id = _signal_identifier(
+                            str(seal["signal_date"]),
+                            candidate,
+                        )
+
+                        log(
+                            "SIGNAL_DETECTED",
+                            signal_id=signal_id,
+                            candidate=asdict(candidate),
+                            live_trade_already_attempted=
+                                trade_attempted,
+                        )
+
+                        if trade_attempted:
+                            log(
+                                "SIGNAL_SKIPPED",
+                                signal_id=signal_id,
+                                candidate=asdict(candidate),
+                                reason=
+                                    "LIVE_TRADE_LIMIT_CONSUMED",
+                            )
+                            continue
+
+                        age = engine.quote_age_seconds(
+                            candidate.stock_id,
+                            now,
+                        )
+
                         decision_result = risk.evaluate_entry(
                             signal=candidate,
-                            quote_age_seconds=float("inf") if age is None else age,
-                            broker_positions=store.positions(),
-                            open_orders=store.orders(open_only=True),
-                            trades_today=_trades_today(store, now),
-                            realized=_realized_pnl_today(store, engine, now),
-                            halted=bool(store.control_state()["halted"]),
+                            quote_age_seconds=(
+                                float("inf")
+                                if age is None
+                                else age
+                            ),
+                            broker_positions=
+                                store.positions(),
+                            open_orders=
+                                store.orders(
+                                    open_only=True
+                                ),
+                            trades_today=
+                                _trades_today(
+                                    store,
+                                    now,
+                                ),
+                            realized=
+                                _realized_pnl_today(
+                                    store,
+                                    engine,
+                                    now,
+                                ),
+                            halted=bool(
+                                store.control_state()[
+                                    "halted"
+                                ]
+                            ),
                         )
+
                         if not decision_result.approved:
                             log(
                                 "RISK_REJECTED_CANDIDATE",
+                                signal_id=signal_id,
                                 candidate=asdict(candidate),
-                                reasons=decision_result.reasons,
+                                reasons=
+                                    decision_result.reasons,
+                            )
+
+                            log(
+                                "SIGNAL_SKIPPED",
+                                signal_id=signal_id,
+                                candidate=asdict(candidate),
+                                reason="RISK_REJECTED",
+                                reasons=
+                                    decision_result.reasons,
                             )
                             continue
-                        log("RISK_APPROVED_CANDIDATE", candidate=asdict(candidate))
-                        if submit_live:
-                            assert decision_result.intent is not None
-                            intent = bridge_strategy_intent(
-                                decision_result.intent,
-                                short_entry_order_type=short_entry,
-                                short_cover_order_type=short_cover,
+
+                        log(
+                            "RISK_APPROVED_CANDIDATE",
+                            signal_id=signal_id,
+                            candidate=asdict(candidate),
+                        )
+
+                        if not submit_live:
+                            log(
+                                "SIGNAL_SKIPPED",
+                                signal_id=signal_id,
+                                candidate=asdict(candidate),
+                                reason="OBSERVE_ONLY",
                             )
-                            order = adapter.submit(intent)
-                            entry_order_id = order.client_order_id
-                            entry_signal = candidate
-                            entry_submitted_at = now
-                            trade_attempted = True
-                            log("ENTRY_SUBMITTED", client_order_id=entry_order_id, intent_id=intent.intent_id, stock_id=intent.symbol, side=intent.side.value, quantity=intent.quantity, price=str(intent.price))
+                            continue
+
+                        assert (
+                            decision_result.intent
+                            is not None
+                        )
+
+                        intent = bridge_strategy_intent(
+                            decision_result.intent,
+                            short_entry_order_type=
+                                short_entry,
+                            short_cover_order_type=
+                                short_cover,
+                        )
+
+                        order = adapter.submit(intent)
+
+                        entry_order_id = (
+                            order.client_order_id
+                        )
+                        entry_signal = candidate
+                        entry_submitted_at = now
+                        trade_attempted = True
+
+                        log(
+                            "ENTRY_SUBMITTED",
+                            signal_id=signal_id,
+                            client_order_id=
+                                entry_order_id,
+                            intent_id=
+                                intent.intent_id,
+                            stock_id=
+                                intent.symbol,
+                            side=
+                                intent.side.value,
+                            quantity=
+                                intent.quantity,
+                            price=
+                                str(intent.price),
+                        )
+
                 else:
                     engine.last_decision = decision
 

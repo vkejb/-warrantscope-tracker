@@ -26,8 +26,9 @@ class TradingBotNotifierTests(unittest.TestCase):
 
     def test_signal_is_compact(self):
         message = format_runtime_event(
-            "RISK_APPROVED_CANDIDATE",
+            "SIGNAL_DETECTED",
             {
+                "signal_id": "20260924:test",
                 "candidate": {
                     "stock_id": "1234",
                     "stock_name": "測試",
@@ -36,12 +37,61 @@ class TradingBotNotifierTests(unittest.TestCase):
                     "quantity": 1000,
                     "score": 0.55,
                 },
-                "broker_positions": {"9999|0": 9999},
+                "broker_positions": {
+                    "9999|0": 9999
+                },
             },
         )
-        self.assertIn("交易訊號成立", message)
+
+        self.assertIn(
+            "偵測到交易訊號",
+            message,
+        )
         self.assertIn("1234", message)
-        self.assertNotIn("broker_positions", message)
+        self.assertNotIn(
+            "broker_positions",
+            message,
+        )
+
+    def test_shadow_signal_skip_is_explicit(self):
+        message = format_runtime_event(
+            "SIGNAL_SKIPPED",
+            {
+                "candidate": {
+                    "stock_id": "3605",
+                    "stock_name": "宏致",
+                    "side": "LONG",
+                },
+                "reason":
+                    "LIVE_TRADE_LIMIT_CONSUMED",
+            },
+        )
+
+        self.assertIn(
+            "今日 LIVE 額度已使用",
+            message,
+        )
+        self.assertIn(
+            "3605",
+            message,
+        )
+
+    def test_current_session_complete_event_is_rendered(self):
+        message = format_runtime_event(
+            "SESSION_COMPLETE",
+            {
+                "trade_attempted": True,
+            },
+        )
+
+        self.assertIn(
+            "Runtime 結束",
+            message,
+        )
+        self.assertIn(
+            "行情封存已正常結束",
+            message,
+        )
 
     def test_critical_omits_details(self):
         message = format_critical(

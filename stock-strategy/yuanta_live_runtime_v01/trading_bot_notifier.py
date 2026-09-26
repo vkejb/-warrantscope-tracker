@@ -15,7 +15,8 @@ NORMAL_EVENTS = {
     "QUOTE_RECONNECT_BEGIN",
     "QUOTE_RECONNECT_PASSED",
     "QUOTE_RECONNECT_FAILED",
-    "RISK_APPROVED_CANDIDATE",
+    "SIGNAL_DETECTED",
+    "SIGNAL_SKIPPED",
     "ENTRY_SUBMITTED",
     "ENTRY_CANCEL_SENT",
     "ENTRY_NOT_FILLED",
@@ -23,6 +24,8 @@ NORMAL_EVENTS = {
     "EXIT_SUBMITTED",
     "POSITION_CLOSED",
     "POSITION_CLOSED_AFTER_RECONCILIATION",
+    "LIVE_TRADE_COMPLETE_CONTINUE_ARCHIVE",
+    "SESSION_COMPLETE",
     "NO_TRADE_SESSION_COMPLETE",
     "EMERGENCY_STOP_REQUESTED",
     "EMERGENCY_STOP_COMPLETE",
@@ -84,18 +87,57 @@ def format_runtime_event(event: str, row: dict[str, Any]) -> str | None:
             f"原因：{row.get('error', '-')}"
         )
 
-    if event == "RISK_APPROVED_CANDIDATE":
+    if event == "SIGNAL_DETECTED":
         candidate = row.get("candidate")
         if not isinstance(candidate, dict):
             return None
         return (
-            "【Trading｜交易訊號成立】\n"
-            f"{candidate.get('stock_id', '-')} {candidate.get('stock_name', '')}"
+            "【Trading｜偵測到交易訊號】\n"
+            f"{candidate.get('stock_id', '-')} "
+            f"{candidate.get('stock_name', '')}"
             f"｜{candidate.get('side', '-')}\n"
             f"預計價格：{candidate.get('entry_price', '-')}"
             f"｜數量：{candidate.get('quantity', '-')} 股\n"
             f"score：{_fmt_float(candidate.get('score'))}"
         )
+
+    if event == "SIGNAL_SKIPPED":
+        candidate = row.get("candidate")
+        if not isinstance(candidate, dict):
+            return None
+
+        reason = str(
+            row.get("reason") or "-"
+        )
+
+        reason_text = {
+            "LIVE_TRADE_LIMIT_CONSUMED":
+                "今日 LIVE 額度已使用，僅記錄 Shadow",
+            "OBSERVE_ONLY":
+                "Observe 模式，只記錄不下單",
+            "RISK_REJECTED":
+                "風控條件未通過",
+        }.get(reason, reason)
+
+        text = (
+            "【Trading｜訊號未下單】\n"
+            f"{candidate.get('stock_id', '-')} "
+            f"{candidate.get('stock_name', '')}"
+            f"｜{candidate.get('side', '-')}\n"
+            f"原因：{reason_text}"
+        )
+
+        reasons = row.get("reasons")
+        if isinstance(reasons, (list, tuple)) and reasons:
+            text += (
+                "\n風控："
+                + ", ".join(
+                    str(value)
+                    for value in reasons
+                )
+            )
+
+        return text
 
     if event == "ENTRY_SUBMITTED":
         return (
@@ -144,6 +186,26 @@ def format_runtime_event(event: str, row: dict[str, Any]) -> str | None:
 
     if event == "POSITION_CLOSED_AFTER_RECONCILIATION":
         return "【Trading｜部位已確認平倉】\n經 reconciliation 確認目前策略部位已歸零。"
+
+    if event == "LIVE_TRADE_COMPLETE_CONTINUE_ARCHIVE":
+        return (
+            "【Trading｜今日 LIVE 交易已完成】\n"
+            "不會再送第二筆 LIVE；行情與訊號將繼續記錄到 13:25。"
+        )
+
+    if event == "SESSION_COMPLETE":
+        attempted = bool(
+            row.get("trade_attempted")
+        )
+        return (
+            "【Trading｜今日 Runtime 結束】\n"
+            + (
+                "今日已執行／嘗試一筆 LIVE，"
+                if attempted
+                else "今日沒有使用 LIVE 交易額度，"
+            )
+            + "行情封存已正常結束。"
+        )
 
     if event == "NO_TRADE_SESSION_COMPLETE":
         return "【Trading｜今日交易結束】\n今日未建立策略部位，runtime 正常結束。"
