@@ -1656,52 +1656,118 @@ def _connect_for_control(args, environment: str, *, baseline: dict[str, int], cl
 
 
 def _preflight(args, environment: str) -> int:
-    baseline = _load_baseline(args.baseline.resolve())
-    seal, items, _provenance = load_stage_a_watchlist()
-    _validate_watchlist_day(str(seal["signal_date"]))
-    metadata = {item.stock_id: item.stock_name for item in items}
-    engine = LiveDirectionEngine(metadata)
-    credentials = load_credentials()
-    api_types = _extend_quote_types(load_api_types(args.vendor_dir.resolve()))
-    logger = lambda event, **payload: print(json.dumps(
-        {"at": utc_now(), "event": event, **payload}, ensure_ascii=False, default=str
-    ))
-    session = _Session(
-        api_types=api_types,
-        environment=environment,
-        credentials=credentials,
-        engine=engine,
-        logger=logger,
-    )
-    store = LiveOrderStore(args.runtime_dir.resolve() / "live-orders.sqlite")
+    runtime_dir = args.runtime_dir.resolve()
+
+    # Preflight opens an independent broker connection. It must therefore own
+    # the same kernel singleton as realtime/clear-halt before credentials are
+    # loaded or any broker connection is attempted.
+    runtime_lock = _acquire_runtime_instance_lock(runtime_dir)
+
+    credentials = None
+    session = None
+    store = None
     adapter = None
+
     try:
+        baseline = _load_baseline(args.baseline.resolve())
+        seal, items, _provenance = load_stage_a_watchlist()
+        _validate_watchlist_day(str(seal["signal_date"]))
+
+        metadata = {
+            item.stock_id: item.stock_name
+            for item in items
+        }
+        engine = LiveDirectionEngine(metadata)
+
+        credentials = load_credentials()
+        api_types = _extend_quote_types(
+            load_api_types(args.vendor_dir.resolve())
+        )
+
+        logger = lambda event, **payload: print(
+            json.dumps(
+                {
+                    "at": utc_now(),
+                    "event": event,
+                    **payload,
+                },
+                ensure_ascii=False,
+                default=str,
+            )
+        )
+
+        session = _Session(
+            api_types=api_types,
+            environment=environment,
+            credentials=credentials,
+            engine=engine,
+            logger=logger,
+        )
+
+        store = LiveOrderStore(
+            runtime_dir / "live-orders.sqlite"
+        )
+
         session.connect()
         assert session.api is not None
+
         adapter = YuantaSparkExecutionAdapter(
             api=session.api,
             api_types=api_types,
             account=session.account,
             store=store,
-            live_gate=LiveTradingGate.from_environment(cli_live=False),
+            live_gate=LiveTradingGate.from_environment(
+                cli_live=False
+            ),
             position_baseline=baseline,
         )
-        result = adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
+
+        result = adapter.reconcile(
+            timeout=args.reconcile_timeout,
+            strict_positions=True,
+        )
+
         session.subscribe(items)
-        print(json.dumps({
-            "status": "READY",
-            "environment": environment,
-            "signal_date": seal["signal_date"],
-            "quote_subscription": "ACCEPTED",
-            "reconciliation": asdict(result),
-            "gate": adapter.live_gate.public_snapshot(),
-        }, ensure_ascii=False, indent=2, default=str))
+
+        print(
+            json.dumps(
+                {
+                    "status": "READY",
+                    "environment": environment,
+                    "signal_date": seal["signal_date"],
+                    "quote_subscription": "ACCEPTED",
+                    "reconciliation": asdict(result),
+                    "gate": adapter.live_gate.public_snapshot(),
+                },
+                ensure_ascii=False,
+                indent=2,
+                default=str,
+            )
+        )
+
         return 0
+
     finally:
-        credentials.update({"pfx_password": "", "trading_password": ""})
+        if credentials is not None:
+            credentials.update(
+                {
+                    "pfx_password": "",
+                    "trading_password": "",
+                }
+            )
+
         if adapter is not None:
             adapter.close()
-        session.close(); store.close()
+
+        if session is not None:
+            session.close()
+
+        if store is not None:
+            store.close()
+
+        _release_runtime_instance_lock(
+            runtime_lock
+        )
 
 
 def _capture_baseline(args, environment: str) -> int:

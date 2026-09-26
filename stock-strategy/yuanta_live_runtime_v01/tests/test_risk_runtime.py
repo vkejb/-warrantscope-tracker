@@ -560,6 +560,65 @@ class RuntimeGateTests(unittest.TestCase):
             finally:
                 runtime_main._release_runtime_instance_lock(first)
 
+    def test_preflight_refuses_running_runtime_before_credentials(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            first = runtime_main._acquire_runtime_instance_lock(
+                runtime
+            )
+
+            try:
+                with patch.object(
+                    runtime_main,
+                    "load_credentials",
+                ) as credentials:
+                    result = runtime_main.main(
+                        [
+                            "preflight-prod",
+                            "--runtime-dir",
+                            temporary,
+                        ]
+                    )
+
+                self.assertEqual(result, 1)
+                credentials.assert_not_called()
+
+            finally:
+                runtime_main._release_runtime_instance_lock(
+                    first
+                )
+
+    def test_preflight_releases_lock_after_local_failure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+
+            with patch.object(
+                runtime_main,
+                "_load_baseline",
+                side_effect=RuntimeError(
+                    "test local failure"
+                ),
+            ):
+                result = runtime_main.main(
+                    [
+                        "preflight-prod",
+                        "--runtime-dir",
+                        temporary,
+                    ]
+                )
+
+            self.assertEqual(result, 1)
+
+            second = runtime_main._acquire_runtime_instance_lock(
+                runtime
+            )
+            try:
+                self.assertFalse(second.closed)
+            finally:
+                runtime_main._release_runtime_instance_lock(
+                    second
+                )
+
     def test_clear_halt_refuses_running_runtime_before_broker_connect(self):
         with tempfile.TemporaryDirectory() as temporary:
             runtime = Path(temporary)
