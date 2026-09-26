@@ -119,6 +119,109 @@ class SafeQuoteTests(unittest.TestCase):
         self.assertGreater(quote.price, 0)
 
 
+class ArchiveRuntimeTests(unittest.TestCase):
+    def test_normal_trade_close_continues_archive(self):
+        self.assertEqual(
+            runtime_main._post_close_action(
+                emergency=False,
+                graceful_stop=False,
+            ),
+            "CONTINUE_ARCHIVE",
+        )
+
+    def test_emergency_close_stops_runtime(self):
+        self.assertEqual(
+            runtime_main._post_close_action(
+                emergency=True,
+                graceful_stop=False,
+            ),
+            "STOP_EMERGENCY",
+        )
+
+    def test_graceful_close_stops_runtime(self):
+        self.assertEqual(
+            runtime_main._post_close_action(
+                emergency=False,
+                graceful_stop=True,
+            ),
+            "STOP_GRACEFUL",
+        )
+
+    def test_emergency_has_priority_over_graceful(self):
+        self.assertEqual(
+            runtime_main._post_close_action(
+                emergency=True,
+                graceful_stop=True,
+            ),
+            "STOP_EMERGENCY",
+        )
+
+    def test_archive_counter_delta_is_non_negative(self):
+        before = {
+            "new_requests": 5,
+            "fills": 4,
+            "requests": 9,
+        }
+        after = {
+            "new_requests": 7,
+            "fills": 5,
+            "requests": 12,
+        }
+
+        self.assertEqual(
+            runtime_main._archive_counter_delta(
+                before,
+                after,
+            ),
+            {
+                "new_requests": 2,
+                "fills": 1,
+                "requests": 3,
+            },
+        )
+
+        self.assertEqual(
+            runtime_main._archive_counter_delta(
+                after,
+                before,
+            ),
+            {
+                "new_requests": 0,
+                "fills": 0,
+                "requests": 0,
+            },
+        )
+
+    def test_start_parser_uses_existing_shadow_archive_root(self):
+        args = runtime_main.parse_args(
+            ["observe-prod"]
+        )
+        self.assertEqual(
+            args.archive_runtime_dir.resolve(),
+            runtime_main.DEFAULT_ARCHIVE_RUNTIME_DIR.resolve(),
+        )
+
+    def test_empty_store_archive_counters_are_zero(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            store = LiveOrderStore(
+                Path(temporary)
+                / "orders.sqlite"
+            )
+            try:
+                self.assertEqual(
+                    runtime_main._store_archive_counters(
+                        store
+                    ),
+                    {
+                        "new_requests": 0,
+                        "fills": 0,
+                        "requests": 0,
+                    },
+                )
+            finally:
+                store.close()
+
+
 class RuntimeGateTests(unittest.TestCase):
     def test_live_environment_flags_are_checked_before_credentials(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -130,6 +233,210 @@ class RuntimeGateTests(unittest.TestCase):
                 ])
             self.assertEqual(result, 1)
             credentials.assert_not_called()
+
+    def test_quote_callback_feeds_engine_and_archive_from_same_session(self):
+        class FakeEngine:
+            def __init__(self):
+                self.ticks = []
+                self.books = []
+
+            def record_tick(self, symbol, **payload):
+                self.ticks.append((symbol, payload))
+
+            def record_book_combined(self, symbol, **payload):
+                self.books.append((symbol, payload))
+
+            def record_book_side(self, symbol, **payload):
+                self.books.append((symbol, payload))
+
+        class FakeArchive:
+            def __init__(self):
+                self.events = []
+                self.errors = 0
+
+            def append(self, kind, payload):
+                self.events.append((kind, payload))
+
+            def callback_error(self):
+                self.errors += 1
+
+        engine = FakeEngine()
+        archive = FakeArchive()
+        logs = []
+
+        item = SimpleNamespace(
+            stock_id="3605",
+            stock_name="宏致",
+            market="TWSE",
+            rank=1,
+            score=0.5,
+        )
+
+        session = runtime_main._Session(
+            api_types={},
+            environment="PROD",
+            credentials={"account": "test"},
+            engine=engine,
+            logger=lambda event, **payload: logs.append(
+                (event, payload)
+            ),
+            archive=archive,
+            archive_signal_date="20260924",
+            archive_items={"3605": item},
+        )
+
+        quote_time = SimpleNamespace(
+            bytHour=9,
+            bytMin=9,
+            bytSec=0,
+            ushtMSec=123,
+        )
+
+        tick = SimpleNamespace(
+            StkCode="3605",
+            Time=quote_time,
+            SerialNo=123,
+            BuyPrice="181.5",
+            SellPrice="182",
+            DealPrice="182",
+            DealVol="10",
+            InOutFlag="1",
+            Type="0",
+        )
+
+        session._on_response(
+            2,
+            0,
+            "SubscribeStockTick",
+            None,
+            tick,
+        )
+
+        levels = {}
+        for i in range(1, 6):
+            levels[f"BuyPrice{i}"] = str(182 - i * 0.5)
+            levels[f"BuyVol{i}"] = str(100 + i)
+            levels[f"SellPrice{i}"] = str(182 + i * 0.5)
+            levels[f"SellVol{i}"] = str(200 + i)
+
+        book = SimpleNamespace(
+            StkCode="3605",
+            Time=quote_time,
+            IndexFlag="50",
+            IndexFlag_50=SimpleNamespace(**levels),
+        )
+
+        session._on_response(
+            2,
+            0,
+            "SubscribeFiveTickA",
+            None,
+            book,
+        )
+
+        self.assertEqual(len(engine.ticks), 1)
+        self.assertEqual(len(engine.books), 1)
+        self.assertEqual(len(archive.events), 2)
+        self.assertEqual(archive.errors, 0)
+
+        tick_kind, tick_payload = archive.events[0]
+        book_kind, book_payload = archive.events[1]
+
+        self.assertEqual(tick_kind, "ticks")
+        self.assertEqual(book_kind, "books")
+        self.assertEqual(tick_payload["stock_id"], "3605")
+        self.assertEqual(tick_payload["event_type"], "STOCK_TICK")
+        self.assertEqual(tick_payload["quote_time"], "09:09:00.123")
+        self.assertEqual(book_payload["event_type"], "FIVE_LEVEL")
+        self.assertEqual(book_payload["stock_id"], "3605")
+        self.assertIn("buy_prices", book_payload)
+        self.assertIn("sell_prices", book_payload)
+
+        rendered = str(archive.events).lower()
+        for forbidden in (
+            "account",
+            "password",
+            "token",
+            "pfx",
+            "baseline",
+        ):
+            self.assertNotIn(forbidden, rendered)
+
+    def test_archive_failure_does_not_block_strategy_callback(self):
+        class FakeEngine:
+            def __init__(self):
+                self.calls = 0
+
+            def record_tick(self, *_args, **_kwargs):
+                self.calls += 1
+
+        class BrokenArchive:
+            def __init__(self):
+                self.errors = 0
+
+            def append(self, *_args, **_kwargs):
+                raise OSError("disk test failure")
+
+            def callback_error(self):
+                self.errors += 1
+
+        engine = FakeEngine()
+        archive = BrokenArchive()
+        logs = []
+
+        session = runtime_main._Session(
+            api_types={},
+            environment="PROD",
+            credentials={"account": "test"},
+            engine=engine,
+            logger=lambda event, **payload: logs.append(
+                (event, payload)
+            ),
+            archive=archive,
+            archive_signal_date="20260924",
+            archive_items={
+                "3605": SimpleNamespace(
+                    stock_name="宏致",
+                    market="TWSE",
+                    rank=1,
+                    score=0.5,
+                )
+            },
+        )
+
+        tick = SimpleNamespace(
+            StkCode="3605",
+            Time=SimpleNamespace(
+                bytHour=9,
+                bytMin=9,
+                bytSec=0,
+                ushtMSec=0,
+            ),
+            SerialNo=1,
+            BuyPrice="181.5",
+            SellPrice="182",
+            DealPrice="182",
+            DealVol="10",
+            InOutFlag="1",
+            Type="0",
+        )
+
+        session._on_response(
+            2,
+            0,
+            "SubscribeStockTick",
+            None,
+            tick,
+        )
+
+        self.assertEqual(engine.calls, 1)
+        self.assertEqual(archive.errors, 1)
+        self.assertTrue(
+            any(
+                event == "ARCHIVE_CALLBACK_ERROR"
+                for event, _payload in logs
+            )
+        )
 
     def test_quote_subscription_rejection_fails_closed(self):
         class FakeList(list):

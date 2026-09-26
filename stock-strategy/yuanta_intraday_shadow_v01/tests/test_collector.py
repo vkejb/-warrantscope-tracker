@@ -63,6 +63,42 @@ class CollectorContractTests(unittest.TestCase):
             self.assertEqual(manifest["actual_orders"], 0)
             self.assertEqual(manifest["broker_order_calls"], 0)
 
+    def test_live_mode_and_execution_counts_are_explicit(self):
+        seal, stocks = self._fixture()
+        with tempfile.TemporaryDirectory() as temp:
+            run = AppendOnlyRun(
+                Path(temp),
+                seal,
+                stocks,
+                {"audit_sha256": "b" * 64},
+                mode="LIVE_TRADING_QUOTES",
+            )
+            manifest = run.finalize(
+                status="COMPLETE",
+                started_at="a",
+                ended_at="b",
+                actual_orders=2,
+                actual_fills=2,
+                broker_order_calls=3,
+            )
+            self.assertEqual(run.snapshot["mode"], "LIVE_TRADING_QUOTES")
+            self.assertEqual(manifest["mode"], "LIVE_TRADING_QUOTES")
+            self.assertEqual(manifest["actual_orders"], 2)
+            self.assertEqual(manifest["actual_fills"], 2)
+            self.assertEqual(manifest["broker_order_calls"], 3)
+
+    def test_archive_mode_is_fail_closed(self):
+        seal, stocks = self._fixture()
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(ValueError, "unsupported archive mode"):
+                AppendOnlyRun(
+                    Path(temp),
+                    seal,
+                    stocks,
+                    {},
+                    mode="UNKNOWN_MODE",
+                )
+
     def test_new_run_never_overwrites_prior_run(self):
         seal, stocks = self._fixture()
         with tempfile.TemporaryDirectory() as temp:

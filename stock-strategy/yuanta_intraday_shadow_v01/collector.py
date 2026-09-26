@@ -121,7 +121,25 @@ def load_stage_a_watchlist(stage_a_runtime: Path = DEFAULT_STAGE_A_RUNTIME, audi
 class AppendOnlyRun:
     """Exclusive run directory with line-flushed append-only event files."""
 
-    def __init__(self, runtime_dir: Path, seal: dict, items: list[WatchItem], provenance: dict, *, compress: bool = False):
+    ALLOWED_MODES = {
+        "SHADOW_ONLY_READ_ONLY_QUOTES",
+        "OBSERVE_ONLY_QUOTES",
+        "LIVE_TRADING_QUOTES",
+    }
+
+    def __init__(
+        self,
+        runtime_dir: Path,
+        seal: dict,
+        items: list[WatchItem],
+        provenance: dict,
+        *,
+        compress: bool = False,
+        mode: str = "SHADOW_ONLY_READ_ONLY_QUOTES",
+    ):
+        if mode not in self.ALLOWED_MODES:
+            raise ValueError(f"unsupported archive mode: {mode}")
+        self.mode = mode
         self.run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ") + "_" + uuid.uuid4().hex[:8]
         self.run_dir = runtime_dir / "runs" / self.run_id
         self.run_dir.mkdir(parents=True, exist_ok=False)
@@ -145,7 +163,7 @@ class AppendOnlyRun:
             "signal_date": seal["signal_date"], "stage_a_seal_hash": seal["seal_hash"],
             "market_provenance": provenance,
             "stocks": [{"stock_id": x.stock_id, "stock_name": x.stock_name, "rank": x.rank, "score": x.score, "market": x.market} for x in items],
-            "mode": "SHADOW_ONLY_READ_ONLY_QUOTES", "compression": "gzip" if compress else "none",
+            "mode": self.mode, "compression": "gzip" if compress else "none",
             "compressed_flush_interval_events": 100 if compress else 1,
         }
         (self.run_dir / "watchlist.json").write_bytes(canonical_bytes(self.snapshot) + b"\n")
@@ -165,18 +183,41 @@ class AppendOnlyRun:
         with self._lock:
             self.counts["callback_errors"] += 1
 
-    def finalize(self, *, status: str, started_at: str, ended_at: str, error_type: str = "") -> dict:
+    def finalize(
+        self,
+        *,
+        status: str,
+        started_at: str,
+        ended_at: str,
+        error_type: str = "",
+        actual_orders: int = 0,
+        actual_fills: int = 0,
+        broker_order_calls: int = 0,
+    ) -> dict:
+        for name, value in {
+            "actual_orders": actual_orders,
+            "actual_fills": actual_fills,
+            "broker_order_calls": broker_order_calls,
+        }.items():
+            if int(value) < 0:
+                raise ValueError(f"{name} must be non-negative")
+
         with self._lock:
             self._tick.flush(); self._book.flush(); self._tick.close(); self._book.close()
             for raw in self._raw_files:
                 raw.close()
+
         manifest = {
             "schema_version": 1, "run_id": self.run_id, "status": status,
             "started_at": started_at, "ended_at": ended_at,
             "signal_date": self.snapshot["signal_date"], "stage_a_seal_hash": self.snapshot["stage_a_seal_hash"],
             "watchlist_count": len(self.snapshot["stocks"]), "event_counts": dict(self.counts),
             "artifacts": {"watchlist.json": sha256_file(self.run_dir / "watchlist.json"), self.tick_path.name: sha256_file(self.tick_path), self.book_path.name: sha256_file(self.book_path)},
-            "error_type": error_type, "actual_orders": 0, "actual_fills": 0, "broker_order_calls": 0,
+            "mode": self.mode,
+            "error_type": error_type,
+            "actual_orders": int(actual_orders),
+            "actual_fills": int(actual_fills),
+            "broker_order_calls": int(broker_order_calls),
         }
         manifest["manifest_hash"] = hashlib.sha256(canonical_bytes(manifest)).hexdigest()
         (self.run_dir / "run_manifest.json").write_bytes(canonical_bytes(manifest) + b"\n")

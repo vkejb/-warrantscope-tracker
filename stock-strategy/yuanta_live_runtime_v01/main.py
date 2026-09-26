@@ -34,8 +34,13 @@ from yuanta_broker_execution_v01 import (
     bridge_strategy_intent,
     load_api_types,
 )
-from yuanta_intraday_shadow_v01.collector import load_stage_a_watchlist, utc_now
-from yuanta_intraday_shadow_v01.collector_main import _book_payload
+from yuanta_intraday_shadow_v01.collector import (
+    AppendOnlyRun,
+    DEFAULT_RUNTIME_DIR as DEFAULT_ARCHIVE_RUNTIME_DIR,
+    load_stage_a_watchlist,
+    utc_now,
+)
+from yuanta_intraday_shadow_v01.collector_main import _book_payload, _quote_time
 from yuanta_intraday_shadow_v01.main import DEFAULT_VENDOR_DIR as SHADOW_DEFAULT_VENDOR_DIR, _safe_text
 from yuanta_intraday_shadow_v01.yuanta_keychain import load_credentials, status as credential_status
 
@@ -250,12 +255,18 @@ class _Session:
         credentials: dict[str, str],
         engine: LiveDirectionEngine | None,
         logger,
+        archive: AppendOnlyRun | None = None,
+        archive_signal_date: str = "",
+        archive_items: dict[str, Any] | None = None,
     ):
         self.api_types = api_types
         self.environment = environment
         self.credentials = credentials
         self.engine = engine
         self.logger = logger
+        self.archive = archive
+        self.archive_signal_date = str(archive_signal_date)
+        self.archive_items = dict(archive_items or {})
         self.login_event = threading.Event()
         self.login_ok = False
         self.login_code = ""
@@ -266,6 +277,108 @@ class _Session:
         self.subscribed = False
         self.last_quote_at: datetime | None = None
         self.quote_started_at: datetime | None = None
+
+    def _archive_quote(
+        self,
+        *,
+        kind: str,
+        symbol: str,
+        value,
+        payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Mirror one already-received quote callback into the raw archive.
+
+        Archiving shares the same Yuanta session/callback as the live strategy.
+        An archive failure is recorded but must not prevent the strategy engine
+        from consuming subsequent market data.
+        """
+        if self.archive is None:
+            return
+
+        item = self.archive_items.get(symbol)
+        if item is None:
+            try:
+                self.archive.callback_error()
+            except Exception:
+                pass
+            self.logger(
+                "ARCHIVE_CALLBACK_ERROR",
+                stock_id=symbol,
+                error="UNKNOWN_WATCHLIST_SYMBOL",
+            )
+            return
+
+        base = {
+            "received_at": utc_now(),
+            "signal_date": self.archive_signal_date,
+            "stock_id": symbol,
+            "stock_name": item.stock_name,
+            "market": item.market,
+            "stage_a_rank": item.rank,
+            "stage_a_score": item.score,
+        }
+
+        try:
+            if kind == "ticks":
+                self.archive.append(
+                    "ticks",
+                    {
+                        **base,
+                        "event_type": "STOCK_TICK",
+                        "quote_time": _quote_time(
+                            getattr(value, "Time", None)
+                        ),
+                        "serial_no": int(
+                            getattr(value, "SerialNo", 0)
+                        ),
+                        "buy_price": _safe_text(
+                            getattr(value, "BuyPrice", "")
+                        ),
+                        "sell_price": _safe_text(
+                            getattr(value, "SellPrice", "")
+                        ),
+                        "deal_price": _safe_text(
+                            getattr(value, "DealPrice", "")
+                        ),
+                        "deal_volume": _safe_text(
+                            getattr(value, "DealVol", "")
+                        ),
+                        "in_out_flag": _safe_text(
+                            getattr(value, "InOutFlag", "")
+                        ),
+                        "tick_type": _safe_text(
+                            getattr(value, "Type", "")
+                        ),
+                    },
+                )
+                return
+
+            if kind == "books":
+                self.archive.append(
+                    "books",
+                    {
+                        **base,
+                        "event_type": "FIVE_LEVEL",
+                        **dict(payload or {}),
+                    },
+                )
+                return
+
+            raise ValueError(
+                f"unsupported archive quote kind: {kind}"
+            )
+
+        except Exception as exc:
+            try:
+                self.archive.callback_error()
+            except Exception:
+                pass
+            self.logger(
+                "ARCHIVE_CALLBACK_ERROR",
+                stock_id=symbol,
+                quote_kind=kind,
+                error=f"{type(exc).__name__}: {exc}",
+            )
 
     def _on_response(self, int_mark, _index, response_name, _handle, value) -> None:
         name = _safe_text(response_name)
@@ -292,6 +405,11 @@ class _Session:
                     flag=getattr(value, "InOutFlag", ""),
                     serial=getattr(value, "SerialNo", 0),
                 )
+                self._archive_quote(
+                    kind="ticks",
+                    symbol=symbol,
+                    value=value,
+                )
                 self.last_quote_at = now
                 return
             if name == "SubscribeFiveTickA":
@@ -317,6 +435,12 @@ class _Session:
                             prices=payload["prices"],
                             volumes=payload["volumes"],
                         )
+                self._archive_quote(
+                    kind="books",
+                    symbol=symbol,
+                    value=value,
+                    payload=payload,
+                )
                 self.last_quote_at = now
         except Exception as exc:
             self.logger("QUOTE_CALLBACK_ERROR", error=f"{type(exc).__name__}: {exc}")
@@ -603,6 +727,62 @@ def _decision_floor(now: datetime) -> datetime:
     return now.replace(second=second, microsecond=0)
 
 
+def _store_archive_counters(store: LiveOrderStore) -> dict[str, int]:
+    """Return non-sensitive durable execution counters for archive metadata."""
+    with store._lock:
+        new_requests = int(
+            store.connection.execute(
+                "SELECT COUNT(*) FROM broker_requests WHERE operation='NEW'"
+            ).fetchone()[0]
+        )
+        fills = int(
+            store.connection.execute(
+                "SELECT COUNT(*) FROM live_fills"
+            ).fetchone()[0]
+        )
+        requests = int(
+            store.connection.execute(
+                "SELECT COUNT(*) FROM broker_requests"
+            ).fetchone()[0]
+        )
+    return {
+        "new_requests": new_requests,
+        "fills": fills,
+        "requests": requests,
+    }
+
+
+def _archive_counter_delta(
+    before: dict[str, int],
+    after: dict[str, int],
+) -> dict[str, int]:
+    return {
+        key: max(
+            0,
+            int(after.get(key, 0))
+            - int(before.get(key, 0)),
+        )
+        for key in (
+            "new_requests",
+            "fills",
+            "requests",
+        )
+    }
+
+
+def _post_close_action(
+    *,
+    emergency: bool,
+    graceful_stop: bool,
+) -> str:
+    """Decide whether a flat runtime stops or continues quote archiving."""
+    if emergency:
+        return "STOP_EMERGENCY"
+    if graceful_stop:
+        return "STOP_GRACEFUL"
+    return "CONTINUE_ARCHIVE"
+
+
 def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     runtime_dir = args.runtime_dir.resolve()
     runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -636,7 +816,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             "refusing realtime startup until the stop request is resolved"
         )
 
-    seal, items, _provenance = load_stage_a_watchlist()
+    seal, items, provenance = load_stage_a_watchlist()
     _validate_watchlist_day(str(seal["signal_date"]))
     metadata = {item.stock_id: item.stock_name for item in items}
     engine = LiveDirectionEngine(metadata, capital_twd=args.capital)
@@ -688,6 +868,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     next_exit_reconcile_at: datetime | None = None
     exit_quote_alerted = False
     clean_shutdown = False
+    archive = None
+    archive_started_at = ""
+    archive_error_type = ""
+    archive_counter_baseline = _store_archive_counters(store)
 
     # Acquire after local setup but before session.connect(), so a second
     # start/observe process is rejected before it can touch the broker.
@@ -707,6 +891,35 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         raise
 
     try:
+        archive_started_at = utc_now()
+        archive = AppendOnlyRun(
+            args.archive_runtime_dir.resolve(),
+            seal,
+            items,
+            provenance,
+            compress=True,
+            mode=(
+                "LIVE_TRADING_QUOTES"
+                if submit_live
+                else "OBSERVE_ONLY_QUOTES"
+            ),
+        )
+        session.archive = archive
+        session.archive_signal_date = str(
+            seal["signal_date"]
+        )
+        session.archive_items = {
+            item.stock_id: item
+            for item in items
+        }
+
+        log(
+            "ARCHIVE_STARTED",
+            run_id=archive.run_id,
+            mode=archive.mode,
+            run_dir=str(archive.run_dir),
+        )
+
         session.connect()
         assert session.api is not None
         adapter = YuantaSparkExecutionAdapter(
@@ -1048,14 +1261,70 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             if exit_order_id is not None:
                 exit_order = store.get(exit_order_id)
                 if exit_order.status == BrokerOrderStatus.FILLED:
-                    log("POSITION_CLOSED", client_order_id=exit_order_id, average_fill_price=str(exit_order.average_fill_price), quantity=exit_order.filled_quantity)
-                    if emergency:
-                        store.halt("MANUAL_EMERGENCY_STOP_FLAT")
-                    elif graceful_stop:
-                        stop_path.unlink(missing_ok=True)
-                        log("GRACEFUL_STOP_COMPLETE", exposure="FLAT")
-                    clean_shutdown = True
-                    return 0
+                    completed_exit_order_id = exit_order_id
+
+                    log(
+                        "POSITION_CLOSED",
+                        client_order_id=completed_exit_order_id,
+                        average_fill_price=str(
+                            exit_order.average_fill_price
+                        ),
+                        quantity=exit_order.filled_quantity,
+                    )
+
+                    close_action = _post_close_action(
+                        emergency=emergency,
+                        graceful_stop=graceful_stop,
+                    )
+
+                    if close_action == "STOP_EMERGENCY":
+                        store.halt(
+                            "MANUAL_EMERGENCY_STOP_FLAT"
+                        )
+                        clean_shutdown = True
+                        return 0
+
+                    if close_action == "STOP_GRACEFUL":
+                        stop_path.unlink(
+                            missing_ok=True
+                        )
+                        log(
+                            "GRACEFUL_STOP_COMPLETE",
+                            exposure="FLAT",
+                        )
+                        clean_shutdown = True
+                        return 0
+
+                    # Normal strategy completion is no longer the end of the
+                    # realtime process. The single LIVE trade allowance has
+                    # already been consumed (trade_attempted stays True), so
+                    # clear only transient position/order tracking and keep
+                    # the same Yuanta quote session alive through 13:25.
+                    entry_order_id = None
+                    entry_signal = None
+                    entry_submitted_at = None
+                    entry_cancel_requested = False
+
+                    position = None
+
+                    exit_order_id = None
+                    pending_exit_reason = None
+                    last_exit_reprice = None
+                    exit_attempt = 0
+                    next_exit_retry_at = None
+                    next_exit_reconcile_at = None
+                    exit_quote_alerted = False
+
+                    log(
+                        "LIVE_TRADE_COMPLETE_CONTINUE_ARCHIVE",
+                        completed_exit_order_id=
+                            completed_exit_order_id,
+                        live_trade_limit_consumed=
+                            trade_attempted,
+                        archive_until="13:25",
+                    )
+
+                    continue
                 if exit_order.status in {BrokerOrderStatus.CANCELED, BrokerOrderStatus.REJECTED, BrokerOrderStatus.EXPIRED, BrokerOrderStatus.UNKNOWN}:
                     if (
                         exit_order.status == BrokerOrderStatus.UNKNOWN
@@ -1191,9 +1460,18 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         last_exit_reprice = now
                         log("EXIT_REPRICE_SENT", client_order_id=exit_order_id, price=new_price)
 
-            # End normally after hard-exit window if no trade was taken.
-            if now.time() >= time_from_text("13:25") and entry_order_id is None and position is None:
-                log("NO_TRADE_SESSION_COMPLETE")
+            # Keep the single broker/quote session alive through 13:25,
+            # whether the day had no trade or one completed LIVE trade.
+            if (
+                now.time()
+                >= time_from_text("13:25")
+                and entry_order_id is None
+                and position is None
+            ):
+                log(
+                    "SESSION_COMPLETE",
+                    trade_attempted=trade_attempted,
+                )
                 clean_shutdown = True
                 return 0
 
@@ -1245,6 +1523,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     quote_stale_triggered = False
 
             time.sleep(0.10)
+    except Exception as exc:
+        archive_error_type = type(exc).__name__
+        raise
     finally:
         try:
             heartbeat.stopped(
@@ -1269,12 +1550,82 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             try:
                 adapter.close()
             except Exception as exc:
-                log("ADAPTER_CLOSE_ERROR", error=f"{type(exc).__name__}: {exc}")
+                log(
+                    "ADAPTER_CLOSE_ERROR",
+                    error=f"{type(exc).__name__}: {exc}",
+                )
+
         session.close()
+
+        if archive is not None:
+            try:
+                counters_now = _store_archive_counters(
+                    store
+                )
+                counter_delta = _archive_counter_delta(
+                    archive_counter_baseline,
+                    counters_now,
+                )
+
+                now_taipei = datetime.now(TAIPEI)
+
+                if not clean_shutdown:
+                    archive_status = "FAILED"
+                elif kill_path.exists():
+                    archive_status = "STOPPED_EMERGENCY"
+                elif (
+                    now_taipei.time()
+                    >= time_from_text("13:25")
+                ):
+                    archive_status = "COMPLETE"
+                else:
+                    archive_status = "STOPPED_CLEAN"
+
+                manifest = archive.finalize(
+                    status=archive_status,
+                    started_at=archive_started_at,
+                    ended_at=utc_now(),
+                    error_type=archive_error_type,
+                    actual_orders=counter_delta[
+                        "new_requests"
+                    ],
+                    actual_fills=counter_delta[
+                        "fills"
+                    ],
+                    broker_order_calls=counter_delta[
+                        "requests"
+                    ],
+                )
+
+                log(
+                    "ARCHIVE_FINALIZED",
+                    run_id=archive.run_id,
+                    status=archive_status,
+                    event_counts=manifest[
+                        "event_counts"
+                    ],
+                    actual_orders=manifest[
+                        "actual_orders"
+                    ],
+                    actual_fills=manifest[
+                        "actual_fills"
+                    ],
+                    broker_order_calls=manifest[
+                        "broker_order_calls"
+                    ],
+                )
+
+            except Exception as exc:
+                log(
+                    "ARCHIVE_FINALIZE_ERROR",
+                    error=f"{type(exc).__name__}: {exc}",
+                )
+
         try:
             trading_notifier.close(timeout=3.0)
         except Exception:
             pass
+
         store.close()
         _release_runtime_instance_lock(runtime_lock)
 
@@ -1526,6 +1877,16 @@ def _common(parser: argparse.ArgumentParser) -> None:
 
 def _start_options(parser: argparse.ArgumentParser) -> None:
     _common(parser)
+    parser.add_argument(
+        "--archive-runtime-dir",
+        type=Path,
+        default=DEFAULT_ARCHIVE_RUNTIME_DIR,
+        help=(
+            "append-only quote archive root; defaults to the existing "
+            "yuanta_intraday_shadow_v01 runtime so historical replay paths "
+            "remain compatible"
+        ),
+    )
     parser.add_argument("--live", action="store_true", help="required together with EXECUTION_MODE=LIVE and ENABLE_LIVE_TRADING=YES")
     parser.add_argument("--capital", type=int, default=190_000)
     parser.add_argument("--entry-timeout", type=float, default=15.0)
