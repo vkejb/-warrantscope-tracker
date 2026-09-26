@@ -101,6 +101,102 @@ class TradingBotStatusTests(unittest.TestCase):
             self.assertNotIn("77.7", text)
             self.assertNotIn("目前部位", text)
 
+    def test_status_uses_latest_signal_ledger_event(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            now = datetime.now(timezone.utc).isoformat()
+
+            heartbeat = {
+                "at": now,
+                "state": "RUNNING",
+                "environment": "PROD",
+                "submit_live": True,
+                "last_quote_at": now,
+                "watchlist_count": 30,
+                "entry_start": "09:05",
+                "trade_attempted": True,
+            }
+
+            (runtime / "heartbeat.json").write_text(
+                json.dumps(heartbeat),
+                encoding="utf-8",
+            )
+
+            rows = [
+                {
+                    "at": now,
+                    "event": "RISK_APPROVED_CANDIDATE",
+                    "candidate": {
+                        "stock_id": "1111",
+                        "stock_name": "舊訊號",
+                        "side": "LONG",
+                        "entry_price": 10.0,
+                        "quantity": 1000,
+                        "score": 0.50,
+                    },
+                },
+                {
+                    "at": now,
+                    "event": "SIGNAL_DETECTED",
+                    "signal_id": "20260929:test",
+                    "candidate": {
+                        "stock_id": "2222",
+                        "stock_name": "新訊號",
+                        "side": "LONG",
+                        "entry_price": 20.0,
+                        "quantity": 1000,
+                        "score": 0.75,
+                    },
+                },
+                {
+                    "at": now,
+                    "event": "SIGNAL_SKIPPED",
+                    "signal_id": "20260929:test",
+                    "reason": "LIVE_TRADE_LIMIT_CONSUMED",
+                    "candidate": {
+                        "stock_id": "2222",
+                        "stock_name": "新訊號",
+                        "side": "LONG",
+                        "entry_price": 20.0,
+                        "quantity": 1000,
+                        "score": 0.75,
+                    },
+                },
+            ]
+
+            (runtime / "session.jsonl").write_text(
+                "\n".join(
+                    json.dumps(
+                        row,
+                        ensure_ascii=False,
+                    )
+                    for row in rows
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            status = build_status(runtime)
+
+            self.assertIsInstance(
+                status["last_signal"],
+                dict,
+            )
+            self.assertEqual(
+                status["last_signal"]["stock_id"],
+                "2222",
+            )
+            self.assertEqual(
+                status["last_signal"]["score"],
+                0.75,
+            )
+
+            rendered = render_status(status)
+
+            self.assertIn("2222", rendered)
+            self.assertIn("新訊號", rendered)
+            self.assertNotIn("1111", rendered)
+
     def test_stopping_runtime_is_reported_as_graceful_stop(self):
         with tempfile.TemporaryDirectory() as tmp:
             runtime = Path(tmp)

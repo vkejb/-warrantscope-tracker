@@ -145,7 +145,12 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
         quote_age = None
         quote_health = "N/A"
 
-    signal_events = {"RISK_APPROVED_CANDIDATE", "RISK_REJECTED_CANDIDATE"}
+    signal_events = {
+        "SIGNAL_DETECTED",
+        "SIGNAL_SKIPPED",
+        "RISK_APPROVED_CANDIDATE",
+        "RISK_REJECTED_CANDIDATE",
+    }
     order_events = {
         "ENTRY_SUBMITTED",
         "ENTRY_NOT_FILLED",
