@@ -45,6 +45,7 @@ from yuanta_intraday_shadow_v01.main import DEFAULT_VENDOR_DIR as SHADOW_DEFAULT
 from yuanta_intraday_shadow_v01.yuanta_keychain import load_credentials, status as credential_status
 
 from .notifications import RuntimeNotifier
+from .accounting import execution_pnl
 from .trading_bot_notifier import AsyncTradingNotifier
 from .risk_manager import RiskLimits, RiskManager
 from .strategy import LiveDirectionEngine, ManagedPosition, SPEC
@@ -246,6 +247,22 @@ def _extend_quote_types(api_types: dict[str, Any]) -> dict[str, Any]:
     return api_types
 
 
+def _exchange_tick_time(value, received_at: datetime) -> datetime | None:
+    """SPARK Time has no date; bind it to receipt day, reject invalid/future times.
+
+    Serial high-water marks in the engine survive reconnects in this process.
+    They do not substitute for broker sequence recovery after process restart.
+    """
+    rendered = _quote_time(value)
+    if not rendered:
+        return None
+    try:
+        clock = datetime.strptime(rendered, "%H:%M:%S.%f").time()
+        return datetime.combine(received_at.astimezone(TAIPEI).date(), clock, tzinfo=TAIPEI)
+    except ValueError:
+        return None
+
+
 class _Session:
     def __init__(
         self,
@@ -395,22 +412,27 @@ class _Session:
             now = datetime.now(TAIPEI)
             if name in {"SubscribeStockTick", "SubscribeStocktick"}:
                 symbol = _safe_text(getattr(value, "StkCode", ""))
-                self.engine.record_tick(
-                    symbol,
-                    at=now,
-                    price=getattr(value, "DealPrice", ""),
-                    volume=getattr(value, "DealVol", ""),
-                    bid=getattr(value, "BuyPrice", ""),
-                    ask=getattr(value, "SellPrice", ""),
-                    flag=getattr(value, "InOutFlag", ""),
-                    serial=getattr(value, "SerialNo", 0),
-                )
+                stamp = _exchange_tick_time(getattr(value, "Time", None), now)
+                accepted = False
+                if stamp is not None:
+                    accepted = self.engine.record_tick(
+                        symbol,
+                        at=stamp,
+                        received_at=now,
+                        price=getattr(value, "DealPrice", ""),
+                        volume=getattr(value, "DealVol", ""),
+                        bid=getattr(value, "BuyPrice", ""),
+                        ask=getattr(value, "SellPrice", ""),
+                        flag=getattr(value, "InOutFlag", ""),
+                        serial=getattr(value, "SerialNo", 0),
+                    )
                 self._archive_quote(
                     kind="ticks",
                     symbol=symbol,
                     value=value,
                 )
-                self.last_quote_at = now
+                if accepted:
+                    self.last_quote_at = now
                 return
             if name == "SubscribeFiveTickA":
                 symbol = _safe_text(getattr(value, "StkCode", ""))
@@ -569,45 +591,33 @@ def _stamp(value: str) -> datetime:
 
 
 def _realized_pnl_today(store: LiveOrderStore, engine: LiveDirectionEngine, now: datetime) -> Decimal:
-    today = now.astimezone(TAIPEI).date()
-    entries = [
-        order for order in store.orders()
-        if order.purpose.value == "ENTRY"
-        and order.status == BrokerOrderStatus.FILLED
-        and order.average_fill_price is not None
-        and _stamp(order.created_at).date() == today
-    ]
-    exits = [
-        order for order in store.orders()
-        if order.purpose.value == "EXIT"
-        and order.status == BrokerOrderStatus.FILLED
-        and order.average_fill_price is not None
-        and _stamp(order.created_at).date() == today
-    ]
-    total = Decimal("0")
-    unused = list(exits)
-    for entry in entries:
-        match = next(
-            (
-                order for order in unused
-                if order.symbol == entry.symbol
-                and order.side != entry.side
-                and _stamp(order.created_at) >= _stamp(entry.created_at)
-            ),
-            None,
-        )
-        if match is None:
-            continue
-        unused.remove(match)
-        quantity = min(entry.filled_quantity, match.filled_quantity)
-        side = "LONG" if entry.side.value == "BUY" else "SHORT"
-        total += Decimal(str(engine._projected_net(
-            side,
-            float(entry.average_fill_price),
-            float(match.average_fill_price),
-            quantity,
-        )))
-    return total
+    return execution_pnl(store, now, SPEC).realized
+
+
+def _confirm_strategy_flat(adapter, store, timeout: float) -> None:
+    """No close-success event until the broker confirms baseline-only inventory."""
+    adapter.reconcile(timeout=timeout, strict_positions=True)
+    snapshot = adapter.inspect_broker_state(timeout=timeout)
+    if (snapshot.positions != adapter.position_baseline or snapshot.open_orders
+            or store.position_buckets() or store.orders(open_only=True)):
+        store.halt("FLAT_CONFIRMATION_FAILED")
+        raise RuntimeError("broker has remaining exposure or unresolved orders; flat not confirmed")
+
+
+def _checkpoint_position(store, position, pending_exit_reason) -> None:
+    store.save_position_checkpoint(position.entry_order_id, {
+        "version": 1,
+        "stock_id": position.stock_id,
+        "side": position.side,
+        "peak_return": position.peak_return,
+        "worst_return": position.worst_return,
+        "reversal_streak": position.reversal_streak,
+        "last_reversal_decision": (
+            None if position.last_reversal_decision is None
+            else position.last_reversal_decision.isoformat()
+        ),
+        "pending_exit_reason": pending_exit_reason,
+    })
 
 
 def _trades_today(store: LiveOrderStore, now: datetime) -> int:
@@ -677,6 +687,29 @@ def _recover_runtime_state(store: LiveOrderStore, metadata: dict[str, str], now:
             "position": position,
             "trade_attempted": True,
         })
+        checkpoint = store.position_checkpoint(entry.client_order_id)
+        if checkpoint is None:
+            # Legacy/first-fill crash: do not invent the missing extrema.
+            state["pending_exit_reason"] = "MISSING_POSITION_CHECKPOINT"
+        else:
+            try:
+                if (checkpoint["version"] != 1 or checkpoint["stock_id"] != symbol
+                        or checkpoint["side"] != direction):
+                    raise ValueError("checkpoint identity mismatch")
+                peak = float(checkpoint["peak_return"])
+                worst = float(checkpoint["worst_return"])
+                if not (Decimal(str(peak)).is_finite() and Decimal(str(worst)).is_finite()
+                        and peak >= 0 and worst <= 0):
+                    raise ValueError("invalid checkpoint extrema")
+                position.peak_return = peak
+                position.worst_return = worst
+                position.reversal_streak = max(0, int(checkpoint["reversal_streak"]))
+                stamp = checkpoint["last_reversal_decision"]
+                position.last_reversal_decision = None if stamp is None else _stamp(stamp)
+                state["pending_exit_reason"] = checkpoint["pending_exit_reason"]
+            except (KeyError, ValueError, TypeError):
+                store.halt("INVALID_POSITION_CHECKPOINT")
+                raise RuntimeError("position checkpoint is invalid; manual reconciliation required") from None
         open_exits = [
             order for order in open_orders
             if order.purpose.value == "EXIT" and order.symbol == symbol
@@ -1084,6 +1117,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             entry_order_id=entry_order_id,
                             entry_time=entry_submitted_at or now,
                         )
+                        _checkpoint_position(store, position, pending_exit_reason)
                         log("POSITION_OPENED", stock_id=position.stock_id, side=position.side, quantity=position.quantity, average_fill_price=avg)
                     elif not position.exit_submitted:
                         net_quantity = abs(int(store.positions().get(position.stock_id, order.filled_quantity)))
@@ -1283,6 +1317,21 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 else:
                     engine.last_decision = decision
 
+            # The daily loss guard must keep running while an EXIT is partial/pending.
+            if position is not None:
+                mark = engine.safe_exit_quote(position, now, max_age_seconds=args.exit_quote_staleness)
+                if mark is not None:
+                    pnl = execution_pnl(store, now, SPEC)
+                    if risk.loss_kill_required(
+                        realized=pnl.realized,
+                        unrealized=pnl.unrealized({position.stock_id: Decimal(str(mark.price))}, SPEC),
+                    ) and pending_exit_reason != "MAX_DAILY_LOSS":
+                        pending_exit_reason = "MAX_DAILY_LOSS"
+                        kill_path.write_text(f"{utc_now()} MAX_DAILY_LOSS\n", encoding="utf-8")
+                        emergency = True
+                        _checkpoint_position(store, position, pending_exit_reason)
+                        notifier.critical("MAX_DAILY_LOSS", "Execution-based daily loss limit reached")
+
             # Exit rule may trigger only after an actual fill exists. If entry still has a live remainder,
             # cancel it first so the exit quantity cannot race against later entry fills.
             if (
@@ -1295,24 +1344,13 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 )
                 if safe_quote is not None:
                     exit_quote_alerted = False
-                if safe_quote is not None and risk.loss_kill_required(
-                    realized=_realized_pnl_today(store, engine, now),
-                    unrealized=Decimal(str(engine.projected_net(position, safe_quote.price))),
-                ):
-                    pending_exit_reason = "MAX_DAILY_LOSS"
-                    kill_path.write_text(f"{utc_now()} MAX_DAILY_LOSS\n", encoding="utf-8")
-                    emergency = True
-                    notifier.critical(
-                        "MAX_DAILY_LOSS",
-                        "Daily loss boundary reached; entry is disabled and exit recovery is active",
-                        stock_id=position.stock_id,
-                    )
                 exit_decision = engine.evaluate_exit(
                     position,
                     now,
                     reversal=reversal,
                     max_quote_age_seconds=args.exit_quote_staleness,
                 )
+                _checkpoint_position(store, position, pending_exit_reason)
                 if (emergency or graceful_stop) and exit_decision is None:
                     if safe_quote is not None:
                         from .strategy import ExitDecision
@@ -1332,7 +1370,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             stock_id=position.stock_id,
                         )
                 if exit_decision is not None:
-                    pending_exit_reason = exit_decision.reason
+                    pending_exit_reason = pending_exit_reason or exit_decision.reason
+                    _checkpoint_position(store, position, pending_exit_reason)
                     entry_terminal = entry_order_id is None or store.get(entry_order_id).status in TERMINAL
                     if not entry_terminal:
                         if not entry_cancel_requested and store.get(entry_order_id).broker_order_no:
@@ -1405,6 +1444,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             if exit_order_id is not None:
                 exit_order = store.get(exit_order_id)
                 if exit_order.status == BrokerOrderStatus.FILLED:
+                    _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
                     completed_exit_order_id = exit_order_id
 
                     log(
@@ -1501,6 +1541,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     )
 
                     if recovery_action == "CLOSED":
+                        _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
                         log(
                             "POSITION_CLOSED_AFTER_RECONCILIATION",
                             client_order_id=exit_order_id,
@@ -1666,6 +1707,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 else:
                     quote_stale_triggered = False
 
+            if position is not None:
+                _checkpoint_position(store, position, pending_exit_reason)
             time.sleep(0.10)
     except Exception as exc:
         archive_error_type = type(exc).__name__

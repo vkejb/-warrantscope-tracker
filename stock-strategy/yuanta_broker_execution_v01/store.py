@@ -130,6 +130,11 @@ class LiveOrderStore:
                     next_identify INTEGER NOT NULL,
                     updated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS position_checkpoints (
+                    entry_order_id TEXT PRIMARY KEY REFERENCES live_orders(client_order_id),
+                    payload TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
                 INSERT OR IGNORE INTO live_control(singleton,halted,reason,next_identify,updated_at)
                 VALUES(1,0,NULL,1,'INITIAL');
                 """
@@ -763,6 +768,39 @@ class LiveOrderStore:
                     },
                 )
             return self.get(client_order_id)
+
+    def fills(self) -> list[dict[str, Any]]:
+        """Return durable executions, including partial/cancelled order fills.
+
+        rowid preserves ingestion order even when callback timestamps tie.
+        filled_at is the local receipt time, not a guaranteed exchange time.
+        """
+        with self._lock:
+            return [dict(row) for row in self.connection.execute(
+                """SELECT f.*, o.symbol, o.side, o.purpose, o.order_type,
+                          o.created_at AS order_created_at
+                   FROM live_fills f JOIN live_orders o USING(client_order_id)
+                   ORDER BY o.created_at, o.rowid, f.rowid"""
+            )]
+
+    def save_position_checkpoint(self, entry_order_id: str, payload: Mapping[str, Any]) -> None:
+        encoded = json.dumps(dict(payload), sort_keys=True, allow_nan=False)
+        with self._lock, self.connection:
+            self.connection.execute(
+                """INSERT INTO position_checkpoints VALUES(?,?,?)
+                   ON CONFLICT(entry_order_id) DO UPDATE SET
+                     payload=excluded.payload, updated_at=excluded.updated_at
+                   WHERE position_checkpoints.payload != excluded.payload""",
+                (entry_order_id, encoded, utc_now()),
+            )
+
+    def position_checkpoint(self, entry_order_id: str) -> dict[str, Any] | None:
+        with self._lock:
+            row = self.connection.execute(
+                "SELECT payload FROM position_checkpoints WHERE entry_order_id=?",
+                (entry_order_id,),
+            ).fetchone()
+            return None if row is None else json.loads(row[0])
 
     def positions(self) -> dict[str, int]:
         with self._lock:

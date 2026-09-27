@@ -9,7 +9,9 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
+from functools import wraps
 import math
+import threading
 from typing import Deque, Mapping
 from zoneinfo import ZoneInfo
 
@@ -17,6 +19,14 @@ from yuanta_intraday_shadow_v01.direction_follow_backtest import SPEC
 from yuanta_intraday_shadow_v01.exploratory_backtest import _tick_size
 
 TAIPEI = ZoneInfo("Asia/Taipei")
+
+
+def _locked(method):
+    @wraps(method)
+    def call(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return call
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,12 +87,14 @@ class _StockState:
     latest_book: dict | None = None
     buy_side: dict | None = None
     sell_side: dict | None = None
+    last_serial: int = 0
 
 
 class LiveDirectionEngine:
     """Memory-bounded realtime equivalent of the causal replay signal rule."""
 
     def __init__(self, metadata: Mapping[str, str], *, capital_twd: int = 190_000):
+        self._lock = threading.RLock()
         self.capital_twd = int(capital_twd)
         if self.capital_twd <= 0:
             raise ValueError("capital_twd must be positive")
@@ -100,6 +112,7 @@ class LiveDirectionEngine:
             return None
         return number if math.isfinite(number) else None
 
+    @_locked
     def record_tick(
         self,
         symbol: str,
@@ -111,18 +124,43 @@ class LiveDirectionEngine:
         ask: object,
         flag: object = "",
         serial: object = 0,
-    ) -> None:
+        received_at: datetime | None = None,
+    ) -> bool:
         state = self._states.get(str(symbol))
         if state is None:
-            return
+            return False
         px, vol, bp, ap = (self._num(value) for value in (price, volume, bid, ask))
         if px is None or vol is None or bp is None or ap is None:
-            return
-        if min(px, bp, ap) <= 0 or vol < 0:
-            return
+            return False
+        if min(px, bp, ap) <= 0 or vol < 0 or ap < bp:
+            return False
         stamp = at.astimezone(TAIPEI)
+        received = stamp if received_at is None else received_at.astimezone(TAIPEI)
+        age = (received - stamp).total_seconds()
+        if age < 0 or age > float(SPEC["maximum_tick_staleness_seconds"]):
+            return False
+        sequence = int(self._num(serial) or 0)
+        if state.ticks:
+            previous = state.ticks[-1]
+            if stamp < previous["time"]:
+                return False
+            if stamp.date() == previous["time"].date():
+                if sequence > 0 and sequence <= state.last_serial:
+                    return False
+                if sequence == 0 and (stamp, px, vol, bp, ap) == (
+                    previous["time"], previous["price"], previous["volume"],
+                    previous["bid"], previous["ask"],
+                ):
+                    return False
+            else:
+                state.ticks.clear()
+                state.cumulative_volume = state.cumulative_pv = 0.0
+                state.latest_book = state.buy_side = state.sell_side = None
+                state.last_serial = 0
+        state.last_serial = max(state.last_serial, sequence)
         row = {
             "time": stamp,
+            "received_at": received,
             "price": px,
             "volume": vol,
             "bid": bp,
@@ -136,7 +174,9 @@ class LiveDirectionEngine:
         cutoff = stamp - timedelta(seconds=max(360, int(SPEC["large_trade_reference_seconds"]) + 30))
         while state.ticks and state.ticks[0]["time"] < cutoff:
             state.ticks.popleft()
+        return True
 
+    @_locked
     def record_book_combined(
         self,
         symbol: str,
@@ -150,6 +190,8 @@ class LiveDirectionEngine:
         state = self._states.get(str(symbol))
         if state is None:
             return
+        if state.latest_book and at < state.latest_book["time"]:
+            return
         buys = [self._num(v) for v in buy_volumes]
         sells = [self._num(v) for v in sell_volumes]
         buy_px = [self._num(v) for v in buy_prices]
@@ -159,7 +201,8 @@ class LiveDirectionEngine:
         if any(v is None for v in buys + sells + buy_px + sell_px):
             return
         assert all(v is not None for v in buys + sells + buy_px + sell_px)
-        if float(buy_px[0]) <= 0 or float(sell_px[0]) <= 0:
+        if (float(buy_px[0]) <= 0 or float(sell_px[0]) < float(buy_px[0])
+                or any(v < 0 for v in buys + sells)):
             return
         state.latest_book = {
             "time": at.astimezone(TAIPEI),
@@ -169,6 +212,7 @@ class LiveDirectionEngine:
             "best_ask": float(sell_px[0]),
         }
 
+    @_locked
     def record_book_side(
         self,
         symbol: str,
@@ -187,7 +231,8 @@ class LiveDirectionEngine:
             return
         assert all(v is not None for v in px + vol)
         item = {"time": at.astimezone(TAIPEI), "best": float(px[0]), "volume": float(sum(vol))}
-        if item["best"] <= 0:
+        prior_side = state.buy_side if side == "BUY" else state.sell_side
+        if item["best"] <= 0 or any(v < 0 for v in vol) or (prior_side and at < prior_side["time"]):
             return
         if side == "BUY":
             state.buy_side = item
@@ -201,7 +246,8 @@ class LiveDirectionEngine:
         if age > float(SPEC["maximum_book_staleness_seconds"]):
             return
         state.latest_book = {
-            "time": max(state.buy_side["time"], state.sell_side["time"]),
+            "time": min(state.buy_side["time"], state.sell_side["time"]),
+            "available_at": max(state.buy_side["time"], state.sell_side["time"]),
             "buy_volume": state.buy_side["volume"],
             "sell_volume": state.sell_side["volume"],
             "best_bid": state.buy_side["best"],
@@ -223,23 +269,25 @@ class LiveDirectionEngine:
         index = max(0, math.ceil(float(SPEC["large_trade_percentile"]) * len(ordered)) - 1)
         return ordered[index]
 
+    @_locked
     def _signal_for(self, symbol: str, decision: datetime) -> dict | None:
         state = self._states[symbol]
         rows = list(state.ticks)
         window_start = decision - timedelta(seconds=int(SPEC["direction_window_seconds"]))
-        window = [row for row in rows if window_start <= row["time"] <= decision]
+        window = [row for row in rows if window_start <= row["time"] <= decision and row["received_at"] <= decision]
         if len(window) < int(SPEC["minimum_ticks_in_direction_window"]):
             return None
         if (decision - window[-1]["time"]).total_seconds() > float(SPEC["maximum_tick_staleness_seconds"]):
             return None
         book = state.latest_book
-        if book is None or (decision - book["time"]).total_seconds() > float(SPEC["maximum_book_staleness_seconds"]):
+        if (book is None or book.get("available_at", book["time"]) > decision
+                or (decision - book["time"]).total_seconds() > float(SPEC["maximum_book_staleness_seconds"])):
             return None
         spread_mid = (book["best_bid"] + book["best_ask"]) / 2
         if spread_mid <= 0:
             return None
         spread_bps = (book["best_ask"] - book["best_bid"]) / spread_mid * 10_000
-        if spread_bps > float(SPEC["maximum_spread_bps"]):
+        if spread_bps < 0 or spread_bps > float(SPEC["maximum_spread_bps"]):
             return None
         book_total = book["buy_volume"] + book["sell_volume"]
         if book_total <= 0:
@@ -251,7 +299,7 @@ class LiveDirectionEngine:
         volume_delta = sum(self._signed_volume(row) for row in window) / total_volume
 
         ref_start = decision - timedelta(seconds=int(SPEC["large_trade_reference_seconds"]))
-        reference = [row for row in rows if ref_start <= row["time"] <= decision]
+        reference = [row for row in rows if ref_start <= row["time"] <= decision and row["received_at"] <= decision]
         if len(reference) < int(SPEC["minimum_ticks_in_direction_window"]):
             return None
         large_threshold = self._percentile90([row["volume"] for row in reference])
@@ -263,12 +311,16 @@ class LiveDirectionEngine:
 
         if state.cumulative_volume <= 0:
             return None
-        vwap = state.cumulative_pv / state.cumulative_volume
+        unavailable = [row for row in rows if row["time"] > decision or row["received_at"] > decision]
+        known_volume = state.cumulative_volume - sum(row["volume"] for row in unavailable)
+        if known_volume <= 0:
+            return None
+        vwap = (state.cumulative_pv - sum(row["price"] * row["volume"] for row in unavailable)) / known_volume
         current = window[-1]["price"]
         vwap_gap = current / vwap - 1
         breakout_start = decision - timedelta(seconds=int(SPEC["breakout_lookback_seconds"]))
         breakout_end = decision - timedelta(seconds=int(SPEC["breakout_excludes_latest_seconds"]))
-        prior = [row for row in rows if breakout_start <= row["time"] <= breakout_end]
+        prior = [row for row in rows if breakout_start <= row["time"] <= breakout_end and row["received_at"] <= decision]
         if not prior:
             return None
         long_ok = (
@@ -325,6 +377,7 @@ class LiveDirectionEngine:
         hour, minute = map(int, value.split(":"))
         return time(hour, minute)
 
+    @_locked
     def choose_entry(self, decision: datetime, *, allow_short: bool) -> LiveSignal | None:
         decision = decision.astimezone(TAIPEI).replace(microsecond=0)
         if self.last_decision is not None and decision <= self.last_decision:
@@ -352,6 +405,7 @@ class LiveDirectionEngine:
         selected = max(confirmed, key=lambda item: (item["score"], item["entry_price"] * item["quantity"]))
         return LiveSignal(**selected)
 
+    @_locked
     def opposite_signal(self, position: ManagedPosition, decision: datetime) -> bool:
         decision = decision.astimezone(TAIPEI).replace(microsecond=0)
         signal = self._signal_for(position.stock_id, decision)
@@ -385,6 +439,7 @@ class LiveDirectionEngine:
             position.side, position.entry_price, exit_price, position.quantity
         )
 
+    @_locked
     def latest_exit_price(self, position: ManagedPosition) -> float | None:
         state = self._states.get(position.stock_id)
         if state is None or not state.ticks:
@@ -394,12 +449,14 @@ class LiveDirectionEngine:
             return max(_tick_size(row["bid"]), row["bid"] - _tick_size(row["bid"]))
         return row["ask"] + _tick_size(row["ask"])
 
+    @_locked
     def quote_age_seconds(self, symbol: str, now: datetime) -> float | None:
         state = self._states.get(str(symbol))
         if state is None or not state.ticks:
             return None
         return (now.astimezone(TAIPEI) - state.ticks[-1]["time"]).total_seconds()
 
+    @_locked
     def safe_exit_quote(
         self,
         position: ManagedPosition,
