@@ -1,0 +1,1111 @@
+{
+  "analysis_id": "INTRADAY_LOSS_REDUCTION_DIAGNOSTIC_V0_1",
+  "interpretation": "OVERLAPPING_INDEPENDENT_SIGNALS_NOT_AN_EXECUTABLE_PORTFOLIO",
+  "trade_count": 18,
+  "session_dates": [
+    "20260922",
+    "20260923",
+    "20260924"
+  ],
+  "summaries": [
+    {
+      "variant": "BASELINE",
+      "description": "All recorded first affordable signals",
+      "trades": 18,
+      "wins": 11,
+      "losses": 7,
+      "win_rate": 0.6111111111111112,
+      "gross_profit": 18248.0,
+      "gross_loss": 24915.0,
+      "net_pnl": -6667.0,
+      "expectancy": -370.3888888888889,
+      "profit_factor": 0.7324101946618503,
+      "average_winner": 1658.909090909091,
+      "average_loser": -3559.285714285714,
+      "maximum_drawdown": 12865.0,
+      "maximum_consecutive_losses": 3,
+      "largest_winner": 5243.0,
+      "net_without_largest_winner": -11910.0,
+      "profitable_days": 1,
+      "losing_days": 2,
+      "by_date": [
+        {
+          "session_date": "20260922",
+          "trades": 1,
+          "net_pnl": 5243.0
+        },
+        {
+          "session_date": "20260923",
+          "trades": 11,
+          "net_pnl": -3912.0
+        },
+        {
+          "session_date": "20260924",
+          "trades": 6,
+          "net_pnl": -7998.0
+        }
+      ],
+      "eligible_for_live_promotion": false
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "description": "All sides, entry before 10:30",
+      "trades": 12,
+      "wins": 9,
+      "losses": 3,
+      "win_rate": 0.75,
+      "gross_profit": 15926.0,
+      "gross_loss": 14465.0,
+      "net_pnl": 1461.0,
+      "expectancy": 121.75,
+      "profit_factor": 1.1010024196335984,
+      "average_winner": 1769.5555555555557,
+      "average_loser": -4821.666666666667,
+      "maximum_drawdown": 5861.0,
+      "maximum_consecutive_losses": 1,
+      "largest_winner": 5243.0,
+      "net_without_largest_winner": -3782.0,
+      "profitable_days": 1,
+      "losing_days": 2,
+      "by_date": [
+        {
+          "session_date": "20260922",
+          "trades": 1,
+          "net_pnl": 5243.0
+        },
+        {
+          "session_date": "20260923",
+          "trades": 7,
+          "net_pnl": -3351.0
+        },
+        {
+          "session_date": "20260924",
+          "trades": 4,
+          "net_pnl": -431.0
+        }
+      ],
+      "eligible_for_live_promotion": false
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "description": "Theoretical SHORT only; eligibility unverified",
+      "trades": 10,
+      "wins": 7,
+      "losses": 3,
+      "win_rate": 0.7,
+      "gross_profit": 14792.0,
+      "gross_loss": 8076.0,
+      "net_pnl": 6716.0,
+      "expectancy": 671.6,
+      "profit_factor": 1.8315998018821198,
+      "average_winner": 2113.1428571428573,
+      "average_loser": -2692.0,
+      "maximum_drawdown": 5754.0,
+      "maximum_consecutive_losses": 2,
+      "largest_winner": 5243.0,
+      "net_without_largest_winner": 1473.0,
+      "profitable_days": 2,
+      "losing_days": 1,
+      "by_date": [
+        {
+          "session_date": "20260922",
+          "trades": 1,
+          "net_pnl": 5243.0
+        },
+        {
+          "session_date": "20260923",
+          "trades": 7,
+          "net_pnl": -2374.0
+        },
+        {
+          "session_date": "20260924",
+          "trades": 2,
+          "net_pnl": 3847.0
+        }
+      ],
+      "eligible_for_live_promotion": false
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "description": "Theoretical SHORT before 10:30; eligibility unverified",
+      "trades": 6,
+      "wins": 5,
+      "losses": 1,
+      "win_rate": 0.8333333333333334,
+      "gross_profit": 12470.0,
+      "gross_loss": 5193.0,
+      "net_pnl": 7277.0,
+      "expectancy": 1212.8333333333333,
+      "profit_factor": 2.401309455035625,
+      "average_winner": 2494.0,
+      "average_loser": -5193.0,
+      "maximum_drawdown": 5193.0,
+      "maximum_consecutive_losses": 1,
+      "largest_winner": 5243.0,
+      "net_without_largest_winner": 2034.0,
+      "profitable_days": 2,
+      "losing_days": 1,
+      "by_date": [
+        {
+          "session_date": "20260922",
+          "trades": 1,
+          "net_pnl": 5243.0
+        },
+        {
+          "session_date": "20260923",
+          "trades": 3,
+          "net_pnl": -1813.0
+        },
+        {
+          "session_date": "20260924",
+          "trades": 2,
+          "net_pnl": 3847.0
+        }
+      ],
+      "eligible_for_live_promotion": false
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "description": "Current production direction boundary",
+      "trades": 8,
+      "wins": 4,
+      "losses": 4,
+      "win_rate": 0.5,
+      "gross_profit": 3456.0,
+      "gross_loss": 16839.0,
+      "net_pnl": -13383.0,
+      "expectancy": -1672.875,
+      "profit_factor": 0.20523784072688403,
+      "average_winner": 864.0,
+      "average_loser": -4209.75,
+      "maximum_drawdown": 13383.0,
+      "maximum_consecutive_losses": 3,
+      "largest_winner": 1077.0,
+      "net_without_largest_winner": -14460.0,
+      "profitable_days": 0,
+      "losing_days": 2,
+      "by_date": [
+        {
+          "session_date": "20260923",
+          "trades": 4,
+          "net_pnl": -1538.0
+        },
+        {
+          "session_date": "20260924",
+          "trades": 4,
+          "net_pnl": -11845.0
+        }
+      ],
+      "eligible_for_live_promotion": false
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "description": "Long-only entries before 10:30",
+      "trades": 6,
+      "wins": 4,
+      "losses": 2,
+      "win_rate": 0.6666666666666666,
+      "gross_profit": 3456.0,
+      "gross_loss": 9272.0,
+      "net_pnl": -5816.0,
+      "expectancy": -969.3333333333334,
+      "profit_factor": 0.3727351164797239,
+      "average_winner": 864.0,
+      "average_loser": -4636.0,
+      "maximum_drawdown": 5816.0,
+      "maximum_consecutive_losses": 1,
+      "largest_winner": 1077.0,
+      "net_without_largest_winner": -6893.0,
+      "profitable_days": 0,
+      "losing_days": 2,
+      "by_date": [
+        {
+          "session_date": "20260923",
+          "trades": 4,
+          "net_pnl": -1538.0
+        },
+        {
+          "session_date": "20260924",
+          "trades": 2,
+          "net_pnl": -4278.0
+        }
+      ],
+      "eligible_for_live_promotion": false
+    }
+  ],
+  "memberships": [
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260922-1709-093200",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-22T09:32:00.233000+08:00",
+      "pnl": 5243.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-3229-092830",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:28:31.476000+08:00",
+      "pnl": 955.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-8111-093300",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:33:05.750000+08:00",
+      "pnl": -4083.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-3094-094300",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:43:05.280000+08:00",
+      "pnl": 990.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-4956-095730",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:57:30.380000+08:00",
+      "pnl": 2425.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-1709-095830",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:58:30.421000+08:00",
+      "pnl": -5193.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-2221-100530",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:05:35.229000+08:00",
+      "pnl": 478.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-3624-102100",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:21:01.594000+08:00",
+      "pnl": 1077.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-2033-113900",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T11:39:02.815000+08:00",
+      "pnl": 409.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-3605-121730",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:17:37.884000+08:00",
+      "pnl": 1913.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-6168-124430",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:44:42.553000+08:00",
+      "pnl": -1327.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260923-2409-130930",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T13:09:30.012000+08:00",
+      "pnl": -1556.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260924-2409-090900",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:09:00.032000+08:00",
+      "pnl": 1690.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260924-3605-090900",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:09:03.562000+08:00",
+      "pnl": 911.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260924-2033-091030",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:10:31.938000+08:00",
+      "pnl": 2157.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260924-4956-093400",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:34:01.454000+08:00",
+      "pnl": -5189.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260924-3624-115700",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T11:57:00.051000+08:00",
+      "pnl": -5441.0
+    },
+    {
+      "variant": "BASELINE",
+      "trade_id": "20260924-6456-131000",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T13:10:00.019000+08:00",
+      "pnl": -2126.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260922-1709-093200",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-22T09:32:00.233000+08:00",
+      "pnl": 5243.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-3229-092830",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:28:31.476000+08:00",
+      "pnl": 955.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-8111-093300",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:33:05.750000+08:00",
+      "pnl": -4083.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-3094-094300",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:43:05.280000+08:00",
+      "pnl": 990.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-4956-095730",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:57:30.380000+08:00",
+      "pnl": 2425.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-1709-095830",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:58:30.421000+08:00",
+      "pnl": -5193.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-2221-100530",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:05:35.229000+08:00",
+      "pnl": 478.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-3624-102100",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:21:01.594000+08:00",
+      "pnl": 1077.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-2033-113900",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T11:39:02.815000+08:00",
+      "pnl": 409.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-3605-121730",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:17:37.884000+08:00",
+      "pnl": 1913.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-6168-124430",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:44:42.553000+08:00",
+      "pnl": -1327.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260923-2409-130930",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T13:09:30.012000+08:00",
+      "pnl": -1556.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260924-2409-090900",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:09:00.032000+08:00",
+      "pnl": 1690.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260924-3605-090900",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:09:03.562000+08:00",
+      "pnl": 911.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260924-2033-091030",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:10:31.938000+08:00",
+      "pnl": 2157.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260924-4956-093400",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:34:01.454000+08:00",
+      "pnl": -5189.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260924-3624-115700",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T11:57:00.051000+08:00",
+      "pnl": -5441.0
+    },
+    {
+      "variant": "NO_NEW_AFTER_1030",
+      "trade_id": "20260924-6456-131000",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T13:10:00.019000+08:00",
+      "pnl": -2126.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260922-1709-093200",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-22T09:32:00.233000+08:00",
+      "pnl": 5243.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-3229-092830",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:28:31.476000+08:00",
+      "pnl": 955.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-8111-093300",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:33:05.750000+08:00",
+      "pnl": -4083.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-3094-094300",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:43:05.280000+08:00",
+      "pnl": 990.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-4956-095730",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:57:30.380000+08:00",
+      "pnl": 2425.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-1709-095830",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:58:30.421000+08:00",
+      "pnl": -5193.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-2221-100530",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:05:35.229000+08:00",
+      "pnl": 478.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-3624-102100",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:21:01.594000+08:00",
+      "pnl": 1077.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-2033-113900",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T11:39:02.815000+08:00",
+      "pnl": 409.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-3605-121730",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:17:37.884000+08:00",
+      "pnl": 1913.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-6168-124430",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:44:42.553000+08:00",
+      "pnl": -1327.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260923-2409-130930",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T13:09:30.012000+08:00",
+      "pnl": -1556.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260924-2409-090900",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:09:00.032000+08:00",
+      "pnl": 1690.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260924-3605-090900",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:09:03.562000+08:00",
+      "pnl": 911.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260924-2033-091030",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:10:31.938000+08:00",
+      "pnl": 2157.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260924-4956-093400",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:34:01.454000+08:00",
+      "pnl": -5189.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260924-3624-115700",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T11:57:00.051000+08:00",
+      "pnl": -5441.0
+    },
+    {
+      "variant": "SHORT_ONLY_DIAGNOSTIC",
+      "trade_id": "20260924-6456-131000",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T13:10:00.019000+08:00",
+      "pnl": -2126.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260922-1709-093200",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-22T09:32:00.233000+08:00",
+      "pnl": 5243.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-3229-092830",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:28:31.476000+08:00",
+      "pnl": 955.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-8111-093300",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:33:05.750000+08:00",
+      "pnl": -4083.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-3094-094300",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:43:05.280000+08:00",
+      "pnl": 990.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-4956-095730",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:57:30.380000+08:00",
+      "pnl": 2425.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-1709-095830",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:58:30.421000+08:00",
+      "pnl": -5193.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-2221-100530",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:05:35.229000+08:00",
+      "pnl": 478.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-3624-102100",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:21:01.594000+08:00",
+      "pnl": 1077.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-2033-113900",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T11:39:02.815000+08:00",
+      "pnl": 409.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-3605-121730",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:17:37.884000+08:00",
+      "pnl": 1913.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-6168-124430",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:44:42.553000+08:00",
+      "pnl": -1327.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260923-2409-130930",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T13:09:30.012000+08:00",
+      "pnl": -1556.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260924-2409-090900",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:09:00.032000+08:00",
+      "pnl": 1690.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260924-3605-090900",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:09:03.562000+08:00",
+      "pnl": 911.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260924-2033-091030",
+      "included": true,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:10:31.938000+08:00",
+      "pnl": 2157.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260924-4956-093400",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:34:01.454000+08:00",
+      "pnl": -5189.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260924-3624-115700",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T11:57:00.051000+08:00",
+      "pnl": -5441.0
+    },
+    {
+      "variant": "SHORT_BEFORE_1030_DIAGNOSTIC",
+      "trade_id": "20260924-6456-131000",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T13:10:00.019000+08:00",
+      "pnl": -2126.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260922-1709-093200",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-22T09:32:00.233000+08:00",
+      "pnl": 5243.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-3229-092830",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:28:31.476000+08:00",
+      "pnl": 955.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-8111-093300",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:33:05.750000+08:00",
+      "pnl": -4083.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-3094-094300",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:43:05.280000+08:00",
+      "pnl": 990.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-4956-095730",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:57:30.380000+08:00",
+      "pnl": 2425.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-1709-095830",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:58:30.421000+08:00",
+      "pnl": -5193.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-2221-100530",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:05:35.229000+08:00",
+      "pnl": 478.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-3624-102100",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:21:01.594000+08:00",
+      "pnl": 1077.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-2033-113900",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T11:39:02.815000+08:00",
+      "pnl": 409.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-3605-121730",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:17:37.884000+08:00",
+      "pnl": 1913.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-6168-124430",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:44:42.553000+08:00",
+      "pnl": -1327.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260923-2409-130930",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T13:09:30.012000+08:00",
+      "pnl": -1556.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260924-2409-090900",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:09:00.032000+08:00",
+      "pnl": 1690.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260924-3605-090900",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:09:03.562000+08:00",
+      "pnl": 911.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260924-2033-091030",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:10:31.938000+08:00",
+      "pnl": 2157.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260924-4956-093400",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:34:01.454000+08:00",
+      "pnl": -5189.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260924-3624-115700",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T11:57:00.051000+08:00",
+      "pnl": -5441.0
+    },
+    {
+      "variant": "LONG_ONLY_CURRENT_PRODUCTION",
+      "trade_id": "20260924-6456-131000",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T13:10:00.019000+08:00",
+      "pnl": -2126.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260922-1709-093200",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-22T09:32:00.233000+08:00",
+      "pnl": 5243.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-3229-092830",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:28:31.476000+08:00",
+      "pnl": 955.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-8111-093300",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:33:05.750000+08:00",
+      "pnl": -4083.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-3094-094300",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T09:43:05.280000+08:00",
+      "pnl": 990.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-4956-095730",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:57:30.380000+08:00",
+      "pnl": 2425.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-1709-095830",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T09:58:30.421000+08:00",
+      "pnl": -5193.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-2221-100530",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:05:35.229000+08:00",
+      "pnl": 478.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-3624-102100",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-23T10:21:01.594000+08:00",
+      "pnl": 1077.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-2033-113900",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T11:39:02.815000+08:00",
+      "pnl": 409.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-3605-121730",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:17:37.884000+08:00",
+      "pnl": 1913.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-6168-124430",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T12:44:42.553000+08:00",
+      "pnl": -1327.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260923-2409-130930",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-23T13:09:30.012000+08:00",
+      "pnl": -1556.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260924-2409-090900",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:09:00.032000+08:00",
+      "pnl": 1690.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260924-3605-090900",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:09:03.562000+08:00",
+      "pnl": 911.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260924-2033-091030",
+      "included": false,
+      "side": "SHORT",
+      "entry_time": "2026-09-24T09:10:31.938000+08:00",
+      "pnl": 2157.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260924-4956-093400",
+      "included": true,
+      "side": "LONG",
+      "entry_time": "2026-09-24T09:34:01.454000+08:00",
+      "pnl": -5189.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260924-3624-115700",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T11:57:00.051000+08:00",
+      "pnl": -5441.0
+    },
+    {
+      "variant": "LONG_BEFORE_1030",
+      "trade_id": "20260924-6456-131000",
+      "included": false,
+      "side": "LONG",
+      "entry_time": "2026-09-24T13:10:00.019000+08:00",
+      "pnl": -2126.0
+    }
+  ],
+  "robust_positive_candidates": [
+    "SHORT_ONLY_DIAGNOSTIC",
+    "SHORT_BEFORE_1030_DIAGNOSTIC"
+  ],
+  "conclusion": "The only positive candidate after removing its largest winner is SHORT_BEFORE_1030_DIAGNOSTIC. It is not production-ready because short eligibility was not captured and the sample is only three partial sessions. The long-only cohort remains negative; the defensible live action is no promotion, not parameter fitting.",
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "live_behavior_changed": false
+}
