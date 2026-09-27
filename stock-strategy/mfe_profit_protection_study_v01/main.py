@@ -24,9 +24,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--session", action="append", required=True, type=_session)
     parser.add_argument("--capital", type=int, default=190_000)
+    parser.add_argument(
+        "--trade-universe",
+        choices=("live-parity", "independent-first-signals"),
+        default="live-parity",
+        help=(
+            "live-parity selects the single executable entry; independent-first-signals "
+            "replays each stock's first affordable signal as a non-portfolio diagnostic"
+        ),
+    )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args(argv)
-    report = build_report(dict(args.session), args.capital)
+    report = build_report(
+        dict(args.session),
+        args.capital,
+        trade_universe=args.trade_universe,
+    )
     write_report(report, args.output_dir.resolve())
     for row in report["summaries"]:
         print(

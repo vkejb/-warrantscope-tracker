@@ -28,7 +28,18 @@ python3 -m mfe_profit_protection_study_v01.main \
   --output-dir mfe_profit_protection_study_v01/results
 ```
 
+To diagnose every stock's first affordable signal instead of stopping after
+the single executable portfolio entry, add:
+
+```bash
+--trade-universe independent-first-signals
+```
+
+That cohort may contain overlapping trades. Its aggregate PnL is diagnostic
+only and must not be read as one executable NT$190,000 portfolio.
+
 Outputs include JSON, comparison/per-trade/bucket/post-exit CSVs, Markdown and
-a SHA-256 manifest. Source sessions must pass the existing strict full-session
-coverage gate. Incomplete or callback-error sessions are refused rather than
-silently mixed into the comparison.
+a SHA-256 manifest. The default live-parity universe requires the existing
+strict full-session coverage gate. The independent diagnostic universe mirrors
+the existing all-signal validator, preserves partial-session and callback-error
+warnings in its output, and must not be treated as production evidence.

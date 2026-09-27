@@ -1,0 +1,1 @@
+trade_id,symbol,side,variant,mfe_exit_time,mfe_exit_pnl,post_exit_best_pnl,post_exit_worst_pnl,max_favorable_movement_after_exit,max_adverse_movement_after_exit,original_strategy_final_pnl,mfe_minus_original_pnl

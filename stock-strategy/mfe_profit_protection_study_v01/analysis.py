@@ -14,8 +14,14 @@ from typing import Any, Callable, Iterable, Mapping
 from yuanta_intraday_shadow_v01.direction_follow_backtest import (
     SPEC,
     SPEC_HASH,
+    _decision_times,
+    _entry_tick,
+    _exit_quote,
     _projected_net_pnl,
+    _reversal_exit_tick,
+    _tick_size,
     load_session,
+    signal_at,
 )
 from yuanta_intraday_shadow_v01.exit_parameter_sweep import (
     PathPoint,
@@ -56,6 +62,7 @@ class ResearchTrade:
     quantity: int
     initial_stop_price: float
     points: tuple[PathPoint, ...]
+    force_last_point_exit: bool = False
 
     @property
     def basis(self) -> PositionBasis:
@@ -222,6 +229,15 @@ def simulate_trade(
                 realized_pnl=point.projected_net_pnl,
                 state=overlay,
             )
+        if trade.force_last_point_exit and index == len(trade.points) - 1:
+            return SimulatedExit(
+                index=index,
+                at=point.at,
+                price=point.exit_price,
+                reason="HARD_EXIT",
+                realized_pnl=point.projected_net_pnl,
+                state=overlay,
+            )
     raise RuntimeError(f"no valid exit found for {trade.trade_id}")
 
 
@@ -266,6 +282,175 @@ def build_trades(
         coverages.append(coverage)
         if path is not None:
             trades.append(_convert_path(path))
+    return trades, diagnostics, coverages
+
+
+def _independent_trade_path(
+    session_date: str,
+    data: dict[str, Any],
+    signal: Any,
+    entry_tick: dict[str, Any],
+    entry_price: float,
+    quantity: int,
+) -> tuple[ResearchTrade | None, dict[str, Any]]:
+    """Build the complete recorded path for one existing independent signal."""
+    hard_hour, hard_minute = map(int, str(SPEC["hard_exit_time"]).split(":"))
+    hard_exit = entry_tick["time"].replace(
+        hour=hard_hour,
+        minute=hard_minute,
+        second=0,
+        microsecond=0,
+    )
+    future = [
+        row for row in data["ticks"]
+        if entry_tick["time"] < row["time"] <= hard_exit
+    ]
+    staleness = (
+        (hard_exit - future[-1]["time"]).total_seconds()
+        if future else float("inf")
+    )
+    if not future:
+        return None, {
+            "exit_data_insufficient": True,
+            "last_exit_quote_staleness_seconds": None,
+        }
+    hard_exit_quote_available = (
+        staleness <= float(SPEC["maximum_hard_exit_quote_staleness_seconds"])
+    )
+
+    reversal_row = _reversal_exit_tick(
+        data,
+        signal,
+        entry_tick["time"],
+        hard_exit,
+    )
+    entry_notional = entry_price * quantity
+    points = []
+    for row in future:
+        exit_price = _exit_quote(signal.side, row)
+        projected = float(
+            _projected_net_pnl(signal.side, entry_price, exit_price, quantity)[3]
+        )
+        points.append(PathPoint(
+            at=row["time"],
+            exit_price=exit_price,
+            projected_net_pnl=projected,
+            current_return=projected / entry_notional if entry_notional else 0.0,
+            reversal=(
+                reversal_row is not None
+                and row["time"] >= reversal_row["time"]
+            ),
+        ))
+
+    initial_stop = derive_initial_stop_price(
+        signal.side,
+        entry_price,
+        quantity,
+        float(SPEC["stop_loss_net_twd"]),
+    )
+    trade_id = (
+        f"{session_date}-{signal.stock_id}-"
+        f"{signal.decision_time.strftime('%H%M%S')}"
+    )
+    return ResearchTrade(
+        trade_id=trade_id,
+        session_date=session_date,
+        symbol=signal.stock_id,
+        stock_name=signal.stock_name,
+        side=signal.side,
+        entry_time=entry_tick["time"],
+        entry_price=entry_price,
+        quantity=quantity,
+        initial_stop_price=initial_stop,
+        points=tuple(points),
+        # The existing independent replay closes on the freshest tick at or
+        # immediately before 13:20 when it is no more than 60 seconds old.
+        force_last_point_exit=hard_exit_quote_available,
+    ), {
+        "last_exit_quote_staleness_seconds": staleness,
+        "hard_exit_quote_available": hard_exit_quote_available,
+    }
+
+
+def build_independent_signal_trades(
+    session_runs: Mapping[str, list[Path]],
+    capital: int = 190_000,
+) -> tuple[list[ResearchTrade], list[dict[str, Any]], list[dict[str, Any]]]:
+    """Replay every stock's first affordable signal as a diagnostic cohort.
+
+    Trades may overlap and therefore are deliberately not represented as one
+    executable 190k portfolio. This mirrors direction_signal_validation.py.
+    """
+    trades: list[ResearchTrade] = []
+    diagnostics: list[dict[str, Any]] = []
+    coverages: list[dict[str, Any]] = []
+    for requested_date, run_dirs in sorted(session_runs.items()):
+        stocks, coverage = load_session(run_dirs)
+        session_date = str(coverage["session_date"])
+        attempted: set[str] = set()
+        session_diagnostic = {
+            "session_date": session_date,
+            "requested_session_date": requested_date,
+            "qualifying_signal_windows": 0,
+            "unaffordable_signal_windows": 0,
+            "independent_entries": 0,
+            "scored_trades": 0,
+            "unscorable_exit_data": 0,
+        }
+        for decision in _decision_times(
+            session_date,
+            str(SPEC["entry_start"]),
+            str(SPEC["last_entry_time"]),
+        ):
+            for stock_id, data in stocks.items():
+                if stock_id in attempted:
+                    continue
+                signal = signal_at(stock_id, data, decision)
+                if signal is None:
+                    continue
+                session_diagnostic["qualifying_signal_windows"] += 1
+                entry_tick = _entry_tick(data, decision)
+                if entry_tick is None:
+                    continue
+                entry_price = (
+                    entry_tick["ask"] + _tick_size(entry_tick["ask"])
+                    if signal.side == "LONG"
+                    else max(
+                        _tick_size(entry_tick["bid"]),
+                        entry_tick["bid"] - _tick_size(entry_tick["bid"]),
+                    )
+                )
+                if entry_price * 1000 > capital:
+                    session_diagnostic["unaffordable_signal_windows"] += 1
+                    continue
+                attempted.add(stock_id)
+                quantity = math.floor(capital / (entry_price * 1000)) * 1000
+                session_diagnostic["independent_entries"] += 1
+                trade, path_diagnostic = _independent_trade_path(
+                    session_date,
+                    data,
+                    signal,
+                    entry_tick,
+                    entry_price,
+                    quantity,
+                )
+                if trade is None:
+                    if path_diagnostic.get("exit_data_insufficient"):
+                        session_diagnostic["unscorable_exit_data"] += 1
+                    continue
+                try:
+                    simulate_trade(
+                        trade,
+                        BASELINE,
+                        enable_mfe_profit_protection=False,
+                    )
+                except RuntimeError:
+                    session_diagnostic["unscorable_exit_data"] += 1
+                    continue
+                trades.append(trade)
+                session_diagnostic["scored_trades"] += 1
+        diagnostics.append(session_diagnostic)
+        coverages.append(coverage)
     return trades, diagnostics, coverages
 
 
@@ -547,6 +732,12 @@ def _diagnostic_answers(
         default=None,
     )
     any_changed = any(row["mfe_exits"] for row in variants)
+    baseline_rows = [row for row in all_rows if row["variant"] == BASELINE]
+    counterfactual_one_r = [
+        row for row in baseline_rows
+        if float(row["counterfactual_path_MFE_R"]) >= 1.0
+        and float(row["MFE_R"]) < 1.0
+    ]
     return {
         "1_large_mfe_low_retention_frequency": {
             "large_mfe_trade_count": len(large_mfe),
@@ -592,14 +783,36 @@ def _diagnostic_answers(
                 "REQUIRES_OUTLIER_REVIEW_IN_PER_TRADE_FILE"
             ),
         },
+        "11_counterfactual_reached_1R_only_after_original_exit": {
+            "trade_count": len(counterfactual_one_r),
+            "trade_ids": [row["trade_id"] for row in counterfactual_one_r],
+            "interpretation": (
+                "ORIGINAL_EXIT_TRIGGERED_FIRST_MFE_OVERLAY_CANNOT_RECOVER_LATER_MOVE"
+                if counterfactual_one_r else "NONE"
+            ),
+        },
     }
 
 
 def build_report(
     session_runs: Mapping[str, list[Path]],
     capital: int = 190_000,
+    *,
+    trade_universe: str = "live-parity",
 ) -> dict[str, Any]:
-    trades, diagnostics, coverage = build_trades(session_runs, capital)
+    if trade_universe == "live-parity":
+        trades, diagnostics, coverage = build_trades(session_runs, capital)
+        universe_interpretation = "EXECUTABLE_SINGLE_POSITION_ENTRY_SELECTION"
+    elif trade_universe == "independent-first-signals":
+        trades, diagnostics, coverage = build_independent_signal_trades(
+            session_runs,
+            capital,
+        )
+        universe_interpretation = (
+            "INDEPENDENT_FIRST_SIGNAL_DIAGNOSTIC_NOT_AN_EXECUTABLE_190K_PORTFOLIO"
+        )
+    else:
+        raise ValueError(f"unknown trade universe: {trade_universe}")
     all_rows: list[dict[str, Any]] = []
     post_rows: list[dict[str, Any]] = []
     for trade in trades:
@@ -618,6 +831,8 @@ def build_report(
     ]
     return {
         "analysis_id": ANALYSIS_ID,
+        "trade_universe": trade_universe,
+        "trade_universe_interpretation": universe_interpretation,
         "strategy_spec_hash": SPEC_HASH,
         "strategy_spec": SPEC,
         "overlay_feature_flag_default": False,
@@ -710,8 +925,10 @@ def markdown_report(report: dict[str, Any]) -> str:
         "",
         "## Data and execution limits",
         "",
-        f"- Sessions accepted by the existing production-parity coverage gate: {len(report['coverage'])}",
-        f"- Scored production-parity entries: {summaries[0]['total_trades']}",
+        f"- Trade universe: `{report['trade_universe']}`",
+        f"- Universe interpretation: `{report['trade_universe_interpretation']}`",
+        f"- Source sessions: {len(report['coverage'])}",
+        f"- Scored entries: {summaries[0]['total_trades']}",
         f"- Execution model: `{report['execution_model']}`",
         "- Entry selection, timing, sizing, existing exits, fees and tax are unchanged.",
         "- MFE uses the existing executable liquidation-quote proxy, not an optimistic raw last-trade high/low.",
@@ -727,14 +944,25 @@ def markdown_report(report: dict[str, Any]) -> str:
         "## Conclusion",
         "",
     ])
+    if report["trade_universe"] == "independent-first-signals":
+        lines.insert(
+            lines.index("## Diagnostic answers") - 1,
+            "- Independent signals can overlap; aggregate PnL and drawdown are cohort diagnostics, not one executable account path.",
+        )
     if any(row["mfe_exits"] for row in summaries):
         lines.append(
             "At least one overlay changed an exit. Review `per_trade_comparison.csv` and "
             "`post_exit_analysis.csv`; the sample remains diagnostic and is not a promotion decision."
         )
+    elif any(row["mfe_protection_activations"] for row in summaries):
+        lines.append(
+            "At least one trade armed MFE protection, but an unchanged existing exit fired "
+            "before any protected-floor giveback occurred. All four variants are therefore "
+            "identical in this sample, and no configuration can be recommended."
+        )
     else:
         lines.append(
-            "No available production-parity trade reached the 1R activation threshold before its existing exit. "
+            "No available trade reached the 1R activation threshold before its existing exit. "
             "All four variants are therefore identical in this sample, and no configuration can be recommended."
         )
     lines.append("")
@@ -766,6 +994,7 @@ def write_report(report: dict[str, Any], output_dir: Path) -> dict[str, str]:
             artifacts[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
     manifest = {
         "analysis_id": ANALYSIS_ID,
+        "trade_universe": report["trade_universe"],
         "strategy_spec_hash": SPEC_HASH,
         "artifact_hashes": artifacts,
         "actual_orders": 0,

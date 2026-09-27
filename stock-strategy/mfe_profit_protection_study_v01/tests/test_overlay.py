@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta
+from pathlib import Path
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from yuanta_intraday_shadow_v01.direction_follow_backtest import SPEC, _projected_net_pnl
@@ -10,6 +14,8 @@ from yuanta_intraday_shadow_v01.exit_parameter_sweep import PathPoint
 from mfe_profit_protection_study_v01.analysis import (
     BASELINE,
     ResearchTrade,
+    build_independent_signal_trades,
+    build_report,
     compare_trade,
     derive_initial_stop_price,
     simulate_trade,
@@ -217,6 +223,77 @@ class TickReplayTests(unittest.TestCase):
         trade = self.trade([])
         with self.assertRaises(RuntimeError):
             simulate_trade(trade, BASELINE)
+
+    def test_existing_fresh_last_tick_can_be_force_flat_exit(self):
+        trade = replace(
+            self.trade([100.5]),
+            force_last_point_exit=True,
+        )
+        result = simulate_trade(trade, BASELINE)
+        self.assertEqual(result.reason, "HARD_EXIT")
+        self.assertEqual(result.price, 100.5)
+
+    def test_unknown_trade_universe_is_rejected(self):
+        with self.assertRaises(ValueError):
+            build_report({}, trade_universe="unknown")
+
+    def test_independent_universe_keeps_first_signal_path(self):
+        decision = self.start
+        entry_tick = {
+            "time": decision + timedelta(seconds=1),
+            "price": 100.0,
+            "bid": 99.9,
+            "ask": 100.0,
+            "volume": 1,
+            "flag": "1",
+            "serial": 1,
+        }
+        final_tick = {
+            **entry_tick,
+            "time": decision.replace(hour=13, minute=19, second=30),
+            "price": 101.0,
+            "bid": 100.9,
+            "ask": 101.0,
+            "serial": 2,
+        }
+        signal = SimpleNamespace(
+            stock_id="1001",
+            stock_name="Test",
+            side="LONG",
+            decision_time=decision,
+        )
+        stocks = {"1001": {"ticks": [entry_tick, final_tick]}}
+        coverage = {"session_date": "20260924"}
+        with (
+            patch(
+                "mfe_profit_protection_study_v01.analysis.load_session",
+                return_value=(stocks, coverage),
+            ),
+            patch(
+                "mfe_profit_protection_study_v01.analysis._decision_times",
+                return_value=[decision],
+            ),
+            patch(
+                "mfe_profit_protection_study_v01.analysis.signal_at",
+                return_value=signal,
+            ),
+            patch(
+                "mfe_profit_protection_study_v01.analysis._entry_tick",
+                return_value=entry_tick,
+            ),
+            patch(
+                "mfe_profit_protection_study_v01.analysis._reversal_exit_tick",
+                return_value=None,
+            ),
+        ):
+            trades, diagnostics, coverages = build_independent_signal_trades(
+                {"20260924": [Path("unused")]},
+            )
+        self.assertEqual(len(trades), 1)
+        self.assertEqual(trades[0].symbol, "1001")
+        self.assertTrue(trades[0].force_last_point_exit)
+        self.assertEqual(diagnostics[0]["scored_trades"], 1)
+        self.assertEqual(coverages, [coverage])
 
     def test_positive_mfe_with_negative_final_pnl_is_reported(self):
         hard_seconds = (13 * 60 + 20) * 60 - (9 * 60 + 30) * 60
