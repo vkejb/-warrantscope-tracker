@@ -1,0 +1,4 @@
+variant,total_signals,entries,no_entry,unscorable,scored_trades,wins,losses,win_rate,gross_profit,gross_loss,net_pnl,expectancy_per_scored_trade,profit_factor,average_winner,average_loser,maximum_drawdown,average_entry_delay_seconds,median_entry_delay_seconds,average_price_improvement_per_share,stop_loss_exits,mfe_exits,hard_exits
+IMMEDIATE,18,18,0,1,17,6,11,0.35294117647058826,24298.0,26076.0,-1778.0,-104.58823529411765,0.9318146955054456,4049.6666666666665,-2370.5454545454545,9664.0,0.0,0.0,0.0,5,7,5
+PULLBACK_0_5R_60S,18,7,11,0,7,1,6,0.14285714285714285,3971.0,18939.0,-14968.0,-2138.285714285714,0.209673161201753,3971.0,-3156.5,14968.0,358.5017142857143,390.155,0.3714285714285716,5,2,0
+PULLBACK_1_0R_90S,18,1,17,0,1,0,1,0.0,0,3588.0,-3588.0,-3588.0,0.0,,-3588.0,3588.0,424.035,424.035,0.45000000000000284,1,0,0
