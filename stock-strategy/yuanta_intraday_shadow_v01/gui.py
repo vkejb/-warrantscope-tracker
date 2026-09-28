@@ -153,12 +153,21 @@ class IntradayApp:
             except queue.Empty: break
             kind = event.get("type")
             if kind == "LOGIN": self.status.set("登入成功" if event["ok"] else f"登入失敗 {event['code']}")
-            elif kind == "SUBSCRIBED": self.status.set(f"已訂閱 {event['watchlist_count']} 檔，正在收集")
+            elif kind == "SUBSCRIBED":
+                self.status.set(
+                    f"已訂閱 {event.get('subscription_count', event['watchlist_count'])} 檔"
+                    f"（Top30 + 0050），正在收集"
+                )
             elif kind == "PROGRESS":
                 self.counts.set(f"逐筆 {event['ticks']}｜五檔 {event['books']}｜解析錯誤 {event['callback_errors']}｜剩餘 {event['remaining_seconds']//60} 分")
             elif kind == "FINAL":
                 self.run_dir = Path(event["run_dir"]); m = event["manifest"]
-                self.counts.set(f"逐筆 {m['event_counts']['ticks']}｜五檔 {m['event_counts']['books']}｜解析錯誤 {m['event_counts']['callback_errors']}")
+                self.counts.set(
+                    f"Top30逐筆 {m['event_counts']['ticks']}｜Top30五檔 {m['event_counts']['books']}"
+                    f"｜0050逐筆 {m['event_counts'].get('market_context_ticks', 0)}"
+                    f"｜0050五檔 {m['event_counts'].get('market_context_books', 0)}"
+                    f"｜解析錯誤 {m['event_counts']['callback_errors']}"
+                )
                 self._append(f"原始封存：{m['status']}｜{m['run_id']}｜hash {m['manifest_hash'][:12]}")
             elif kind == "ANALYSIS_COMPLETE":
                 self._append(f"分析完成：{event['session']['coverage_status']}｜mature outcomes {event['session']['mature_outcome_rows']}")

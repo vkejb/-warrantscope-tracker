@@ -4,7 +4,12 @@ import tempfile
 import unittest
 from unittest.mock import Mock
 
-from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem, canonical_bytes
+from yuanta_intraday_shadow_v01.collector import (
+    AppendOnlyRun,
+    WatchItem,
+    canonical_bytes,
+    subscription_items,
+)
 from yuanta_intraday_shadow_v01.collector_main import _connect_and_login
 
 
@@ -62,6 +67,41 @@ class CollectorContractTests(unittest.TestCase):
             self.assertEqual(manifest["artifacts"]["ticks.jsonl"], hashlib.sha256(run.tick_path.read_bytes()).hexdigest())
             self.assertEqual(manifest["actual_orders"], 0)
             self.assertEqual(manifest["broker_order_calls"], 0)
+
+    def test_subscription_is_top30_plus_permanent_0050(self):
+        _seal, stocks = self._fixture()
+        subscribed = subscription_items(stocks)
+        self.assertEqual(len(stocks), 30)
+        self.assertEqual(len(subscribed), 31)
+        self.assertEqual(subscribed[-1].stock_id, "0050")
+        self.assertEqual(subscribed[-1].market, "TWSE")
+
+    def test_0050_is_archived_separately_without_changing_top30_contract(self):
+        seal, stocks = self._fixture()
+        with tempfile.TemporaryDirectory() as temp:
+            run = AppendOnlyRun(Path(temp), seal, stocks, {})
+            run.append("market_context_ticks", {
+                "stock_id": "0050", "deal_price": "66.5",
+            })
+            run.append("market_context_books", {
+                "stock_id": "0050", "buy_prices": ["66.4"],
+            })
+            manifest = run.finalize(
+                status="COMPLETE", started_at="a", ended_at="b",
+            )
+            self.assertEqual(manifest["watchlist_count"], 30)
+            self.assertEqual(manifest["subscription_count"], 31)
+            self.assertEqual(
+                manifest["market_context_event_counts"]["0050"],
+                {"ticks": 1, "books": 1},
+            )
+            self.assertIn("market_context_ticks.jsonl", manifest["artifacts"])
+            self.assertIn("market_context_books.jsonl", manifest["artifacts"])
+            watch = __import__("json").loads(
+                (run.run_dir / "watchlist.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(len(watch["stocks"]), 30)
+            self.assertEqual(watch["market_context"][0]["stock_id"], "0050")
 
     def test_live_mode_and_execution_counts_are_explicit(self):
         seal, stocks = self._fixture()

@@ -1,7 +1,7 @@
 # Yuanta Intraday Shadow V0.1
 
 這個模組提供元大 SPARK API 的逐筆成交與五檔訂閱 smoke test，以及
-Stage A Top30 append-only 即時行情收集器。
+Stage A Top30 加上永久 0050 市場基準的 append-only 即時行情收集器。
 
 安全契約：
 
@@ -11,6 +11,8 @@ Stage A Top30 append-only 即時行情收集器。
 - 不建立正式或模擬委託。
 - 測試結束一定嘗試解訂閱、登出及關閉連線。
 - Top30 市場別只從同日 immutable 官方 TWSE／TPEx EOD 判定，不以代碼猜測。
+- 每日訂閱範圍固定為前一交易日 sealed Top30 再加 0050；0050 不佔 Top30 名額、不參與選股或排名。
+- 0050 逐筆與五檔寫入獨立 `market_context_*` 檔案，不混入 Top30 研究原始檔。
 - 每次收集建立獨立 run 目錄，保存逐筆、五檔、輸入 seal 與 SHA-256 摘要。
 - 收集完成後使用固定 V0.1 定義計算價格路徑、VWAP、量能節奏、spread 與五檔失衡。
 
@@ -28,7 +30,7 @@ cd stock-strategy
 
 正式環境只用於讀取即時行情。輸入的是證券交易帳號，不是 CMA 交割帳號。
 
-執行 Top30 五分鐘收集：
+執行 Top30 + 0050 五分鐘收集：
 
 ```bash
 open scripts/run_yuanta_stage_a_top30_collector.command
@@ -82,7 +84,8 @@ open scripts/install_yuanta_intraday_automation.command
 安裝器以隱藏輸入將 PFX 路徑、PFX 密碼、證券帳號與電子交易密碼存入
 macOS Keychain，安裝使用者層級 LaunchAgent，並設定週一至週五 08:45
 喚醒。08:50 runner 仍會先查正式交易日曆與前一交易日 Stage A seal；假日
-不登入。收集期間由 `caffeinate` 防止休眠，13:35 後才分析及通知。
+不登入。通過後每日會訂閱 Top30 + 0050；若 0050 沒有同時收到逐筆與五檔證據，
+當日自動收集不宣告完成。收集期間由 `caffeinate` 防止休眠，13:35 後才分析及通知。
 
 Keychain、LaunchAgent 與喚醒狀態可用下列命令檢查，輸出不含秘密：
 

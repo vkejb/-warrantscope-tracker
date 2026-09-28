@@ -73,6 +73,15 @@ def _readiness(now: datetime) -> tuple[str, str]:
     return "READY", expected
 
 
+def _require_market_context(manifest: dict, symbol: str = "0050") -> dict:
+    counts = manifest.get("market_context_event_counts", {}).get(symbol, {})
+    if int(counts.get("ticks", 0)) <= 0 or int(counts.get("books", 0)) <= 0:
+        raise RuntimeError(
+            f"permanent {symbol} subscription produced no complete tick/book evidence"
+        )
+    return {"ticks": int(counts["ticks"]), "books": int(counts["books"])}
+
+
 def main() -> int:
     now = datetime.now(TAIPEI)
     day = now.strftime("%Y%m%d")
@@ -104,7 +113,12 @@ def main() -> int:
                 caffeinate.terminate()
             if code != 0 or "run_dir" not in holder:
                 raise RuntimeError(f"collector failed with code {code}")
-            result = process_run(Path(holder["run_dir"]))
+            run_dir = Path(holder["run_dir"])
+            run_manifest = json.loads(
+                (run_dir / "run_manifest.json").read_text(encoding="utf-8")
+            )
+            context_counts = _require_market_context(run_manifest)
+            result = process_run(run_dir)
             session = result["session"]
             if session["coverage_status"] != "FULL_SESSION":
                 raise RuntimeError(f"coverage failed: max_gap={session.get('max_market_event_gap_seconds')}")
@@ -112,6 +126,7 @@ def main() -> int:
                 "at": utc_now(), "date": day, "signal_date": signal_date, "status": "COMPLETE",
                 "run_id": session["source_run_id"], "analysis_hash": result["quality"]["analysis_hash"],
                 "coverage": session["coverage_status"], "actual_orders": 0, "actual_fills": 0, "broker_order_calls": 0,
+                "market_context_0050": context_counts,
             })
             return 0
         except Exception as exc:

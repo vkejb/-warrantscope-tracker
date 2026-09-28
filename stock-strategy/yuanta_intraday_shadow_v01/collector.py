@@ -22,6 +22,12 @@ STOCK_STRATEGY_DIR = MODULE_DIR.parent
 DEFAULT_RUNTIME_DIR = MODULE_DIR / "runtime"
 DEFAULT_STAGE_A_RUNTIME = STOCK_STRATEGY_DIR / "stage_a_prospective_watchlist_v01" / "runtime"
 DEFAULT_EOD_AUDIT_DIR = STOCK_STRATEGY_DIR / "shadow_daily_runner" / "runtime" / "audit"
+MARKET_CONTEXT_ITEMS = (
+    # Quote-only benchmark. It is deliberately outside the sealed Stage A Top30.
+    # rank=0 and score=0 are never used by the strategy or research ranking.
+    # The values keep WatchItem's existing schema backward compatible.
+    ("0050", "元大台灣50", 0, 0.0, "TWSE"),
+)
 
 
 def canonical_bytes(value: object) -> bytes:
@@ -47,6 +53,21 @@ class WatchItem:
     rank: int
     score: float
     market: str
+
+
+def market_context_items() -> list[WatchItem]:
+    return [WatchItem(*values) for values in MARKET_CONTEXT_ITEMS]
+
+
+def subscription_items(items: list[WatchItem]) -> list[WatchItem]:
+    """Return the sealed Top30 plus permanent quote-only market benchmarks."""
+    result = list(items)
+    subscribed = {item.stock_id for item in result}
+    for item in market_context_items():
+        if item.stock_id not in subscribed:
+            result.append(item)
+            subscribed.add(item.stock_id)
+    return result
 
 
 def _source_snapshot(metadata: dict) -> SourceSnapshot:
@@ -140,42 +161,85 @@ class AppendOnlyRun:
         if mode not in self.ALLOWED_MODES:
             raise ValueError(f"unsupported archive mode: {mode}")
         self.mode = mode
+        self.subscription_count = len(subscription_items(items))
         self.run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ") + "_" + uuid.uuid4().hex[:8]
         self.run_dir = runtime_dir / "runs" / self.run_id
         self.run_dir.mkdir(parents=True, exist_ok=False)
         self.compressed = compress
         self.tick_path = self.run_dir / ("ticks.jsonl.gz" if compress else "ticks.jsonl")
         self.book_path = self.run_dir / ("books.jsonl.gz" if compress else "books.jsonl")
+        self.market_tick_path = self.run_dir / (
+            "market_context_ticks.jsonl.gz" if compress else "market_context_ticks.jsonl"
+        )
+        self.market_book_path = self.run_dir / (
+            "market_context_books.jsonl.gz" if compress else "market_context_books.jsonl"
+        )
         self._raw_files = []
         if compress:
             tick_raw = self.tick_path.open("xb")
             book_raw = self.book_path.open("xb")
-            self._raw_files = [tick_raw, book_raw]
+            market_tick_raw = self.market_tick_path.open("xb")
+            market_book_raw = self.market_book_path.open("xb")
+            self._raw_files = [tick_raw, book_raw, market_tick_raw, market_book_raw]
             self._tick = io.TextIOWrapper(gzip.GzipFile(fileobj=tick_raw, mode="wb", mtime=0), encoding="utf-8", write_through=True)
             self._book = io.TextIOWrapper(gzip.GzipFile(fileobj=book_raw, mode="wb", mtime=0), encoding="utf-8", write_through=True)
+            self._market_tick = io.TextIOWrapper(gzip.GzipFile(fileobj=market_tick_raw, mode="wb", mtime=0), encoding="utf-8", write_through=True)
+            self._market_book = io.TextIOWrapper(gzip.GzipFile(fileobj=market_book_raw, mode="wb", mtime=0), encoding="utf-8", write_through=True)
         else:
             self._tick = self.tick_path.open("x", encoding="utf-8", buffering=1)
             self._book = self.book_path.open("x", encoding="utf-8", buffering=1)
+            self._market_tick = self.market_tick_path.open("x", encoding="utf-8", buffering=1)
+            self._market_book = self.market_book_path.open("x", encoding="utf-8", buffering=1)
         self._lock = threading.Lock()
-        self.counts = {"ticks": 0, "books": 0, "callback_errors": 0}
+        self.counts = {
+            "ticks": 0,
+            "books": 0,
+            "market_context_ticks": 0,
+            "market_context_books": 0,
+            "callback_errors": 0,
+        }
+        self.market_context_counts = {
+            item.stock_id: {"ticks": 0, "books": 0}
+            for item in market_context_items()
+        }
         self.snapshot = {
-            "schema_version": 1, "run_id": self.run_id, "created_at": utc_now(),
+            "schema_version": 2, "run_id": self.run_id, "created_at": utc_now(),
             "signal_date": seal["signal_date"], "stage_a_seal_hash": seal["seal_hash"],
             "market_provenance": provenance,
             "stocks": [{"stock_id": x.stock_id, "stock_name": x.stock_name, "rank": x.rank, "score": x.score, "market": x.market} for x in items],
+            "market_context": [
+                {
+                    "stock_id": x.stock_id,
+                    "stock_name": x.stock_name,
+                    "market": x.market,
+                    "role": "MARKET_BENCHMARK",
+                }
+                for x in market_context_items()
+            ],
             "mode": self.mode, "compression": "gzip" if compress else "none",
             "compressed_flush_interval_events": 100 if compress else 1,
         }
         (self.run_dir / "watchlist.json").write_bytes(canonical_bytes(self.snapshot) + b"\n")
 
     def append(self, kind: str, event: dict) -> None:
-        if kind not in {"ticks", "books"}:
+        if kind not in {"ticks", "books", "market_context_ticks", "market_context_books"}:
             raise ValueError(kind)
         payload = canonical_bytes(event).decode("utf-8") + "\n"
         with self._lock:
-            handle = self._tick if kind == "ticks" else self._book
+            handles = {
+                "ticks": self._tick,
+                "books": self._book,
+                "market_context_ticks": self._market_tick,
+                "market_context_books": self._market_book,
+            }
+            handle = handles[kind]
             handle.write(payload)
             self.counts[kind] += 1
+            if kind.startswith("market_context_"):
+                symbol = str(event.get("stock_id", ""))
+                if symbol in self.market_context_counts:
+                    counter = "ticks" if kind.endswith("ticks") else "books"
+                    self.market_context_counts[symbol][counter] += 1
             if not self.compressed or self.counts[kind] % 100 == 0:
                 handle.flush()
 
@@ -203,16 +267,32 @@ class AppendOnlyRun:
                 raise ValueError(f"{name} must be non-negative")
 
         with self._lock:
-            self._tick.flush(); self._book.flush(); self._tick.close(); self._book.close()
+            for handle in (
+                self._tick,
+                self._book,
+                self._market_tick,
+                self._market_book,
+            ):
+                handle.flush()
+                handle.close()
             for raw in self._raw_files:
                 raw.close()
 
         manifest = {
-            "schema_version": 1, "run_id": self.run_id, "status": status,
+            "schema_version": 2, "run_id": self.run_id, "status": status,
             "started_at": started_at, "ended_at": ended_at,
             "signal_date": self.snapshot["signal_date"], "stage_a_seal_hash": self.snapshot["stage_a_seal_hash"],
-            "watchlist_count": len(self.snapshot["stocks"]), "event_counts": dict(self.counts),
-            "artifacts": {"watchlist.json": sha256_file(self.run_dir / "watchlist.json"), self.tick_path.name: sha256_file(self.tick_path), self.book_path.name: sha256_file(self.book_path)},
+            "watchlist_count": len(self.snapshot["stocks"]),
+            "subscription_count": self.subscription_count,
+            "event_counts": dict(self.counts),
+            "market_context_event_counts": self.market_context_counts,
+            "artifacts": {
+                "watchlist.json": sha256_file(self.run_dir / "watchlist.json"),
+                self.tick_path.name: sha256_file(self.tick_path),
+                self.book_path.name: sha256_file(self.book_path),
+                self.market_tick_path.name: sha256_file(self.market_tick_path),
+                self.market_book_path.name: sha256_file(self.market_book_path),
+            },
             "mode": self.mode,
             "error_type": error_type,
             "actual_orders": int(actual_orders),

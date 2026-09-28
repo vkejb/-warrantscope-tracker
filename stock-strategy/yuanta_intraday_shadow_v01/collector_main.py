@@ -11,7 +11,14 @@ from pathlib import Path
 import threading
 import time
 
-from .collector import AppendOnlyRun, DEFAULT_RUNTIME_DIR, load_stage_a_watchlist, utc_now
+from .collector import (
+    AppendOnlyRun,
+    DEFAULT_RUNTIME_DIR,
+    load_stage_a_watchlist,
+    market_context_items,
+    subscription_items,
+    utc_now,
+)
 from .main import DEFAULT_VENDOR_DIR, _dragged_path, _load_api, _normalise_account, _safe_text
 
 
@@ -154,6 +161,8 @@ def run(
 
     artifact = AppendOnlyRun(runtime_dir, seal, items, provenance, compress=compress)
     meta = {x.stock_id: x for x in items}
+    context_meta = {x.stock_id: x for x in market_context_items()}
+    subscribed_items = subscription_items(items)
     login_event = threading.Event()
     login_state: dict[str, object] = {"ok": False, "code": ""}
     api = None
@@ -178,24 +187,50 @@ def run(
                 return
             stock_id = _safe_text(getattr(value, "StkCode", ""))
             item = meta.get(stock_id)
-            if item is None:
+            context_item = context_meta.get(stock_id)
+            if item is None and context_item is None:
                 artifact.callback_error()
                 return
-            base = {
-                "received_at": utc_now(), "signal_date": seal["signal_date"],
-                "stock_id": stock_id, "stock_name": item.stock_name, "market": item.market,
-                "stage_a_rank": item.rank, "stage_a_score": item.score,
-            }
+            received_at = utc_now()
+
+            def base_for(current, *, role: str) -> dict:
+                return {
+                    "received_at": received_at,
+                    "signal_date": seal["signal_date"],
+                    "stock_id": stock_id,
+                    "stock_name": current.stock_name,
+                    "market": current.market,
+                    "stage_a_rank": current.rank if role == "STAGE_A_CANDIDATE" else None,
+                    "stage_a_score": current.score if role == "STAGE_A_CANDIDATE" else None,
+                    "role": role,
+                }
+
             if name in {"SubscribeStockTick", "SubscribeStocktick"}:
-                artifact.append("ticks", {
-                    **base, "event_type": "STOCK_TICK", "quote_time": _quote_time(value.Time),
+                payload = {
+                    "event_type": "STOCK_TICK", "quote_time": _quote_time(value.Time),
                     "serial_no": int(value.SerialNo), "buy_price": _safe_text(value.BuyPrice),
                     "sell_price": _safe_text(value.SellPrice), "deal_price": _safe_text(value.DealPrice),
                     "deal_volume": _safe_text(value.DealVol), "in_out_flag": _safe_text(value.InOutFlag),
                     "tick_type": _safe_text(value.Type),
-                })
+                }
+                if item is not None:
+                    artifact.append("ticks", {
+                        **base_for(item, role="STAGE_A_CANDIDATE"), **payload,
+                    })
+                if context_item is not None:
+                    artifact.append("market_context_ticks", {
+                        **base_for(context_item, role="MARKET_BENCHMARK"), **payload,
+                    })
             elif name == "SubscribeFiveTickA":
-                artifact.append("books", {**base, "event_type": "FIVE_LEVEL", **_book_payload(value)})
+                payload = {"event_type": "FIVE_LEVEL", **_book_payload(value)}
+                if item is not None:
+                    artifact.append("books", {
+                        **base_for(item, role="STAGE_A_CANDIDATE"), **payload,
+                    })
+                if context_item is not None:
+                    artifact.append("market_context_books", {
+                        **base_for(context_item, role="MARKET_BENCHMARK"), **payload,
+                    })
         except Exception:
             artifact.callback_error()
 
@@ -218,16 +253,25 @@ def run(
         stock_list = api_types["List"][api_types["StockTick"]]()
         book_list = api_types["List"][api_types["FiveTickA"]]()
         enums = {"TWSE": api_types["Market"].TWSE, "TPEX": api_types["Market"].TWOTC}
-        for item in items:
+        for item in subscribed_items:
             stock = api_types["StockTick"](); stock.MarketType = enums[item.market]; stock.StockCode = item.stock_id; stock_list.Add(stock)
             book = api_types["FiveTickA"](); book.MarketType = enums[item.market]; book.StockCode = item.stock_id; book_list.Add(book)
         api.SubscribeStockTick(account, stock_list, api_types["Language"].UTF8)
         subscribed_tick = True
         api.SubscribeFiveTickA(account, book_list, api_types["Language"].UTF8)
         subscribed_book = True
-        print(f"30檔逐筆與五檔訂閱已送出，收集 {seconds} 秒。按 Control-C 可安全停止。")
+        print(
+            f"Top30 + 0050 市場基準，共 {len(subscribed_items)} 檔逐筆與五檔訂閱已送出，"
+            f"收集 {seconds} 秒。按 Control-C 可安全停止。"
+        )
         if progress_callback:
-            progress_callback({"type": "SUBSCRIBED", "watchlist_count": len(items), "seconds": seconds})
+            progress_callback({
+                "type": "SUBSCRIBED",
+                "watchlist_count": len(items),
+                "market_context_count": len(context_meta),
+                "subscription_count": len(subscribed_items),
+                "seconds": seconds,
+            })
         deadline = time.monotonic() + seconds
         next_report = time.monotonic() + 30
         while time.monotonic() < deadline:
@@ -237,7 +281,11 @@ def run(
                 return 130
             time.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
             if time.monotonic() >= next_report:
-                print(f"目前事件：逐筆 {artifact.counts['ticks']}｜五檔 {artifact.counts['books']}")
+                print(
+                    f"目前事件：Top30逐筆 {artifact.counts['ticks']}｜Top30五檔 {artifact.counts['books']}｜"
+                    f"0050逐筆 {artifact.counts['market_context_ticks']}｜"
+                    f"0050五檔 {artifact.counts['market_context_books']}"
+                )
                 if progress_callback:
                     progress_callback({"type": "PROGRESS", **artifact.counts, "remaining_seconds": max(0, int(deadline - time.monotonic()))})
                 next_report += 30

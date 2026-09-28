@@ -38,6 +38,7 @@ from yuanta_intraday_shadow_v01.collector import (
     AppendOnlyRun,
     DEFAULT_RUNTIME_DIR as DEFAULT_ARCHIVE_RUNTIME_DIR,
     load_stage_a_watchlist,
+    market_context_items,
     utc_now,
 )
 from yuanta_intraday_shadow_v01.collector_main import _book_payload, _quote_time
@@ -319,6 +320,9 @@ class _Session:
         self.archive_signal_date = str(archive_signal_date)
         self.archive_items = dict(archive_items or {})
         self.non_archive_symbols = {str(symbol) for symbol in (non_archive_symbols or set())}
+        self.market_context_items = {
+            item.stock_id: item for item in market_context_items()
+        }
         self.strategy_symbols = (
             None if strategy_symbols is None
             else {str(symbol) for symbol in strategy_symbols}
@@ -351,10 +355,12 @@ class _Session:
         if self.archive is None:
             return
 
-        if symbol in self.non_archive_symbols:
-            return
-
-        item = self.archive_items.get(symbol)
+        is_market_context = symbol in self.non_archive_symbols
+        item = (
+            self.market_context_items.get(symbol)
+            if is_market_context
+            else self.archive_items.get(symbol)
+        )
         if item is None:
             try:
                 self.archive.callback_error()
@@ -373,14 +379,15 @@ class _Session:
             "stock_id": symbol,
             "stock_name": item.stock_name,
             "market": item.market,
-            "stage_a_rank": item.rank,
-            "stage_a_score": item.score,
+            "stage_a_rank": None if is_market_context else item.rank,
+            "stage_a_score": None if is_market_context else item.score,
+            "role": "MARKET_BENCHMARK" if is_market_context else "STAGE_A_CANDIDATE",
         }
 
         try:
             if kind == "ticks":
                 self.archive.append(
-                    "ticks",
+                    "market_context_ticks" if is_market_context else "ticks",
                     {
                         **base,
                         "event_type": "STOCK_TICK",
@@ -414,7 +421,7 @@ class _Session:
 
             if kind == "books":
                 self.archive.append(
-                    "books",
+                    "market_context_books" if is_market_context else "books",
                     {
                         **base,
                         "event_type": "FIVE_LEVEL",

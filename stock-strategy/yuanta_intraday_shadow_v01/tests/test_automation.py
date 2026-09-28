@@ -42,6 +42,25 @@ class AutomationTests(unittest.TestCase):
             with patch.object(auto_runner, "CALENDAR", calendar):
                 self.assertEqual(auto_runner._readiness(datetime(2026, 9, 22, 8, 50, tzinfo=zone)), ("NON_TRADING_DAY", ""))
 
+    def test_automatic_run_requires_0050_tick_and_book_evidence(self):
+        manifest = {
+            "market_context_event_counts": {
+                "0050": {"ticks": 10, "books": 20},
+            }
+        }
+        self.assertEqual(
+            auto_runner._require_market_context(manifest),
+            {"ticks": 10, "books": 20},
+        )
+        with self.assertRaisesRegex(RuntimeError, "0050"):
+            auto_runner._require_market_context({})
+        with self.assertRaisesRegex(RuntimeError, "0050"):
+            auto_runner._require_market_context({
+                "market_context_event_counts": {
+                    "0050": {"ticks": 10, "books": 0},
+                }
+            })
+
     def test_automation_sources_have_no_order_api(self):
         root = Path(__file__).parents[1]
         source = "".join((root / name).read_text() for name in ("auto_runner.py", "yuanta_keychain.py", "postprocess.py"))

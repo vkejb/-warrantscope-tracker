@@ -128,10 +128,10 @@ class ArchiveRuntimeTests(unittest.TestCase):
         self.assertEqual([item.stock_id for item in items], ["3605"])
         self.assertEqual([item.stock_id for item in quotes], ["3605", "0050"])
 
-    def test_quote_only_benchmark_is_not_written_to_sealed_archive(self):
+    def test_quote_only_benchmark_is_written_to_separate_context_archive(self):
+        events = []
         archive = SimpleNamespace(
-            events=[], errors=0,
-            append=lambda *_args, **_kwargs: None,
+            append=lambda kind, payload: events.append((kind, payload)),
             callback_error=lambda: None,
         )
         logs = []
@@ -147,6 +147,9 @@ class ArchiveRuntimeTests(unittest.TestCase):
             kind="ticks", symbol="0050", value=SimpleNamespace(),
         )
         self.assertEqual(logs, [])
+        self.assertEqual(events[0][0], "market_context_ticks")
+        self.assertEqual(events[0][1]["stock_id"], "0050")
+        self.assertEqual(events[0][1]["role"], "MARKET_BENCHMARK")
 
     def test_signal_identifier_is_stable_and_non_sensitive(self):
         candidate = SimpleNamespace(

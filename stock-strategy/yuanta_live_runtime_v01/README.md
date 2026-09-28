@@ -22,7 +22,7 @@
 - 60 秒方向量、5 分鐘大單參考、3 分鐘突破
 - volume delta / large-trade delta / VWAP / order-book imbalance / spread
 - 09:05 起進場，13:10 後不再新開倉
-- 做多進場另套用 `LONG_0050_RELATIVE_STRENGTH_V1`：同步訂閱 0050，但不把 0050 寫進 sealed Top30 原始歸檔，也不讓 0050 成為交易候選
+- 做多進場另套用 `LONG_0050_RELATIVE_STRENGTH_V1`：同步訂閱 0050，寫入獨立 `market_context_*` 歸檔，不混入 sealed Top30 原始檔，也不讓 0050 成為交易候選
 - 0050 同時在 VWAP 上且 5 分鐘報酬非負時視為 BULLISH，個股 5 分鐘相對強度不得為負
 - 0050 同時在 VWAP 下且 5 分鐘報酬為負時視為 BEARISH，個股必須至少領先 0050 0.5%，且原訊號連續確認 2 次
 - 其餘為 NEUTRAL，個股必須至少領先 0050 0.25%，且原訊號連續確認 2 次
