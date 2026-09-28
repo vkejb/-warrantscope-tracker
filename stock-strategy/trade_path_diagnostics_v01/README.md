@@ -17,3 +17,9 @@ PYTHONPATH=stock-strategy python3 -m trade_path_diagnostics_v01.main \
 Incomplete horizons remain null. A horizon is complete only when recorded data
 reaches the target and the latest exit quote is no more than the strategy's
 existing maximum tick-staleness allowance (5 seconds) old.
+
+The independent `early_failure_main` command runs the fixed 75-candidate
+5/10/15-minute early-failure grid. It requires both a negative current-PnL R
+threshold and a low MFE-progress R threshold, preserves earlier original exits,
+and writes per-trade plus leave-one-trade-out diagnostics. It is not imported by
+live code.
