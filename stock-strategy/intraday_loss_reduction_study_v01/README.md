@@ -27,3 +27,19 @@ python3 -m intraday_loss_reduction_study_v01.stop_loss_main \
 It compares fixed TWD hard stops, no-positive-MFE time stops and soft/hard
 hybrids while preserving all other exits. Stops fill at the first observed
 executable quote after the threshold, so gaps never receive perfect fills.
+
+The indicator-stop replay treats the fixed TWD amount only as a disaster cap.
+Its primary exit evidence is the causal Yuanta trade-flow direction, large-trade
+flow and aggregated five-level book imbalance, optionally confirmed by a VWAP
+break or book depletion:
+
+```bash
+python3 -m intraday_loss_reduction_study_v01.indicator_stop_main \
+  --session 20260922=/path/to/run1,/path/to/run2 \
+  --session 20260923=/path/to/run \
+  --session 20260924=/path/to/run
+```
+
+Only fields already present in the historical archives are used. Newly audited
+`GetStockInformation` and `GetWatchListAll` fields cannot be retroactively
+claimed when those callbacks were not saved in the original sessions.
