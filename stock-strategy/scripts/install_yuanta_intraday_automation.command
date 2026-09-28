@@ -20,7 +20,7 @@ plutil -lint "${source_plist}"
 mkdir -p "${HOME}/Library/LaunchAgents"
 launchctl bootout "gui/${UID}/${label}" 2>/dev/null || true
 cp "${source_plist}" "${target_plist}"
-chmod 600 "${target_plist}"
+chmod 644 "${target_plist}"
 launchctl bootstrap "gui/${UID}" "${target_plist}"
 launchctl enable "gui/${UID}/${label}"
 
