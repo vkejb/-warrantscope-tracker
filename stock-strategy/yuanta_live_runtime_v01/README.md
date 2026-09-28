@@ -2,7 +2,7 @@
 
 這個模組把目前 repo 已存在的三層串起來：
 
-`Stage A Top30 → 即時逐筆/五檔 → frozen direction rule → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
+`Stage A Top30 → 即時逐筆/五檔 → frozen direction rule → 0050 market gate → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
 
 它**沒有移除** broker adapter 的安全鎖。正式送單仍必須同時滿足：
 
@@ -21,7 +21,13 @@
 - 每 30 秒判斷
 - 60 秒方向量、5 分鐘大單參考、3 分鐘突破
 - volume delta / large-trade delta / VWAP / order-book imbalance / spread
-- 09:35 起進場，13:10 後不再新開倉
+- 09:05 起進場，13:10 後不再新開倉
+- 做多進場另套用 `LONG_0050_RELATIVE_STRENGTH_V1`：同步訂閱 0050，但不把 0050 寫進 sealed Top30 原始歸檔，也不讓 0050 成為交易候選
+- 0050 同時在 VWAP 上且 5 分鐘報酬非負時視為 BULLISH，個股 5 分鐘相對強度不得為負
+- 0050 同時在 VWAP 下且 5 分鐘報酬為負時視為 BEARISH，個股必須至少領先 0050 0.5%，且原訊號連續確認 2 次
+- 其餘為 NEUTRAL，個股必須至少領先 0050 0.25%，且原訊號連續確認 2 次
+- 0050 缺少完整 5 分鐘暖機資料、行情 stale 或計算無效時 fail closed，不建立新倉
+- 每個 30 秒決策的市場狀態、相對強度、通過／拒絕原因寫入獨立 signal ledger，供後續累積樣本驗證
 - 單日最多一次進場嘗試
 - 預設資金上限 190,000 元，以整張 1,000 股 sizing
 - 不固定限制每檔張數；依 190,000 元單筆上限計算可買整張數量
@@ -34,6 +40,8 @@
 - 13:20 強制出場
 
 實際進出場使用 broker 回報的成交股數與平均成交價，而不是 replay 的假成交。
+
+`LONG_0050_RELATIVE_STRENGTH_V1` 是小樣本下的保守前瞻版本，不是已被歷史資料證明的最佳參數。現有三日資料沒有同步、完整的 0050 逐筆序列，因此沒有用缺失資料補值或倒推回測；它的用途是先避免弱市中追進相對弱股，並留下完整拒絕紀錄，等樣本增加後再做相同交易宇宙的受控比較。這次沒有改做空規則，也不會因加入 0050 自動啟用 SHORT。
 
 ### 退場規則的資料界線
 

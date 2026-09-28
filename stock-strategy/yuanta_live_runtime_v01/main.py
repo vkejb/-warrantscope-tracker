@@ -48,7 +48,13 @@ from .notifications import RuntimeNotifier
 from .accounting import execution_pnl
 from .trading_bot_notifier import AsyncTradingNotifier
 from .risk_manager import RiskLimits, RiskManager
-from .strategy import LIVE_EXIT_POLICY, LiveDirectionEngine, ManagedPosition, SPEC
+from .strategy import (
+    LIVE_EXIT_POLICY,
+    LONG_MARKET_REGIME_POLICY,
+    LiveDirectionEngine,
+    ManagedPosition,
+    SPEC,
+)
 from .watchdog import Heartbeat, monitor as watchdog_monitor
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -72,6 +78,32 @@ ACTIVE_EXIT_STATUSES = {
 }
 
 RUNTIME_LOCK_FILENAME = "runtime.lock"
+
+
+def _quote_universe(items):
+    """Add the quote-only benchmark without changing the sealed Top30 archive."""
+    result = list(items)
+    benchmark = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
+    if not any(str(item.stock_id) == benchmark for item in result):
+        result.append(SimpleNamespace(
+            market=str(LONG_MARKET_REGIME_POLICY["benchmark_market"]),
+            stock_id=benchmark,
+            stock_name=str(LONG_MARKET_REGIME_POLICY["benchmark_name"]),
+        ))
+    return result
+
+
+def _strategy_engine(items, *, capital_twd: int = 190_000) -> LiveDirectionEngine:
+    benchmark = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
+    candidates = {str(item.stock_id) for item in items if str(item.stock_id) != benchmark}
+    metadata = {str(item.stock_id): str(item.stock_name) for item in items}
+    metadata[benchmark] = str(LONG_MARKET_REGIME_POLICY["benchmark_name"])
+    return LiveDirectionEngine(
+        metadata,
+        capital_twd=capital_twd,
+        candidate_symbols=candidates,
+        benchmark_symbol=benchmark,
+    )
 
 
 def _acquire_runtime_instance_lock(runtime_dir: Path):
@@ -275,6 +307,8 @@ class _Session:
         archive: AppendOnlyRun | None = None,
         archive_signal_date: str = "",
         archive_items: dict[str, Any] | None = None,
+        non_archive_symbols: set[str] | None = None,
+        strategy_symbols: set[str] | None = None,
     ):
         self.api_types = api_types
         self.environment = environment
@@ -284,6 +318,11 @@ class _Session:
         self.archive = archive
         self.archive_signal_date = str(archive_signal_date)
         self.archive_items = dict(archive_items or {})
+        self.non_archive_symbols = {str(symbol) for symbol in (non_archive_symbols or set())}
+        self.strategy_symbols = (
+            None if strategy_symbols is None
+            else {str(symbol) for symbol in strategy_symbols}
+        )
         self.login_event = threading.Event()
         self.login_ok = False
         self.login_code = ""
@@ -310,6 +349,9 @@ class _Session:
         from consuming subsequent market data.
         """
         if self.archive is None:
+            return
+
+        if symbol in self.non_archive_symbols:
             return
 
         item = self.archive_items.get(symbol)
@@ -431,7 +473,9 @@ class _Session:
                     symbol=symbol,
                     value=value,
                 )
-                if accepted:
+                if accepted and (
+                    self.strategy_symbols is None or symbol in self.strategy_symbols
+                ):
                     self.last_quote_at = now
                 return
             if name == "SubscribeFiveTickA":
@@ -463,7 +507,8 @@ class _Session:
                     value=value,
                     payload=payload,
                 )
-                self.last_quote_at = now
+                if self.strategy_symbols is None or symbol in self.strategy_symbols:
+                    self.last_quote_at = now
         except Exception as exc:
             self.logger("QUOTE_CALLBACK_ERROR", error=f"{type(exc).__name__}: {exc}")
 
@@ -935,6 +980,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         if event in {
             "SIGNAL_DETECTED",
             "SIGNAL_SKIPPED",
+            "ENTRY_GATE_DIAGNOSTICS",
         }:
             _append_jsonl(
                 signal_ledger_path,
@@ -966,7 +1012,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     seal, items, provenance = load_stage_a_watchlist()
     _validate_watchlist_day(str(seal["signal_date"]))
     metadata = {item.stock_id: item.stock_name for item in items}
-    engine = LiveDirectionEngine(metadata, capital_twd=args.capital)
+    quote_items = _quote_universe(items)
+    benchmark_symbol = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
+    strategy_symbols = {str(item.stock_id) for item in items if str(item.stock_id) != benchmark_symbol}
+    engine = _strategy_engine(items, capital_twd=args.capital)
     risk = RiskManager(RiskLimits(
         max_daily_loss=Decimal(str(args.max_daily_loss)),
         max_order_value=Decimal(str(args.max_order_value)),
@@ -980,7 +1029,15 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     ))
     credentials = load_credentials()
     api_types = _extend_quote_types(load_api_types(args.vendor_dir.resolve()))
-    session = _Session(api_types=api_types, environment=environment, credentials=credentials, engine=engine, logger=log)
+    session = _Session(
+        api_types=api_types,
+        environment=environment,
+        credentials=credentials,
+        engine=engine,
+        logger=log,
+        non_archive_symbols={benchmark_symbol},
+        strategy_symbols=strategy_symbols,
+    )
     short_entry = _order_type(args.short_entry_order_type)
     short_cover = _order_type(args.short_cover_order_type)
     allow_short = short_entry is not None and short_cover is not None
@@ -1099,7 +1156,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 "trade_attempted": trade_attempted,
                 "pending_exit_reason": pending_exit_reason,
             })
-        session.subscribe(items)
+        session.subscribe(quote_items)
         log(
             "RUNTIME_STARTED",
             environment=environment,
@@ -1107,6 +1164,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             signal_date=seal["signal_date"],
             capital=args.capital,
             short_enabled=allow_short,
+            entry_policy=LONG_MARKET_REGIME_POLICY,
             exit_policy=LIVE_EXIT_POLICY,
             gate=gate.public_snapshot(),
         )
@@ -1117,6 +1175,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             signal_date=seal["signal_date"],
             watchlist_count=len(items),
             entry_start=SPEC["entry_start"],
+            entry_policy=LONG_MARKET_REGIME_POLICY,
             exit_policy=LIVE_EXIT_POLICY,
             trade_attempted=trade_attempted,
             last_quote_at=session.last_quote_at,
@@ -1265,6 +1324,12 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         decision,
                         allow_short=allow_short,
                     )
+
+                    if engine.last_entry_diagnostics:
+                        log(
+                            "ENTRY_GATE_DIAGNOSTICS",
+                            diagnostics=engine.last_entry_diagnostics,
+                        )
 
                     if candidate is not None:
                         signal_id = _signal_identifier(
@@ -1784,7 +1849,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                                 raise RuntimeError(
                                     f"broker execution store halted during reconnect: {store.control_state().get('reason')}"
                                 )
-                            session.subscribe(items)
+                            session.subscribe(quote_items)
                             quote_stale_triggered = False
                             log("QUOTE_RECONNECT_PASSED", reconciliation=asdict(reconnection))
                         except Exception as exc:
@@ -1945,11 +2010,16 @@ def _preflight(args, environment: str) -> int:
         seal, items, _provenance = load_stage_a_watchlist()
         _validate_watchlist_day(str(seal["signal_date"]))
 
-        metadata = {
-            item.stock_id: item.stock_name
+        quote_items = _quote_universe(items)
+        benchmark_symbol = str(
+            LONG_MARKET_REGIME_POLICY["benchmark_symbol"]
+        )
+        strategy_symbols = {
+            str(item.stock_id)
             for item in items
+            if str(item.stock_id) != benchmark_symbol
         }
-        engine = LiveDirectionEngine(metadata)
+        engine = _strategy_engine(items)
 
         credentials = load_credentials()
         api_types = _extend_quote_types(
@@ -1974,6 +2044,8 @@ def _preflight(args, environment: str) -> int:
             credentials=credentials,
             engine=engine,
             logger=logger,
+            non_archive_symbols={benchmark_symbol},
+            strategy_symbols=strategy_symbols,
         )
 
         store = LiveOrderStore(
@@ -1999,7 +2071,7 @@ def _preflight(args, environment: str) -> int:
             strict_positions=True,
         )
 
-        session.subscribe(items)
+        session.subscribe(quote_items)
 
         print(
             json.dumps(
@@ -2008,6 +2080,8 @@ def _preflight(args, environment: str) -> int:
                     "environment": environment,
                     "signal_date": seal["signal_date"],
                     "quote_subscription": "ACCEPTED",
+                    "quote_symbols": len(quote_items),
+                    "entry_policy": LONG_MARKET_REGIME_POLICY,
                     "reconciliation": asdict(result),
                     "gate": adapter.live_gate.public_snapshot(),
                 },
@@ -2195,6 +2269,7 @@ def _status(args) -> int:
         "runtime_dir": str(runtime),
         "emergency_stop_marker": (runtime / "EMERGENCY_STOP").exists(),
         "database_exists": db.exists(),
+        "entry_policy": LONG_MARKET_REGIME_POLICY,
         "exit_policy": LIVE_EXIT_POLICY,
     }
     if db.exists():

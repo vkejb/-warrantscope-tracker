@@ -3,6 +3,7 @@ import unittest
 
 from yuanta_live_runtime_v01.strategy import (
     LIVE_EXIT_POLICY,
+    LONG_MARKET_REGIME_POLICY,
     LiveDirectionEngine,
     ManagedPosition,
     SPEC,
@@ -12,6 +13,56 @@ from yuanta_live_runtime_v01.strategy import (
 
 
 class StrategyTests(unittest.TestCase):
+    def _engine_with_market_long_signal(self, *, bearish=False, weak_stock=False):
+        decision = datetime(2026, 9, 24, 9, 35, 0, tzinfo=TAIPEI)
+        engine = LiveDirectionEngine(
+            {"2330": "台積電", "0050": "元大台灣50"},
+            capital_twd=190000,
+            candidate_symbols={"2330"},
+            benchmark_symbol="0050",
+        )
+        for index in range(53):
+            at = decision - timedelta(seconds=320 - index * 5)
+            stock_gain = 0.001 if weak_stock else 0.01
+            stock_price = 99.0 + index * stock_gain
+            benchmark_price = (
+                102.0 - index * 0.025
+                if bearish else 100.0 + index * 0.005
+            )
+            engine.record_tick(
+                "2330", at=at, price=stock_price, volume=10,
+                bid=stock_price - 0.1, ask=stock_price + 0.1,
+                flag="1", serial=index + 1,
+            )
+            engine.record_tick(
+                "0050", at=at, price=benchmark_price, volume=100,
+                bid=benchmark_price - 0.05, ask=benchmark_price + 0.05,
+                flag="0" if bearish else "1", serial=index + 1,
+            )
+        for index in range(12):
+            at = decision - timedelta(seconds=55 - index * 5)
+            stock_price = (99.2 if weak_stock else 101.0) + index * 0.01
+            benchmark_price = (
+                100.5 - index * 0.01
+                if bearish else 100.3 + index * 0.005
+            )
+            engine.record_tick(
+                "2330", at=at, price=stock_price, volume=100,
+                bid=stock_price - 0.1, ask=stock_price + 0.1,
+                flag="1", serial=100 + index,
+            )
+            engine.record_tick(
+                "0050", at=at, price=benchmark_price, volume=100,
+                bid=benchmark_price - 0.05, ask=benchmark_price + 0.05,
+                flag="0" if bearish else "1", serial=100 + index,
+            )
+        engine.record_book_combined(
+            "2330", at=decision,
+            buy_prices=[101.0], buy_volumes=[900],
+            sell_prices=[101.1], sell_volumes=[100],
+        )
+        return engine, decision
+
     def _engine_with_long_signal(self, decision=None):
         engine = LiveDirectionEngine({"2330": "台積電"}, capital_twd=190000)
         if decision is None:
@@ -39,6 +90,73 @@ class StrategyTests(unittest.TestCase):
         self.assertGreater(signal.quantity, 0)
         self.assertLessEqual(signal.entry_price * signal.quantity, 190000)
         self.assertEqual(signal.quantity % 1000, 0)
+
+    def test_market_gate_fails_closed_without_benchmark_history(self):
+        engine, decision = self._engine_with_market_long_signal()
+        engine._states["0050"].ticks.clear()
+        engine._states["0050"].cumulative_volume = 0
+        engine._states["0050"].cumulative_pv = 0
+        self.assertIsNone(engine.choose_entry(decision, allow_short=False))
+        self.assertEqual(
+            engine.last_entry_diagnostics["reason"],
+            "BENCHMARK_MISSING_OR_STALE",
+        )
+
+    def test_market_gate_fails_closed_on_stale_benchmark(self):
+        engine, decision = self._engine_with_market_long_signal()
+        later = decision + timedelta(
+            seconds=float(LONG_MARKET_REGIME_POLICY["maximum_staleness_seconds"]) + 1
+        )
+        self.assertIsNone(engine.choose_entry(later, allow_short=False))
+        self.assertEqual(
+            engine.last_entry_diagnostics["reason"],
+            "BENCHMARK_MISSING_OR_STALE",
+        )
+
+    def test_bullish_market_allows_strong_long_candidate(self):
+        engine, decision = self._engine_with_market_long_signal()
+        signal = engine.choose_entry(decision, allow_short=False)
+        self.assertIsNotNone(signal)
+        self.assertEqual(signal.market_regime, "BULLISH")
+        self.assertGreaterEqual(signal.relative_strength_5m, 0)
+        self.assertEqual(signal.required_confirmations, 1)
+        self.assertNotEqual(signal.stock_id, LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
+
+    def test_bearish_market_requires_two_confirmations(self):
+        engine, decision = self._engine_with_market_long_signal(bearish=True)
+        self.assertIsNone(engine.choose_entry(decision, allow_short=False))
+        self.assertEqual(
+            engine.last_entry_diagnostics["candidates"][0]["gate_reason"],
+            "CONFIRMATIONS_INCOMPLETE",
+        )
+        later = decision + timedelta(seconds=int(SPEC["decision_interval_seconds"]))
+        for index in range(1, 7):
+            at = decision + timedelta(seconds=index * 5)
+            stock_price = 101.11 + index * 0.015
+            benchmark_price = 100.39 - index * 0.015
+            engine.record_tick(
+                "2330", at=at, price=stock_price, volume=100,
+                bid=stock_price - 0.1, ask=stock_price,
+                flag="1", serial=500 + index,
+            )
+            engine.record_tick(
+                "0050", at=at, price=benchmark_price, volume=100,
+                bid=benchmark_price - 0.05, ask=benchmark_price + 0.05,
+                flag="0", serial=500 + index,
+            )
+        engine.record_book_combined(
+            "2330", at=later,
+            buy_prices=[101.1], buy_volumes=[900],
+            sell_prices=[101.2], sell_volumes=[100],
+        )
+        signal = engine.choose_entry(later, allow_short=False)
+        self.assertIsNotNone(signal)
+        self.assertEqual(signal.market_regime, "BEARISH")
+        self.assertEqual(signal.required_confirmations, 2)
+        self.assertGreaterEqual(
+            signal.relative_strength_5m,
+            LONG_MARKET_REGIME_POLICY["bearish_min_relative_strength"],
+        )
 
     def test_entry_window_starts_at_0905(self):
         self.assertEqual(SPEC["entry_start"], "09:05")

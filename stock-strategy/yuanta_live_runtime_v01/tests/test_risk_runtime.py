@@ -120,6 +120,34 @@ class SafeQuoteTests(unittest.TestCase):
 
 
 class ArchiveRuntimeTests(unittest.TestCase):
+    def test_quote_universe_adds_0050_without_changing_top30_items(self):
+        items = [SimpleNamespace(
+            market="TWSE", stock_id="3605", stock_name="宏致",
+        )]
+        quotes = runtime_main._quote_universe(items)
+        self.assertEqual([item.stock_id for item in items], ["3605"])
+        self.assertEqual([item.stock_id for item in quotes], ["3605", "0050"])
+
+    def test_quote_only_benchmark_is_not_written_to_sealed_archive(self):
+        archive = SimpleNamespace(
+            events=[], errors=0,
+            append=lambda *_args, **_kwargs: None,
+            callback_error=lambda: None,
+        )
+        logs = []
+        session = runtime_main._Session(
+            api_types={}, environment="PROD",
+            credentials={"account": "test"}, engine=None,
+            logger=lambda event, **payload: logs.append((event, payload)),
+            archive=archive,
+            archive_items={},
+            non_archive_symbols={"0050"},
+        )
+        session._archive_quote(
+            kind="ticks", symbol="0050", value=SimpleNamespace(),
+        )
+        self.assertEqual(logs, [])
+
     def test_signal_identifier_is_stable_and_non_sensitive(self):
         candidate = SimpleNamespace(
             stock_id="3605",

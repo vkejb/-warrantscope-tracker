@@ -31,6 +31,22 @@ LIVE_EXIT_POLICY = {
     "retain_3_0": 0.75,
 }
 
+LONG_MARKET_REGIME_POLICY = {
+    "policy_id": "LONG_0050_RELATIVE_STRENGTH_V1",
+    "benchmark_symbol": "0050",
+    "benchmark_name": "元大台灣50",
+    "benchmark_market": "TWSE",
+    "lookback_seconds": 300,
+    "maximum_staleness_seconds": float(SPEC["maximum_tick_staleness_seconds"]),
+    "bullish_min_relative_strength": 0.0,
+    "neutral_min_relative_strength": 0.0025,
+    "bearish_min_relative_strength": 0.005,
+    "bullish_confirmations": 1,
+    "neutral_confirmations": 2,
+    "bearish_confirmations": 2,
+    "short_behavior": "UNCHANGED_NOT_ENABLED_BY_THIS_POLICY",
+}
+
 
 def _candidate_locked_r(mfe_r: float) -> float | None:
     """Return the fixed MFE_V1 floor; this policy is not runtime-optimized."""
@@ -67,6 +83,11 @@ class LiveSignal:
     spread_bps: float
     entry_price: float
     quantity: int
+    market_regime: str | None = None
+    benchmark_vwap_gap: float | None = None
+    benchmark_return_5m: float | None = None
+    relative_strength_5m: float | None = None
+    required_confirmations: int = 1
 
 
 @dataclass(slots=True)
@@ -129,7 +150,14 @@ class _StockState:
 class LiveDirectionEngine:
     """Memory-bounded realtime equivalent of the causal replay signal rule."""
 
-    def __init__(self, metadata: Mapping[str, str], *, capital_twd: int = 190_000):
+    def __init__(
+        self,
+        metadata: Mapping[str, str],
+        *,
+        capital_twd: int = 190_000,
+        candidate_symbols: set[str] | None = None,
+        benchmark_symbol: str | None = None,
+    ):
         self._lock = threading.RLock()
         self.capital_twd = int(capital_twd)
         if self.capital_twd <= 0:
@@ -137,8 +165,24 @@ class LiveDirectionEngine:
         self._states = {
             str(symbol): _StockState(str(name), deque()) for symbol, name in metadata.items()
         }
+        self.benchmark_symbol = str(benchmark_symbol) if benchmark_symbol else None
+        if self.benchmark_symbol is not None and self.benchmark_symbol not in self._states:
+            raise ValueError("benchmark_symbol must exist in metadata")
+        default_candidates = set(self._states)
+        if self.benchmark_symbol is not None:
+            default_candidates.discard(self.benchmark_symbol)
+        self._candidate_symbols = {
+            str(symbol) for symbol in (
+                default_candidates if candidate_symbols is None else candidate_symbols
+            )
+        }
+        if not self._candidate_symbols.issubset(self._states):
+            raise ValueError("candidate_symbols must exist in metadata")
+        if self.benchmark_symbol in self._candidate_symbols:
+            raise ValueError("benchmark_symbol cannot be an entry candidate")
         self._previous: dict[str, tuple[str, int, datetime]] = {}
         self.last_decision: datetime | None = None
+        self.last_entry_diagnostics: dict = {}
 
     @staticmethod
     def _num(value: object) -> float | None:
@@ -305,6 +349,66 @@ class LiveDirectionEngine:
         index = max(0, math.ceil(float(SPEC["large_trade_percentile"]) * len(ordered)) - 1)
         return ordered[index]
 
+    @staticmethod
+    def _causal_rows(state: _StockState, decision: datetime) -> list[dict]:
+        return [
+            row for row in state.ticks
+            if row["time"] <= decision and row["received_at"] <= decision
+        ]
+
+    @staticmethod
+    def _return_over(rows: list[dict], decision: datetime, seconds: int) -> float | None:
+        if not rows:
+            return None
+        cutoff = decision - timedelta(seconds=seconds)
+        eligible = [row for row in rows if row["time"] <= cutoff]
+        if not eligible or eligible[-1]["price"] <= 0:
+            return None
+        return rows[-1]["price"] / eligible[-1]["price"] - 1
+
+    def _market_context(self, decision: datetime) -> dict | None:
+        if self.benchmark_symbol is None:
+            return None
+        state = self._states[self.benchmark_symbol]
+        rows = self._causal_rows(state, decision)
+        if not rows:
+            return None
+        age = (decision - rows[-1]["time"]).total_seconds()
+        if age < 0 or age > float(LONG_MARKET_REGIME_POLICY["maximum_staleness_seconds"]):
+            return None
+        lookback = int(LONG_MARKET_REGIME_POLICY["lookback_seconds"])
+        return_5m = self._return_over(rows, decision, lookback)
+        if return_5m is None:
+            return None
+        unavailable = [
+            row for row in state.ticks
+            if row["time"] > decision or row["received_at"] > decision
+        ]
+        known_volume = state.cumulative_volume - sum(row["volume"] for row in unavailable)
+        if known_volume <= 0:
+            return None
+        vwap = (
+            state.cumulative_pv
+            - sum(row["price"] * row["volume"] for row in unavailable)
+        ) / known_volume
+        if vwap <= 0:
+            return None
+        vwap_gap = rows[-1]["price"] / vwap - 1
+        if vwap_gap > 0 and return_5m >= 0:
+            regime = "BULLISH"
+        elif vwap_gap < 0 and return_5m < 0:
+            regime = "BEARISH"
+        else:
+            regime = "NEUTRAL"
+        return {
+            "benchmark_symbol": self.benchmark_symbol,
+            "market_regime": regime,
+            "benchmark_price": rows[-1]["price"],
+            "benchmark_vwap_gap": vwap_gap,
+            "benchmark_return_5m": return_5m,
+            "benchmark_quote_age_seconds": age,
+        }
+
     @_locked
     def _signal_for(self, symbol: str, decision: datetime) -> dict | None:
         state = self._states[symbol]
@@ -354,6 +458,11 @@ class LiveDirectionEngine:
         vwap = (state.cumulative_pv - sum(row["price"] * row["volume"] for row in unavailable)) / known_volume
         current = window[-1]["price"]
         vwap_gap = current / vwap - 1
+        return_5m = self._return_over(
+            self._causal_rows(state, decision),
+            decision,
+            int(LONG_MARKET_REGIME_POLICY["lookback_seconds"]),
+        )
         breakout_start = decision - timedelta(seconds=int(SPEC["breakout_lookback_seconds"]))
         breakout_end = decision - timedelta(seconds=int(SPEC["breakout_excludes_latest_seconds"]))
         prior = [row for row in rows if breakout_start <= row["time"] <= breakout_end and row["received_at"] <= decision]
@@ -406,6 +515,7 @@ class LiveDirectionEngine:
             "spread_bps": spread_bps,
             "entry_price": entry_price,
             "quantity": quantity,
+            "return_5m": return_5m,
         }
 
     @staticmethod
@@ -421,9 +531,21 @@ class LiveDirectionEngine:
         self.last_decision = decision
         if not self._clock(SPEC["entry_start"]) <= decision.time() <= self._clock(SPEC["last_entry_time"]):
             return None
+        market = self._market_context(decision)
+        self.last_entry_diagnostics = {
+            "policy_id": LONG_MARKET_REGIME_POLICY["policy_id"],
+            "decision_time": decision,
+            "benchmark_required": self.benchmark_symbol is not None,
+            "market_context": market,
+            "candidates": [],
+        }
+        if self.benchmark_symbol is not None and market is None:
+            self.last_entry_diagnostics["decision"] = "REJECTED"
+            self.last_entry_diagnostics["reason"] = "BENCHMARK_MISSING_OR_STALE"
+            return None
         confirmed: list[dict] = []
         interval = timedelta(seconds=int(SPEC["decision_interval_seconds"]))
-        for symbol in sorted(self._states):
+        for symbol in sorted(self._candidate_symbols):
             signal = self._signal_for(symbol, decision)
             prior = self._previous.get(symbol)
             if signal is not None:
@@ -431,14 +553,63 @@ class LiveDirectionEngine:
             else:
                 streak = 0
             self._previous[symbol] = (signal["side"], streak, decision) if signal else ("", 0, decision)
-            if signal is None or streak < int(SPEC["entry_confirmations"]):
+            if signal is None:
                 continue
             if signal["side"] == "SHORT" and not allow_short:
                 continue
+            required_confirmations = int(SPEC["entry_confirmations"])
+            gate_reason = "BASE_SIGNAL_CONFIRMED"
+            if market is not None and signal["side"] == "LONG":
+                stock_return = signal.pop("return_5m")
+                if stock_return is None:
+                    gate_reason = "STOCK_5M_HISTORY_MISSING"
+                else:
+                    regime = str(market["market_regime"])
+                    minimum = float(
+                        LONG_MARKET_REGIME_POLICY[
+                            f"{regime.lower()}_min_relative_strength"
+                        ]
+                    )
+                    required_confirmations = int(
+                        LONG_MARKET_REGIME_POLICY[
+                            f"{regime.lower()}_confirmations"
+                        ]
+                    )
+                    relative_strength = stock_return - float(market["benchmark_return_5m"])
+                    signal.update({
+                        "market_regime": regime,
+                        "benchmark_vwap_gap": float(market["benchmark_vwap_gap"]),
+                        "benchmark_return_5m": float(market["benchmark_return_5m"]),
+                        "relative_strength_5m": relative_strength,
+                        "required_confirmations": required_confirmations,
+                    })
+                    gate_reason = (
+                        "MARKET_GATE_PASSED"
+                        if relative_strength >= minimum
+                        else "RELATIVE_STRENGTH_BELOW_THRESHOLD"
+                    )
+                    signal["minimum_relative_strength"] = minimum
+            else:
+                signal.pop("return_5m", None)
+            diagnostic = {
+                **signal,
+                "streak": streak,
+                "gate_reason": gate_reason,
+            }
+            self.last_entry_diagnostics["candidates"].append(diagnostic)
+            if gate_reason not in {"BASE_SIGNAL_CONFIRMED", "MARKET_GATE_PASSED"}:
+                continue
+            if streak < required_confirmations:
+                diagnostic["gate_reason"] = "CONFIRMATIONS_INCOMPLETE"
+                continue
+            signal.pop("minimum_relative_strength", None)
             confirmed.append(signal)
         if not confirmed:
+            self.last_entry_diagnostics["decision"] = "NO_APPROVED_CANDIDATE"
             return None
         selected = max(confirmed, key=lambda item: (item["score"], item["entry_price"] * item["quantity"]))
+        self.last_entry_diagnostics["decision"] = "APPROVED"
+        self.last_entry_diagnostics["selected_stock_id"] = selected["stock_id"]
         return LiveSignal(**selected)
 
     @_locked
