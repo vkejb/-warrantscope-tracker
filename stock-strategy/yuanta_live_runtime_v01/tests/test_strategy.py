@@ -77,6 +77,33 @@ class StrategyTests(unittest.TestCase):
         self.assertEqual(decision.reason, "STOP_LOSS")
         self.assertLessEqual(decision.projected_net_pnl, -3500)
 
+    def test_loss_recovery_to_positive_is_not_an_exit(self):
+        engine, _ = self._engine_with_long_signal()
+        now = datetime(2026, 9, 24, 10, 0, tzinfo=TAIPEI)
+        position = ManagedPosition(
+            "2330", "台積電", "LONG", 1000, 100.0, "abc",
+            now - timedelta(minutes=1),
+        )
+        engine.record_tick(
+            "2330", at=now, price=98.5, volume=10,
+            bid=98.5, ask=98.6, flag="0", serial=999,
+        )
+        self.assertIsNone(engine.evaluate_exit(position, now))
+        engine.record_tick(
+            "2330", at=now + timedelta(seconds=1), price=101.0, volume=10,
+            bid=101.0, ask=101.1, flag="1", serial=1000,
+        )
+        decision = engine.evaluate_exit(position, now + timedelta(seconds=1))
+        self.assertIsNone(decision)
+        self.assertLess(position.worst_return, 0)
+        self.assertFalse(position.mfe_protection_armed)
+
+    def test_policy_id_records_removed_loss_recovery_rule(self):
+        self.assertEqual(
+            LIVE_EXIT_POLICY["policy_id"],
+            "HARD_3500_PLUS_MFE_V1_NO_LOSS_RECOVERY",
+        )
+
     def test_mfe_v1_exact_boundaries(self):
         self.assertIsNone(_candidate_locked_r(0.999999))
         self.assertEqual(_candidate_locked_r(1.0), 0.0)

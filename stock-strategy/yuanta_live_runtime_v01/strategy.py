@@ -22,7 +22,7 @@ from yuanta_intraday_shadow_v01.exploratory_backtest import _tick_size
 TAIPEI = ZoneInfo("Asia/Taipei")
 
 LIVE_EXIT_POLICY = {
-    "policy_id": "HARD_3500_PLUS_MFE_V1",
+    "policy_id": "HARD_3500_PLUS_MFE_V1_NO_LOSS_RECOVERY",
     "stop_loss_net_twd": 3500.0,
     "one_r_definition": "entry_to_net_3500_stop_price",
     "mfe_variant": "MFE_V1",
@@ -693,12 +693,6 @@ class LiveDirectionEngine:
             reason = "STOP_LOSS"
         elif self._mfe_floor_breached(position, price):
             reason = "MFE_PROFIT_PROTECTION"
-        elif (
-            position.worst_return < 0
-            and current_return > 0
-            and current_return - position.worst_return >= float(SPEC["loss_recovery_required"])
-        ):
-            reason = "LOSS_RECOVERY_TO_PROFIT"
         elif reversal:
             reason = "SIGNAL_REVERSAL"
         elif now.astimezone(TAIPEI).time() >= self._clock(SPEC["hard_exit_time"]):
