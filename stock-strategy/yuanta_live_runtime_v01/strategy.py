@@ -1,8 +1,9 @@
-"""Realtime form of the frozen Top30 direction-following research rule.
+"""Realtime form of the frozen Top30 direction-following entry rule.
 
 The thresholds come from ``yuanta_intraday_shadow_v01.direction_follow_backtest.SPEC``.
-This module only turns live quote state into candidates and exit decisions; broker
-submission remains in ``main.py`` and still passes through the reviewed broker gate.
+Entry selection remains frozen. Runtime exits use an explicit, independently logged
+policy; broker submission remains in ``main.py`` and still passes through the
+reviewed broker gate.
 """
 from __future__ import annotations
 
@@ -19,6 +20,29 @@ from yuanta_intraday_shadow_v01.direction_follow_backtest import SPEC
 from yuanta_intraday_shadow_v01.exploratory_backtest import _tick_size
 
 TAIPEI = ZoneInfo("Asia/Taipei")
+
+LIVE_EXIT_POLICY = {
+    "policy_id": "HARD_3500_PLUS_MFE_V1",
+    "stop_loss_net_twd": 3500.0,
+    "one_r_definition": "entry_to_net_3500_stop_price",
+    "mfe_variant": "MFE_V1",
+    "retain_1_5": 0.60,
+    "retain_2_0": 0.70,
+    "retain_3_0": 0.75,
+}
+
+
+def _candidate_locked_r(mfe_r: float) -> float | None:
+    """Return the fixed MFE_V1 floor; this policy is not runtime-optimized."""
+    if not math.isfinite(mfe_r) or mfe_r < 1.0:
+        return None
+    if mfe_r < 1.5:
+        return 0.0
+    if mfe_r < 2.0:
+        return float(LIVE_EXIT_POLICY["retain_1_5"]) * mfe_r
+    if mfe_r < 3.0:
+        return float(LIVE_EXIT_POLICY["retain_2_0"]) * mfe_r
+    return float(LIVE_EXIT_POLICY["retain_3_0"]) * mfe_r
 
 
 def _locked(method):
@@ -59,6 +83,18 @@ class ManagedPosition:
     reversal_streak: int = 0
     last_reversal_decision: datetime | None = None
     exit_submitted: bool = False
+    initial_stop_price: float | None = None
+    mfe_basis_entry_price: float | None = None
+    mfe_basis_quantity: int = 0
+    mfe_price: float | None = None
+    mfe_pnl: float | None = None
+    mfe_r: float = 0.0
+    mfe_time: datetime | None = None
+    locked_profit_r: float = 0.0
+    locked_profit_price: float | None = None
+    locked_profit_pnl: float | None = None
+    mfe_protection_armed: bool = False
+    mfe_activation_time: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -439,6 +475,146 @@ class LiveDirectionEngine:
             position.side, position.entry_price, exit_price, position.quantity
         )
 
+    def _derive_initial_stop_price(self, position: ManagedPosition) -> float:
+        """Invert the net-TWD disaster stop into a positive per-share R."""
+        target = -float(LIVE_EXIT_POLICY["stop_loss_net_twd"])
+        entry = float(position.entry_price)
+        quantity = int(position.quantity)
+        if position.side not in {"LONG", "SHORT"} or entry <= 0 or quantity <= 0:
+            raise ValueError("position cannot define a valid initial risk")
+        if self._projected_net(position.side, entry, entry, quantity) <= target:
+            raise ValueError("entry costs consume the complete initial risk")
+        if position.side == "LONG":
+            adverse, safe = max(entry / 1_000_000, 0.000001), entry
+            if self._projected_net(position.side, entry, adverse, quantity) > target:
+                raise ValueError("unable to derive long initial stop")
+            for _ in range(100):
+                middle = (adverse + safe) / 2
+                if self._projected_net(position.side, entry, middle, quantity) <= target:
+                    adverse = middle
+                else:
+                    safe = middle
+        else:
+            safe, adverse = entry, entry * 2
+            for _ in range(30):
+                if self._projected_net(position.side, entry, adverse, quantity) <= target:
+                    break
+                adverse *= 2
+            else:
+                raise ValueError("unable to derive short initial stop")
+            for _ in range(100):
+                middle = (safe + adverse) / 2
+                if self._projected_net(position.side, entry, middle, quantity) <= target:
+                    adverse = middle
+                else:
+                    safe = middle
+        stop = (adverse + safe) / 2
+        risk = entry - stop if position.side == "LONG" else stop - entry
+        if not math.isfinite(stop) or stop <= 0 or risk <= 0:
+            raise ValueError("derived initial stop is invalid")
+        return stop
+
+    @staticmethod
+    def _favorable_move(position: ManagedPosition, price: float) -> float:
+        if position.side == "LONG":
+            return price - float(position.mfe_basis_entry_price)
+        return float(position.mfe_basis_entry_price) - price
+
+    def _refresh_mfe_basis(self, position: ManagedPosition) -> None:
+        signature_changed = (
+            position.mfe_basis_entry_price != float(position.entry_price)
+            or position.mfe_basis_quantity != int(position.quantity)
+            or position.initial_stop_price is None
+        )
+        if not signature_changed:
+            return
+        old_floor = position.locked_profit_price
+        position.initial_stop_price = self._derive_initial_stop_price(position)
+        position.mfe_basis_entry_price = float(position.entry_price)
+        position.mfe_basis_quantity = int(position.quantity)
+        risk = abs(position.mfe_basis_entry_price - position.initial_stop_price)
+        position.mfe_r = (
+            max(0.0, self._favorable_move(position, position.mfe_price) / risk)
+            if position.mfe_price is not None else 0.0
+        )
+        candidate = _candidate_locked_r(position.mfe_r)
+        if position.mfe_protection_armed and candidate is None:
+            candidate = 0.0
+        new_floor = None
+        if candidate is not None:
+            move = candidate * risk
+            new_floor = (
+                position.mfe_basis_entry_price + move
+                if position.side == "LONG"
+                else position.mfe_basis_entry_price - move
+            )
+        choices = [value for value in (old_floor, new_floor) if value is not None]
+        if choices:
+            position.locked_profit_price = (
+                max(choices) if position.side == "LONG" else min(choices)
+            )
+            position.locked_profit_r = max(
+                0.0,
+                self._favorable_move(position, position.locked_profit_price) / risk,
+            )
+            position.locked_profit_pnl = self.projected_net(
+                position, position.locked_profit_price
+            )
+
+    def _observe_mfe(
+        self,
+        position: ManagedPosition,
+        *,
+        price: float,
+        projected_net_pnl: float,
+        at: datetime,
+    ) -> None:
+        self._refresh_mfe_basis(position)
+        risk = abs(float(position.mfe_basis_entry_price) - float(position.initial_stop_price))
+        if position.mfe_price is None:
+            position.mfe_price = float(position.mfe_basis_entry_price)
+            position.mfe_pnl = self.projected_net(position, position.mfe_price)
+            position.mfe_time = position.entry_time
+        current_r = self._favorable_move(position, price) / risk
+        if position.mfe_price is None or current_r > position.mfe_r:
+            position.mfe_price = price
+            position.mfe_pnl = projected_net_pnl
+            position.mfe_r = max(0.0, current_r)
+            position.mfe_time = at
+        candidate = _candidate_locked_r(position.mfe_r)
+        if candidate is None:
+            return
+        if not position.mfe_protection_armed:
+            position.mfe_protection_armed = True
+            position.mfe_activation_time = at
+        move = candidate * risk
+        candidate_price = (
+            float(position.mfe_basis_entry_price) + move
+            if position.side == "LONG"
+            else float(position.mfe_basis_entry_price) - move
+        )
+        if position.locked_profit_price is None:
+            position.locked_profit_price = candidate_price
+        elif position.side == "LONG":
+            position.locked_profit_price = max(position.locked_profit_price, candidate_price)
+        else:
+            position.locked_profit_price = min(position.locked_profit_price, candidate_price)
+        position.locked_profit_r = max(
+            position.locked_profit_r,
+            self._favorable_move(position, position.locked_profit_price) / risk,
+        )
+        position.locked_profit_pnl = self.projected_net(
+            position, position.locked_profit_price
+        )
+
+    @staticmethod
+    def _mfe_floor_breached(position: ManagedPosition, price: float) -> bool:
+        if not position.mfe_protection_armed or position.locked_profit_price is None:
+            return False
+        if position.side == "LONG":
+            return price <= position.locked_profit_price
+        return price >= position.locked_profit_price
+
     @_locked
     def latest_exit_price(self, position: ManagedPosition) -> float | None:
         state = self._states.get(position.stock_id)
@@ -506,14 +682,17 @@ class LiveDirectionEngine:
         current_return = projected / denominator if denominator else 0.0
         position.peak_return = max(position.peak_return, current_return)
         position.worst_return = min(position.worst_return, current_return)
+        self._observe_mfe(
+            position,
+            price=price,
+            projected_net_pnl=projected,
+            at=now.astimezone(TAIPEI),
+        )
         reason = None
-        if projected <= -float(SPEC["stop_loss_net_twd"]):
+        if projected <= -float(LIVE_EXIT_POLICY["stop_loss_net_twd"]):
             reason = "STOP_LOSS"
-        elif (
-            position.peak_return >= float(SPEC["trailing_profit_activation"])
-            and current_return <= position.peak_return - float(SPEC["trailing_profit_drawdown"])
-        ):
-            reason = "TRAILING_PROFIT"
+        elif self._mfe_floor_breached(position, price):
+            reason = "MFE_PROFIT_PROTECTION"
         elif (
             position.worst_return < 0
             and current_return > 0

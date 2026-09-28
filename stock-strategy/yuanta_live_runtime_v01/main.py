@@ -48,7 +48,7 @@ from .notifications import RuntimeNotifier
 from .accounting import execution_pnl
 from .trading_bot_notifier import AsyncTradingNotifier
 from .risk_manager import RiskLimits, RiskManager
-from .strategy import LiveDirectionEngine, ManagedPosition, SPEC
+from .strategy import LIVE_EXIT_POLICY, LiveDirectionEngine, ManagedPosition, SPEC
 from .watchdog import Heartbeat, monitor as watchdog_monitor
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -606,7 +606,7 @@ def _confirm_strategy_flat(adapter, store, timeout: float) -> None:
 
 def _checkpoint_position(store, position, pending_exit_reason) -> None:
     store.save_position_checkpoint(position.entry_order_id, {
-        "version": 1,
+        "version": 2,
         "stock_id": position.stock_id,
         "side": position.side,
         "peak_return": position.peak_return,
@@ -617,6 +617,22 @@ def _checkpoint_position(store, position, pending_exit_reason) -> None:
             else position.last_reversal_decision.isoformat()
         ),
         "pending_exit_reason": pending_exit_reason,
+        "initial_stop_price": position.initial_stop_price,
+        "mfe_basis_entry_price": position.mfe_basis_entry_price,
+        "mfe_basis_quantity": position.mfe_basis_quantity,
+        "mfe_price": position.mfe_price,
+        "mfe_pnl": position.mfe_pnl,
+        "mfe_r": position.mfe_r,
+        "mfe_time": None if position.mfe_time is None else position.mfe_time.isoformat(),
+        "locked_profit_r": position.locked_profit_r,
+        "locked_profit_price": position.locked_profit_price,
+        "locked_profit_pnl": position.locked_profit_pnl,
+        "mfe_protection_armed": position.mfe_protection_armed,
+        "mfe_activation_time": (
+            None if position.mfe_activation_time is None
+            else position.mfe_activation_time.isoformat()
+        ),
+        "exit_policy_id": LIVE_EXIT_POLICY["policy_id"],
     })
 
 
@@ -693,7 +709,8 @@ def _recover_runtime_state(store: LiveOrderStore, metadata: dict[str, str], now:
             state["pending_exit_reason"] = "MISSING_POSITION_CHECKPOINT"
         else:
             try:
-                if (checkpoint["version"] != 1 or checkpoint["stock_id"] != symbol
+                version = int(checkpoint["version"])
+                if (version not in {1, 2} or checkpoint["stock_id"] != symbol
                         or checkpoint["side"] != direction):
                     raise ValueError("checkpoint identity mismatch")
                 peak = float(checkpoint["peak_return"])
@@ -707,6 +724,72 @@ def _recover_runtime_state(store: LiveOrderStore, metadata: dict[str, str], now:
                 stamp = checkpoint["last_reversal_decision"]
                 position.last_reversal_decision = None if stamp is None else _stamp(stamp)
                 state["pending_exit_reason"] = checkpoint["pending_exit_reason"]
+                if version == 1:
+                    # A prior runtime never persisted the MFE floor. Do not
+                    # invent a lower floor after restart; request a safe exit.
+                    state["pending_exit_reason"] = (
+                        state["pending_exit_reason"]
+                        or "MFE_STATE_UNAVAILABLE_AFTER_UPGRADE"
+                    )
+                else:
+                    if checkpoint.get("exit_policy_id") != LIVE_EXIT_POLICY["policy_id"]:
+                        raise ValueError("checkpoint exit policy mismatch")
+                    numeric = {
+                        key: checkpoint.get(key)
+                        for key in (
+                            "initial_stop_price", "mfe_basis_entry_price",
+                            "mfe_price", "mfe_pnl", "mfe_time",
+                            "locked_profit_price", "locked_profit_pnl",
+                            "mfe_activation_time",
+                        )
+                    }
+                    position.mfe_basis_quantity = int(checkpoint["mfe_basis_quantity"])
+                    position.mfe_r = float(checkpoint["mfe_r"])
+                    position.locked_profit_r = float(checkpoint["locked_profit_r"])
+                    position.mfe_protection_armed = bool(checkpoint["mfe_protection_armed"])
+                    for key in (
+                        "initial_stop_price", "mfe_basis_entry_price", "mfe_price",
+                        "mfe_pnl", "locked_profit_price", "locked_profit_pnl",
+                    ):
+                        value = numeric[key]
+                        setattr(position, key, None if value is None else float(value))
+                    position.mfe_time = (
+                        None if numeric["mfe_time"] is None else _stamp(numeric["mfe_time"])
+                    )
+                    position.mfe_activation_time = (
+                        None if numeric["mfe_activation_time"] is None
+                        else _stamp(numeric["mfe_activation_time"])
+                    )
+                    finite = (
+                        Decimal(str(value)).is_finite()
+                        for value in (
+                            position.mfe_r, position.locked_profit_r,
+                            *(
+                                value for value in (
+                                    position.initial_stop_price,
+                                    position.mfe_basis_entry_price,
+                                    position.mfe_price,
+                                    position.mfe_pnl,
+                                    position.locked_profit_price,
+                                    position.locked_profit_pnl,
+                                ) if value is not None
+                            ),
+                        )
+                    )
+                    if (
+                        not all(finite)
+                        or position.mfe_basis_quantity < 0
+                        or position.mfe_r < 0
+                        or position.locked_profit_r < 0
+                        or (
+                            position.mfe_protection_armed
+                            and (
+                                position.locked_profit_price is None
+                                or position.mfe_activation_time is None
+                            )
+                        )
+                    ):
+                        raise ValueError("invalid MFE checkpoint")
             except (KeyError, ValueError, TypeError):
                 store.halt("INVALID_POSITION_CHECKPOINT")
                 raise RuntimeError("position checkpoint is invalid; manual reconciliation required") from None
@@ -1024,6 +1107,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             signal_date=seal["signal_date"],
             capital=args.capital,
             short_enabled=allow_short,
+            exit_policy=LIVE_EXIT_POLICY,
             gate=gate.public_snapshot(),
         )
         heartbeat.beat(
@@ -1033,6 +1117,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             signal_date=seal["signal_date"],
             watchlist_count=len(items),
             entry_start=SPEC["entry_start"],
+            exit_policy=LIVE_EXIT_POLICY,
             trade_attempted=trade_attempted,
             last_quote_at=session.last_quote_at,
             gate=gate.public_snapshot(),
@@ -2110,6 +2195,7 @@ def _status(args) -> int:
         "runtime_dir": str(runtime),
         "emergency_stop_marker": (runtime / "EMERGENCY_STOP").exists(),
         "database_exists": db.exists(),
+        "exit_policy": LIVE_EXIT_POLICY,
     }
     if db.exists():
         store = LiveOrderStore(db)

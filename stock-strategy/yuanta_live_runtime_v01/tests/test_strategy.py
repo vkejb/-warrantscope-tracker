@@ -1,7 +1,14 @@
 from datetime import datetime, timedelta
 import unittest
 
-from yuanta_live_runtime_v01.strategy import LiveDirectionEngine, ManagedPosition, SPEC, TAIPEI
+from yuanta_live_runtime_v01.strategy import (
+    LIVE_EXIT_POLICY,
+    LiveDirectionEngine,
+    ManagedPosition,
+    SPEC,
+    TAIPEI,
+    _candidate_locked_r,
+)
 
 
 class StrategyTests(unittest.TestCase):
@@ -52,6 +59,107 @@ class StrategyTests(unittest.TestCase):
         decision = engine.evaluate_exit(position, now)
         self.assertIsNotNone(decision)
         self.assertEqual(decision.reason, "HARD_EXIT")
+
+    def test_live_stop_is_net_3500_and_gap_uses_observed_quote(self):
+        engine, _ = self._engine_with_long_signal()
+        now = datetime(2026, 9, 24, 10, 0, tzinfo=TAIPEI)
+        position = ManagedPosition(
+            "2330", "台積電", "LONG", 1000, 100.0, "abc",
+            now - timedelta(minutes=1),
+        )
+        engine.record_tick(
+            "2330", at=now, price=96.5, volume=10,
+            bid=96.5, ask=96.6, flag="0", serial=999,
+        )
+        decision = engine.evaluate_exit(position, now)
+        self.assertEqual(LIVE_EXIT_POLICY["stop_loss_net_twd"], 3500.0)
+        self.assertIsNotNone(decision)
+        self.assertEqual(decision.reason, "STOP_LOSS")
+        self.assertLessEqual(decision.projected_net_pnl, -3500)
+
+    def test_mfe_v1_exact_boundaries(self):
+        self.assertIsNone(_candidate_locked_r(0.999999))
+        self.assertEqual(_candidate_locked_r(1.0), 0.0)
+        self.assertAlmostEqual(_candidate_locked_r(1.5), 0.9)
+        self.assertAlmostEqual(_candidate_locked_r(2.0), 1.4)
+        self.assertAlmostEqual(_candidate_locked_r(3.0), 2.25)
+
+    def test_mfe_floor_never_loosens_and_triggers_exit(self):
+        engine, _ = self._engine_with_long_signal()
+        now = datetime(2026, 9, 24, 10, 0, tzinfo=TAIPEI)
+        position = ManagedPosition(
+            "2330", "台積電", "LONG", 1000, 100.0, "abc",
+            now - timedelta(minutes=1),
+        )
+        engine._refresh_mfe_basis(position)
+        risk = position.entry_price - position.initial_stop_price
+        peak = position.entry_price + 3 * risk
+        engine._observe_mfe(
+            position,
+            price=peak,
+            projected_net_pnl=engine.projected_net(position, peak),
+            at=now,
+        )
+        locked = position.locked_profit_price
+        self.assertTrue(position.mfe_protection_armed)
+        self.assertAlmostEqual(position.locked_profit_r, 2.25)
+        engine._observe_mfe(
+            position,
+            price=position.entry_price + risk,
+            projected_net_pnl=engine.projected_net(position, position.entry_price + risk),
+            at=now + timedelta(seconds=1),
+        )
+        self.assertEqual(position.locked_profit_price, locked)
+        engine.record_tick(
+            "2330", at=now + timedelta(seconds=2), price=locked,
+            volume=10, bid=locked, ask=locked + 0.1, flag="0", serial=1000,
+        )
+        decision = engine.evaluate_exit(position, now + timedelta(seconds=2))
+        self.assertIsNotNone(decision)
+        self.assertEqual(decision.reason, "MFE_PROFIT_PROTECTION")
+
+    def test_short_mfe_floor_is_side_symmetric(self):
+        engine = LiveDirectionEngine({"2330": "台積電"})
+        now = datetime(2026, 9, 24, 10, 0, tzinfo=TAIPEI)
+        position = ManagedPosition(
+            "2330", "台積電", "SHORT", 1000, 100.0, "abc",
+            now - timedelta(minutes=1),
+        )
+        engine._refresh_mfe_basis(position)
+        risk = position.initial_stop_price - position.entry_price
+        peak = position.entry_price - 3 * risk
+        engine._observe_mfe(
+            position,
+            price=peak,
+            projected_net_pnl=engine.projected_net(position, peak),
+            at=now,
+        )
+        self.assertAlmostEqual(position.locked_profit_r, 2.25)
+        self.assertLess(position.locked_profit_price, position.entry_price)
+        self.assertTrue(engine._mfe_floor_breached(
+            position, position.locked_profit_price + 0.01,
+        ))
+
+    def test_partial_fill_rebase_never_loosens_absolute_floor(self):
+        engine = LiveDirectionEngine({"2330": "台積電"})
+        now = datetime(2026, 9, 24, 10, 0, tzinfo=TAIPEI)
+        position = ManagedPosition(
+            "2330", "台積電", "LONG", 1000, 100.0, "abc",
+            now - timedelta(minutes=1),
+        )
+        engine._refresh_mfe_basis(position)
+        risk = position.entry_price - position.initial_stop_price
+        peak = position.entry_price + 3 * risk
+        engine._observe_mfe(
+            position, price=peak,
+            projected_net_pnl=engine.projected_net(position, peak), at=now,
+        )
+        locked_before = position.locked_profit_price
+        position.entry_price = 101.0
+        position.quantity = 2000
+        engine._refresh_mfe_basis(position)
+        self.assertGreaterEqual(position.locked_profit_price, locked_before)
+        self.assertGreaterEqual(position.locked_profit_r, 0.0)
 
 
 if __name__ == "__main__":

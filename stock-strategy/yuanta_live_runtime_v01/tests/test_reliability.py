@@ -129,13 +129,21 @@ class PositionRecoveryTests(StoreCase):
         self.fill(entry, 1000, 100)
         return ManagedPosition("TEST", "Test", "LONG", 1000, 100, entry.client_order_id, self.now)
 
-    def test_restart_preserves_trailing_state_and_exit_reason(self):
+    def test_restart_preserves_mfe_state_and_exit_reason(self):
         position = self.create_position()
         position.peak_return = .05
         position.worst_return = -.025
         position.reversal_streak = 1
         position.last_reversal_decision = self.now
-        _checkpoint_position(self.store, position, "STOP_LOSS")
+        self.engine._refresh_mfe_basis(position)
+        risk = position.entry_price - position.initial_stop_price
+        peak = position.entry_price + 3 * risk
+        self.engine._observe_mfe(
+            position, price=peak,
+            projected_net_pnl=self.engine.projected_net(position, peak),
+            at=self.now,
+        )
+        _checkpoint_position(self.store, position, "MFE_PROFIT_PROTECTION")
         self.store.close()
         self.store = LiveOrderStore(self.path)
         recovered = _recover_runtime_state(self.store, {"TEST": "Test"}, self.now)
@@ -144,9 +152,36 @@ class PositionRecoveryTests(StoreCase):
         self.assertEqual(restored.worst_return, -.025)
         self.assertEqual(restored.reversal_streak, 1)
         self.assertEqual(restored.last_reversal_decision, self.now)
-        self.assertEqual(recovered["pending_exit_reason"], "STOP_LOSS")
-        self.engine.record_tick("TEST", at=self.now, price=102, bid=102, ask=102.5, volume=1)
-        self.assertEqual(self.engine.evaluate_exit(restored, self.now).reason, "TRAILING_PROFIT")
+        self.assertTrue(restored.mfe_protection_armed)
+        self.assertAlmostEqual(restored.mfe_r, 3.0)
+        self.assertAlmostEqual(restored.locked_profit_r, 2.25)
+        self.assertEqual(recovered["pending_exit_reason"], "MFE_PROFIT_PROTECTION")
+        floor = restored.locked_profit_price
+        self.engine.record_tick(
+            "TEST", at=self.now, price=floor, bid=floor, ask=floor + .1, volume=1,
+        )
+        self.assertEqual(
+            self.engine.evaluate_exit(restored, self.now).reason,
+            "MFE_PROFIT_PROTECTION",
+        )
+
+    def test_legacy_checkpoint_requests_exit_instead_of_resetting_mfe(self):
+        position = self.create_position()
+        _checkpoint_position(self.store, position, None)
+        payload = self.store.position_checkpoint(position.entry_order_id)
+        payload["version"] = 1
+        for key in list(payload):
+            if key not in {
+                "version", "stock_id", "side", "peak_return", "worst_return",
+                "reversal_streak", "last_reversal_decision", "pending_exit_reason",
+            }:
+                payload.pop(key)
+        self.store.save_position_checkpoint(position.entry_order_id, payload)
+        recovered = _recover_runtime_state(self.store, {"TEST": "Test"}, self.now)
+        self.assertEqual(
+            recovered["pending_exit_reason"],
+            "MFE_STATE_UNAVAILABLE_AFTER_UPGRADE",
+        )
 
     def test_missing_checkpoint_requests_exit_not_reset_and_hold(self):
         self.create_position()
