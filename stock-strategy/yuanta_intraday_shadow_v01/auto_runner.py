@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from prospective_notifications_v01.keychain import load_into_environment
 from prospective_notifications_v01.notifier import notify
+from paper_shadow_v01.runner import publish_paper_day
 
 from .collector import DEFAULT_RUNTIME_DIR, DEFAULT_STAGE_A_RUNTIME, utc_now
 from .collector_main import run
@@ -122,11 +123,18 @@ def main() -> int:
             session = result["session"]
             if session["coverage_status"] != "FULL_SESSION":
                 raise RuntimeError(f"coverage failed: max_gap={session.get('max_market_event_gap_seconds')}")
+            paper = publish_paper_day(run_dir, session)
             _append({
                 "at": utc_now(), "date": day, "signal_date": signal_date, "status": "COMPLETE",
                 "run_id": session["source_run_id"], "analysis_hash": result["quality"]["analysis_hash"],
                 "coverage": session["coverage_status"], "actual_orders": 0, "actual_fills": 0, "broker_order_calls": 0,
                 "market_context_0050": context_counts,
+                "paper_run_id": paper["paper_run_id"],
+                "paper_publish_status": paper["publish_status"],
+                "paper_status": paper["status"],
+                "paper_trade_count": paper["paper_trade_count"],
+                "paper_net_pnl": paper["net_pnl"],
+                "paper_manifest_hash": paper["manifest_hash"],
             })
             return 0
         except Exception as exc:

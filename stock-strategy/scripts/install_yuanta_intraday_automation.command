@@ -33,6 +33,6 @@ print "安裝完成："
 launchctl print "gui/${UID}/${label}" | sed -n '1,35p'
 pmset -g sched
 print ""
-print "交易日 08:50 自動登入只讀行情；13:35 封存、分析並通知。"
+print "交易日 08:50 自動登入只讀行情；13:35 封存、紙上回放、分析並通知。"
 print "Mac 必須接上電源、處於睡眠而非關機，且早上有網路。"
 read -r "?按 Enter 關閉視窗……"

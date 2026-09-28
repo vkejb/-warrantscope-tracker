@@ -220,6 +220,11 @@ def _impact_rows(cases: list[TradeCase]) -> list[dict[str, Any]]:
 
 
 def _grid_rows(impacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def difference(current: float | None, baseline: float | None) -> float | None:
+        if current is None or baseline is None:
+            return None
+        return current - baseline
+
     grouped: dict[str, list[dict[str, Any]]] = {}
     for row in impacts:
         grouped.setdefault(row["candidate_id"], []).append(row)
@@ -253,15 +258,15 @@ def _grid_rows(impacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "net_pnl": new["net_pnl"],
             "net_pnl_difference": new["net_pnl"] - base["net_pnl"],
             "expectancy": new["expectancy"],
-            "expectancy_difference": new["expectancy"] - base["expectancy"],
+            "expectancy_difference": difference(new["expectancy"], base["expectancy"]),
             "profit_factor": new["profit_factor"],
-            "profit_factor_difference": new["profit_factor"] - base["profit_factor"],
+            "profit_factor_difference": difference(new["profit_factor"], base["profit_factor"]),
             "max_drawdown": new["max_drawdown"],
             "max_drawdown_difference": new["max_drawdown"] - base["max_drawdown"],
             "average_loser": new["average_loser"],
-            "average_loser_difference": new["average_loser"] - base["average_loser"],
+            "average_loser_difference": difference(new["average_loser"], base["average_loser"]),
             "average_winner": new["average_winner"],
-            "average_winner_difference": new["average_winner"] - base["average_winner"],
+            "average_winner_difference": difference(new["average_winner"], base["average_winner"]),
             "baseline_net_pnl": base["net_pnl"],
             "baseline_expectancy": base["expectancy"],
             "baseline_profit_factor": base["profit_factor"],

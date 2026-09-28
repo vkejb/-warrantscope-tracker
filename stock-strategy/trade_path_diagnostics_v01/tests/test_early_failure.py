@@ -83,6 +83,21 @@ class EarlyFailureTests(unittest.TestCase):
         self.assertTrue(summary["c"]["fragile"])
         self.assertEqual(summary["c"]["loo_min_net_pnl_difference"], 0)
 
+    def test_single_trade_grid_preserves_undefined_group_metrics(self):
+        rows = [{
+            "candidate_id": "c", "trade_id": "winner", "entry_time": "1",
+            "original_pnl": 1000.0, "new_pnl": 1000.0, "pnl_delta": 0.0,
+            "triggered": False, "evaluable": True,
+            "original_loser_exited": False, "incorrect_winner_exit": False,
+            "checkpoint_minutes": 5, "negative_threshold_r": -0.2,
+            "mfe_progress_threshold_r": 0.1,
+        }]
+        grid = _grid_rows(rows)[0]
+        self.assertIsNone(grid["average_loser"])
+        self.assertIsNone(grid["average_loser_difference"])
+        self.assertIsNone(grid["profit_factor"])
+        self.assertIsNone(grid["profit_factor_difference"])
+
 
 if __name__ == "__main__":
     unittest.main()

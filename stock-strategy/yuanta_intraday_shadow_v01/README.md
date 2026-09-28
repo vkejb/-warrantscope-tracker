@@ -46,8 +46,11 @@ open scripts/open_yuanta_intraday_gui.command
 全天模式會以 gzip 直接寫入不可覆寫的逐筆／五檔資料，並在完成後產生
 09:05、09:15、09:30、10:00、10:30 固定時間快照與收盤後路徑結果。
 
-即時資料只寫入 gitignored 的 `runtime/runs/<run_id>/`。目前沒有紙上撮合，
-也沒有任何元大委託函式；帳號與兩組密碼仍由當次互動輸入且不落盤。
+即時資料只寫入 gitignored 的 `runtime/runs/<run_id>/`。背景自動程序在
+`FULL_SESSION` 封存後，會呼叫獨立的 `paper_shadow_v01`，使用正式長多訊號引擎
+與現行出場規則做盤後因果紙上回放，並保存假設進出場、5／10／15分鐘狀態及
+EARLY_FAILURE 75組 observe-only 結果。紙上模組沒有任何元大委託函式；帳號
+與兩組密碼仍只由 Keychain 載入且不寫入紙上交易檔案。
 
 衍生分析寫入獨立的 `runtime/analyses/<run_id>/`，不修改原始行情。V0.1
 狀態只屬於 prospective shadow diagnostics，不是進出場建議，也尚未經歷史驗證。
@@ -86,6 +89,8 @@ macOS Keychain，安裝使用者層級 LaunchAgent，並設定週一至週五 08
 喚醒。08:50 runner 仍會先查正式交易日曆與前一交易日 Stage A seal；假日
 不登入。通過後每日會訂閱 Top30 + 0050；若 0050 沒有同時收到逐筆與五檔證據，
 當日自動收集不宣告完成。收集期間由 `caffeinate` 防止休眠，13:35 後才分析及通知。
+只有 coverage、0050逐筆／五檔與紙上回放都成功，當日自動紀錄才標記完成；
+紙上回放失敗不會建立假成交，會讓自動紀錄失敗並發出既有 WARNING。
 
 Keychain、LaunchAgent 與喚醒狀態可用下列命令檢查，輸出不含秘密：
 
