@@ -50,6 +50,7 @@ from .accounting import execution_pnl
 from .trading_bot_notifier import AsyncTradingNotifier
 from .risk_manager import RiskLimits, RiskManager
 from .strategy import (
+    ANTI_CHASE_ENTRY_POLICY,
     LIVE_EXIT_POLICY,
     LONG_MARKET_REGIME_POLICY,
     LiveDirectionEngine,
@@ -1172,6 +1173,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             capital=args.capital,
             short_enabled=allow_short,
             entry_policy=LONG_MARKET_REGIME_POLICY,
+            entry_location_policy=ANTI_CHASE_ENTRY_POLICY,
             exit_policy=LIVE_EXIT_POLICY,
             gate=gate.public_snapshot(),
         )
@@ -1183,6 +1185,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             watchlist_count=len(items),
             entry_start=SPEC["entry_start"],
             entry_policy=LONG_MARKET_REGIME_POLICY,
+            entry_location_policy=ANTI_CHASE_ENTRY_POLICY,
             exit_policy=LIVE_EXIT_POLICY,
             trade_attempted=trade_attempted,
             last_quote_at=session.last_quote_at,

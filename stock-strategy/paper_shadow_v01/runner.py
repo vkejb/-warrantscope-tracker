@@ -1,11 +1,12 @@
 """Post-session paper replay using the production long-only signal engine."""
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timedelta
 import gzip
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -26,6 +27,7 @@ from yuanta_intraday_shadow_v01.direction_follow_backtest import (
     _decision_times,
     _exit_quote,
     _projected_net_pnl,
+    _tick_size,
     load_session,
 )
 from yuanta_intraday_shadow_v01.exit_parameter_sweep import PathPoint
@@ -38,6 +40,7 @@ from yuanta_intraday_shadow_v01.live_parity_backtest import (
     _validate_full_session_coverage,
 )
 from yuanta_live_runtime_v01.strategy import (
+    ANTI_CHASE_ENTRY_POLICY,
     LIVE_EXIT_POLICY,
     LONG_MARKET_REGIME_POLICY,
     LiveDirectionEngine,
@@ -48,6 +51,14 @@ from yuanta_live_runtime_v01.strategy import (
 ANALYSIS_ID = "BACKGROUND_PAPER_SHADOW_V0_1"
 MODULE_DIR = Path(__file__).resolve().parent
 DEFAULT_RUNTIME_DIR = MODULE_DIR / "runtime"
+PAPER_CONFIRMATION_POLICY = {
+    "policy_id": "ANTI_CHASE_60S_CONFIRMATION_SHADOW_V1",
+    "delay_seconds": 60,
+    "minimum_directional_volume_delta": 0.10,
+    "minimum_directional_large_trade_delta": 0.0,
+    "requires_breakout_held": True,
+    "rechecks_anti_chase": True,
+}
 PAPER_CONTRACT = {
     "analysis_id": ANALYSIS_ID,
     "mode": "POST_SESSION_CAUSAL_PAPER_REPLAY",
@@ -56,7 +67,13 @@ PAPER_CONTRACT = {
     "benchmark": "0050",
     "capital_twd": 190_000,
     "maximum_concurrent_positions": 1,
-    "maximum_trades_per_session": 1,
+    "maximum_trades_per_session_per_variant": 1,
+    "paper_variants": [
+        "PRODUCTION_ANTI_CHASE",
+        "ANTI_CHASE_PLUS_60S_CONFIRMATION",
+    ],
+    "production_anti_chase_policy": ANTI_CHASE_ENTRY_POLICY,
+    "confirmation_60s": PAPER_CONFIRMATION_POLICY,
     "execution_model": EXECUTION_MODEL,
     "exit_policy": LIVE_EXIT_POLICY,
     "market_regime_policy": LONG_MARKET_REGIME_POLICY,
@@ -168,6 +185,145 @@ def _jsonable(value: Any) -> Any:
     return value
 
 
+def _signed_volume(row: dict[str, Any]) -> float:
+    if row.get("flag") == "1":
+        return float(row["volume"])
+    if row.get("flag") == "0":
+        return -float(row["volume"])
+    midpoint = (float(row["bid"]) + float(row["ask"])) / 2
+    return float(row["volume"]) if float(row["price"]) >= midpoint else -float(row["volume"])
+
+
+def _percentile90(values: list[float]) -> float:
+    ordered = sorted(values)
+    index = max(0, math.ceil(0.9 * len(ordered)) - 1)
+    return ordered[index]
+
+
+def _confirm_after_60_seconds(
+    candidate: Any,
+    data: dict[str, Any],
+    *,
+    capital_twd: int,
+) -> tuple[Any | None, dict[str, Any]]:
+    """Causal paper-only delayed confirmation; never reaches a broker adapter."""
+    signal_time = candidate.decision_time
+    checkpoint = signal_time + timedelta(
+        seconds=int(PAPER_CONFIRMATION_POLICY["delay_seconds"])
+    )
+    observations = [row for row in data["ticks"] if row["time"] <= checkpoint]
+    observation = observations[-1] if observations else None
+    execution = next((row for row in data["ticks"] if row["time"] >= checkpoint), None)
+    if observation is None or execution is None:
+        return None, {"confirmation_time": checkpoint, "confirmation_reason": "QUOTE_MISSING"}
+    maximum_age = float(SPEC["maximum_tick_staleness_seconds"])
+    observation_age = (checkpoint - observation["time"]).total_seconds()
+    execution_delay = (execution["time"] - checkpoint).total_seconds()
+    if not (
+        0 <= observation_age <= maximum_age
+        and 0 <= execution_delay <= maximum_age
+    ):
+        return None, {
+            "confirmation_time": checkpoint,
+            "confirmation_reason": "QUOTE_STALE",
+            "observation_age_seconds": observation_age,
+            "execution_delay_seconds": execution_delay,
+        }
+    window = [
+        row for row in data["ticks"]
+        if signal_time < row["time"] <= checkpoint
+    ]
+    total_volume = sum(float(row["volume"]) for row in window)
+    if not window or total_volume <= 0:
+        return None, {"confirmation_time": checkpoint, "confirmation_reason": "FLOW_WINDOW_MISSING"}
+    direction = 1.0 if candidate.side == "LONG" else -1.0
+    volume_delta = direction * sum(_signed_volume(row) for row in window) / total_volume
+    reference = [
+        row for row in data["ticks"]
+        if checkpoint - timedelta(seconds=300) <= row["time"] <= checkpoint
+    ]
+    if not reference:
+        return None, {"confirmation_time": checkpoint, "confirmation_reason": "REFERENCE_MISSING"}
+    threshold = _percentile90([float(row["volume"]) for row in reference])
+    large = [row for row in window if float(row["volume"]) >= threshold]
+    large_total = sum(float(row["volume"]) for row in large)
+    large_delta = (
+        direction * sum(_signed_volume(row) for row in large) / large_total
+        if large_total > 0 else None
+    )
+    current = float(observation["price"])
+    boundary = float(candidate.breakout_boundary_price)
+    structure_held = current >= boundary if candidate.side == "LONG" else current <= boundary
+    causal = observations
+    known_volume = sum(float(row["volume"]) for row in causal)
+    vwap = (
+        sum(float(row["price"]) * float(row["volume"]) for row in causal) / known_volume
+        if known_volume > 0 else None
+    )
+    opening = float(causal[0]["price"])
+    if candidate.side == "LONG":
+        opening_extension = current / opening - 1
+        vwap_extension = current / float(vwap) - 1 if vwap else None
+    else:
+        opening_extension = opening / current - 1
+        vwap_extension = float(vwap) / current - 1 if vwap else None
+    checks = {
+        "VOLUME_NOT_PERSISTENT": volume_delta >= float(
+            PAPER_CONFIRMATION_POLICY["minimum_directional_volume_delta"]
+        ),
+        "LARGE_TRADE_NOT_PERSISTENT": large_delta is not None and large_delta >= float(
+            PAPER_CONFIRMATION_POLICY["minimum_directional_large_trade_delta"]
+        ),
+        "BREAKOUT_NOT_HELD": structure_held,
+        "OPENING_EXTENSION_TOO_HIGH": opening_extension <= float(
+            ANTI_CHASE_ENTRY_POLICY["maximum_directional_opening_extension"]
+        ) + 1e-12,
+        "VWAP_EXTENSION_TOO_HIGH": vwap_extension is not None and vwap_extension <= float(
+            ANTI_CHASE_ENTRY_POLICY["maximum_directional_vwap_extension"]
+        ) + 1e-12,
+    }
+    failed = [reason for reason, passed in checks.items() if not passed]
+    diagnostics = {
+        "confirmation_time": checkpoint,
+        "confirmation_volume_delta": volume_delta,
+        "confirmation_large_trade_delta": large_delta,
+        "confirmation_structure_held": structure_held,
+        "confirmation_opening_extension": opening_extension,
+        "confirmation_vwap_extension": vwap_extension,
+        "observation_age_seconds": observation_age,
+        "execution_delay_seconds": execution_delay,
+    }
+    if failed:
+        return None, {**diagnostics, "confirmation_reason": "+".join(failed)}
+    entry_price = (
+        float(execution["ask"]) + _tick_size(float(execution["ask"]))
+        if candidate.side == "LONG"
+        else max(
+            _tick_size(float(execution["bid"])),
+            float(execution["bid"]) - _tick_size(float(execution["bid"])),
+        )
+    )
+    quantity = math.floor(capital_twd / (entry_price * 1000)) * 1000
+    if quantity <= 0:
+        return None, {**diagnostics, "confirmation_reason": "DELAYED_ENTRY_UNAFFORDABLE"}
+    confirmed = replace(
+        candidate,
+        decision_time=execution["time"],
+        entry_price=entry_price,
+        quantity=quantity,
+        directional_opening_extension=opening_extension,
+        directional_vwap_extension=float(vwap_extension),
+    )
+    return confirmed, {
+        **diagnostics,
+        "confirmation_reason": "CONFIRMED",
+        "original_signal_time": signal_time,
+        "delayed_entry_time": execution["time"],
+        "delayed_entry_price": entry_price,
+        "delayed_quantity": quantity,
+    }
+
+
 def _research_trade(candidate: Any, data: dict, end_time: datetime) -> ResearchTrade:
     points = []
     for row in data["ticks"]:
@@ -206,18 +362,16 @@ def _research_trade(candidate: Any, data: dict, end_time: datetime) -> ResearchT
     )
 
 
-def replay_paper_session(
+def _replay_paper_track(
     candidates: dict[str, dict],
     market_context: dict[str, dict],
     coverage: dict,
     *,
     capital_twd: int = 190_000,
+    confirmation_60s: bool = False,
 ) -> dict[str, Any]:
-    _validate_full_session_coverage(coverage)
     benchmark = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
     combined = {**candidates, **market_context}
-    if benchmark not in combined:
-        raise RuntimeError("benchmark is missing from paper replay")
     metadata = {
         symbol: str(data.get("meta", {}).get("stock_name", symbol))
         for symbol, data in combined.items()
@@ -233,11 +387,42 @@ def replay_paper_session(
     session_date = str(coverage["session_date"])
     decisions = []
     candidate = None
+    signal_time = None
+    next_decision_after = None
     for decision in _decision_times(session_date, SPEC["entry_start"], SPEC["last_entry_time"]):
+        if next_decision_after is not None and decision <= next_decision_after:
+            continue
         _feed_until(engine, combined, tick_indexes, book_indexes, decision)
         candidate = engine.choose_entry(decision, allow_short=False)
         decisions.append(_jsonable(engine.last_entry_diagnostics))
         if candidate is not None:
+            signal_time = candidate.decision_time
+            if not confirmation_60s:
+                break
+            confirmed, confirmation = _confirm_after_60_seconds(
+                candidate,
+                candidates[candidate.stock_id],
+                capital_twd=capital_twd,
+            )
+            decisions.append({
+                "decision": "PAPER_60S_CONFIRMATION",
+                "stock_id": candidate.stock_id,
+                **_jsonable(confirmation),
+            })
+            checkpoint = signal_time + timedelta(
+                seconds=int(PAPER_CONFIRMATION_POLICY["delay_seconds"])
+            )
+            if confirmed is None:
+                _feed_until(engine, combined, tick_indexes, book_indexes, checkpoint)
+                next_decision_after = checkpoint
+                candidate = None
+                signal_time = None
+                continue
+            candidate = confirmed
+            _feed_until(
+                engine, combined, tick_indexes, book_indexes,
+                candidate.decision_time,
+            )
             break
     if candidate is None:
         return {
@@ -246,7 +431,10 @@ def replay_paper_session(
             "candidate_impacts": [],
             "candidate_grid": [],
             "decision_diagnostics": decisions,
-            "reason": "NO_APPROVED_LONG_ENTRY",
+            "reason": (
+                "NO_CONFIRMED_LONG_ENTRY"
+                if confirmation_60s else "NO_APPROVED_LONG_ENTRY"
+            ),
         }
     position = ManagedPosition(
         stock_id=candidate.stock_id,
@@ -309,7 +497,11 @@ def replay_paper_session(
         "stock_id": candidate.stock_id,
         "stock_name": candidate.stock_name,
         "side": "LONG",
-        "signal_time": candidate.decision_time.isoformat(),
+        "strategy_variant": (
+            "ANTI_CHASE_PLUS_60S_CONFIRMATION"
+            if confirmation_60s else "PRODUCTION_ANTI_CHASE"
+        ),
+        "signal_time": (signal_time or candidate.decision_time).isoformat(),
         "entry_time": candidate.decision_time.isoformat(),
         "entry_price": candidate.entry_price,
         "quantity": candidate.quantity,
@@ -333,6 +525,9 @@ def replay_paper_session(
         "benchmark_return_5m": candidate.benchmark_return_5m,
         "relative_strength_5m": candidate.relative_strength_5m,
         "required_confirmations": candidate.required_confirmations,
+        "directional_opening_extension": candidate.directional_opening_extension,
+        "directional_vwap_extension": candidate.directional_vwap_extension,
+        "breakout_boundary_price": candidate.breakout_boundary_price,
         "execution_model": EXECUTION_MODEL,
         "paper_only": True,
     }
@@ -353,6 +548,40 @@ def replay_paper_session(
         "decision_diagnostics": decisions,
         "reason": "PAPER_TRADE_SCORED",
         "selected_signal": _jsonable(asdict(candidate)),
+    }
+
+
+def replay_paper_session(
+    candidates: dict[str, dict],
+    market_context: dict[str, dict],
+    coverage: dict,
+    *,
+    capital_twd: int = 190_000,
+) -> dict[str, Any]:
+    _validate_full_session_coverage(coverage)
+    benchmark = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
+    combined = {**candidates, **market_context}
+    if benchmark not in combined:
+        raise RuntimeError("benchmark is missing from paper replay")
+    anti_chase = _replay_paper_track(
+        candidates, market_context, coverage,
+        capital_twd=capital_twd,
+        confirmation_60s=False,
+    )
+    confirmed = _replay_paper_track(
+        candidates, market_context, coverage,
+        capital_twd=capital_twd,
+        confirmation_60s=True,
+    )
+    return {
+        **anti_chase,
+        "variants": {
+            "PRODUCTION_ANTI_CHASE": anti_chase,
+            "ANTI_CHASE_PLUS_60S_CONFIRMATION": confirmed,
+        },
+        "confirmation_trade": confirmed["trade"],
+        "confirmation_reason": confirmed["reason"],
+        "confirmation_decision_diagnostics": confirmed["decision_diagnostics"],
     }
 
 
@@ -426,9 +655,16 @@ def publish_paper_day(
         shutil.rmtree(temporary)
     temporary.mkdir()
     try:
-        trade_rows = [result["trade"]] if result["trade"] else []
+        trade_rows = [
+            trade for trade in (result["trade"], result["confirmation_trade"])
+            if trade is not None
+        ]
         _write_jsonl(temporary / "paper_trades.jsonl", trade_rows)
         _write_jsonl(temporary / "decision_diagnostics.jsonl", result["decision_diagnostics"])
+        _write_jsonl(
+            temporary / "confirmation_60s_diagnostics.jsonl",
+            result["confirmation_decision_diagnostics"],
+        )
         _write_jsonl(temporary / "early_failure_checkpoints.jsonl", result["checkpoint_rows"])
         _write_jsonl(temporary / "early_failure_candidate_impacts.jsonl", result["candidate_impacts"])
         _write_jsonl(temporary / "early_failure_grid.jsonl", result["candidate_grid"])
@@ -438,9 +674,25 @@ def publish_paper_day(
             "session_date": day,
             "source_run_id": source["run_id"],
             "paper_contract_hash": PAPER_CONTRACT_HASH,
-            "status": result["reason"],
+            "status": "PAPER_VARIANTS_EVALUATED",
             "paper_trade_count": len(trade_rows),
             "net_pnl": result["trade"]["net_pnl"] if result["trade"] else 0,
+            "net_pnl_scope": "PRODUCTION_ANTI_CHASE_ONLY_NOT_VARIANT_SUM",
+            "variant_results": {
+                "PRODUCTION_ANTI_CHASE": {
+                    "status": result["reason"],
+                    "trade_count": int(result["trade"] is not None),
+                    "net_pnl": result["trade"]["net_pnl"] if result["trade"] else 0,
+                },
+                "ANTI_CHASE_PLUS_60S_CONFIRMATION": {
+                    "status": result["confirmation_reason"],
+                    "trade_count": int(result["confirmation_trade"] is not None),
+                    "net_pnl": (
+                        result["confirmation_trade"]["net_pnl"]
+                        if result["confirmation_trade"] else 0
+                    ),
+                },
+            },
             "checkpoint_rows": len(result["checkpoint_rows"]),
             "evaluable_checkpoints": sum(bool(row["evaluable"]) for row in result["checkpoint_rows"]),
             "candidate_impact_rows": len(result["candidate_impacts"]),
@@ -448,11 +700,14 @@ def publish_paper_day(
             "actual_orders": 0,
             "actual_fills": 0,
             "broker_connections": 0,
-            "live_behavior_changed": False,
+            "production_entry_policy": "ANTI_CHASE_BALANCED_V1",
+            "production_entry_behavior_changed": True,
+            "broker_submission_behavior_changed": False,
         }
         (temporary / "daily_summary.json").write_bytes(canonical_bytes(summary) + b"\n")
         artifact_names = (
             "paper_trades.jsonl", "decision_diagnostics.jsonl",
+            "confirmation_60s_diagnostics.jsonl",
             "early_failure_checkpoints.jsonl",
             "early_failure_candidate_impacts.jsonl", "early_failure_grid.jsonl",
             "daily_summary.json",

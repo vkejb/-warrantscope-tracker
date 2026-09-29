@@ -1,9 +1,9 @@
-"""Realtime form of the frozen Top30 direction-following entry rule.
+"""Realtime form of the Top30 direction-following entry rule.
 
 The thresholds come from ``yuanta_intraday_shadow_v01.direction_follow_backtest.SPEC``.
-Entry selection remains frozen. Runtime exits use an explicit, independently logged
-policy; broker submission remains in ``main.py`` and still passes through the
-reviewed broker gate.
+The approved anti-chase overlay is applied after the base and market-regime gates.
+Runtime exits use an explicit, independently logged policy; broker submission remains
+in ``main.py`` and still passes through the reviewed broker gate.
 """
 from __future__ import annotations
 
@@ -45,6 +45,14 @@ LONG_MARKET_REGIME_POLICY = {
     "neutral_confirmations": 2,
     "bearish_confirmations": 2,
     "short_behavior": "UNCHANGED_NOT_ENABLED_BY_THIS_POLICY",
+}
+
+ANTI_CHASE_ENTRY_POLICY = {
+    "policy_id": "ANTI_CHASE_BALANCED_V1",
+    "maximum_directional_opening_extension": 0.020,
+    "maximum_directional_vwap_extension": 0.0125,
+    "opening_reference_must_arrive_by": SPEC["entry_start"],
+    "applies_to": "ENTRY_ONLY_SIDE_AWARE",
 }
 
 # TWSE quote timestamps and the local callback clock can differ by a fraction
@@ -93,6 +101,9 @@ class LiveSignal:
     benchmark_return_5m: float | None = None
     relative_strength_5m: float | None = None
     required_confirmations: int = 1
+    directional_opening_extension: float = 0.0
+    directional_vwap_extension: float = 0.0
+    breakout_boundary_price: float = 0.0
 
 
 @dataclass(slots=True)
@@ -150,6 +161,9 @@ class _StockState:
     buy_side: dict | None = None
     sell_side: dict | None = None
     last_serial: int = 0
+    session_date: object | None = None
+    session_open_price: float | None = None
+    session_open_time: datetime | None = None
 
 
 class LiveDirectionEngine:
@@ -228,10 +242,18 @@ class LiveDirectionEngine:
         ):
             return False
         sequence = int(self._num(serial) or 0)
+        if state.ticks and stamp < state.ticks[-1]["time"]:
+            return False
+        if state.session_date != stamp.date():
+            state.ticks.clear()
+            state.cumulative_volume = state.cumulative_pv = 0.0
+            state.latest_book = state.buy_side = state.sell_side = None
+            state.last_serial = 0
+            state.session_date = stamp.date()
+            state.session_open_price = px
+            state.session_open_time = stamp
         if state.ticks:
             previous = state.ticks[-1]
-            if stamp < previous["time"]:
-                return False
             if stamp.date() == previous["time"].date():
                 if sequence > 0 and sequence <= state.last_serial:
                     return False
@@ -240,11 +262,6 @@ class LiveDirectionEngine:
                     previous["bid"], previous["ask"],
                 ):
                     return False
-            else:
-                state.ticks.clear()
-                state.cumulative_volume = state.cumulative_pv = 0.0
-                state.latest_book = state.buy_side = state.sell_side = None
-                state.last_serial = 0
         state.last_serial = max(state.last_serial, sequence)
         row = {
             "time": stamp,
@@ -466,6 +483,17 @@ class LiveDirectionEngine:
         vwap = (state.cumulative_pv - sum(row["price"] * row["volume"] for row in unavailable)) / known_volume
         current = window[-1]["price"]
         vwap_gap = current / vwap - 1
+        opening_price = state.session_open_price
+        opening_time = state.session_open_time
+        if (
+            opening_price is None
+            or opening_price <= 0
+            or opening_time is None
+            or opening_time.time() > self._clock(
+                str(ANTI_CHASE_ENTRY_POLICY["opening_reference_must_arrive_by"])
+            )
+        ):
+            return None
         return_5m = self._return_over(
             self._causal_rows(state, decision),
             decision,
@@ -499,6 +527,14 @@ class LiveDirectionEngine:
             + 0.20 * abs(book_imbalance)
         )
         side = "LONG" if long_ok else "SHORT"
+        if side == "LONG":
+            directional_opening_extension = current / opening_price - 1
+            directional_vwap_extension = vwap_gap
+            breakout_boundary_price = max(row["price"] for row in prior)
+        else:
+            directional_opening_extension = opening_price / current - 1
+            directional_vwap_extension = -vwap_gap
+            breakout_boundary_price = min(row["price"] for row in prior)
         entry_price = (
             window[-1]["ask"] + _tick_size(window[-1]["ask"])
             if side == "LONG"
@@ -524,6 +560,9 @@ class LiveDirectionEngine:
             "entry_price": entry_price,
             "quantity": quantity,
             "return_5m": return_5m,
+            "directional_opening_extension": directional_opening_extension,
+            "directional_vwap_extension": directional_vwap_extension,
+            "breakout_boundary_price": breakout_boundary_price,
         }
 
     @staticmethod
@@ -542,6 +581,7 @@ class LiveDirectionEngine:
         market = self._market_context(decision)
         self.last_entry_diagnostics = {
             "policy_id": LONG_MARKET_REGIME_POLICY["policy_id"],
+            "anti_chase_policy": ANTI_CHASE_ENTRY_POLICY,
             "decision_time": decision,
             "benchmark_required": self.benchmark_symbol is not None,
             "market_context": market,
@@ -606,6 +646,18 @@ class LiveDirectionEngine:
             }
             self.last_entry_diagnostics["candidates"].append(diagnostic)
             if gate_reason not in {"BASE_SIGNAL_CONFIRMED", "MARKET_GATE_PASSED"}:
+                continue
+            if (
+                float(signal["directional_opening_extension"])
+                > float(ANTI_CHASE_ENTRY_POLICY["maximum_directional_opening_extension"]) + 1e-12
+            ):
+                diagnostic["gate_reason"] = "ANTI_CHASE_OPENING_EXTENSION"
+                continue
+            if (
+                float(signal["directional_vwap_extension"])
+                > float(ANTI_CHASE_ENTRY_POLICY["maximum_directional_vwap_extension"]) + 1e-12
+            ):
+                diagnostic["gate_reason"] = "ANTI_CHASE_VWAP_EXTENSION"
                 continue
             if streak < required_confirmations:
                 diagnostic["gate_reason"] = "CONFIRMATIONS_INCOMPLETE"

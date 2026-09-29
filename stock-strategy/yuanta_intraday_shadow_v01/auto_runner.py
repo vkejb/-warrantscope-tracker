@@ -134,6 +134,7 @@ def main() -> int:
                 "paper_status": paper["status"],
                 "paper_trade_count": paper["paper_trade_count"],
                 "paper_net_pnl": paper["net_pnl"],
+                "paper_variant_results": paper.get("variant_results", {}),
                 "paper_manifest_hash": paper["manifest_hash"],
             })
             return 0

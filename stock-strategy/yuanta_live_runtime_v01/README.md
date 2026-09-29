@@ -2,7 +2,7 @@
 
 這個模組把目前 repo 已存在的三層串起來：
 
-`Stage A Top30 → 即時逐筆/五檔 → frozen direction rule → 0050 market gate → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
+`Stage A Top30 → 即時逐筆/五檔 → direction rule → 0050 market gate → ANTI_CHASE_BALANCED_V1 → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
 
 它**沒有移除** broker adapter 的安全鎖。正式送單仍必須同時滿足：
 
@@ -27,6 +27,8 @@
 - 0050 同時在 VWAP 下且 5 分鐘報酬為負時視為 BEARISH，個股必須至少領先 0050 0.5%，且原訊號連續確認 2 次
 - 其餘為 NEUTRAL，個股必須至少領先 0050 0.25%，且原訊號連續確認 2 次
 - 0050 缺少完整 5 分鐘暖機資料、行情 stale 或計算無效時 fail closed，不建立新倉
+- 正式做多進場套用 `ANTI_CHASE_BALANCED_V1`：訊號價相對當日第一筆有效價不得超過 2.0%，相對當日即時 VWAP 不得超過 1.25%；任一超標即拒絕該次進場並保留拒絕原因
+- 防追高只改變進場核准，不改選股、原始方向訊號、部位 sizing、停損、MFE、強制出場、broker gate 或送單路由
 - 每個 30 秒決策的市場狀態、相對強度、通過／拒絕原因寫入獨立 signal ledger，供後續累積樣本驗證
 - 單日最多一次進場嘗試
 - 預設資金上限 190,000 元，以整張 1,000 股 sizing

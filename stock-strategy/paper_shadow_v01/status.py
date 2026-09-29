@@ -24,6 +24,7 @@ def latest_status(runtime_dir: Path = DEFAULT_RUNTIME_DIR) -> dict:
         "paper_run_id": manifest["paper_run_id"],
         "paper_trade_count": manifest["paper_trade_count"],
         "net_pnl": manifest["net_pnl"],
+        "variant_results": manifest.get("variant_results", {}),
         "evaluable_checkpoints": manifest["evaluable_checkpoints"],
         "decision_windows": manifest["decision_windows"],
         "manifest_hash": manifest["manifest_hash"],

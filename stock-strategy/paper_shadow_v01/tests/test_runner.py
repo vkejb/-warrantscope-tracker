@@ -30,12 +30,12 @@ def _empty_stock(name: str) -> dict:
 def _market_stock(name: str, *, benchmark: bool = False) -> dict:
     start = datetime(2026, 9, 29, 9, 0, tzinfo=TAIPEI)
     ticks, books = [], []
-    for index in range(61):
+    for index in range(73):
         at = start + timedelta(seconds=index * 5)
         if benchmark:
             price = 100.0 + index * 0.01
         else:
-            price = 100.0 if index < 36 else 100.0 + (index - 35) * 0.12
+            price = 100.0 if index < 36 else 100.0 + (index - 35) * 0.03
         ticks.append({
             "time": at, "price": price, "volume": 10.0,
             "bid": price - 0.1, "ask": price, "flag": "1", "serial": index + 1,
@@ -104,7 +104,17 @@ class PaperShadowTests(unittest.TestCase):
         )
         self.assertEqual(result["reason"], "PAPER_TRADE_SCORED")
         self.assertEqual(result["trade"]["side"], "LONG")
+        self.assertEqual(result["trade"]["strategy_variant"], "PRODUCTION_ANTI_CHASE")
         self.assertEqual(result["trade"]["exit_reason"], "HARD_EXIT")
+        self.assertIsNotNone(result["confirmation_trade"])
+        self.assertEqual(
+            result["confirmation_trade"]["strategy_variant"],
+            "ANTI_CHASE_PLUS_60S_CONFIRMATION",
+        )
+        self.assertGreater(
+            datetime.fromisoformat(result["confirmation_trade"]["entry_time"]),
+            datetime.fromisoformat(result["confirmation_trade"]["signal_time"]),
+        )
         self.assertEqual(len(result["checkpoint_rows"]), 3)
         self.assertEqual(len(result["candidate_impacts"]), 75)
         self.assertEqual(len(result["candidate_grid"]), 75)
@@ -125,6 +135,29 @@ class PaperShadowTests(unittest.TestCase):
         self.assertEqual(result["reason"], "NO_APPROVED_LONG_ENTRY")
         self.assertIsNone(result["trade"])
         self.assertGreater(len(result["decision_diagnostics"]), 0)
+
+    def test_stale_60s_confirmation_does_not_remove_production_paper_trade(self):
+        coverage = {
+            "session_date": "20260929",
+            "source_statuses": ["COMPLETE"], "callback_errors": 0,
+            "started_at_taipei": "2026-09-29T08:50:00+08:00",
+            "ended_at_taipei": "2026-09-29T13:35:00+08:00",
+        }
+        stock = _market_stock("測試股")
+        cutoff = datetime(2026, 9, 29, 9, 5, tzinfo=TAIPEI)
+        stock["ticks"] = [
+            row for row in stock["ticks"]
+            if row["time"] <= cutoff or row["time"] >= cutoff + timedelta(minutes=5)
+        ]
+        stock["tick_times"] = [row["time"] for row in stock["ticks"]]
+        result = replay_paper_session(
+            {"1001": stock},
+            {"0050": _market_stock("元大台灣50", benchmark=True)},
+            coverage,
+        )
+        self.assertIsNotNone(result["trade"])
+        self.assertIsNone(result["confirmation_trade"])
+        self.assertEqual(result["confirmation_reason"], "NO_CONFIRMED_LONG_ENTRY")
 
     def test_partial_session_fails_closed(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -152,6 +185,9 @@ class PaperShadowTests(unittest.TestCase):
                 "trade": None, "checkpoint_rows": [], "candidate_impacts": [],
                 "candidate_grid": [], "decision_diagnostics": [],
                 "reason": "NO_APPROVED_LONG_ENTRY",
+                "confirmation_trade": None,
+                "confirmation_reason": "NO_CONFIRMED_LONG_ENTRY",
+                "confirmation_decision_diagnostics": [],
             }
             runtime = root / "paper"
             with patch("paper_shadow_v01.runner.load_session", return_value=({}, coverage)), patch(
@@ -175,6 +211,7 @@ class PaperShadowTests(unittest.TestCase):
         self.assertEqual(PAPER_CONTRACT["mode"], "POST_SESSION_CAUSAL_PAPER_REPLAY")
         self.assertEqual(PAPER_CONTRACT["direction"], "LONG_ONLY")
         self.assertEqual(PAPER_CONTRACT["early_failure_mode"], "OBSERVE_ONLY_DO_NOT_EXIT")
+        self.assertEqual(len(PAPER_CONTRACT["paper_variants"]), 2)
         self.assertEqual(PAPER_CONTRACT["actual_orders"], 0)
 
 

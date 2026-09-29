@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import unittest
 
 from yuanta_live_runtime_v01.strategy import (
+    ANTI_CHASE_ENTRY_POLICY,
     LIVE_EXIT_POLICY,
     LONG_MARKET_REGIME_POLICY,
     LiveDirectionEngine,
@@ -24,7 +25,7 @@ class StrategyTests(unittest.TestCase):
         for index in range(53):
             at = decision - timedelta(seconds=320 - index * 5)
             stock_gain = 0.001 if weak_stock else 0.01
-            stock_price = 99.0 + index * stock_gain
+            stock_price = 99.5 + index * stock_gain
             benchmark_price = (
                 102.0 - index * 0.025
                 if bearish else 100.0 + index * 0.005
@@ -61,6 +62,9 @@ class StrategyTests(unittest.TestCase):
             buy_prices=[101.0], buy_volumes=[900],
             sell_prices=[101.1], sell_volumes=[100],
         )
+        engine._states["2330"].session_open_time = decision.replace(
+            hour=9, minute=0, second=0
+        )
         return engine, decision
 
     def _engine_with_long_signal(self, decision=None):
@@ -80,6 +84,9 @@ class StrategyTests(unittest.TestCase):
             "2330", at=decision,
             buy_prices=[101.0], buy_volumes=[900], sell_prices=[101.1], sell_volumes=[100],
         )
+        engine._states["2330"].session_open_time = decision.replace(
+            hour=9, minute=0, second=0
+        )
         return engine, decision
 
     def test_long_candidate_is_sized_within_cap(self):
@@ -90,6 +97,48 @@ class StrategyTests(unittest.TestCase):
         self.assertGreater(signal.quantity, 0)
         self.assertLessEqual(signal.entry_price * signal.quantity, 190000)
         self.assertEqual(signal.quantity % 1000, 0)
+
+    def test_anti_chase_rejects_opening_extension_above_two_percent(self):
+        engine, decision = self._engine_with_long_signal()
+        engine._states["2330"].session_open_price = 101.11 / 1.0201
+        self.assertIsNone(engine.choose_entry(decision, allow_short=False))
+        self.assertEqual(
+            engine.last_entry_diagnostics["candidates"][0]["gate_reason"],
+            "ANTI_CHASE_OPENING_EXTENSION",
+        )
+
+    def test_anti_chase_accepts_exact_boundaries(self):
+        engine, decision = self._engine_with_long_signal()
+        state = engine._states["2330"]
+        current = 101.11
+        state.session_open_price = current / (
+            1 + ANTI_CHASE_ENTRY_POLICY["maximum_directional_opening_extension"]
+        )
+        state.cumulative_pv = state.cumulative_volume * current / (
+            1 + ANTI_CHASE_ENTRY_POLICY["maximum_directional_vwap_extension"]
+        )
+        signal = engine.choose_entry(decision, allow_short=False)
+        self.assertIsNotNone(signal)
+        self.assertAlmostEqual(signal.directional_opening_extension, 0.020, places=9)
+        self.assertAlmostEqual(signal.directional_vwap_extension, 0.0125, places=9)
+
+    def test_anti_chase_rejects_vwap_extension_above_one_point_two_five_percent(self):
+        engine, decision = self._engine_with_long_signal()
+        state = engine._states["2330"]
+        current = 101.11
+        state.cumulative_pv = state.cumulative_volume * current / 1.0126
+        self.assertIsNone(engine.choose_entry(decision, allow_short=False))
+        self.assertEqual(
+            engine.last_entry_diagnostics["candidates"][0]["gate_reason"],
+            "ANTI_CHASE_VWAP_EXTENSION",
+        )
+
+    def test_anti_chase_fails_closed_when_runtime_started_after_entry_window_opened(self):
+        engine, decision = self._engine_with_long_signal()
+        engine._states["2330"].session_open_time = decision.replace(
+            hour=9, minute=6, second=0
+        )
+        self.assertIsNone(engine.choose_entry(decision, allow_short=False))
 
     def test_market_gate_fails_closed_without_benchmark_history(self):
         engine, decision = self._engine_with_market_long_signal()
