@@ -60,7 +60,6 @@ no stable incremental next-day edge.  Missing or
 Partial official chip data never affects sealing or masquerades as full coverage.
 Buy/sell flow labels carry the direction in words (for example `外資買超`) and
 display lots (`張`, one lot = 1,000 shares) without redundant plus/minus signs.
-Checks run at 18:15, 19:15, 20:15, 21:15, and 22:15 Taipei time.  If the final
-attempt is still incomplete, a single idempotent status message explains that
-no watch candidates were produced, so silence cannot be confused with a failed
-scheduler.
+The chip-watch LaunchAgent is intentionally disabled; this command remains
+manual-only for research inspection and does not run at 18:15–22:15. Daily
+Top30 seal notifications remain enabled and independent.

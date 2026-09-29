@@ -198,6 +198,10 @@ inputs 檢查至前一個交易日，不下載當日 EOD、不呼叫 strategy，
 當日 EOD 嘗試，不代表資料已完整。Mac 睡眠造成的 16:05 後延遲觸發會由
 runner 拒絕。
 
+安裝器只啟用每日封存 runner 與 14:15 preflight。籌碼觀察候選的
+`com.linyunyan.warrantscope.chip-watch` 會明確停用，不再自動傳送；每日完整
+Top30 封存通知維持啟用。
+
 安裝：
 
 ```bash

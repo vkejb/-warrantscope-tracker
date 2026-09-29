@@ -779,6 +779,12 @@ class RunnerSafetyTests(unittest.TestCase):
             ),
         )
 
+    def test_installer_keeps_chip_watch_automation_disabled(self):
+        installer = (MODULE_DIR / "install_launch_agent.sh").read_text(encoding="utf-8")
+        self.assertIn('launchctl disable "gui/${user_id}/${chip_label}"', installer)
+        self.assertNotIn('launchctl bootstrap "gui/${user_id}" "${chip_installed_plist}"', installer)
+        self.assertNotIn('launchctl enable "gui/${user_id}/${chip_label}"', installer)
+
 
 class FrozenContractTests(unittest.TestCase):
     def test_prospective_sources_match_pre_runner_hashes(self):
