@@ -264,6 +264,21 @@ class QuoteIntegrityTests(TestCase):
         self.assertFalse(self.tick(3, at=self.now+timedelta(seconds=1), received_at=self.now))
         self.assertEqual(len(self.engine._states["TEST"].ticks), 1)
 
+    def test_subsecond_exchange_clock_lead_is_accepted(self):
+        self.assertTrue(self.tick(
+            1,
+            at=self.now + timedelta(milliseconds=200),
+            received_at=self.now,
+        ))
+        self.assertEqual(self.engine.quote_age_seconds("TEST", self.now), 0.0)
+
+    def test_material_future_quote_is_still_rejected(self):
+        self.assertFalse(self.tick(
+            1,
+            at=self.now + timedelta(milliseconds=600),
+            received_at=self.now,
+        ))
+
     def test_out_of_order_quote_does_not_replace_newer_quote(self):
         self.assertTrue(self.tick(5))
         self.assertFalse(self.tick(6, at=self.now-timedelta(seconds=1)))

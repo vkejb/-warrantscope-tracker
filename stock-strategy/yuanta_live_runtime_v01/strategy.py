@@ -47,6 +47,11 @@ LONG_MARKET_REGIME_POLICY = {
     "short_behavior": "UNCHANGED_NOT_ENABLED_BY_THIS_POLICY",
 }
 
+# TWSE quote timestamps and the local callback clock can differ by a fraction
+# of a second.  Accept that bounded clock skew, but continue to reject quotes
+# that are materially future-dated or older than the existing stale limit.
+MAXIMUM_FUTURE_TICK_SKEW_SECONDS = 0.5
+
 
 def _candidate_locked_r(mfe_r: float) -> float | None:
     """Return the fixed MFE_V1 floor; this policy is not runtime-optimized."""
@@ -217,7 +222,10 @@ class LiveDirectionEngine:
         stamp = at.astimezone(TAIPEI)
         received = stamp if received_at is None else received_at.astimezone(TAIPEI)
         age = (received - stamp).total_seconds()
-        if age < 0 or age > float(SPEC["maximum_tick_staleness_seconds"]):
+        if (
+            age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS
+            or age > float(SPEC["maximum_tick_staleness_seconds"])
+        ):
             return False
         sequence = int(self._num(serial) or 0)
         if state.ticks:
@@ -801,7 +809,10 @@ class LiveDirectionEngine:
         state = self._states.get(str(symbol))
         if state is None or not state.ticks:
             return None
-        return (now.astimezone(TAIPEI) - state.ticks[-1]["time"]).total_seconds()
+        age = (now.astimezone(TAIPEI) - state.ticks[-1]["time"]).total_seconds()
+        if age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS:
+            return None
+        return max(0.0, age)
 
     @_locked
     def safe_exit_quote(
@@ -819,8 +830,15 @@ class LiveDirectionEngine:
         row = state.ticks[-1]
         age = (now.astimezone(TAIPEI) - row["time"]).total_seconds()
         bid, ask = float(row["bid"]), float(row["ask"])
-        if age < 0 or age > max_age_seconds or bid <= 0 or ask <= 0 or ask < bid:
+        if (
+            age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS
+            or age > max_age_seconds
+            or bid <= 0
+            or ask <= 0
+            or ask < bid
+        ):
             return None
+        age = max(0.0, age)
         midpoint = (bid + ask) / 2
         if midpoint <= 0 or (ask - bid) / midpoint * 10_000 > max_spread_bps:
             return None

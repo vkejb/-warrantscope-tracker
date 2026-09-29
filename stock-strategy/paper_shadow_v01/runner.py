@@ -22,6 +22,7 @@ from trade_path_diagnostics_v01.early_failure import (
 from yuanta_intraday_shadow_v01.collector import canonical_bytes, sha256_file
 from yuanta_intraday_shadow_v01.direction_follow_backtest import (
     SPEC,
+    _archived_exchange_time,
     _decision_times,
     _exit_quote,
     _projected_net_pnl,
@@ -111,8 +112,13 @@ def _load_market_context(run_dir: Path, source_manifest: dict) -> dict[str, dict
     stocks: dict[str, dict] = {}
     for row in _read_jsonl(run_dir / tick_name):
         try:
+            received_at = _parse_stamp(row["received_at"])
             item = {
-                "time": _parse_stamp(row["received_at"]),
+                "time": received_at,
+                "received_at": received_at,
+                "exchange_time": _archived_exchange_time(
+                    row.get("quote_time"), received_at
+                ),
                 "price": float(row["deal_price"]),
                 "volume": float(row["deal_volume"]),
                 "bid": float(row["buy_price"]),

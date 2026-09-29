@@ -126,6 +126,27 @@ def _number_list(values: list[str]) -> list[float]:
     return result
 
 
+def _archived_exchange_time(value: object, received_at: datetime) -> datetime:
+    """Restore a tick's exchange clock while preserving callback availability."""
+    text = str(value or "").strip()
+    if not text:
+        return received_at
+    try:
+        parsed = datetime.strptime(text, "%H:%M:%S.%f")
+    except ValueError:
+        try:
+            parsed = datetime.strptime(text, "%H:%M:%S")
+        except ValueError:
+            return received_at
+    local = received_at.astimezone(TAIPEI)
+    return local.replace(
+        hour=parsed.hour,
+        minute=parsed.minute,
+        second=parsed.second,
+        microsecond=parsed.microsecond,
+    )
+
+
 def load_session(run_dirs: list[Path]) -> tuple[dict[str, dict], dict]:
     stocks: dict[str, dict] = {}
     metadata: dict[str, dict] = {}
@@ -143,8 +164,14 @@ def load_session(run_dirs: list[Path]) -> tuple[dict[str, dict], dict]:
         metadata.update({str(item["stock_id"]): item for item in watchlist["stocks"]})
         for row in _read_jsonl(tick_path):
             try:
+                received_at = _stamp(row["received_at"])
                 item = {
-                    "time": _stamp(row["received_at"]), "price": float(row["deal_price"]),
+                    "time": received_at,
+                    "received_at": received_at,
+                    "exchange_time": _archived_exchange_time(
+                        row.get("quote_time"), received_at
+                    ),
+                    "price": float(row["deal_price"]),
                     "volume": float(row["deal_volume"]), "bid": float(row["buy_price"]),
                     "ask": float(row["sell_price"]), "flag": str(row.get("in_out_flag", "")),
                     "serial": int(row.get("serial_no", 0)),

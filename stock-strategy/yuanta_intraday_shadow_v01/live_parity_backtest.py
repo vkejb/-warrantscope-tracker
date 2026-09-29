@@ -103,7 +103,8 @@ def _validate_full_session_coverage(coverage: dict) -> None:
 def _record_tick(engine: LiveDirectionEngine, symbol: str, row: dict) -> None:
     engine.record_tick(
         symbol,
-        at=row["time"],
+        at=row.get("exchange_time", row["time"]),
+        received_at=row.get("received_at", row["time"]),
         price=row["price"],
         volume=row["volume"],
         bid=row["bid"],

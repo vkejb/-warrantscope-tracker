@@ -43,6 +43,7 @@ class LiveParityBacktestTests(unittest.TestCase):
                 "ticks",
                 {
                     "received_at": received,
+                    "quote_time": "09:00:00.200" if index == 0 else "",
                     "stock_id": "1001",
                     "deal_price": str(price),
                     "deal_volume": "20",
@@ -107,6 +108,16 @@ class LiveParityBacktestTests(unittest.TestCase):
 
             with self.assertRaisesRegex(RuntimeError, "status COMPLETE"):
                 replay_session(stocks, bad)
+
+    def test_archive_preserves_exchange_and_callback_times(self):
+        with tempfile.TemporaryDirectory() as temp:
+            run_dir = self._run(Path(temp))
+            stocks, _coverage = load_session([run_dir])
+            first = stocks["1001"]["ticks"][0]
+            self.assertEqual(
+                (first["exchange_time"] - first["received_at"]).total_seconds(),
+                0.2,
+            )
 
 
 if __name__ == "__main__":
