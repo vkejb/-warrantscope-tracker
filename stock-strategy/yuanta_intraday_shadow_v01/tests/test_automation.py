@@ -6,10 +6,44 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from yuanta_intraday_shadow_v01 import auto_runner
+from yuanta_intraday_shadow_v01.postprocess import _intraday_message
 from yuanta_intraday_shadow_v01.yuanta_keychain import BINDING_SERVICE, SERVICES, _binding, load_credentials, status
 
 
 class AutomationTests(unittest.TestCase):
+    def test_intraday_completion_message_lists_all_30_stocks_and_scores(self):
+        quality = {
+            "source_run_id": "run-1",
+            "state_counts": {"VALID": 30, "INVALID": 0},
+            "analysis_hash": "a" * 64,
+        }
+        session = {"session_date": "20260929", "coverage_status": "FULL_SESSION"}
+        stocks = [
+            {
+                "rank": rank,
+                "stock_id": str(2000 + rank),
+                "stock_name": f"測試{rank}",
+                "score": 0.1 - rank / 10000,
+            }
+            for rank in range(1, 31)
+        ]
+        message = _intraday_message(
+            quality, session, {"signal_date": "20260924", "stocks": stocks}
+        )
+        self.assertIn("訂閱 Top30（信號日 2026-09-24）", message)
+        self.assertIn("1. 2001 測試1｜0.0999", message)
+        self.assertIn("30. 2030 測試30｜0.0970", message)
+        self.assertEqual(sum(line.split(". ", 1)[0].isdigit() for line in message.splitlines()), 30)
+        self.assertLessEqual(len(message), 4096)
+
+    def test_intraday_completion_message_rejects_incomplete_watchlist(self):
+        with self.assertRaisesRegex(ValueError, "exactly 30"):
+            _intraday_message(
+                {"source_run_id": "run", "state_counts": {}, "analysis_hash": "a" * 64},
+                {"session_date": "20260929", "coverage_status": "FULL_SESSION"},
+                {"signal_date": "20260924", "stocks": []},
+            )
+
     def test_keychain_binding_and_validation(self):
         with tempfile.TemporaryDirectory() as temp:
             pfx = Path(temp) / "certificate.pfx"; pfx.write_bytes(b"fixture")
