@@ -11,3 +11,7 @@ Daily seal files are created with exclusive-create semantics under ignored
 `runtime/seals/YYYYMMDD.json`. They contain exactly 30 shadow-only names, ranks,
 scores, model/config/input hashes, creation time, and content seal hash. A
 rerun verifies the old seal and never edits it. There is no backfill command.
+An explicit `shadow_daily_runner recover-today` may continue a failed scheduled
+run only later on the same Taipei date. It cannot accept a date override and
+records the launcher-failure recovery reason in the seal without changing the
+frozen model, ranking, or content hash contract.

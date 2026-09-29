@@ -636,6 +636,69 @@ class RunnerSafetyTests(unittest.TestCase):
             self.assertEqual("REFUSED_OUTSIDE_ATTEMPT_WINDOW", result["status"])
             self.assertFalse(called)
 
+    def test_same_day_recovery_is_explicit_and_audited(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            self.seed_ledgers(cfg)
+            archive = root / "ready.zip"
+            archive.write_bytes(b"fixture")
+            calendar_path = root / "calendar.csv"
+            calendar_path.write_text("date\n2026-09-08\n", encoding="utf-8")
+
+            def ready_prepare(**_kwargs):
+                return PreparedInputs(
+                    target_date="20260908", trading_day=True, ready=True,
+                    archives=(archive,), calendar_path=calendar_path,
+                    audit_path=root / "ready.json", audit={"status": "READY"},
+                )
+
+            daily = {
+                "signal_date": "20260908", "actual_orders": 0, "actual_fills": 0,
+                "outcomes": {"status": "NO_ACTIVE_SIGNALS", "appended_outcomes": 0},
+                "input_manifest_hash": "c" * 64, "run_manifest": "runs/x/run_manifest.json",
+                "scan": {"status": "APPENDED", "appended_signals": 0}, "signal_count": 0,
+            }
+            status = {
+                "status": {
+                    "actual_orders": 0, "actual_fills": 0, "broker_connections": 0,
+                    "last_successful_signal_date": "20260908",
+                }
+            }
+            with patch("shadow_daily_runner.runner._run_json", side_effect=[daily, status]):
+                result = attempt(
+                    now=datetime(2026, 9, 8, 18, 0, tzinfo=ZoneInfo("Asia/Taipei")),
+                    cfg=cfg,
+                    prepare=ready_prepare,
+                    allow_same_day_recovery=True,
+                    recovery_reason="SCHEDULED_LAUNCHER_FAILURE_RECOVERY",
+                )
+            self.assertEqual("SUCCESS", result["status"])
+            self.assertFalse(result["same_day_recovery"]["historical_date_override"])
+            state = json.loads(cfg.runner_state_path.read_text())
+            recovery = state["completed_targets"]["20260908"]["same_day_recovery"]
+            self.assertEqual("SCHEDULED_LAUNCHER_FAILURE_RECOVERY", recovery["reason"])
+
+    def test_same_day_recovery_rejects_unapproved_reason(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            cfg = self.temporary_config(Path(temporary))
+            called = False
+
+            def should_not_run(**_kwargs):
+                nonlocal called
+                called = True
+                raise AssertionError
+
+            result = attempt(
+                now=datetime(2026, 9, 8, 18, 0, tzinfo=ZoneInfo("Asia/Taipei")),
+                cfg=cfg,
+                prepare=should_not_run,
+                allow_same_day_recovery=True,
+                recovery_reason="UNAPPROVED",
+            )
+            self.assertEqual("REFUSED_OUTSIDE_ATTEMPT_WINDOW", result["status"])
+            self.assertFalse(called)
+
     def test_success_requires_builtin_outcomes_and_zero_safety_counters(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

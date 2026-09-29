@@ -14,12 +14,23 @@ def main(argv: list[str] | None = None) -> int:
     seal.add_argument("--archives", nargs="+", type=Path, required=True)
     seal.add_argument("--trading-calendar", type=Path, required=True)
     seal.add_argument("--expected-input-hash", required=True)
+    seal.add_argument("--same-day-recovery", action="store_true")
+    seal.add_argument(
+        "--recovery-reason",
+        choices=("SCHEDULED_LAUNCHER_FAILURE_RECOVERY",),
+    )
     commands.add_parser("status")
     args = parser.parse_args(argv)
     try:
         if args.command == "seal-current":
             from .watchlist import seal_current
-            result = seal_current(args.archives, args.trading_calendar, expected_input_hash=args.expected_input_hash)
+            result = seal_current(
+                args.archives,
+                args.trading_calendar,
+                expected_input_hash=args.expected_input_hash,
+                allow_same_day_recovery=args.same_day_recovery,
+                recovery_reason=args.recovery_reason,
+            )
         else:
             result = {"latest_seal": latest_seal()}
         code = 0

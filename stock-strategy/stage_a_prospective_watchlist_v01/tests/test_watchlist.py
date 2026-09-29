@@ -53,6 +53,30 @@ class WatchlistTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "activation"):
             seal_current([Path("unused")], Path("unused"), now=old)
 
+    def test_same_day_recovery_requires_explicit_reason(self):
+        late = datetime(2026, 9, 16, 20, 0, tzinfo=ZoneInfo("Asia/Taipei"))
+        with self.assertRaisesRegex(RuntimeError, "attempt window"):
+            seal_current(
+                [Path("unused")], Path("unused"), now=late,
+                allow_same_day_recovery=True, recovery_reason="UNAPPROVED",
+            )
+
+    def test_same_day_recovery_is_recorded_without_date_override(self):
+        late = datetime(2026, 9, 16, 20, 0, tzinfo=ZoneInfo("Asia/Taipei"))
+        content = {"schema_version": "1", "signal_date": "20260916", "setup": "FROZEN_STAGE_A_TOP30", "mode": "SHADOW_ONLY", "stocks": [{"rank": i, "stock_id": str(i), "stock_name": "測試", "score": 0.1} for i in range(1, 31)], "model_hash": "m", "model_spec_hash": "s", "config_hash": "c", "input_hash": "i", "eligible_stock_count": 40}
+        fake_provider = type("Provider", (), {"load_through": lambda self, date: type("Snapshot", (), {"input_manifest_hash": "i"})()})
+        with tempfile.TemporaryDirectory() as directory, patch("stage_a_prospective_watchlist_v01.watchlist.ExistingDailyDataProvider", return_value=fake_provider()), patch("stage_a_prospective_watchlist_v01.watchlist.build_watchlist", return_value=content):
+            root = Path(directory)
+            result = seal_current(
+                [Path("unused")], Path("unused"), now=late,
+                runtime_dir=root, expected_input_hash="i",
+                allow_same_day_recovery=True,
+                recovery_reason="SCHEDULED_LAUNCHER_FAILURE_RECOVERY",
+            )
+            sealed = json.loads((root / "seals" / "20260916.json").read_text())
+        self.assertEqual("SEALED", result["status"])
+        self.assertFalse(sealed["same_day_recovery"]["historical_date_override"])
+
     def test_exclusive_seal_rerun_never_mutates(self):
         now = datetime(2026, 9, 16, 15, 0, tzinfo=ZoneInfo("Asia/Taipei"))
         content = {"schema_version": "1", "signal_date": "20260916", "setup": "FROZEN_STAGE_A_TOP30", "mode": "SHADOW_ONLY", "stocks": [{"rank": i, "stock_id": str(i), "stock_name": "測試", "score": 0.1} for i in range(1, 31)], "model_hash": "m", "model_spec_hash": "s", "config_hash": "c", "input_hash": "i", "eligible_stock_count": 40}

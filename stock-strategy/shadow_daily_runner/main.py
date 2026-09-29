@@ -57,6 +57,13 @@ def _parser() -> argparse.ArgumentParser:
         help="scheduled local-only health check through the previous trading session",
     )
     commands.add_parser("attempt", help="scheduled current-day attempt; no date override exists")
+    commands.add_parser(
+        "recover-today",
+        help=(
+            "explicit same-day recovery after the final scheduled attempt; "
+            "no date override or historical backfill exists"
+        ),
+    )
     commands.add_parser("status", help="show runner and prospective-ledger counts")
     commands.add_parser(
         "test-notification",
@@ -125,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
                 "historical_through_date": through,
             }
             code = 0 if health.ready else 3
-        elif args.command == "attempt":
+        elif args.command in {"attempt", "recover-today"}:
             # Keychain is notification-only. Missing/locked items may never
             # block official readiness, the N scan, or any Stage A seal.
             try:
@@ -133,7 +140,14 @@ def main(argv: list[str] | None = None) -> int:
                 load_into_environment()
             except Exception:
                 pass
-            result = attempt(cfg=CFG)
+            result = attempt(
+                cfg=CFG,
+                allow_same_day_recovery=args.command == "recover-today",
+                recovery_reason=(
+                    "SCHEDULED_LAUNCHER_FAILURE_RECOVERY"
+                    if args.command == "recover-today" else None
+                ),
+            )
             code = 0 if result["status"] in {
                 "SUCCESS",
                 "ALREADY_SUCCEEDED_NO_OP",
@@ -150,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False))
         return code
     except Exception as exc:
-        if args.command == "attempt":
+        if args.command in {"attempt", "recover-today"}:
             safe_notify_unhandled_attempt_failure(
                 local=taipei_now(cfg=CFG),
                 reason=exc,

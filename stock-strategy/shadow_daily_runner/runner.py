@@ -16,7 +16,14 @@ from .notifications import notification_status, safe_notify_attempt_result
 from .pipeline import PreparedInputs, prepare_inputs, public_result, taipei_now
 
 
-def _postseal_notifications(target: str, prepared: PreparedInputs | None, cfg: RunnerConfig, local: datetime) -> dict:
+def _postseal_notifications(
+    target: str,
+    prepared: PreparedInputs | None,
+    cfg: RunnerConfig,
+    local: datetime,
+    *,
+    allow_same_day_recovery: bool = False,
+) -> dict:
     """Side effects only after the N ledger has sealed; never alter N records."""
     from prospective_notifications_v01.notifier import daily_message, notify, warning_message
     from stage_a_prospective_watchlist_v01.seal_store import latest_seal
@@ -64,12 +71,18 @@ def _postseal_notifications(target: str, prepared: PreparedInputs | None, cfg: R
             )
             if not Path(stage_python).is_file():
                 raise RuntimeError("Stage A Python with frozen model dependencies is unavailable")
-            stage = _run_json([
+            stage_command = [
                 stage_python, "-B", "-m", "stage_a_prospective_watchlist_v01.main",
                 "seal-current", "--archives", *[str(path) for path in prepared.archives],
                 "--trading-calendar", str(prepared.calendar_path),
                 "--expected-input-hash", scan["input_manifest_hash"],
-            ], cfg)
+            ]
+            if allow_same_day_recovery:
+                stage_command.extend([
+                    "--same-day-recovery",
+                    "--recovery-reason", "SCHEDULED_LAUNCHER_FAILURE_RECOVERY",
+                ])
+            stage = _run_json(stage_command, cfg)
             if stage["signal_date"] != target:
                 raise RuntimeError("Stage A seal date differs from N seal")
         except Exception as exc:
@@ -189,6 +202,13 @@ def _inside_attempt_window(local: datetime, cfg: RunnerConfig) -> bool:
     )
 
 
+def _inside_same_day_recovery_window(local: datetime, cfg: RunnerConfig) -> bool:
+    """Allow explicit recovery only after today's final scheduled attempt."""
+
+    current = local.time().replace(tzinfo=None)
+    return time.fromisoformat(cfg.latest_attempt_time) < current <= time(23, 59, 59)
+
+
 def _run_json(command: list[str], cfg: RunnerConfig) -> dict:
     environment = {
         **os.environ,
@@ -269,9 +289,17 @@ def attempt(
     now: datetime | None = None,
     cfg: RunnerConfig = CFG,
     prepare: Callable[..., PreparedInputs] = prepare_inputs,
+    allow_same_day_recovery: bool = False,
+    recovery_reason: str | None = None,
 ) -> dict:
     local = taipei_now(now, cfg)
     target = local.strftime("%Y%m%d")
+    scheduled_window = _inside_attempt_window(local, cfg)
+    recovery_mode = (
+        allow_same_day_recovery
+        and recovery_reason == "SCHEDULED_LAUNCHER_FAILURE_RECOVERY"
+        and _inside_same_day_recovery_window(local, cfg)
+    )
     result: dict
     with process_lock(cfg.lock_path):
         state = _read_json(
@@ -289,10 +317,16 @@ def attempt(
                 "actual_fills": 0,
                 "broker_connections": 0,
             }
-            if target >= "20260916" and _inside_attempt_window(local, cfg):
+            if target >= "20260916" and (scheduled_window or recovery_mode):
                 try:
                     retry_inputs = prepare(now=now, cfg=cfg)
-                    result["postseal"] = _postseal_notifications(target, retry_inputs, cfg, local)
+                    result["postseal"] = _postseal_notifications(
+                        target,
+                        retry_inputs,
+                        cfg,
+                        local,
+                        allow_same_day_recovery=recovery_mode,
+                    )
                 except Exception as exc:
                     result["postseal"] = {"status": "RETRY_NOT_READY", "error_type": type(exc).__name__}
                 if result["postseal"].get("status") != "SEALED":
@@ -308,7 +342,7 @@ def attempt(
                 "broker_connections": 0,
             }
             return _finish_attempt(result, local, cfg)
-        if not _inside_attempt_window(local, cfg):
+        if not scheduled_window and not recovery_mode:
             result = {
                 "status": "REFUSED_OUTSIDE_ATTEMPT_WINDOW",
                 "target_date": target,
@@ -368,6 +402,12 @@ def attempt(
             "signal_count": daily_result.get("signal_count"),
             "ledger_status": verified_status,
         }
+        if recovery_mode:
+            completed["same_day_recovery"] = {
+                "reason": recovery_reason,
+                "executed_at_local": local.isoformat(),
+                "historical_date_override": False,
+            }
         state["completed_targets"][target] = completed
         state.update(
             {
@@ -391,8 +431,16 @@ def attempt(
             "actual_fills": 0,
             "broker_connections": 0,
         }
+        if recovery_mode:
+            result["same_day_recovery"] = completed["same_day_recovery"]
         if target >= "20260916":
-            result["postseal"] = _postseal_notifications(target, prepared, cfg, local)
+            result["postseal"] = _postseal_notifications(
+                target,
+                prepared,
+                cfg,
+                local,
+                allow_same_day_recovery=recovery_mode,
+            )
             if result["postseal"].get("status") != "SEALED":
                 result["status"] = "STAGE_A_PENDING_N_SEALED"
         return _finish_attempt(result, local, cfg)

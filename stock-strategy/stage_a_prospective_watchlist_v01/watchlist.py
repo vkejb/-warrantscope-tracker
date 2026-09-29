@@ -93,10 +93,25 @@ def build_watchlist(snapshot, signal_date: str) -> dict:
     return content
 
 
-def seal_current(archives: list[Path], calendar: Path, *, now: datetime | None = None, runtime_dir: Path = RUNTIME_DIR, expected_input_hash: str | None = None) -> dict:
+def seal_current(
+    archives: list[Path],
+    calendar: Path,
+    *,
+    now: datetime | None = None,
+    runtime_dir: Path = RUNTIME_DIR,
+    expected_input_hash: str | None = None,
+    allow_same_day_recovery: bool = False,
+    recovery_reason: str | None = None,
+) -> dict:
     local = (now or datetime.now(ZoneInfo("Asia/Taipei"))).astimezone(ZoneInfo("Asia/Taipei"))
     date = local.strftime("%Y%m%d")
-    if date < ACTIVATION_DATE or local.strftime("%H:%M") < "14:25" or local.strftime("%H:%M") > "16:05":
+    scheduled_window = "14:25" <= local.strftime("%H:%M") <= "16:05"
+    recovery_mode = (
+        allow_same_day_recovery
+        and recovery_reason == "SCHEDULED_LAUNCHER_FAILURE_RECOVERY"
+        and "16:05" < local.strftime("%H:%M") <= "23:59"
+    )
+    if date < ACTIVATION_DATE or (not scheduled_window and not recovery_mode):
         raise RuntimeError("Stage A prospective seal refused outside activation/current-day attempt window")
     snapshot = ExistingDailyDataProvider(archives, trading_calendar_path=calendar).load_through(date)
     if expected_input_hash is not None and snapshot.input_manifest_hash != expected_input_hash:
@@ -104,6 +119,12 @@ def seal_current(archives: list[Path], calendar: Path, *, now: datetime | None =
     content = build_watchlist(snapshot, date)
     seal_hash = _digest(_canonical(content))
     payload = {**content, "created_at": local.isoformat(), "seal_hash": seal_hash, "status": "SEALED", "actual_orders": 0, "actual_fills": 0, "broker_connections": 0}
+    if recovery_mode:
+        payload["same_day_recovery"] = {
+            "reason": recovery_reason,
+            "executed_at_local": local.isoformat(),
+            "historical_date_override": False,
+        }
     seals = runtime_dir / "seals"
     seals.mkdir(parents=True, exist_ok=True)
     path = seals / f"{date}.json"
@@ -121,4 +142,7 @@ def seal_current(archives: list[Path], calendar: Path, *, now: datetime | None =
         json.dump(payload, handle, ensure_ascii=False, sort_keys=True, allow_nan=False)
         handle.flush()
         os.fsync(handle.fileno())
-    return {"status": "SEALED", "signal_date": date, "seal_hash": seal_hash, "input_hash": content["input_hash"], "count": TOP_K, "stocks": content["stocks"]}
+    result = {"status": "SEALED", "signal_date": date, "seal_hash": seal_hash, "input_hash": content["input_hash"], "count": TOP_K, "stocks": content["stocks"]}
+    if recovery_mode:
+        result["same_day_recovery"] = payload["same_day_recovery"]
+    return result

@@ -57,12 +57,18 @@ conflict-fatal union，避免新聞 API 日後滾動移除舊公告時把休市�
 python3 -B -m shadow_daily_runner.main prepare
 python3 -B -m shadow_daily_runner.main preflight-latest
 python3 -B -m shadow_daily_runner.main attempt
+python3 -B -m shadow_daily_runner.main recover-today
 python3 -B -m shadow_daily_runner.main status
 ```
 
 `prepare` 可在白天先建立／檢查資料，不會寫任何 prospective ledger。`attempt` 沒有
 日期參數，只接受台北當日 14:25～16:05；2026-09-07 或更早一律拒絕，避免 backfill。
 同日成功後的 retry 為 no-op。
+
+`recover-today` 只供排程器已確認故障時人工復原：它仍只接受台北當日，且只能在
+16:05 後執行，沒有日期參數、不能補歷史日期。runner state 與 Stage A seal 會保存
+`SCHEDULED_LAUNCHER_FAILURE_RECOVERY`、實際執行時間及
+`historical_date_override: false`，以便稽核；正常 `attempt` 的時間限制不變。
 
 ## macOS 系統通知
 
