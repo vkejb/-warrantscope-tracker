@@ -4,9 +4,23 @@ import json
 import tempfile
 from pathlib import Path
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 from prospective_notifications_v01.notifier import chip_not_ready_message, chip_watch_message, daily_message, entry_state_message, notify, warning_message
+
+
+class _TelegramResponse:
+    status = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self, _limit):
+        return b'{"ok": true}'
 
 
 class NotificationTests(unittest.TestCase):
@@ -20,6 +34,41 @@ class NotificationTests(unittest.TestCase):
             rows = [json.loads(line) for line in ledger.read_text().splitlines()]
             self.assertEqual(len(rows), 2)
             self.assertNotIn("token", ledger.read_text())
+
+    def test_transient_network_failure_is_retried(self):
+        with patch.dict("os.environ", {
+            "WARRANTSCOPE_TELEGRAM_BOT_TOKEN": "private-token",
+            "WARRANTSCOPE_TELEGRAM_CHAT_ID": "12345",
+        }, clear=True), patch(
+            "prospective_notifications_v01.notifier.urllib.request.urlopen",
+            side_effect=[urllib.error.URLError("temporary"), _TelegramResponse()],
+        ) as urlopen, patch("prospective_notifications_v01.notifier.time.sleep") as sleep:
+            result = notify(
+                "M", "20260929", "retry-hash", "SEALED", "hello",
+                ledger=Path(tempfile.mkdtemp()) / "ledger.jsonl",
+                providers=("TELEGRAM",),
+            )
+        self.assertEqual(result["TELEGRAM"], "SUCCESS")
+        self.assertEqual(urlopen.call_count, 2)
+        sleep.assert_called_once_with(1.0)
+
+    def test_permanent_client_error_is_not_retried_and_is_sanitized(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {
+            "WARRANTSCOPE_TELEGRAM_BOT_TOKEN": "private-token",
+            "WARRANTSCOPE_TELEGRAM_CHAT_ID": "12345",
+        }, clear=True), patch(
+            "prospective_notifications_v01.notifier.urllib.request.urlopen",
+            side_effect=urllib.error.HTTPError("redacted", 401, "unauthorized", {}, None),
+        ) as urlopen:
+            ledger = Path(directory) / "ledger.jsonl"
+            result = notify("M", "20260929", "bad-auth", "SEALED", "hello", ledger=ledger, providers=("TELEGRAM",))
+            row = json.loads(ledger.read_text())
+            ledger_text = ledger.read_text()
+        self.assertEqual(result["TELEGRAM"], "FAILED")
+        self.assertEqual(urlopen.call_count, 1)
+        self.assertEqual(row["error_category"], "HTTP_CLIENT_ERROR")
+        self.assertEqual(row["attempt_count"], 1)
+        self.assertNotIn("private-token", ledger_text)
 
     def test_not_configured_does_not_block(self):
         with tempfile.TemporaryDirectory() as directory:

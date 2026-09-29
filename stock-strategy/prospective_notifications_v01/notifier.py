@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import time
 import urllib.error
 import urllib.request
 
@@ -16,6 +17,8 @@ RUNTIME_DIR = Path(__file__).resolve().parent / "runtime"
 LEDGER = RUNTIME_DIR / "notification_ledger.jsonl"
 ENTRY_STATE_RUNTIME = Path(__file__).resolve().parents[1] / "stage_a_t1_extreme_upside_study_v01" / "runtime" / "seals"
 ENTRY_STATE_ORDER = ("READY", "WATCH", "COOLING_BUT_WEAK", "OVERHEATED")
+TELEGRAM_MAX_ATTEMPTS = 3
+TELEGRAM_RETRY_DELAYS_SECONDS = (1.0, 3.0)
 
 
 def _digest(message: str) -> str:
@@ -36,11 +39,21 @@ def _append(path: Path, record: dict) -> None:
         os.fsync(handle.fileno())
 
 
-def _telegram(message: str) -> tuple[str, int | None]:
+def _retry_after_seconds(exc: urllib.error.HTTPError) -> float:
+    """Return a bounded Telegram retry delay without logging response content."""
+
+    raw = exc.headers.get("Retry-After") if exc.headers is not None else None
+    try:
+        return min(10.0, max(1.0, float(raw))) if raw is not None else 1.0
+    except (TypeError, ValueError):
+        return 1.0
+
+
+def _telegram(message: str) -> tuple[str, int | None, str | None, int]:
     token = os.environ.get("WARRANTSCOPE_TELEGRAM_BOT_TOKEN", "")
     chat_id = os.environ.get("WARRANTSCOPE_TELEGRAM_CHAT_ID", "")
     if not token or not chat_id:
-        return "NOT_CONFIGURED", None
+        return "NOT_CONFIGURED", None, "MISSING_CREDENTIALS", 0
     payload = json.dumps({"chat_id": chat_id, "text": message}, ensure_ascii=False).encode("utf-8")
     request = urllib.request.Request(
         f"https://api.telegram.org/bot{token}/sendMessage",
@@ -48,14 +61,41 @@ def _telegram(message: str) -> tuple[str, int | None]:
         headers={"Content-Type": "application/json", "Accept": "application/json"},
         method="POST",
     )
-    try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            body = json.loads(response.read(4096))
-            return ("SUCCESS" if response.status == 200 and body.get("ok") is True else "FAILED"), response.status
-    except urllib.error.HTTPError as exc:
-        return "FAILED", exc.code
-    except (urllib.error.URLError, TimeoutError, ValueError):
-        return "FAILED", None
+    last_code: int | None = None
+    last_error: str | None = None
+    for attempt in range(1, TELEGRAM_MAX_ATTEMPTS + 1):
+        retry_delay: float | None = None
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                body = json.loads(response.read(4096))
+                if response.status == 200 and body.get("ok") is True:
+                    return "SUCCESS", response.status, None, attempt
+                last_code = response.status
+                last_error = "INVALID_API_RESPONSE"
+                retry_delay = TELEGRAM_RETRY_DELAYS_SECONDS[min(attempt - 1, len(TELEGRAM_RETRY_DELAYS_SECONDS) - 1)]
+        except urllib.error.HTTPError as exc:
+            last_code = exc.code
+            if exc.code == 429:
+                last_error = "RATE_LIMITED"
+                retry_delay = _retry_after_seconds(exc)
+            elif 500 <= exc.code <= 599:
+                last_error = "HTTP_SERVER_ERROR"
+                retry_delay = TELEGRAM_RETRY_DELAYS_SECONDS[min(attempt - 1, len(TELEGRAM_RETRY_DELAYS_SECONDS) - 1)]
+            else:
+                return "FAILED", exc.code, "HTTP_CLIENT_ERROR", attempt
+        except urllib.error.URLError:
+            last_error = "NETWORK_ERROR"
+            retry_delay = TELEGRAM_RETRY_DELAYS_SECONDS[min(attempt - 1, len(TELEGRAM_RETRY_DELAYS_SECONDS) - 1)]
+        except TimeoutError:
+            last_error = "TIMEOUT"
+            retry_delay = TELEGRAM_RETRY_DELAYS_SECONDS[min(attempt - 1, len(TELEGRAM_RETRY_DELAYS_SECONDS) - 1)]
+        except (ValueError, OSError):
+            last_error = "INVALID_RESPONSE_OR_IO_ERROR"
+            retry_delay = TELEGRAM_RETRY_DELAYS_SECONDS[min(attempt - 1, len(TELEGRAM_RETRY_DELAYS_SECONDS) - 1)]
+
+        if attempt < TELEGRAM_MAX_ATTEMPTS and retry_delay is not None:
+            time.sleep(retry_delay)
+    return "FAILED", last_code, last_error, TELEGRAM_MAX_ATTEMPTS
 
 
 def _macos(message: str) -> tuple[str, int | None]:
@@ -78,14 +118,20 @@ def notify(module: str, signal_date: str, seal_hash: str, notification_type: str
                 results[provider] = "ALREADY_SENT"
                 continue
             try:
-                status, response_code = _telegram(message) if provider == "TELEGRAM" else _macos(message)
+                delivery = _telegram(message) if provider == "TELEGRAM" else _macos(message)
+                status, response_code = delivery[:2]
+                error_category = delivery[2] if len(delivery) >= 3 else None
+                attempt_count = delivery[3] if len(delivery) >= 4 else 1
             except Exception:
                 status, response_code = "FAILED", None
+                error_category, attempt_count = "UNEXPECTED_DELIVERY_ERROR", 1
             record = {
                 "module": module, "signal_date": signal_date, "seal_hash": seal_hash,
                 "notification_type": notification_type, "provider": provider,
                 "attempted_at": datetime.now(timezone.utc).isoformat(),
                 "status": status, "response_code": response_code,
+                "error_category": error_category,
+                "attempt_count": attempt_count,
                 "message_digest": _digest(message),
             }
             _append(ledger, record)

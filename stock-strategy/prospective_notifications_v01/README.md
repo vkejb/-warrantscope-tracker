@@ -15,6 +15,10 @@ attempt startup a best-effort Keychain adapter loads both values into those
 environment variables. A missing/locked Keychain never blocks sealing. Do not
 put secrets in a committed plist or use `launchctl setenv` for the bot token.
 Notification ledger records only digest/status/code.
+Transient Telegram network failures, rate limits, and server errors are retried
+up to three times with bounded delays.  The ledger also records only a sanitized
+error category and attempt count; it never records the bot token, chat ID,
+Telegram response body, or exception URL.
 
 On the user's own Mac Terminal, run
 `python3 -B -m prospective_notifications_v01.main configure-keychain`.
