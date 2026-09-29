@@ -1,0 +1,6 @@
+{
+  "schema_version": "1",
+  "targets": [
+    "/absolute/path/to/live-checkout/stock-strategy"
+  ]
+}

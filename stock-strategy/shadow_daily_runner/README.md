@@ -190,6 +190,32 @@ archive，只建立 content-addressed patch / normalized base 並原子切換 ac
 outcome run manifest。完成後再跑既有 `status`，確認 hash chain 及
 `actual_orders = actual_fills = broker_connections = 0`，最後才寫 success marker。
 
+## LIVE 前置資料同步
+
+如果每日封存 runner 與 LIVE 控制服務位於不同 checkout，可將
+`live_data_sync_targets.example.json` 複製為
+`shadow_daily_runner/runtime/live_data_sync_targets.json`，並把 `targets` 設為
+LIVE checkout 的 `stock-strategy` 絕對路徑。此設定保留在本機 runtime，不納入 Git。
+
+Stage A 封存成功後，runner 會同步且重新驗證：
+
+- 當日 immutable Stage A Top30 seal；
+- 當日 TWSE／TPEx 官方 raw source 與 official EOD audit；
+- 交易日曆及其 metadata。
+
+同步不會讀寫 LIVE order database、position baseline、Keychain、LIVE gate、委託或成交
+紀錄。既有 immutable 目的檔若內容不同會 fail closed，錯誤只記錄為
+`LIVE_DATA_SYNC` post-seal error，不會回寫或改變已完成的研究 seal。
+
+手動補同步可使用：
+
+```bash
+python3 -B -m shadow_daily_runner.live_data_sync \
+  --source-strategy-root /absolute/path/to/source/stock-strategy \
+  --destination-strategy-root /absolute/path/to/live/stock-strategy \
+  --target-date YYYYMMDD
+```
+
 ## launchd
 
 獨立 preflight plist 在每週一至週五台北時間 14:15 先以本地 immutable

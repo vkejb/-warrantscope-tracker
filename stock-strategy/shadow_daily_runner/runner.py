@@ -96,6 +96,30 @@ def _postseal_notifications(
                 warning = {"status": "FAILED_LOCAL_LOG_ONLY"}
             return {"status": "STAGE_A_FAILED_N_REMAINS_SEALED", "error_type": type(exc).__name__, "warning": warning}
     stage_summary = {key: stage[key] for key in ("status", "signal_date", "seal_hash", "count")}
+    live_data_sync = {"status": "DISABLED", "target_date": target, "targets": []}
+    try:
+        from .live_data_sync import sync_configured_live_data
+
+        live_data_sync = sync_configured_live_data(
+            STOCK_STRATEGY_DIR,
+            cfg.runtime_dir,
+            target,
+        )
+    except Exception as exc:
+        append_jsonl(
+            cfg.logs_dir / "postseal_errors.jsonl",
+            {
+                "at": utc_timestamp(),
+                "target_date": target,
+                "module": "LIVE_DATA_SYNC",
+                "traceback": traceback.format_exc(),
+            },
+        )
+        live_data_sync = {
+            "status": "FAILED_AFTER_STAGE_A_SEAL",
+            "target_date": target,
+            "error_type": type(exc).__name__,
+        }
     entry_state_result = {"status": "INPUT_NOT_READY"}
     outcome_result = {"status": "INPUT_NOT_READY"}
     if prepared is not None and prepared.ready:
@@ -133,7 +157,14 @@ def _postseal_notifications(
     except Exception as exc:
         append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "NOTIFICATION", "traceback": traceback.format_exc()})
         notification = {"status": "FAILED_AFTER_SEAL", "error_type": type(exc).__name__}
-    return {"status": "SEALED", "stage_a": stage_summary, "entry_state": entry_state_result, "t1_outcomes": outcome_result, "notification": notification}
+    return {
+        "status": "SEALED",
+        "stage_a": stage_summary,
+        "live_data_sync": live_data_sync,
+        "entry_state": entry_state_result,
+        "t1_outcomes": outcome_result,
+        "notification": notification,
+    }
 
 
 LEDGER_FILENAMES = (
