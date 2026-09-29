@@ -1,0 +1,16 @@
+{
+  "analysis_id": "ANTI_CHASE_DIAGNOSTICS_V0_1",
+  "artifact_hashes": {
+    "anti_chase_grid.csv": "4eca16e010b2516781ac8a7b03e1f492c32ed668f3f16398cf99ae4a6816bae9",
+    "anti_chase_ranked.csv": "01672b1700fc920992845bd03f113e1252316f1b06d75916ee64456143f28430",
+    "anti_chase_trade_impacts.csv": "dff7d23a0b7c1e6d8642a4710feed6bc0574da95b9e201989acae70a09e53867",
+    "report.md": "94ba4a38408b8c7208a3bd63634dcff7ddef13ad8b8e129b40a1a0eafeb0da17",
+    "summary.json": "100c94fe95a58f2ddfb45f9f17cb20f6d9e2509bfe29c72c3eccb22530b6d07d"
+  },
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "strategy_changed": false,
+  "live_behavior_changed": false,
+  "manifest_hash": "efdeb6239130137e1c7717217132252c2866328e4e0cc89bbfb93784345e95df"
+}

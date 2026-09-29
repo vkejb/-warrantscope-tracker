@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+from datetime import timedelta
 import hashlib
 import json
 import math
@@ -75,6 +76,42 @@ def _feature_rows(
                 if entry_price * 1000 > capital:
                     continue
                 attempted.add(stock_id)
+                causal = [
+                    row for row in data["ticks"]
+                    if row["time"] <= decision
+                ]
+                current_price = float(causal[-1]["price"])
+
+                def directional_return(seconds: int) -> float | None:
+                    prior = [
+                        row for row in causal
+                        if row["time"] <= decision - timedelta(seconds=seconds)
+                    ]
+                    if not prior or float(prior[-1]["price"]) <= 0:
+                        return None
+                    raw = current_price / float(prior[-1]["price"]) - 1
+                    return raw if signal.side == "LONG" else -raw
+
+                breakout_start = decision - timedelta(
+                    seconds=int(SPEC["breakout_lookback_seconds"])
+                )
+                breakout_end = decision - timedelta(
+                    seconds=int(SPEC["breakout_excludes_latest_seconds"])
+                )
+                breakout_rows = [
+                    row for row in causal
+                    if breakout_start <= row["time"] <= breakout_end
+                ]
+                if signal.side == "LONG":
+                    boundary = max(float(row["price"]) for row in breakout_rows)
+                    breakout_overshoot = current_price / boundary - 1
+                    opening_extension = current_price / float(causal[0]["price"]) - 1
+                    directional_vwap_extension = signal.vwap_gap
+                else:
+                    boundary = min(float(row["price"]) for row in breakout_rows)
+                    breakout_overshoot = boundary / current_price - 1
+                    opening_extension = float(causal[0]["price"]) / current_price - 1
+                    directional_vwap_extension = -signal.vwap_gap
                 rows[(session_date, stock_id)] = {
                     "signal_time": signal.decision_time.isoformat(),
                     "score": signal.score,
@@ -83,6 +120,11 @@ def _feature_rows(
                     "large_trade_delta": signal.large_trade_delta,
                     "large_trade_strength": abs(signal.large_trade_delta),
                     "vwap_gap": signal.vwap_gap,
+                    "directional_vwap_extension": directional_vwap_extension,
+                    "directional_return_60s": directional_return(60),
+                    "directional_return_300s": directional_return(300),
+                    "directional_opening_extension": opening_extension,
+                    "breakout_overshoot": breakout_overshoot,
                     "book_imbalance": signal.book_imbalance,
                     "spread_bps": signal.spread_bps,
                 }

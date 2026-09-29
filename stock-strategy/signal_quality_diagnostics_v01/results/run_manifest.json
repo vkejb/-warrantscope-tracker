@@ -3,12 +3,12 @@
   "artifact_hashes": {
     "feature_correlations.csv": "a9338d1c49a3cf57d122b7fb16b5237439054d3b8877696198ebb361344a424b",
     "outcome_summary.csv": "19428cde75e5b5fdee7855bcdc1e15147306485e1b49f41c5765791b14e66455",
-    "per_trade_signal_quality.csv": "31ea53e8c4af480062d1bab69b9dca489074423063f60cc479dc7e18f58f6023",
+    "per_trade_signal_quality.csv": "4697dbaa95b3043ffb5c5fe7c8ee66d835f9679677dfe4777a101031e84ff48a",
     "report.md": "ae9ea12d11687ea1956dcce1fbd8745eb883f2a85062ebdb687e559947e5d7d8",
     "score_buckets.csv": "29c09157423856fc834b339b1b97e3f8ebd726f1afaed7efb54c45c6d5b38e2d",
     "session_summary.csv": "51aea1e5fb8d355c2f1b6dd51a3a66c0f141a79fe06c4e0dd62b7a3593b8f37f",
     "side_summary.csv": "0d907d83987be873ae0133d5b38f09500c569d0a866dc16aae88313762d7ce00",
-    "summary.json": "d4e29c3e1a1ddce1173908a5f84d926e48297c44d12a207641ef099484610add",
+    "summary.json": "4538cf97a96a2c90b95ce6cde56e96817a4a0effa7be8796e39732f2755b75f3",
     "threshold_analysis.csv": "28ec16a32330bc646df45e7c3aea35f6d887df9df925fc17831193a48cbe1ebf"
   },
   "actual_orders": 0,
@@ -16,5 +16,5 @@
   "broker_connections": 0,
   "strategy_changed": false,
   "live_behavior_changed": false,
-  "manifest_hash": "86c9de68048ae97f0fe3249ca62fe6b92aed24639c8dde699be4fa5881230b74"
+  "manifest_hash": "3ddb1f368b6ad5140ffe0540e2f147f3a1492537181804acbc84133ff79f2656"
 }
