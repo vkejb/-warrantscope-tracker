@@ -124,6 +124,7 @@ def _feature_rows(
                     "directional_return_60s": directional_return(60),
                     "directional_return_300s": directional_return(300),
                     "directional_opening_extension": opening_extension,
+                    "breakout_boundary_price": boundary,
                     "breakout_overshoot": breakout_overshoot,
                     "book_imbalance": signal.book_imbalance,
                     "spread_bps": signal.spread_bps,

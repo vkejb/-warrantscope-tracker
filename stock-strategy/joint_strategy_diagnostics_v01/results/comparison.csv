@@ -1,0 +1,6 @@
+variant,opportunities,evaluable_opportunities,unscorable_after_delay,entered_trades,skipped_anti_chase,rejected_confirmation,wins,losses,win_rate,net_pnl,matched_baseline_net_pnl,full_baseline_net_pnl,net_pnl_difference,expectancy_per_opportunity,expectancy_per_entry,profit_factor,average_winner,average_loser,maximum_drawdown,original_winners_not_entered,original_losers_not_entered
+BASELINE,17,17,0,17,0,0,6,11,0.35294117647058826,-1778.0,-1778.0,-1778.0,0.0,-104.58823529411765,-104.58823529411765,0.9318146955054456,4049.6666666666665,-2370.5454545454545,9664.0,0,0
+ANTI_CHASE_ONLY,17,17,0,8,9,0,6,2,0.75,20029.0,-1778.0,-1778.0,21807.0,1178.1764705882354,2503.625,5.69173108456313,4049.6666666666665,-2134.5,3684.0,0,9
+ANTI_CHASE_WITH_EXIT_PROTECTION,17,17,0,8,9,0,6,2,0.75,20527.0,-1778.0,-1778.0,22305.0,1207.4705882352941,2565.875,6.443383717846725,4049.6666666666665,-1885.5,3684.0,0,9
+ANTI_CHASE_CONFIRM_60S,17,17,0,3,9,5,3,0,1.0,13857.0,-1778.0,-1778.0,15635.0,815.1176470588235,4619.0,,4619.0,,0.0,3,11
+JOINT_WITH_EXIT_PROTECTION,17,17,0,3,9,5,3,0,1.0,13857.0,-1778.0,-1778.0,15635.0,815.1176470588235,4619.0,,4619.0,,0.0,3,11

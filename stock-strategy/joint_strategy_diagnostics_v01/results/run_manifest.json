@@ -1,0 +1,15 @@
+{
+  "analysis_id": "JOINT_INTRADAY_STRATEGY_DIAGNOSTICS_V0_1",
+  "artifact_hashes": {
+    "comparison.csv": "1c441187f9f7080ffc4914aac13e9d770f396801506ed1849a33e9e09a78cb7b",
+    "per_trade_impacts.csv": "5c52655fdcb58a6f329242490dd2c88b42629d25d280e2f264fc91c984b5c1e8",
+    "report.md": "092285d89149059efcda88b36eaf883a48df9e70cbac1dffc2aeb5e413c4ea7b",
+    "summary.json": "fc80edba8328fa19512aa5f7e44ac447cfea49953c45526e8e3e7e96e54e43ad"
+  },
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "strategy_changed": false,
+  "live_behavior_changed": false,
+  "manifest_hash": "d79b44754e49e359d1c1623d4df7d9dc10ab0355cc13a10c9180bc2f38f9aeb1"
+}
