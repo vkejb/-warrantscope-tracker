@@ -6,6 +6,10 @@ from stitched_session_backtest_v01.analysis import _decision_summary, stitch_str
 from stitched_session_backtest_v01.near_miss_counterfactual import (
     _candidate_as_signal,
 )
+from stitched_session_backtest_v01.relative_strength_gate_study import (
+    relative_strength_gate,
+)
+from yuanta_live_runtime_v01.strategy import LONG_MARKET_REGIME_POLICY
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -89,6 +93,21 @@ class StitchTests(unittest.TestCase):
         self.assertEqual(signal.stock_id, "3016")
         self.assertEqual(signal.entry_price, 171.0)
         self.assertEqual(signal.quantity, 1000)
+
+    def test_relative_strength_override_is_backtest_only_and_restored(self):
+        keys = (
+            "bullish_min_relative_strength",
+            "neutral_min_relative_strength",
+            "bearish_min_relative_strength",
+        )
+        original = {key: LONG_MARKET_REGIME_POLICY[key] for key in keys}
+
+        with relative_strength_gate(False):
+            self.assertTrue(all(LONG_MARKET_REGIME_POLICY[key] < -100 for key in keys))
+
+        self.assertEqual(
+            {key: LONG_MARKET_REGIME_POLICY[key] for key in keys}, original
+        )
 
 
 if __name__ == "__main__":
