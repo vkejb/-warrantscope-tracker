@@ -205,75 +205,215 @@ def _fmt_age(value: Any) -> str:
     if value is None:
         return "-"
     try:
-        return f"{float(value):.1f}s"
+        return f"{float(value):.1f} 秒"
     except Exception:
         return str(value)
 
 
 def render_status(status: dict[str, Any]) -> str:
-    mode = "LIVE" if status.get("submit_live") else "OBSERVE"
-    runtime_state = str(status.get("runtime_state", "UNKNOWN"))
-    runtime_text = (
-        f"{runtime_state}（正常停止中）"
-        if runtime_state in {"LIVE_STOPPING", "OBSERVE_STOPPING"}
-        else runtime_state
+    runtime_raw = str(
+        status.get("runtime_state", "UNKNOWN")
     )
+
+    runtime_text = {
+        "LIVE_RUNNING": "實盤執行中",
+        "OBSERVE_RUNNING": "觀察模式執行中",
+        "LIVE_STOPPING": "實盤停止中",
+        "OBSERVE_STOPPING": "觀察模式停止中",
+        "STOPPED_CLEAN": "已正常停止",
+        "STOPPED_UNSAFE": "異常停止",
+        "HEARTBEAT_STALE": "系統心跳逾時",
+        "NOT_STARTED": "尚未啟動",
+        "RUNNING": "執行中",
+        "STOPPING": "停止處理中",
+        "EMERGENCY_EXIT": "緊急平倉處理中",
+        "UNKNOWN": "狀態未知",
+    }.get(
+        runtime_raw,
+        f"其他狀態（{runtime_raw}）",
+    )
+
+    environment = {
+        "PROD": "正式環境",
+        "UAT": "測試環境",
+    }.get(
+        str(status.get("environment")),
+        str(status.get("environment") or "-"),
+    )
+
+    mode = (
+        "實盤"
+        if status.get("submit_live")
+        else "觀察"
+    )
+
+    quote_raw = str(
+        status.get("quote_health", "UNKNOWN")
+    )
+
+    quote_text = {
+        "FRESH": "正常",
+        "DELAYED": "延遲",
+        "STALE": "過期",
+        "NO_QUOTE_YET": "尚未收到行情",
+        "N/A": "未啟用",
+        "UNKNOWN": "狀態未知",
+    }.get(
+        quote_raw,
+        f"其他狀態（{quote_raw}）",
+    )
+
+    side_map = {
+        "LONG": "做多",
+        "SHORT": "做空",
+        "BUY": "買進",
+        "SELL": "賣出",
+    }
+
+    event_map = {
+        "ENTRY_SUBMITTED": "進場委託已送出",
+        "ENTRY_NOT_FILLED": "進場委託未成交",
+        "ENTRY_CANCEL_SENT": "進場撤單已送出",
+        "POSITION_OPENED": "進場成交",
+        "EXIT_SUBMITTED": "出場委託已送出",
+        "EXIT_REPRICE_SENT": "出場委託已重新報價",
+        "POSITION_CLOSED": "部位已平倉",
+        "POSITION_CLOSED_AFTER_RECONCILIATION": "重新對帳後確認平倉",
+    }
+
+    order_status_map = {
+        "NEW": "新委託",
+        "PENDING": "等待中",
+        "ACKNOWLEDGED": "券商已接受",
+        "PARTIAL": "部分成交",
+        "PARTIALLY_FILLED": "部分成交",
+        "FILLED": "全部成交",
+        "CANCELED": "已撤單",
+        "CANCELLED": "已撤單",
+        "REJECTED": "已拒絕",
+        "FAILED": "失敗",
+        "UNKNOWN": "狀態未確認",
+    }
+
     lines = [
-        "【WarrantScope Trading】",
-        f"Runtime：{runtime_text}",
+        "【WarrantScope 交易系統】",
+        f"系統狀態：{runtime_text}",
         (
-            "交易HALT：ACTIVE（EMERGENCY_STOP）"
-            if bool(status.get("emergency_stop_active"))
-            else "交易HALT：CLEAR"
+            "交易暫停：已啟用（緊急停止）"
+            if bool(
+                status.get("emergency_stop_active")
+            )
+            else "交易暫停：未啟用"
         ),
-        f"環境：{status.get('environment') or '-'}｜模式：{mode}",
+        f"環境：{environment}｜模式：{mode}",
     ]
 
     gate = status.get("gate_authorized")
     if gate is not None:
-        lines.append(f"交易授權：{'AUTHORIZED' if gate else 'BLOCKED'}")
+        lines.append(
+            "交易授權："
+            + ("已授權" if gate else "未授權")
+        )
+
+    quote_age = status.get("quote_age_seconds")
+    lines.append(
+        f"行情狀態：{quote_text}"
+        f"｜行情延遲：{_fmt_age(quote_age)}"
+    )
 
     lines.append(
-        f"行情：{status.get('quote_health', 'UNKNOWN')}"
-        f"｜Quote age：{_fmt_age(status.get('quote_age_seconds'))}"
+        f"監控標的："
+        f"{status.get('watchlist_count') or '-'} / 30"
+        f"｜最早進場時間："
+        f"{status.get('entry_start') or '-'}"
+    )
+
+    attempted = status.get("trade_attempted")
+    attempted_text = (
+        "是"
+        if attempted is True
+        else (
+            "否"
+            if attempted is False
+            else "未知"
+        )
     )
     lines.append(
-        f"監控：{status.get('watchlist_count') or '-'} / 30"
-        f"｜Entry：{status.get('entry_start') or '-'}"
+        f"今日是否已嘗試交易：{attempted_text}"
     )
-    lines.append(f"今日交易嘗試：{_yn(status.get('trade_attempted'))}")
 
     signal = status.get("last_signal")
+
     if isinstance(signal, dict):
         try:
-            score_text = f"{float(signal.get('score')):.3f}"
+            score_text = (
+                f"{float(signal.get('score')):.3f}"
+            )
         except Exception:
             score_text = "-"
+
+        side = side_map.get(
+            str(signal.get("side")),
+            str(signal.get("side") or "-"),
+        )
+
         lines.append(
-            "最後訊號："
-            f"{signal.get('stock_id', '-')} {signal.get('stock_name', '')}｜"
-            f"{signal.get('side', '-')}｜{signal.get('entry_price', '-')}｜"
-            f"score {score_text}"
+            "最後交易訊號："
+            f"{signal.get('stock_id', '-')} "
+            f"{signal.get('stock_name', '')}｜"
+            f"{side}｜"
+            f"預計 {signal.get('entry_price', '-')}｜"
+            f"訊號強度 {score_text}"
         )
     else:
-        lines.append("最後訊號：NONE")
+        lines.append("最後交易訊號：尚無")
 
     order = status.get("last_order")
+
     if isinstance(order, dict):
-        event = order.get("event", "-")
-        status_text = order.get("status")
-        lines.append(
-            f"最後委託事件：{event}"
-            + (f"｜{status_text}" if status_text else "")
+        event_raw = str(
+            order.get("event", "-")
         )
+        event_text = event_map.get(
+            event_raw,
+            f"其他事件（{event_raw}）",
+        )
+
+        status_raw = order.get("status")
+        status_text = (
+            order_status_map.get(
+                str(status_raw),
+                str(status_raw),
+            )
+            if status_raw
+            else None
+        )
+
+        lines.append(
+            f"最後委託事件：{event_text}"
+            + (
+                f"｜{status_text}"
+                if status_text
+                else ""
+            )
+        )
+
         if order.get("last_error"):
-            lines.append(f"原因：{order['last_error']}")
+            lines.append(
+                f"委託原因："
+                f"{order['last_error']}"
+            )
     else:
-        lines.append("最後委託事件：NONE")
+        lines.append("最後委託事件：尚無")
 
-    lines.append(f"Heartbeat：{_fmt_age(status.get('heartbeat_age_seconds'))} 前")
+    heartbeat = _fmt_age(
+        status.get("heartbeat_age_seconds")
+    )
+    lines.append(
+        f"系統心跳：{heartbeat}前"
+    )
+
     return "\n".join(lines)
-
 
 def _telegram_json(
     token: str,

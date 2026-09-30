@@ -222,8 +222,8 @@ class TradingBotStatusTests(unittest.TestCase):
             self.assertEqual(status["quote_health"], "FRESH")
 
             rendered = render_status(status)
-            self.assertIn("LIVE_STOPPING", rendered)
-            self.assertIn("正常停止中", rendered)
+            self.assertIn("實盤停止中", rendered)
+            self.assertIn("停止中", rendered)
 
     def test_emergency_stop_marker_is_reported_without_overwriting_runtime_state(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -250,9 +250,9 @@ class TradingBotStatusTests(unittest.TestCase):
             self.assertTrue(status["emergency_stop_active"])
 
             rendered = render_status(status)
-            self.assertIn("Runtime：STOPPED_CLEAN", rendered)
+            self.assertIn("系統狀態：已正常停止", rendered)
             self.assertIn(
-                "交易HALT：ACTIVE（EMERGENCY_STOP）",
+                "交易暫停：已啟用（緊急停止）",
                 rendered,
             )
 
@@ -263,8 +263,8 @@ class TradingBotStatusTests(unittest.TestCase):
             self.assertFalse(status["emergency_stop_active"])
 
             rendered = render_status(status)
-            self.assertIn("NOT_STARTED", rendered)
-            self.assertIn("交易HALT：CLEAR", rendered)
+            self.assertIn("尚未啟動", rendered)
+            self.assertIn("交易暫停：未啟用", rendered)
 
 
 

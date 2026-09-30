@@ -68,7 +68,7 @@ class TradingBotNotifierTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "今日 LIVE 額度已使用",
+            "今日實盤交易額度已使用",
             message,
         )
         self.assertIn(
@@ -85,11 +85,11 @@ class TradingBotNotifierTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "Runtime 結束",
+            "交易系統正常結束",
             message,
         )
         self.assertIn(
-            "行情封存已正常結束",
+            "行情資料已正常封存",
             message,
         )
 
@@ -98,7 +98,7 @@ class TradingBotNotifierTests(unittest.TestCase):
             "MAX_DAILY_LOSS",
             "Daily loss boundary reached",
         )
-        self.assertIn("MAX_DAILY_LOSS", message)
+        self.assertIn("當日最大虧損保護已觸發", message)
         self.assertNotIn("account", message)
 
 
