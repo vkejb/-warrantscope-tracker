@@ -296,6 +296,75 @@ class ArchiveRuntimeTests(unittest.TestCase):
 
 
 class RuntimeGateTests(unittest.TestCase):
+    def test_baseline_capture_refuses_broker_open_orders_without_writing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            args = SimpleNamespace(
+                accept_existing_positions=True,
+                runtime_dir=runtime,
+                baseline=runtime / "position_baseline.json",
+                reconcile_timeout=1,
+            )
+            credentials = {"pfx_password": "secret", "trading_password": "secret"}
+            session = SimpleNamespace(close=lambda: None)
+            store = SimpleNamespace(
+                position_buckets=lambda: {},
+                orders=lambda: [],
+                close=lambda: None,
+            )
+            adapter = SimpleNamespace(
+                inspect_broker_state=lambda timeout: SimpleNamespace(
+                    open_orders=[{"order_no": "PRIVATE"}],
+                    positions={"0050|0": 1000},
+                ),
+                close=lambda: None,
+            )
+
+            with patch.object(
+                runtime_main,
+                "_connect_for_control",
+                return_value=(credentials, session, store, adapter),
+            ), patch.object(runtime_main, "_write_baseline") as write:
+                with self.assertRaisesRegex(RuntimeError, "broker has open orders"):
+                    runtime_main._capture_baseline(args, "PROD")
+
+            write.assert_not_called()
+
+    def test_baseline_capture_writes_authoritative_positions_when_safe(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            baseline = runtime / "position_baseline.json"
+            args = SimpleNamespace(
+                accept_existing_positions=True,
+                runtime_dir=runtime,
+                baseline=baseline,
+                reconcile_timeout=1,
+            )
+            credentials = {"pfx_password": "secret", "trading_password": "secret"}
+            session = SimpleNamespace(close=lambda: None)
+            store = SimpleNamespace(
+                position_buckets=lambda: {},
+                orders=lambda: [],
+                close=lambda: None,
+            )
+            adapter = SimpleNamespace(
+                inspect_broker_state=lambda timeout: SimpleNamespace(
+                    open_orders=[],
+                    positions={"0050|0": 1000},
+                ),
+                close=lambda: None,
+            )
+
+            with patch.object(
+                runtime_main,
+                "_connect_for_control",
+                return_value=(credentials, session, store, adapter),
+            ):
+                result = runtime_main._capture_baseline(args, "PROD")
+
+            self.assertEqual(0, result)
+            self.assertEqual({"0050|0": 1000}, runtime_main._load_baseline(baseline))
+
     def test_live_environment_flags_are_checked_before_credentials(self):
         with tempfile.TemporaryDirectory() as temporary:
             with patch.dict(os.environ, {}, clear=True), patch.object(

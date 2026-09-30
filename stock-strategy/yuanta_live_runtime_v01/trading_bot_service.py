@@ -524,6 +524,63 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
     return False, "START_REJECTED"
 
 
+def _sync_position_baseline(runtime_dir: Path) -> tuple[bool, str]:
+    """Capture authoritative PROD inventory without enabling LIVE submission.
+
+    The runtime CLI owns the kernel singleton lock and independently refuses
+    STOP/HALT markers, broker open orders, local active orders, and local
+    strategy positions. Broker/account output is captured and never returned
+    through Telegram.
+    """
+    runtime_dir = Path(runtime_dir).resolve()
+    if _runtime_process_active(runtime_dir):
+        return False, "RUNTIME_ALREADY_RUNNING"
+    if (runtime_dir / "STOP_REQUEST").exists():
+        return False, "STOP_REQUEST_ACTIVE"
+    if (runtime_dir / "EMERGENCY_STOP").exists():
+        return False, "EMERGENCY_STOP_ACTIVE"
+
+    command = [
+        sys.executable,
+        "-m",
+        "yuanta_live_runtime_v01.main",
+        "baseline-prod",
+        "--runtime-dir",
+        str(runtime_dir),
+        "--baseline",
+        str(runtime_dir / "position_baseline.json"),
+        "--accept-existing-positions",
+    ]
+    child_env = os.environ.copy()
+    child_env["EXECUTION_MODE"] = "DRY_RUN"
+    child_env["ENABLE_LIVE_TRADING"] = "NO"
+
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(MODULE_DIR.parent),
+            env=child_env,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False, "BASELINE_SYNC_EXECUTION_ERROR"
+
+    stdout = str(completed.stdout or "")
+    captured = (
+        completed.returncode == 0
+        and (
+            '"status": "BASELINE_CAPTURED"' in stdout
+            or '"status":"BASELINE_CAPTURED"' in stdout
+        )
+    )
+    if captured:
+        return True, "BASELINE_SYNCED"
+    return False, "BASELINE_SYNC_FAILED"
+
+
 def _invoke_runtime_control(action: str, runtime_dir: Path) -> tuple[bool, str]:
     """Invoke the existing guarded runtime CLI in a separate process.
 
@@ -634,6 +691,13 @@ class _RemoteControl:
                 "會連線券商重新檢查未成交單、實際部位、baseline、"
                 "local orders 與 strategy positions；只有全部安全一致才會解除 HALT。"
             )
+        elif action == "sync-baseline":
+            title = "同步既有庫存基準"
+            detail = (
+                "只會在 runtime 已停止、STOP/HALT 未啟動、券商沒有未成交委託，"
+                "且本機沒有策略部位或進行中委託時，讀取元大正式帳戶實際庫存並"
+                "更新 position baseline。此操作不會開啟 LIVE，也不會送單。"
+            )
         else:
             title = "緊急停止"
             detail = (
@@ -667,7 +731,7 @@ class _RemoteControl:
             )
             return (
                 "確認已逾時，指令沒有執行。"
-                "請重新送出 /start、/stop、/kill 或 /clear-halt。"
+                "請重新送出 /start、/stop、/kill、/clear-halt 或 /sync-baseline。"
             )
 
         raw = str(message.get("text", "")).strip()
@@ -719,6 +783,8 @@ class _RemoteControl:
 
         if action == "start":
             ok, status = _launch_runtime_start(self.runtime_dir)
+        elif action == "sync-baseline":
+            ok, status = _sync_position_baseline(self.runtime_dir)
         else:
             ok, status = _invoke_runtime_control(action, self.runtime_dir)
 
@@ -727,7 +793,11 @@ class _RemoteControl:
             "REMOTE_CONTROL_EXECUTED",
             action=action,
             update_id=update_id,
-            outcome=status if action == "start" else ("SUCCESS" if ok else "FAILED"),
+            outcome=(
+                status
+                if action in {"start", "sync-baseline"}
+                else ("SUCCESS" if ok else "FAILED")
+            ),
         )
 
         if action == "start":
@@ -752,6 +822,17 @@ class _RemoteControl:
             )
 
         if not ok:
+            if action == "sync-baseline":
+                if status == "RUNTIME_ALREADY_RUNNING":
+                    return "⚠️ Runtime 仍在執行，沒有同步庫存基準。請先正常停止。"
+                if status == "STOP_REQUEST_ACTIVE":
+                    return "⚠️ STOP_REQUEST 仍有效，沒有同步庫存基準。"
+                if status == "EMERGENCY_STOP_ACTIVE":
+                    return "⚠️ EMERGENCY_STOP / HALT 仍有效，沒有同步庫存基準。"
+                return (
+                    "⚠️ 庫存基準同步失敗。可能有券商未成交委託、本機策略部位／"
+                    "進行中委託、PROD 登入或帳務查詢失敗。原基準未被安全更新。"
+                )
             return (
                 "⚠️ 控制指令執行失敗。"
                 "安全機制沒有被繞過，請使用 /status 檢查 runtime 狀態。"
@@ -775,6 +856,13 @@ class _RemoteControl:
             return (
                 "⚠️ HALT 沒有解除。\n"
                 "安全檢查未通過或控制程序失敗；原 HALT 狀態不應被繞過。"
+            )
+
+        if action == "sync-baseline":
+            return (
+                "✅ 既有庫存基準已依元大正式帳戶實際庫存更新。\n"
+                "同步時已確認 runtime 停止、券商無未成交委託，且本機沒有策略部位或"
+                "進行中委託。此操作沒有開啟 LIVE，也沒有送單。"
             )
 
         return (
@@ -836,6 +924,15 @@ class _RemoteControl:
         if command == "/clear-halt":
             return self._request("clear-halt", update_id)
 
+        if command == "/sync-baseline":
+            if _runtime_process_active(self.runtime_dir):
+                return "⚠️ Runtime 仍在執行，請先正常停止後再同步庫存基準。"
+            if (self.runtime_dir / "STOP_REQUEST").exists():
+                return "⚠️ STOP_REQUEST 仍有效，暫不允許同步庫存基準。"
+            if (self.runtime_dir / "EMERGENCY_STOP").exists():
+                return "⚠️ EMERGENCY_STOP / HALT 仍有效，暫不允許同步庫存基準。"
+            return self._request("sync-baseline", update_id)
+
         if command == "/confirm":
             return self._confirm(message, update_id)
 
@@ -848,7 +945,7 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
     controls = _RemoteControl(runtime_dir)
     print(
         "Trading Bot service started. Commands: "
-        "/status /start /stop /kill /clear-halt /confirm /help",
+        "/status /start /stop /kill /clear-halt /sync-baseline /confirm /help",
         flush=True,
     )
 
@@ -919,6 +1016,7 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
                             "/stop：要求正常停止（需要確認碼）\n"
                             "/kill：要求緊急停止（需要確認碼）\n"
                             "/clear-halt：安全檢查後解除 HALT（需要確認碼）\n"
+                            "/sync-baseline：以元大實際庫存更新既有庫存基準（需要確認碼）\n"
                             "/confirm 1234：確認待執行的控制指令\n"
                             "/help：顯示指令\n\n"
                             "所有遠端控制都沿用既有 runtime 安全機制；"

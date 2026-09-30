@@ -86,6 +86,18 @@ python3 -m yuanta_live_runtime_v01.main preflight-prod
 
 baseline 不會在 `start-prod` 時自動吞掉現有庫存；沒有明確建立 baseline 而庫存不符時會 fail closed。
 
+已安裝 Trading Bot 時，可在 Telegram 私人對話使用：
+
+```text
+/sync-baseline
+/confirm 1234
+```
+
+`/sync-baseline` 必須經一次性確認碼，而且只允許在 runtime 已停止、沒有
+`STOP_REQUEST`／`EMERGENCY_STOP`、券商沒有未成交委託、本機沒有策略部位或進行中
+委託時執行。子程序固定使用 `DRY_RUN`／`ENABLE_LIVE_TRADING=NO`，只讀取元大正式帳戶
+庫存並原子更新 baseline；不會啟動 LIVE 或送單。同步失敗時保留原基準。
+
 ## 先看即時訊號、不下單
 
 ```bash

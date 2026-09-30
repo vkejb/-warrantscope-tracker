@@ -2129,16 +2129,56 @@ def _preflight(args, environment: str) -> int:
 def _capture_baseline(args, environment: str) -> int:
     if not args.accept_existing_positions:
         raise RuntimeError("baseline capture requires --accept-existing-positions")
-    credentials, session, store, adapter = _connect_for_control(args, environment, baseline={}, cli_live=False)
+    runtime_dir = args.runtime_dir.resolve()
+    if (runtime_dir / "STOP_REQUEST").exists():
+        raise RuntimeError("baseline capture refused while STOP_REQUEST is active")
+    if (runtime_dir / "EMERGENCY_STOP").exists():
+        raise RuntimeError("baseline capture refused while EMERGENCY_STOP is active")
+
+    runtime_lock = _acquire_runtime_instance_lock(runtime_dir)
+    credentials = None
+    session = None
+    store = None
+    adapter = None
     try:
-        result = adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=False)
-        positions = dict(result.broker_positions)
+        # Recheck after owning the singleton so a concurrent stop/kill request
+        # cannot race the earlier friendly checks.
+        if (runtime_dir / "STOP_REQUEST").exists():
+            raise RuntimeError("baseline capture refused while STOP_REQUEST is active")
+        if (runtime_dir / "EMERGENCY_STOP").exists():
+            raise RuntimeError("baseline capture refused while EMERGENCY_STOP is active")
+        credentials, session, store, adapter = _connect_for_control(
+            args,
+            environment,
+            baseline={},
+            cli_live=False,
+        )
+        snapshot = adapter.inspect_broker_state(timeout=args.reconcile_timeout)
+        if snapshot.open_orders:
+            raise RuntimeError("baseline capture refused while broker has open orders")
+        if store.position_buckets():
+            raise RuntimeError("baseline capture refused while local strategy positions exist")
+        active_local_orders = [
+            order
+            for order in store.orders()
+            if order.status not in TERMINAL
+        ]
+        if active_local_orders:
+            raise RuntimeError("baseline capture refused while local active orders exist")
+        positions = dict(snapshot.positions)
         _write_baseline(args.baseline.resolve(), positions)
         print(json.dumps({"status": "BASELINE_CAPTURED", "path": str(args.baseline.resolve()), "positions": positions}, ensure_ascii=False, indent=2))
         return 0
     finally:
-        credentials.update({"pfx_password": "", "trading_password": ""})
-        adapter.close(); session.close(); store.close()
+        if credentials is not None:
+            credentials.update({"pfx_password": "", "trading_password": ""})
+        if adapter is not None:
+            adapter.close()
+        if session is not None:
+            session.close()
+        if store is not None:
+            store.close()
+        _release_runtime_instance_lock(runtime_lock)
 
 
 def _stop(args) -> int:

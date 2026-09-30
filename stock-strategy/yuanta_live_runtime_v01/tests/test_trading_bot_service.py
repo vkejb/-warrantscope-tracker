@@ -15,6 +15,7 @@ from yuanta_live_runtime_v01.trading_bot_service import (
     _invoke_runtime_control,
     _launch_runtime_start,
     _run_start_preflight,
+    _sync_position_baseline,
     build_status,
     render_status,
     serve,
@@ -268,6 +269,79 @@ class TradingBotStatusTests(unittest.TestCase):
 
 
 class TradingBotRemoteControlTests(unittest.TestCase):
+    def test_remote_sync_baseline_requires_confirmation_and_executes_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            controls = _RemoteControl(runtime, confirm_ttl_seconds=120)
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.secrets.randbelow",
+                return_value=1357,
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service._sync_position_baseline",
+                return_value=(True, "BASELINE_SYNCED"),
+            ) as sync:
+                request = controls.handle({"text": "/sync-baseline"}, 90)
+                self.assertIn("/confirm 1357", request)
+                self.assertIn("同步既有庫存基準", request)
+                sync.assert_not_called()
+
+                confirmed = controls.handle({"text": "/confirm 1357"}, 91)
+                self.assertIn("庫存基準已", confirmed)
+                sync.assert_called_once_with(runtime)
+
+                replay = controls.handle({"text": "/confirm 1357"}, 92)
+                self.assertIn("沒有待確認", replay)
+                sync.assert_called_once()
+
+    def test_remote_sync_baseline_refuses_running_runtime_without_confirmation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            controls = _RemoteControl(runtime, confirm_ttl_seconds=120)
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service._runtime_process_active",
+                return_value=True,
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service._sync_position_baseline",
+            ) as sync:
+                result = controls.handle({"text": "/sync-baseline"}, 93)
+
+            self.assertIn("仍在執行", result)
+            self.assertIsNone(controls.pending)
+            sync.assert_not_called()
+
+    def test_sync_baseline_cli_forces_dry_run_and_never_live_flag(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            completed = SimpleNamespace(
+                returncode=0,
+                stdout='{"status":"BASELINE_CAPTURED"}',
+                stderr="",
+            )
+
+            with patch.dict(
+                os.environ,
+                {"EXECUTION_MODE": "LIVE", "ENABLE_LIVE_TRADING": "YES"},
+                clear=False,
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
+                return_value=completed,
+            ) as run:
+                ok, status = _sync_position_baseline(runtime)
+
+            self.assertTrue(ok)
+            self.assertEqual("BASELINE_SYNCED", status)
+            command = run.call_args.args[0]
+            kwargs = run.call_args.kwargs
+            self.assertIn("baseline-prod", command)
+            self.assertIn("--accept-existing-positions", command)
+            self.assertNotIn("--live", command)
+            self.assertNotIn("start-prod", command)
+            self.assertEqual("DRY_RUN", kwargs["env"]["EXECUTION_MODE"])
+            self.assertEqual("NO", kwargs["env"]["ENABLE_LIVE_TRADING"])
+            self.assertTrue(kwargs["capture_output"])
+
     def test_remote_stop_requires_confirmation_and_executes_only_once(self):
         with tempfile.TemporaryDirectory() as tmp:
             runtime = Path(tmp)
