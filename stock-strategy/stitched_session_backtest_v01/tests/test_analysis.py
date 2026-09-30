@@ -3,6 +3,9 @@ import unittest
 from zoneinfo import ZoneInfo
 
 from stitched_session_backtest_v01.analysis import _decision_summary, stitch_streams
+from stitched_session_backtest_v01.near_miss_counterfactual import (
+    _candidate_as_signal,
+)
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -61,6 +64,31 @@ class StitchTests(unittest.TestCase):
         self.assertEqual(summary["decisions"]["REJECTED"], 1)
         self.assertEqual(summary["near_miss_gate_counts"]["CONFIRMATIONS_INCOMPLETE"], 1)
         self.assertEqual(summary["near_miss_symbol_counts"]["3016"], 1)
+
+    def test_near_miss_candidate_reconstructs_signal_without_gate_metadata(self):
+        decision = datetime(2026, 9, 30, 9, 7, tzinfo=TAIPEI)
+        candidate = {
+            "stock_id": "3016",
+            "stock_name": "嘉晶",
+            "side": "LONG",
+            "decision_time": decision,
+            "score": 0.7,
+            "volume_delta": 0.4,
+            "large_trade_delta": 0.3,
+            "vwap_gap": 0.01,
+            "book_imbalance": 0.2,
+            "spread_bps": 10.0,
+            "entry_price": 171.0,
+            "quantity": 1000,
+            "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+            "streak": 1,
+        }
+
+        signal = _candidate_as_signal(candidate)
+
+        self.assertEqual(signal.stock_id, "3016")
+        self.assertEqual(signal.entry_price, 171.0)
+        self.assertEqual(signal.quantity, 1000)
 
 
 if __name__ == "__main__":
