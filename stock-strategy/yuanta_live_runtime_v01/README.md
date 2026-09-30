@@ -98,6 +98,13 @@ baseline 不會在 `start-prod` 時自動吞掉現有庫存；沒有明確建立
 委託時執行。子程序固定使用 `DRY_RUN`／`ENABLE_LIVE_TRADING=NO`，只讀取元大正式帳戶
 庫存並原子更新 baseline；不會啟動 LIVE 或送單。同步失敗時保留原基準。
 
+Telegram `/start` 會先檢查 persistent broker execution HALT；若仍為 HALT，
+不會產生確認碼，必須先用 `/status` 查明原因，確認元大實際庫存與未成交委託後，
+再用 `/clear-halt` 解除。輸入確認碼後，Trading Bot 會等待 runtime 完成登入、對帳與
+行情訂閱；只有回覆「已確認啟動，正在監控市場」，且 `/status` 顯示
+「目前監控市場：是」，才代表 LIVE runtime 已真正開始監控。僅顯示「仍在啟動」
+不等於已完成啟動，也不代表已送出任何委託。
+
 ## 先看即時訊號、不下單
 
 ```bash

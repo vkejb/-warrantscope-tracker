@@ -23,6 +23,7 @@ DEFAULT_RUNTIME_DIR = MODULE_DIR / "runtime"
 CONTROL_CONFIRM_TTL_SECONDS = 120
 CONTROL_CONFIRM_MAX_ATTEMPTS = 3
 CONTROL_AUDIT_FILENAME = "trading_bot_audit.jsonl"
+START_CONFIRM_TIMEOUT_SECONDS = 20.0
 
 
 def _read_json(path: Path) -> dict[str, Any] | None:
@@ -105,9 +106,15 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
     else:
         heartbeat_age = _age_seconds(heartbeat.get("at"))
         state = str(heartbeat.get("state", "UNKNOWN"))
-        if state in {"RUNNING", "EMERGENCY_EXIT", "STOPPING"}:
+        if state in {"STARTING", "RUNNING", "EMERGENCY_EXIT", "STOPPING"}:
             if heartbeat_age is not None and heartbeat_age <= 15:
-                if state == "STOPPING":
+                if state == "STARTING":
+                    runtime_state = (
+                        "LIVE_STARTING"
+                        if bool(heartbeat.get("submit_live"))
+                        else "OBSERVE_STARTING"
+                    )
+                elif state == "STOPPING":
                     runtime_state = (
                         "LIVE_STOPPING"
                         if bool(heartbeat.get("submit_live"))
@@ -127,6 +134,8 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
             runtime_state = state
 
     if runtime_state in {
+        "LIVE_STARTING",
+        "OBSERVE_STARTING",
         "LIVE_RUNNING",
         "OBSERVE_RUNNING",
         "LIVE_STOPPING",
@@ -188,6 +197,9 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
         "quote_health": quote_health,
         "quote_age_seconds": None if quote_age is None else round(quote_age, 1),
         "trade_attempted": (heartbeat or {}).get("trade_attempted"),
+        "failure_code": (heartbeat or {}).get("failure_code"),
+        "failure_stage": (heartbeat or {}).get("failure_stage"),
+        "monitoring_market": runtime_state in {"LIVE_RUNNING", "OBSERVE_RUNNING"},
         "last_signal": _compact_signal(last_signal_row),
         "last_order": _compact_order(last_order_row),
     }
@@ -218,6 +230,8 @@ def render_status(status: dict[str, Any]) -> str:
     runtime_text = {
         "LIVE_RUNNING": "實盤執行中",
         "OBSERVE_RUNNING": "觀察模式執行中",
+        "LIVE_STARTING": "實盤啟動中",
+        "OBSERVE_STARTING": "觀察模式啟動中",
         "LIVE_STOPPING": "實盤停止中",
         "OBSERVE_STOPPING": "觀察模式停止中",
         "STOPPED_CLEAN": "已正常停止",
@@ -322,6 +336,15 @@ def render_status(status: dict[str, Any]) -> str:
     )
 
     lines.append(
+        "目前監控市場："
+        + (
+            "是"
+            if bool(status.get("monitoring_market"))
+            else "否"
+        )
+    )
+
+    lines.append(
         f"監控標的："
         f"{status.get('watchlist_count') or '-'} / 30"
         f"｜最早進場時間："
@@ -412,6 +435,18 @@ def render_status(status: dict[str, Any]) -> str:
     lines.append(
         f"系統心跳：{heartbeat}前"
     )
+
+    if runtime_raw == "STOPPED_UNSAFE":
+        failure_code = str(
+            status.get("failure_code") or "UNKNOWN"
+        )
+        failure_stage = str(
+            status.get("failure_stage") or "UNKNOWN"
+        )
+        lines.append(
+            f"異常原因：{failure_code}"
+            f"｜階段：{failure_stage}"
+        )
 
     return "\n".join(lines)
 
@@ -523,7 +558,7 @@ def _runtime_process_active(runtime_dir: Path) -> bool:
         return False
 
     state = str(heartbeat.get("state", ""))
-    if state not in {"RUNNING", "STOPPING", "EMERGENCY_EXIT"}:
+    if state not in {"STARTING", "RUNNING", "STOPPING", "EMERGENCY_EXIT"}:
         return False
 
     age = _age_seconds(heartbeat.get("at"))
@@ -595,6 +630,11 @@ def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
         return False, "START_PREFLIGHT_EXECUTION_ERROR"
 
     stdout = str(completed.stdout or "")
+    if (
+        '"reason": "BROKER_EXECUTION_HALTED"' in stdout
+        or '"reason":"BROKER_EXECUTION_HALTED"' in stdout
+    ):
+        return False, "BROKER_EXECUTION_HALTED"
     ready = (
         completed.returncode == 0
         and (
@@ -637,6 +677,15 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
     child_env["EXECUTION_MODE"] = "LIVE"
     child_env["ENABLE_LIVE_TRADING"] = "YES"
 
+    previous_heartbeat = _read_json(
+        runtime_dir / "heartbeat.json"
+    )
+    previous_stamp = (
+        None
+        if previous_heartbeat is None
+        else previous_heartbeat.get("at")
+    )
+
     try:
         process = subprocess.Popen(
             command,
@@ -651,17 +700,56 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
     except OSError:
         return False, "START_EXECUTION_ERROR"
 
-    # Gate/syntax failures happen before broker login and normally terminate
-    # immediately. Probe briefly, but never block the Telegram service on the
-    # long-running realtime process.
-    try:
-        return_code = process.wait(timeout=0.75)
-    except subprocess.TimeoutExpired:
-        return True, "START_DISPATCHED"
+    # A child surviving the first fraction of a second is not proof that LIVE
+    # is monitoring. Login, reconciliation, local-state recovery, and quote
+    # subscription happen later. Wait for this launch to publish a fresh
+    # RUNNING or STOPPED_UNSAFE heartbeat before reporting the outcome.
+    deadline = (
+        time.monotonic()
+        + START_CONFIRM_TIMEOUT_SECONDS
+    )
 
-    if return_code == 0:
-        return False, "START_EXITED_EARLY"
-    return False, "START_REJECTED"
+    while time.monotonic() < deadline:
+        heartbeat = _read_json(
+            runtime_dir / "heartbeat.json"
+        )
+
+        if (
+            heartbeat is not None
+            and heartbeat.get("at") != previous_stamp
+        ):
+            state = str(
+                heartbeat.get("state", "")
+            )
+
+            if state == "RUNNING":
+                return True, "START_CONFIRMED_RUNNING"
+
+            if state == "STOPPED_UNSAFE":
+                failure = str(
+                    heartbeat.get("failure_code")
+                    or "UNKNOWN"
+                )
+
+                if failure == "BROKER_EXECUTION_HALTED":
+                    return False, "START_FAILED_BROKER_HALTED"
+
+                if failure == "QUOTE_SUBSCRIPTION_FAILED":
+                    return False, "START_FAILED_QUOTE_SUBSCRIPTION"
+
+                return False, "START_FAILED_UNSAFE"
+
+        try:
+            return_code = process.wait(timeout=0.25)
+        except subprocess.TimeoutExpired:
+            continue
+
+        if return_code == 0:
+            return False, "START_EXITED_EARLY"
+
+        return False, "START_REJECTED"
+
+    return True, "START_DISPATCHED_PENDING"
 
 
 def _sync_position_baseline(runtime_dir: Path) -> tuple[bool, str]:
@@ -948,17 +1036,36 @@ class _RemoteControl:
                     "⚠️ 偵測到尚未解除的 STOP_REQUEST，沒有啟動 LIVE runtime。\n"
                     "請先用 /status 確認 runtime 狀態並處理停止要求。"
                 )
+            if status == "START_FAILED_BROKER_HALTED":
+                return (
+                    "⚠️ LIVE runtime 啟動失敗：券商執行狀態仍為 HALT。\n"
+                    "沒有開始監控市場，也沒有送出委託。請先用 /status 檢查，"
+                    "確認實際庫存與未成交委託一致後，再執行 /clear-halt。"
+                )
+            if status == "START_FAILED_QUOTE_SUBSCRIPTION":
+                return (
+                    "⚠️ LIVE runtime 啟動失敗：正式行情訂閱未完成。\n"
+                    "沒有開始監控市場，也沒有送出委託。請用 /status 查看失敗階段。"
+                )
+            if status == "START_FAILED_UNSAFE":
+                return (
+                    "⚠️ LIVE runtime 啟動失敗並已安全停止。\n"
+                    "沒有開始監控市場；請用 /status 查看異常原因與失敗階段。"
+                )
             if not ok:
                 return (
                     "⚠️ LIVE runtime 啟動要求被拒絕或立即結束。\n"
                     "既有 LIVE gate、EMERGENCY_STOP、singleton lock、"
                     "reconciliation / halt 等安全機制都沒有被繞過。"
                 )
+            if status == "START_CONFIRMED_RUNNING":
+                return (
+                    "✅ LIVE runtime 已確認啟動，正在監控市場。\n"
+                    "券商登入、庫存對帳及行情訂閱均已通過；可用 /status 再次確認。"
+                )
             return (
-                "✅ LIVE runtime 啟動要求已送出。\n"
-                "這次子程序已帶入三道 LIVE gate；runtime 仍會再次驗證交易日、"
-                "Stage A、singleton lock、reconciliation 與 STOP/HALT。"
-                "稍後可用 /status 確認是否進入 LIVE_RUNNING。"
+                "⏳ LIVE runtime 仍在啟動，尚未確認已開始監控市場。\n"
+                "請稍後用 /status 確認；只有顯示「目前監控市場：是」才代表完成啟動。"
             )
 
         if not ok:
@@ -1045,6 +1152,13 @@ class _RemoteControl:
                     return (
                         "⚠️ LIVE 啟動前置檢查未通過：position baseline 不存在。\n"
                         "未產生確認碼，也沒有啟動 runtime。"
+                    )
+
+                if status == "BROKER_EXECUTION_HALTED":
+                    return (
+                        "⚠️ LIVE 啟動前置檢查未通過：券商執行狀態仍為 HALT。\n"
+                        "未產生確認碼，也沒有啟動 runtime。請先用 /status 檢查，"
+                        "確認實際庫存與未成交委託一致後，再執行 /clear-halt。"
                     )
 
                 return (

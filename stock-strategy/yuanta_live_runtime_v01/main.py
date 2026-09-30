@@ -1083,6 +1083,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     archive = None
     archive_started_at = ""
     archive_error_type = ""
+    failure_code = ""
+    startup_stage = "LOCAL_SETUP"
     archive_counter_baseline = _store_archive_counters(store)
 
     # Acquire after local setup but before session.connect(), so a second
@@ -1103,6 +1105,16 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         raise
 
     try:
+        heartbeat.beat(
+            "STARTING",
+            environment=environment,
+            submit_live=submit_live,
+            signal_date=seal["signal_date"],
+            watchlist_count=len(items),
+            entry_start=SPEC["entry_start"],
+            gate=gate.public_snapshot(),
+            startup_stage="BROKER_CONNECT",
+        )
         archive_started_at = utc_now()
         archive = AppendOnlyRun(
             args.archive_runtime_dir.resolve(),
@@ -1132,7 +1144,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             run_dir=str(archive.run_dir),
         )
 
+        startup_stage = "BROKER_CONNECT"
         session.connect()
+        startup_stage = "BROKER_CONNECTED"
         assert session.api is not None
         adapter = YuantaSparkExecutionAdapter(
             api=session.api,
@@ -1142,12 +1156,16 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             live_gate=gate,
             position_baseline=baseline,
         )
+        startup_stage = "BROKER_RECONCILIATION"
         reconciliation = adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
+        startup_stage = "BROKER_RECONCILED"
         log("RECONCILIATION_PASSED", result=asdict(reconciliation), gate=gate.public_snapshot())
         if store.control_state()["halted"] and not (
             submit_live and args.recover_emergency and kill_path.exists()
         ):
+            failure_code = "BROKER_EXECUTION_HALTED"
             raise RuntimeError(f"broker execution store is halted: {store.control_state().get('reason')}")
+        startup_stage = "LOCAL_STATE_RECOVERY"
         recovered = _recover_runtime_state(store, metadata, datetime.now(TAIPEI))
         entry_order_id = recovered["entry_order_id"]
         entry_signal = recovered["entry_signal"]
@@ -1164,7 +1182,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 "trade_attempted": trade_attempted,
                 "pending_exit_reason": pending_exit_reason,
             })
+        startup_stage = "QUOTE_SUBSCRIPTION"
         session.subscribe(quote_items)
+        startup_stage = "RUNNING"
         log(
             "RUNTIME_STARTED",
             environment=environment,
@@ -1872,6 +1892,26 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             time.sleep(0.10)
     except Exception as exc:
         archive_error_type = type(exc).__name__
+        if not failure_code:
+            if startup_stage == "QUOTE_SUBSCRIPTION":
+                failure_code = "QUOTE_SUBSCRIPTION_FAILED"
+            elif startup_stage in {"BROKER_CONNECT", "BROKER_CONNECTED"}:
+                failure_code = "BROKER_CONNECTION_FAILED"
+            elif startup_stage in {"BROKER_RECONCILIATION", "BROKER_RECONCILED"}:
+                failure_code = "BROKER_RECONCILIATION_FAILED"
+            elif startup_stage == "LOCAL_STATE_RECOVERY":
+                failure_code = "LOCAL_STATE_RECOVERY_FAILED"
+            else:
+                failure_code = "RUNTIME_FAILED"
+        try:
+            log(
+                "RUNTIME_FATAL_ERROR",
+                failure_code=failure_code,
+                failure_stage=startup_stage,
+                error_type=archive_error_type,
+            )
+        except Exception:
+            pass
         raise
     finally:
         try:
@@ -1879,6 +1919,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 clean_shutdown,
                 environment=environment,
                 submit_live=submit_live,
+                failure_code=("" if clean_shutdown else failure_code),
+                failure_stage=("" if clean_shutdown else startup_stage),
             )
         except Exception:
             pass
@@ -1889,6 +1931,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     "Live runtime stopped without a confirmed clean terminal state",
                     environment=environment,
                     submit_live=submit_live,
+                    failure_code=failure_code,
+                    failure_stage=startup_stage,
                 )
             except Exception:
                 pass
@@ -2061,6 +2105,19 @@ def _preflight(args, environment: str) -> int:
         store = LiveOrderStore(
             runtime_dir / "live-orders.sqlite"
         )
+
+        control = store.control_state()
+        if control["halted"]:
+            print(
+                json.dumps(
+                    {
+                        "status": "BLOCKED",
+                        "reason": "BROKER_EXECUTION_HALTED",
+                    },
+                    ensure_ascii=False,
+                )
+            )
+            return 2
 
         session.connect()
         assert session.api is not None

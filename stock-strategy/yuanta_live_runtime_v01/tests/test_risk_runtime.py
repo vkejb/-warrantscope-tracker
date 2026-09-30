@@ -761,6 +761,80 @@ class RuntimeGateTests(unittest.TestCase):
                     second
                 )
 
+    def test_preflight_blocks_persistent_broker_halt_before_connect(self):
+        class FakeSession:
+            def __init__(self):
+                self.connect_calls = 0
+                self.close_calls = 0
+
+            def connect(self):
+                self.connect_calls += 1
+
+            def close(self):
+                self.close_calls += 1
+
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            baseline = runtime / "position_baseline.json"
+            baseline.write_text("{}\n", encoding="utf-8")
+
+            store = LiveOrderStore(runtime / "live-orders.sqlite")
+            store.halt("RECONCILIATION_MISMATCH")
+            store.close()
+
+            args = SimpleNamespace(
+                runtime_dir=runtime,
+                baseline=baseline,
+                vendor_dir=runtime,
+                reconcile_timeout=1.0,
+            )
+            item = SimpleNamespace(
+                stock_id="3605",
+                stock_name="宏致",
+                market="0",
+            )
+            fake_session = FakeSession()
+
+            with patch.object(
+                runtime_main,
+                "load_stage_a_watchlist",
+                return_value=(
+                    {"signal_date": "20260930"},
+                    [item],
+                    {},
+                ),
+            ), patch.object(
+                runtime_main,
+                "_validate_watchlist_day",
+            ), patch.object(
+                runtime_main,
+                "load_credentials",
+                return_value={
+                    "pfx_password": "secret",
+                    "trading_password": "secret",
+                },
+            ), patch.object(
+                runtime_main,
+                "load_api_types",
+                return_value=SimpleNamespace(),
+            ), patch.object(
+                runtime_main,
+                "_extend_quote_types",
+                side_effect=lambda value: value,
+            ), patch.object(
+                runtime_main,
+                "_Session",
+                return_value=fake_session,
+            ):
+                result = runtime_main._preflight(
+                    args,
+                    "PROD",
+                )
+
+            self.assertEqual(result, 2)
+            self.assertEqual(fake_session.connect_calls, 0)
+            self.assertEqual(fake_session.close_calls, 1)
+
     def test_clear_halt_refuses_running_runtime_before_broker_connect(self):
         with tempfile.TemporaryDirectory() as temporary:
             runtime = Path(temporary)

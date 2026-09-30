@@ -90,6 +90,7 @@ class TradingBotStatusTests(unittest.TestCase):
             self.assertEqual(status["runtime_state"], "LIVE_RUNNING")
             self.assertEqual(status["quote_health"], "FRESH")
             self.assertTrue(status["gate_authorized"])
+            self.assertTrue(status["monitoring_market"])
             self.assertNotIn("position", status)
 
             text = render_status(status)
@@ -101,6 +102,35 @@ class TradingBotStatusTests(unittest.TestCase):
             self.assertNotIn("3000", text)
             self.assertNotIn("77.7", text)
             self.assertNotIn("目前部位", text)
+            self.assertIn("目前監控市場：是", text)
+
+    def test_unsafe_stop_reports_failure_stage_and_not_monitoring(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            heartbeat = {
+                "at": datetime.now(timezone.utc).isoformat(),
+                "state": "STOPPED_UNSAFE",
+                "environment": "PROD",
+                "submit_live": True,
+                "failure_code": "BROKER_EXECUTION_HALTED",
+                "failure_stage": "BROKER_RECONCILED",
+            }
+            (runtime / "heartbeat.json").write_text(
+                json.dumps(heartbeat),
+                encoding="utf-8",
+            )
+
+            status = build_status(runtime)
+            self.assertFalse(status["monitoring_market"])
+            self.assertEqual(
+                status["failure_code"],
+                "BROKER_EXECUTION_HALTED",
+            )
+
+            rendered = render_status(status)
+            self.assertIn("目前監控市場：否", rendered)
+            self.assertIn("BROKER_EXECUTION_HALTED", rendered)
+            self.assertIn("BROKER_RECONCILED", rendered)
 
     def test_status_uses_latest_signal_ledger_event(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -514,7 +544,7 @@ class TradingBotRemoteControlTests(unittest.TestCase):
                 return_value=(True, "START_PREFLIGHT_READY"),
             ) as preflight, patch(
                 "yuanta_live_runtime_v01.trading_bot_service._launch_runtime_start",
-                return_value=(True, "START_DISPATCHED"),
+                return_value=(True, "START_CONFIRMED_RUNNING"),
             ) as launch:
                 request = controls.handle({"text": "/start"}, 700)
                 preflight.assert_called_once_with(runtime)
@@ -522,7 +552,8 @@ class TradingBotRemoteControlTests(unittest.TestCase):
                 launch.assert_not_called()
 
                 confirmed = controls.handle({"text": "/confirm 4321"}, 701)
-                self.assertIn("啟動要求已送出", confirmed)
+                self.assertIn("已確認啟動", confirmed)
+                self.assertIn("正在監控市場", confirmed)
                 launch.assert_called_once_with(runtime)
 
     def test_remote_start_preflight_failure_never_issues_confirmation(self):
@@ -543,6 +574,46 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             self.assertIsNone(controls.pending)
             self.assertIn("前置檢查未通過", result)
             self.assertIn("未產生確認碼", result)
+
+    def test_remote_start_reports_persistent_broker_halt_without_confirmation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            controls = _RemoteControl(runtime, confirm_ttl_seconds=120)
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service._run_start_preflight",
+                return_value=(False, "BROKER_EXECUTION_HALTED"),
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service._launch_runtime_start",
+            ) as launch:
+                result = controls.handle({"text": "/start"}, 703)
+
+            launch.assert_not_called()
+            self.assertIsNone(controls.pending)
+            self.assertIn("HALT", result)
+            self.assertIn("/clear-halt", result)
+
+    def test_start_preflight_parses_persistent_broker_halt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            (runtime / "position_baseline.json").write_text(
+                "{}\n",
+                encoding="utf-8",
+            )
+            completed = SimpleNamespace(
+                returncode=2,
+                stdout='{"status":"BLOCKED","reason":"BROKER_EXECUTION_HALTED"}',
+                stderr="",
+            )
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
+                return_value=completed,
+            ):
+                ok, status = _run_start_preflight(runtime)
+
+            self.assertFalse(ok)
+            self.assertEqual(status, "BROKER_EXECUTION_HALTED")
 
 
     def test_start_preflight_forces_dry_run_child_environment(self):
@@ -595,7 +666,18 @@ class TradingBotRemoteControlTests(unittest.TestCase):
 
     def test_start_launcher_sets_live_gates_only_in_child_environment(self):
         class FakeProcess:
+            def __init__(self, runtime):
+                self.runtime = runtime
+
             def wait(self, timeout):
+                (self.runtime / "heartbeat.json").write_text(
+                    json.dumps({
+                        "at": datetime.now(timezone.utc).isoformat(),
+                        "state": "RUNNING",
+                        "submit_live": True,
+                    }),
+                    encoding="utf-8",
+                )
                 raise subprocess.TimeoutExpired(cmd="start-prod", timeout=timeout)
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -603,12 +685,12 @@ class TradingBotRemoteControlTests(unittest.TestCase):
 
             with patch(
                 "yuanta_live_runtime_v01.trading_bot_service.subprocess.Popen",
-                return_value=FakeProcess(),
+                return_value=FakeProcess(runtime),
             ) as popen:
                 ok, status = _launch_runtime_start(runtime)
 
             self.assertTrue(ok)
-            self.assertEqual(status, "START_DISPATCHED")
+            self.assertEqual(status, "START_CONFIRMED_RUNNING")
 
             command = popen.call_args.args[0]
             kwargs = popen.call_args.kwargs
@@ -628,6 +710,35 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             self.assertIs(kwargs["stdout"], subprocess.DEVNULL)
             self.assertIs(kwargs["stderr"], subprocess.DEVNULL)
             self.assertTrue(kwargs["start_new_session"])
+
+    def test_start_launcher_reports_fresh_unsafe_halt(self):
+        class FakeProcess:
+            def __init__(self, runtime):
+                self.runtime = runtime
+
+            def wait(self, timeout):
+                (self.runtime / "heartbeat.json").write_text(
+                    json.dumps({
+                        "at": datetime.now(timezone.utc).isoformat(),
+                        "state": "STOPPED_UNSAFE",
+                        "failure_code": "BROKER_EXECUTION_HALTED",
+                        "failure_stage": "BROKER_RECONCILED",
+                    }),
+                    encoding="utf-8",
+                )
+                raise subprocess.TimeoutExpired(cmd="start-prod", timeout=timeout)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.Popen",
+                return_value=FakeProcess(runtime),
+            ):
+                ok, status = _launch_runtime_start(runtime)
+
+            self.assertFalse(ok)
+            self.assertEqual(status, "START_FAILED_BROKER_HALTED")
 
     def test_start_launcher_refuses_fresh_existing_runtime_before_spawn(self):
         with tempfile.TemporaryDirectory() as tmp:
