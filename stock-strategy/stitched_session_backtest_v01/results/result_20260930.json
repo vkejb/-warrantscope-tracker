@@ -1,0 +1,783 @@
+{
+  "analysis_id": "STITCHED_CURRENT_STRATEGY_BACKTEST_V0_1",
+  "session_date": "20260930",
+  "signal_date": "20260929",
+  "stage_a_seal_hash": "c3536858dba2cbcd813ad22a2524520e72ada86506390065c91812ffbd3eb84e",
+  "paper_contract_hash": "296824190d027d47a1f0d55f2ccb1da13c5a0a80b33b9614685893734151a237",
+  "capital_twd": 190000,
+  "current_strategy": {
+    "entry_policy": {
+      "policy_id": "ANTI_CHASE_BALANCED_V1",
+      "maximum_directional_opening_extension": 0.02,
+      "maximum_directional_vwap_extension": 0.0125,
+      "opening_reference_must_arrive_by": "09:05",
+      "applies_to": "ENTRY_ONLY_SIDE_AWARE"
+    },
+    "exit_policy": {
+      "policy_id": "HARD_3500_PLUS_MFE_V1_NO_LOSS_RECOVERY",
+      "stop_loss_net_twd": 3500.0,
+      "one_r_definition": "entry_to_net_3500_stop_price",
+      "mfe_variant": "MFE_V1",
+      "retain_1_5": 0.6,
+      "retain_2_0": 0.7,
+      "retain_3_0": 0.75
+    },
+    "market_regime_policy": {
+      "policy_id": "LONG_0050_RELATIVE_STRENGTH_V1",
+      "benchmark_symbol": "0050",
+      "benchmark_name": "元大台灣50",
+      "benchmark_market": "TWSE",
+      "lookback_seconds": 300,
+      "maximum_staleness_seconds": 5.0,
+      "bullish_min_relative_strength": 0.0,
+      "neutral_min_relative_strength": 0.0025,
+      "bearish_min_relative_strength": 0.005,
+      "bullish_confirmations": 1,
+      "neutral_confirmations": 2,
+      "bearish_confirmations": 2,
+      "short_behavior": "UNCHANGED_NOT_ENABLED_BY_THIS_POLICY"
+    },
+    "direction": "LONG_ONLY"
+  },
+  "source_runs": [
+    {
+      "role": "EARLY_SESSION",
+      "run_id": "20260930T005009.221028Z_c408fefe",
+      "manifest_hash": "713186876cf5a0f5869507ffa56131be725d26e3d54fd7b328390dbc3fae14cb",
+      "started_at": "2026-09-30T00:50:09.227Z",
+      "ended_at": "2026-09-30T05:35:10.757Z",
+      "callback_errors": 4
+    },
+    {
+      "role": "LATE_SESSION",
+      "run_id": "20260930T012715.505778Z_08bdc748",
+      "manifest_hash": "df84c81e6a497edc3140182db3f3a0ec12165cc677d6a0ac8104c18e00074567",
+      "started_at": "2026-09-30T01:27:15.505Z",
+      "ended_at": "2026-09-30T05:25:00.844Z",
+      "callback_errors": 0
+    }
+  ],
+  "data_quality": {
+    "status": "DIAGNOSTIC_ONLY_NOT_CERTIFIED_FULL_SESSION",
+    "same_stage_a_seal": true,
+    "source_callback_errors": 4,
+    "callback_error_limitation": "early source callback errors are aggregate and untimestamped; the stitched replay cannot prove they occurred outside the selected interval",
+    "benchmark_0050": {
+      "first_event": "2026-09-30T08:50:19.829000+08:00",
+      "last_event": "2026-09-30T13:24:59.771000+08:00",
+      "event_count": 28997,
+      "maximum_event_gap_seconds": 49.91
+    },
+    "watchlist_symbol_count": 30,
+    "candidate_symbol_count": 29,
+    "candidate_symbols_without_executable_quotes": [
+      "8227"
+    ],
+    "non_executable_quote_handling": "symbols without a positive bid and ask are excluded exactly as in the live engine"
+  },
+  "result": {
+    "production_status": "NO_APPROVED_LONG_ENTRY",
+    "production_trade": null,
+    "production_net_pnl_twd": 0,
+    "confirmation_status": "NO_CONFIRMED_LONG_ENTRY",
+    "confirmation_trade": null,
+    "confirmation_net_pnl_twd": 0,
+    "decision_windows": 491,
+    "decisions": {
+      "NO_APPROVED_CANDIDATE": 416,
+      "REJECTED": 75
+    },
+    "near_miss_gate_counts": {
+      "ANTI_CHASE_OPENING_EXTENSION": 6,
+      "CONFIRMATIONS_INCOMPLETE": 1,
+      "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2
+    },
+    "near_miss_symbol_counts": {
+      "1709": 2,
+      "2033": 2,
+      "3016": 1,
+      "4956": 3,
+      "6456": 1
+    },
+    "near_misses": [
+      {
+        "decision_time": "2026-09-30T09:07:00+08:00",
+        "stock_id": "3016",
+        "stock_name": "嘉晶",
+        "score": 0.7368928302465395,
+        "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+        "opening_extension": 0.0,
+        "vwap_extension": 0.012314256599576634,
+        "relative_strength_5m": 0.017964071856287456,
+        "required_confirmations": 2,
+        "streak": 1
+      },
+      {
+        "decision_time": "2026-09-30T09:08:00+08:00",
+        "stock_id": "1709",
+        "stock_name": "和益",
+        "score": 0.7710568590628323,
+        "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+        "opening_extension": 0.012471655328798015,
+        "vwap_extension": 0.006067815885557826,
+        "relative_strength_5m": 0.0026891133557800373,
+        "required_confirmations": 2,
+        "streak": 1
+      },
+      {
+        "decision_time": "2026-09-30T09:11:00+08:00",
+        "stock_id": "2033",
+        "stock_name": "佳大",
+        "score": 0.6416463238787025,
+        "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+        "opening_extension": 0.03732303732303732,
+        "vwap_extension": 0.01787802580253306,
+        "relative_strength_5m": 0.023287084038353,
+        "required_confirmations": 2,
+        "streak": 1
+      },
+      {
+        "decision_time": "2026-09-30T09:13:30+08:00",
+        "stock_id": "2033",
+        "stock_name": "佳大",
+        "score": 0.730584918957012,
+        "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+        "opening_extension": 0.05534105534105538,
+        "vwap_extension": 0.030247545624284333,
+        "relative_strength_5m": 0.03490889329039604,
+        "required_confirmations": 2,
+        "streak": 1
+      },
+      {
+        "decision_time": "2026-09-30T09:56:00+08:00",
+        "stock_id": "4956",
+        "stock_name": "光鋐",
+        "score": 0.6786063860044054,
+        "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+        "opening_extension": 0.043243243243243246,
+        "vwap_extension": 0.034414116740818956,
+        "relative_strength_5m": 0.012591815320041944,
+        "required_confirmations": 1,
+        "streak": 1
+      },
+      {
+        "decision_time": "2026-09-30T09:56:30+08:00",
+        "stock_id": "4956",
+        "stock_name": "光鋐",
+        "score": 0.5731096862729658,
+        "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+        "opening_extension": 0.051891891891891806,
+        "vwap_extension": 0.04163418162347976,
+        "relative_strength_5m": 0.01778242677824271,
+        "required_confirmations": 1,
+        "streak": 2
+      },
+      {
+        "decision_time": "2026-09-30T10:14:30+08:00",
+        "stock_id": "4956",
+        "stock_name": "光鋐",
+        "score": 0.5823928944618599,
+        "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+        "opening_extension": 0.03243243243243232,
+        "vwap_extension": 0.007678937090781268,
+        "relative_strength_5m": -0.0009191346278197843,
+        "required_confirmations": 2,
+        "streak": 1
+      },
+      {
+        "decision_time": "2026-09-30T10:30:30+08:00",
+        "stock_id": "6456",
+        "stock_name": "GIS-KY",
+        "score": 0.6433642139853639,
+        "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+        "opening_extension": 0.021857923497267784,
+        "vwap_extension": 0.004366209174770708,
+        "relative_strength_5m": 0.002586688739237508,
+        "required_confirmations": 2,
+        "streak": 1
+      },
+      {
+        "decision_time": "2026-09-30T10:48:30+08:00",
+        "stock_id": "1709",
+        "stock_name": "和益",
+        "score": 0.6555974687198236,
+        "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+        "opening_extension": 0.07482993197278898,
+        "vwap_extension": 0.04477048769745662,
+        "relative_strength_5m": 0.0344906451756708,
+        "required_confirmations": 2,
+        "streak": 1
+      }
+    ]
+  },
+  "cutover_sensitivity": {
+    "result_invariant": true,
+    "variants": [
+      {
+        "cutover_time": "2026-09-30T09:27:15.505000+08:00",
+        "production_status": "NO_APPROVED_LONG_ENTRY",
+        "production_trade": null,
+        "confirmation_status": "NO_CONFIRMED_LONG_ENTRY",
+        "confirmation_trade": null,
+        "decision_windows": 491,
+        "decisions": {
+          "NO_APPROVED_CANDIDATE": 416,
+          "REJECTED": 75
+        },
+        "near_miss_gate_counts": {
+          "ANTI_CHASE_OPENING_EXTENSION": 6,
+          "CONFIRMATIONS_INCOMPLETE": 1,
+          "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2
+        },
+        "near_miss_symbol_counts": {
+          "1709": 2,
+          "2033": 2,
+          "3016": 1,
+          "4956": 3,
+          "6456": 1
+        },
+        "near_misses": [
+          {
+            "decision_time": "2026-09-30T09:07:00+08:00",
+            "stock_id": "3016",
+            "stock_name": "嘉晶",
+            "score": 0.7368928302465395,
+            "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+            "opening_extension": 0.0,
+            "vwap_extension": 0.012314256599576634,
+            "relative_strength_5m": 0.017964071856287456,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:08:00+08:00",
+            "stock_id": "1709",
+            "stock_name": "和益",
+            "score": 0.7710568590628323,
+            "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+            "opening_extension": 0.012471655328798015,
+            "vwap_extension": 0.006067815885557826,
+            "relative_strength_5m": 0.0026891133557800373,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:11:00+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.6416463238787025,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.03732303732303732,
+            "vwap_extension": 0.01787802580253306,
+            "relative_strength_5m": 0.023287084038353,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:13:30+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.730584918957012,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.05534105534105538,
+            "vwap_extension": 0.030247545624284333,
+            "relative_strength_5m": 0.03490889329039604,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:56:00+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.6786063860044054,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.043243243243243246,
+            "vwap_extension": 0.034414116740818956,
+            "relative_strength_5m": 0.012591815320041944,
+            "required_confirmations": 1,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:56:30+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.5731096862729658,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.051891891891891806,
+            "vwap_extension": 0.04163418162347976,
+            "relative_strength_5m": 0.01778242677824271,
+            "required_confirmations": 1,
+            "streak": 2
+          },
+          {
+            "decision_time": "2026-09-30T10:14:30+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.5823928944618599,
+            "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+            "opening_extension": 0.03243243243243232,
+            "vwap_extension": 0.007678937090781268,
+            "relative_strength_5m": -0.0009191346278197843,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T10:30:30+08:00",
+            "stock_id": "6456",
+            "stock_name": "GIS-KY",
+            "score": 0.6433642139853639,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.021857923497267784,
+            "vwap_extension": 0.004366209174770708,
+            "relative_strength_5m": 0.002586688739237508,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T10:48:30+08:00",
+            "stock_id": "1709",
+            "stock_name": "和益",
+            "score": 0.6555974687198236,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.07482993197278898,
+            "vwap_extension": 0.04477048769745662,
+            "relative_strength_5m": 0.0344906451756708,
+            "required_confirmations": 2,
+            "streak": 1
+          }
+        ]
+      },
+      {
+        "cutover_time": "2026-09-30T09:30:00+08:00",
+        "production_status": "NO_APPROVED_LONG_ENTRY",
+        "production_trade": null,
+        "confirmation_status": "NO_CONFIRMED_LONG_ENTRY",
+        "confirmation_trade": null,
+        "decision_windows": 491,
+        "decisions": {
+          "NO_APPROVED_CANDIDATE": 416,
+          "REJECTED": 75
+        },
+        "near_miss_gate_counts": {
+          "ANTI_CHASE_OPENING_EXTENSION": 6,
+          "CONFIRMATIONS_INCOMPLETE": 1,
+          "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2
+        },
+        "near_miss_symbol_counts": {
+          "1709": 2,
+          "2033": 2,
+          "3016": 1,
+          "4956": 3,
+          "6456": 1
+        },
+        "near_misses": [
+          {
+            "decision_time": "2026-09-30T09:07:00+08:00",
+            "stock_id": "3016",
+            "stock_name": "嘉晶",
+            "score": 0.7368928302465395,
+            "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+            "opening_extension": 0.0,
+            "vwap_extension": 0.012314256599576634,
+            "relative_strength_5m": 0.017964071856287456,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:08:00+08:00",
+            "stock_id": "1709",
+            "stock_name": "和益",
+            "score": 0.7710568590628323,
+            "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+            "opening_extension": 0.012471655328798015,
+            "vwap_extension": 0.006067815885557826,
+            "relative_strength_5m": 0.0026891133557800373,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:11:00+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.6416463238787025,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.03732303732303732,
+            "vwap_extension": 0.01787802580253306,
+            "relative_strength_5m": 0.023287084038353,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:13:30+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.730584918957012,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.05534105534105538,
+            "vwap_extension": 0.030247545624284333,
+            "relative_strength_5m": 0.03490889329039604,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:56:00+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.6786063860044054,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.043243243243243246,
+            "vwap_extension": 0.034415783092633045,
+            "relative_strength_5m": 0.012591815320041944,
+            "required_confirmations": 1,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:56:30+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.5731096862729658,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.051891891891891806,
+            "vwap_extension": 0.04163592523435278,
+            "relative_strength_5m": 0.01778242677824271,
+            "required_confirmations": 1,
+            "streak": 2
+          },
+          {
+            "decision_time": "2026-09-30T10:14:30+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.5823928944618599,
+            "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+            "opening_extension": 0.03243243243243232,
+            "vwap_extension": 0.0076808262920389225,
+            "relative_strength_5m": -0.0009191346278197843,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T10:30:30+08:00",
+            "stock_id": "6456",
+            "stock_name": "GIS-KY",
+            "score": 0.6469378979869405,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.021857923497267784,
+            "vwap_extension": 0.004455551274810121,
+            "relative_strength_5m": 0.002586688739237508,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T10:48:30+08:00",
+            "stock_id": "1709",
+            "stock_name": "和益",
+            "score": 0.6555974687198236,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.07482993197278898,
+            "vwap_extension": 0.044786507663483466,
+            "relative_strength_5m": 0.0344906451756708,
+            "required_confirmations": 2,
+            "streak": 1
+          }
+        ]
+      },
+      {
+        "cutover_time": "2026-09-30T10:00:00+08:00",
+        "production_status": "NO_APPROVED_LONG_ENTRY",
+        "production_trade": null,
+        "confirmation_status": "NO_CONFIRMED_LONG_ENTRY",
+        "confirmation_trade": null,
+        "decision_windows": 491,
+        "decisions": {
+          "NO_APPROVED_CANDIDATE": 416,
+          "REJECTED": 75
+        },
+        "near_miss_gate_counts": {
+          "ANTI_CHASE_OPENING_EXTENSION": 7,
+          "CONFIRMATIONS_INCOMPLETE": 1,
+          "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2
+        },
+        "near_miss_symbol_counts": {
+          "1709": 2,
+          "2033": 3,
+          "3016": 1,
+          "4956": 3,
+          "6456": 1
+        },
+        "near_misses": [
+          {
+            "decision_time": "2026-09-30T09:07:00+08:00",
+            "stock_id": "3016",
+            "stock_name": "嘉晶",
+            "score": 0.7368928302465395,
+            "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+            "opening_extension": 0.0,
+            "vwap_extension": 0.012314256599576634,
+            "relative_strength_5m": 0.017964071856287456,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:08:00+08:00",
+            "stock_id": "1709",
+            "stock_name": "和益",
+            "score": 0.7710568590628323,
+            "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+            "opening_extension": 0.012471655328798015,
+            "vwap_extension": 0.006067815885557826,
+            "relative_strength_5m": 0.0026891133557800373,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:11:00+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.6416463238787025,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.03732303732303732,
+            "vwap_extension": 0.01787802580253306,
+            "relative_strength_5m": 0.023287084038353,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:13:30+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.730584918957012,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.05534105534105538,
+            "vwap_extension": 0.030247545624284333,
+            "relative_strength_5m": 0.03490889329039604,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:40:30+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.6908665105386417,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.04761904761904767,
+            "vwap_extension": 0.016237183852773063,
+            "relative_strength_5m": 0.005824403638611364,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:56:00+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.6786063860044054,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.043243243243243246,
+            "vwap_extension": 0.034415783092633045,
+            "relative_strength_5m": 0.012591815320041944,
+            "required_confirmations": 1,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:56:30+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.5780466451063244,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.051891891891891806,
+            "vwap_extension": 0.04163592523435278,
+            "relative_strength_5m": 0.01778242677824271,
+            "required_confirmations": 1,
+            "streak": 2
+          },
+          {
+            "decision_time": "2026-09-30T10:14:30+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.5823928944618599,
+            "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+            "opening_extension": 0.03243243243243232,
+            "vwap_extension": 0.0076808262920389225,
+            "relative_strength_5m": -0.0009191346278197843,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T10:30:30+08:00",
+            "stock_id": "6456",
+            "stock_name": "GIS-KY",
+            "score": 0.6469378979869405,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.021857923497267784,
+            "vwap_extension": 0.004455551274810121,
+            "relative_strength_5m": 0.002586688739237508,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T10:48:30+08:00",
+            "stock_id": "1709",
+            "stock_name": "和益",
+            "score": 0.6555974687198236,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.07482993197278898,
+            "vwap_extension": 0.044786507663483466,
+            "relative_strength_5m": 0.0344906451756708,
+            "required_confirmations": 2,
+            "streak": 1
+          }
+        ]
+      },
+      {
+        "cutover_time": "2026-09-30T12:00:00+08:00",
+        "production_status": "NO_APPROVED_LONG_ENTRY",
+        "production_trade": null,
+        "confirmation_status": "NO_CONFIRMED_LONG_ENTRY",
+        "confirmation_trade": null,
+        "decision_windows": 491,
+        "decisions": {
+          "NO_APPROVED_CANDIDATE": 416,
+          "REJECTED": 75
+        },
+        "near_miss_gate_counts": {
+          "ANTI_CHASE_OPENING_EXTENSION": 7,
+          "CONFIRMATIONS_INCOMPLETE": 1,
+          "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2
+        },
+        "near_miss_symbol_counts": {
+          "1709": 2,
+          "2033": 3,
+          "3016": 1,
+          "4956": 3,
+          "6456": 1
+        },
+        "near_misses": [
+          {
+            "decision_time": "2026-09-30T09:07:00+08:00",
+            "stock_id": "3016",
+            "stock_name": "嘉晶",
+            "score": 0.7368928302465395,
+            "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+            "opening_extension": 0.0,
+            "vwap_extension": 0.012314256599576634,
+            "relative_strength_5m": 0.017964071856287456,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:08:00+08:00",
+            "stock_id": "1709",
+            "stock_name": "和益",
+            "score": 0.7710568590628323,
+            "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+            "opening_extension": 0.012471655328798015,
+            "vwap_extension": 0.006067815885557826,
+            "relative_strength_5m": 0.0026891133557800373,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:11:00+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.6416463238787025,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.03732303732303732,
+            "vwap_extension": 0.01787802580253306,
+            "relative_strength_5m": 0.023287084038353,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:13:30+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.730584918957012,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.05534105534105538,
+            "vwap_extension": 0.030247545624284333,
+            "relative_strength_5m": 0.03490889329039604,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:40:30+08:00",
+            "stock_id": "2033",
+            "stock_name": "佳大",
+            "score": 0.6908665105386417,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.04761904761904767,
+            "vwap_extension": 0.016237183852773063,
+            "relative_strength_5m": 0.005824403638611364,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:56:00+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.6786063860044054,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.043243243243243246,
+            "vwap_extension": 0.034415783092633045,
+            "relative_strength_5m": 0.012591815320041944,
+            "required_confirmations": 1,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T09:56:30+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.5780466451063244,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.051891891891891806,
+            "vwap_extension": 0.04163592523435278,
+            "relative_strength_5m": 0.01778242677824271,
+            "required_confirmations": 1,
+            "streak": 2
+          },
+          {
+            "decision_time": "2026-09-30T10:14:30+08:00",
+            "stock_id": "4956",
+            "stock_name": "光鋐",
+            "score": 0.5694271716600716,
+            "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+            "opening_extension": 0.03243243243243232,
+            "vwap_extension": 0.0076808262920389225,
+            "relative_strength_5m": -0.0009191346278197843,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T10:30:30+08:00",
+            "stock_id": "6456",
+            "stock_name": "GIS-KY",
+            "score": 0.6469171445661097,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.021857923497267784,
+            "vwap_extension": 0.0044550324392893526,
+            "relative_strength_5m": 0.002586688739237508,
+            "required_confirmations": 2,
+            "streak": 1
+          },
+          {
+            "decision_time": "2026-09-30T10:48:30+08:00",
+            "stock_id": "1709",
+            "stock_name": "和益",
+            "score": 0.6513758783002492,
+            "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+            "opening_extension": 0.07482993197278898,
+            "vwap_extension": 0.04478885808780708,
+            "relative_strength_5m": 0.0344906451756708,
+            "required_confirmations": 2,
+            "streak": 1
+          }
+        ]
+      }
+    ]
+  },
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "interpretation": "BACKTEST_ONLY_CURRENT_STRATEGY_DIAGNOSTIC_NOT_LIVE_EXECUTION",
+  "report_hash": "4f255577e57ba9391e77d017fd52569d970832c625d50a9767b1d470704b2596"
+}
