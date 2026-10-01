@@ -86,10 +86,41 @@ def _session_manifest(source: dict, *, coverage: str = "FULL_SESSION") -> dict:
 class PaperShadowTests(unittest.TestCase):
     def test_status_is_safe_before_first_paper_day(self):
         with tempfile.TemporaryDirectory() as temp:
-            result = latest_status(Path(temp))
+            root = Path(temp)
+            result = latest_status(root / "paper", root / "collector")
         self.assertEqual(result["status"], "NO_PAPER_DAY_YET")
+        self.assertEqual(
+            result["latest_source_preflight"]["status"], "NO_SOURCE_RUN",
+        )
         self.assertEqual(result["actual_orders"], 0)
         self.assertEqual(result["comparison"]["status"], "NOT_BUILT")
+
+    def test_status_explains_why_latest_source_cannot_publish_paper(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            run = root / "collector" / "runs" / "run-1"
+            run.mkdir(parents=True)
+            manifest = {
+                "run_id": "run-1", "status": "COMPLETE",
+                "started_at": "2026-10-01T00:50:00Z",
+                "ended_at": "2026-10-01T05:35:00Z",
+                "event_counts": {"callback_errors": 17},
+                "callback_error_types": {"ValueError": 17},
+                "artifacts": {
+                    "market_context_ticks.jsonl.gz": "a",
+                    "market_context_books.jsonl.gz": "b",
+                },
+            }
+            manifest["manifest_hash"] = __import__("hashlib").sha256(
+                canonical_bytes(manifest)
+            ).hexdigest()
+            (run / "run_manifest.json").write_bytes(canonical_bytes(manifest) + b"\n")
+            result = latest_status(root / "paper", root / "collector")
+        preflight = result["latest_source_preflight"]
+        self.assertEqual(preflight["status"], "PREREQUISITES_BLOCKED")
+        self.assertEqual(preflight["callback_errors"], 17)
+        self.assertEqual(preflight["blocking_reasons"], ["CALLBACK_ERRORS_PRESENT"])
+        self.assertFalse(preflight["paper_eligible_prerequisites"])
 
     def test_causal_long_paper_trade_collects_checkpoints_and_grid(self):
         coverage = {
