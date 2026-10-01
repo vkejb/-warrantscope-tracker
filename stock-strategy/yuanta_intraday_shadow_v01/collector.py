@@ -179,6 +179,8 @@ class AppendOnlyRun:
         # metadata is accepted by callback_error(); raw broker payloads and
         # exception messages must never be persisted here.
         self.callback_error_path = self.run_dir / "callback_errors.jsonl"
+        self.decision_evidence_path = self.run_dir / "decision_evidence.jsonl"
+        self.subscription_evidence_path = self.run_dir / "subscription_evidence.jsonl"
         self._raw_files = []
         if compress:
             tick_raw = self.tick_path.open("xb")
@@ -198,6 +200,12 @@ class AppendOnlyRun:
         self._callback_errors = self.callback_error_path.open(
             "x", encoding="utf-8", buffering=1,
         )
+        self._decision_evidence = self.decision_evidence_path.open(
+            "x", encoding="utf-8", buffering=1,
+        )
+        self._subscription_evidence = self.subscription_evidence_path.open(
+            "x", encoding="utf-8", buffering=1,
+        )
         self._lock = threading.Lock()
         self.counts = {
             "ticks": 0,
@@ -205,6 +213,10 @@ class AppendOnlyRun:
             "market_context_ticks": 0,
             "market_context_books": 0,
             "callback_errors": 0,
+            "evidenced_quote_events": 0,
+            "decision_evidence": 0,
+            "subscription_evidence": 0,
+            "observation_failures": 0,
         }
         self.callback_error_types: dict[str, int] = {}
         self.market_context_counts = {
@@ -244,6 +256,15 @@ class AppendOnlyRun:
             handle = handles[kind]
             handle.write(payload)
             self.counts[kind] += 1
+            required = {
+                "run_id", "subscription_generation", "event_kind",
+                "callback_received_at", "ingest_sequence", "ingest_accepted",
+                "ingest_reason",
+            }
+            if required.issubset(event) and all(
+                event.get(key) is not None for key in required
+            ):
+                self.counts["evidenced_quote_events"] += 1
             if kind.startswith("market_context_"):
                 symbol = str(event.get("stock_id", ""))
                 if symbol in self.market_context_counts:
@@ -251,6 +272,35 @@ class AppendOnlyRun:
                     self.market_context_counts[symbol][counter] += 1
             if not self.compressed or self.counts[kind] % 100 == 0:
                 handle.flush()
+
+    def append_decision_evidence(self, event: dict) -> None:
+        with self._lock:
+            self._decision_evidence.write(
+                canonical_bytes(event).decode("utf-8") + "\n"
+            )
+            self._decision_evidence.flush()
+            self.counts["decision_evidence"] += 1
+
+    def append_subscription_evidence(self, event: dict) -> None:
+        with self._lock:
+            self._subscription_evidence.write(
+                canonical_bytes(event).decode("utf-8") + "\n"
+            )
+            self._subscription_evidence.flush()
+            self.counts["subscription_evidence"] += 1
+
+    def observation_failure(
+        self, *, phase: str, stock_id: str = "", event_kind: str = "",
+    ) -> None:
+        """Make missing observation evidence invalidate completeness visibly."""
+        with self._lock:
+            self.counts["observation_failures"] += 1
+        self.callback_error(
+            "OBSERVATION_WRITE_FAILURE",
+            callback_name=event_kind,
+            stock_id=stock_id,
+            phase=phase,
+        )
 
     def callback_error(
         self,
@@ -293,6 +343,7 @@ class AppendOnlyRun:
         actual_orders: int = 0,
         actual_fills: int = 0,
         broker_order_calls: int = 0,
+        terminal_flat_confirmed_at: str | None = None,
     ) -> dict:
         for name, value in {
             "actual_orders": actual_orders,
@@ -309,6 +360,8 @@ class AppendOnlyRun:
                 self._market_tick,
                 self._market_book,
                 self._callback_errors,
+                self._decision_evidence,
+                self._subscription_evidence,
             ):
                 handle.flush()
                 handle.close()
@@ -324,6 +377,25 @@ class AppendOnlyRun:
             "event_counts": dict(self.counts),
             "callback_error_types": dict(sorted(self.callback_error_types.items())),
             "market_context_event_counts": self.market_context_counts,
+            "observation_evidence": {
+                "schema_version": 1,
+                "event_fields_embedded_in_quote_streams": True,
+                "write_mode": "EXISTING_SYNCHRONOUS_ARCHIVE_FAIL_VISIBLE",
+                "queue_used": False,
+                "queue_overflow_count": 0,
+                "quote_event_count": sum(
+                    int(self.counts[name]) for name in (
+                        "ticks", "books", "market_context_ticks",
+                        "market_context_books",
+                    )
+                ),
+                "evidenced_quote_event_count": int(
+                    self.counts["evidenced_quote_events"]
+                ),
+                "observation_failure_count": int(
+                    self.counts["observation_failures"]
+                ),
+            },
             "artifacts": {
                 "watchlist.json": sha256_file(self.run_dir / "watchlist.json"),
                 self.tick_path.name: sha256_file(self.tick_path),
@@ -333,12 +405,19 @@ class AppendOnlyRun:
                 self.callback_error_path.name: sha256_file(
                     self.callback_error_path
                 ),
+                self.decision_evidence_path.name: sha256_file(
+                    self.decision_evidence_path
+                ),
+                self.subscription_evidence_path.name: sha256_file(
+                    self.subscription_evidence_path
+                ),
             },
             "mode": self.mode,
             "error_type": error_type,
             "actual_orders": int(actual_orders),
             "actual_fills": int(actual_fills),
             "broker_order_calls": int(broker_order_calls),
+            "terminal_flat_confirmed_at": terminal_flat_confirmed_at,
         }
         manifest["manifest_hash"] = hashlib.sha256(canonical_bytes(manifest)).hexdigest()
         (self.run_dir / "run_manifest.json").write_bytes(canonical_bytes(manifest) + b"\n")

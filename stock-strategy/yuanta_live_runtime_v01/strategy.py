@@ -151,6 +151,16 @@ class SafeExitQuote:
     best_ask: float
 
 
+@dataclass(frozen=True, slots=True)
+class IngestOutcome:
+    """The engine's actual result for one normalized market-data event."""
+
+    event_kind: str
+    symbol: str
+    accepted: bool
+    reason: str
+
+
 @dataclass(slots=True)
 class _StockState:
     stock_name: str
@@ -211,8 +221,15 @@ class LiveDirectionEngine:
             return None
         return number if math.isfinite(number) else None
 
-    @_locked
     def record_tick(
+        self,
+        symbol: str,
+        **kwargs,
+    ) -> bool:
+        return self.ingest_tick(symbol, **kwargs).accepted
+
+    @_locked
+    def ingest_tick(
         self,
         symbol: str,
         *,
@@ -224,15 +241,18 @@ class LiveDirectionEngine:
         flag: object = "",
         serial: object = 0,
         received_at: datetime | None = None,
-    ) -> bool:
+    ) -> IngestOutcome:
+        def reject(reason: str) -> IngestOutcome:
+            return IngestOutcome("STOCK_TICK", str(symbol), False, reason)
+
         state = self._states.get(str(symbol))
         if state is None:
-            return False
+            return reject("UNKNOWN_SYMBOL")
         px, vol, bp, ap = (self._num(value) for value in (price, volume, bid, ask))
         if px is None or vol is None or bp is None or ap is None:
-            return False
+            return reject("NON_NUMERIC_FIELD")
         if min(px, bp, ap) <= 0 or vol < 0 or ap < bp:
-            return False
+            return reject("INVALID_PRICE_VOLUME_OR_SPREAD")
         stamp = at.astimezone(TAIPEI)
         received = stamp if received_at is None else received_at.astimezone(TAIPEI)
         age = (received - stamp).total_seconds()
@@ -240,10 +260,12 @@ class LiveDirectionEngine:
             age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS
             or age > float(SPEC["maximum_tick_staleness_seconds"])
         ):
-            return False
+            return reject(
+                "FUTURE_EXCHANGE_TIME" if age < 0 else "STALE_AT_INGEST"
+            )
         sequence = int(self._num(serial) or 0)
         if state.ticks and stamp < state.ticks[-1]["time"]:
-            return False
+            return reject("OUT_OF_ORDER_EXCHANGE_TIME")
         if state.session_date != stamp.date():
             state.ticks.clear()
             state.cumulative_volume = state.cumulative_pv = 0.0
@@ -256,12 +278,12 @@ class LiveDirectionEngine:
             previous = state.ticks[-1]
             if stamp.date() == previous["time"].date():
                 if sequence > 0 and sequence <= state.last_serial:
-                    return False
+                    return reject("NON_INCREASING_SERIAL")
                 if sequence == 0 and (stamp, px, vol, bp, ap) == (
                     previous["time"], previous["price"], previous["volume"],
                     previous["bid"], previous["ask"],
                 ):
-                    return False
+                    return reject("DUPLICATE_ZERO_SERIAL_TICK")
         state.last_serial = max(state.last_serial, sequence)
         row = {
             "time": stamp,
@@ -279,10 +301,15 @@ class LiveDirectionEngine:
         cutoff = stamp - timedelta(seconds=max(360, int(SPEC["large_trade_reference_seconds"]) + 30))
         while state.ticks and state.ticks[0]["time"] < cutoff:
             state.ticks.popleft()
-        return True
+        return IngestOutcome("STOCK_TICK", str(symbol), True, "ACCEPTED")
+
+    def record_book_combined(
+        self, symbol: str, **kwargs,
+    ) -> None:
+        self.ingest_book_combined(symbol, **kwargs)
 
     @_locked
-    def record_book_combined(
+    def ingest_book_combined(
         self,
         symbol: str,
         *,
@@ -291,24 +318,27 @@ class LiveDirectionEngine:
         buy_volumes: list[object],
         sell_prices: list[object],
         sell_volumes: list[object],
-    ) -> None:
+    ) -> IngestOutcome:
+        def reject(reason: str) -> IngestOutcome:
+            return IngestOutcome("FIVE_LEVEL", str(symbol), False, reason)
+
         state = self._states.get(str(symbol))
         if state is None:
-            return
+            return reject("UNKNOWN_SYMBOL")
         if state.latest_book and at < state.latest_book["time"]:
-            return
+            return reject("OUT_OF_ORDER_BOOK_TIME")
         buys = [self._num(v) for v in buy_volumes]
         sells = [self._num(v) for v in sell_volumes]
         buy_px = [self._num(v) for v in buy_prices]
         sell_px = [self._num(v) for v in sell_prices]
         if not buys or not sells or not buy_px or not sell_px:
-            return
+            return reject("EMPTY_BOOK_SIDE")
         if any(v is None for v in buys + sells + buy_px + sell_px):
-            return
+            return reject("NON_NUMERIC_BOOK_FIELD")
         assert all(v is not None for v in buys + sells + buy_px + sell_px)
         if (float(buy_px[0]) <= 0 or float(sell_px[0]) < float(buy_px[0])
                 or any(v < 0 for v in buys + sells)):
-            return
+            return reject("INVALID_BOOK_PRICE_VOLUME_OR_SPREAD")
         state.latest_book = {
             "time": at.astimezone(TAIPEI),
             "buy_volume": float(sum(buys)),
@@ -316,9 +346,15 @@ class LiveDirectionEngine:
             "best_bid": float(buy_px[0]),
             "best_ask": float(sell_px[0]),
         }
+        return IngestOutcome("FIVE_LEVEL", str(symbol), True, "ACCEPTED")
+
+    def record_book_side(
+        self, symbol: str, **kwargs,
+    ) -> None:
+        self.ingest_book_side(symbol, **kwargs)
 
     @_locked
-    def record_book_side(
+    def ingest_book_side(
         self,
         symbol: str,
         *,
@@ -326,30 +362,39 @@ class LiveDirectionEngine:
         side: str,
         prices: list[object],
         volumes: list[object],
-    ) -> None:
+    ) -> IngestOutcome:
+        def reject(reason: str) -> IngestOutcome:
+            return IngestOutcome("FIVE_LEVEL_SIDE", str(symbol), False, reason)
+
         state = self._states.get(str(symbol))
         if state is None:
-            return
+            return reject("UNKNOWN_SYMBOL")
         px = [self._num(v) for v in prices]
         vol = [self._num(v) for v in volumes]
         if not px or not vol or any(v is None for v in px + vol):
-            return
+            return reject("EMPTY_OR_NON_NUMERIC_BOOK_SIDE")
         assert all(v is not None for v in px + vol)
         item = {"time": at.astimezone(TAIPEI), "best": float(px[0]), "volume": float(sum(vol))}
         prior_side = state.buy_side if side == "BUY" else state.sell_side
         if item["best"] <= 0 or any(v < 0 for v in vol) or (prior_side and at < prior_side["time"]):
-            return
+            return reject("INVALID_OR_OUT_OF_ORDER_BOOK_SIDE")
         if side == "BUY":
             state.buy_side = item
         elif side == "SELL":
             state.sell_side = item
         else:
-            return
+            return reject("UNKNOWN_BOOK_SIDE")
         if state.buy_side is None or state.sell_side is None:
-            return
+            return IngestOutcome(
+                "FIVE_LEVEL_SIDE", str(symbol), True,
+                "SIDE_ACCEPTED_WAITING_FOR_PAIR",
+            )
         age = abs((state.buy_side["time"] - state.sell_side["time"]).total_seconds())
         if age > float(SPEC["maximum_book_staleness_seconds"]):
-            return
+            return IngestOutcome(
+                "FIVE_LEVEL_SIDE", str(symbol), True,
+                "SIDE_ACCEPTED_PAIR_TOO_STALE",
+            )
         state.latest_book = {
             "time": min(state.buy_side["time"], state.sell_side["time"]),
             "available_at": max(state.buy_side["time"], state.sell_side["time"]),
@@ -358,6 +403,47 @@ class LiveDirectionEngine:
             "best_bid": state.buy_side["best"],
             "best_ask": state.sell_side["best"],
         }
+        return IngestOutcome("FIVE_LEVEL_SIDE", str(symbol), True, "ACCEPTED")
+
+    @_locked
+    def observation_state_summary(self, decision: datetime) -> dict[str, dict]:
+        """Small state watermarks for decision evidence, never full history."""
+        output: dict[str, dict] = {}
+        for symbol, state in sorted(self._states.items()):
+            causal = self._causal_rows(state, decision)
+            latest = causal[-1] if causal else None
+            book = state.latest_book
+            unavailable = [
+                row for row in state.ticks
+                if row["time"] > decision or row["received_at"] > decision
+            ]
+            known_volume = state.cumulative_volume - sum(
+                row["volume"] for row in unavailable
+            )
+            known_pv = state.cumulative_pv - sum(
+                row["price"] * row["volume"] for row in unavailable
+            )
+            output[symbol] = {
+                "accepted_tick_count_retained": len(causal),
+                "last_accepted_exchange_time": (
+                    latest["time"].isoformat() if latest else None
+                ),
+                "last_accepted_received_at": (
+                    latest["received_at"].isoformat() if latest else None
+                ),
+                "last_accepted_serial": latest["serial"] if latest else None,
+                "last_book_time": (
+                    book["time"].isoformat() if book else None
+                ),
+                "session_open_time": (
+                    state.session_open_time.isoformat()
+                    if state.session_open_time else None
+                ),
+                "session_open_price": state.session_open_price,
+                "causal_cumulative_volume": known_volume,
+                "causal_cumulative_pv": known_pv,
+            }
+        return output
 
     @staticmethod
     def _signed_volume(row: dict) -> float:

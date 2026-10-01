@@ -409,6 +409,12 @@ def _path_diagnostics(
         for point in research.points
         if point.at > exit_time
     ]
+    fixed_end = exit_time + timedelta(minutes=5)
+    after_exit_5m = [
+        float(point.projected_net_pnl)
+        for point in research.points
+        if exit_time < point.at <= fixed_end
+    ]
     entry_net_pnl = float(research.pnl_at_price(research.entry_price))
     observed = through_exit or [entry_net_pnl]
     return {
@@ -416,6 +422,9 @@ def _path_diagnostics(
         "mae_net_pnl_at_exit": min(observed),
         "post_exit_best_net_pnl": max(after_exit, default=observed[-1]),
         "post_exit_worst_net_pnl": min(after_exit, default=observed[-1]),
+        "post_exit_5m_scorable": bool(after_exit_5m),
+        "post_exit_5m_best_net_pnl": max(after_exit_5m, default=None),
+        "post_exit_5m_worst_net_pnl": min(after_exit_5m, default=None),
         "full_path_mfe_net_pnl": max(observed + after_exit),
         "full_path_mae_net_pnl": min(observed + after_exit),
     }
@@ -444,6 +453,11 @@ def _buffered_shadow_trades(
             "exit_time": result.exit_time.isoformat(),
             "exit_price": result.exit_price,
             "exit_reason": result.exit_reason,
+            "exit_trigger_time": result.exit_time.isoformat(),
+            "simulated_fill_time": result.exit_time.isoformat(),
+            "trigger_to_fill_delay_seconds": 0.0,
+            "trigger_price": result.exit_price,
+            "trigger_to_fill_price_gap": 0.0,
             "gross_pnl": gross,
             "commission": commission,
             "sell_tax": sell_tax,
@@ -455,6 +469,7 @@ def _buffered_shadow_trades(
             "original_exit_reason": production_trade["exit_reason"],
             "original_net_pnl": production_trade["net_pnl"],
             "buffered_exit_policy": asdict(policy),
+            **_path_diagnostics(research, result.exit_time),
             **buffered_result_dict(result),
         }
         # Recomputed costs are authoritative for the selected observed quote.
@@ -613,6 +628,11 @@ def _replay_paper_track(
         "exit_time": exit_time.isoformat(),
         "exit_price": exit_decision.price,
         "exit_reason": exit_decision.reason,
+        "exit_trigger_time": exit_time.isoformat(),
+        "simulated_fill_time": exit_time.isoformat(),
+        "trigger_to_fill_delay_seconds": 0.0,
+        "trigger_price": exit_decision.price,
+        "trigger_to_fill_price_gap": 0.0,
         "gross_pnl": gross,
         "commission": commission,
         "sell_tax": sell_tax,

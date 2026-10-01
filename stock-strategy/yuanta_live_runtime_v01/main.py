@@ -12,6 +12,7 @@ import argparse
 from dataclasses import asdict
 import errno
 import fcntl
+import hashlib
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
@@ -37,6 +38,7 @@ from yuanta_broker_execution_v01 import (
 from yuanta_intraday_shadow_v01.collector import (
     AppendOnlyRun,
     DEFAULT_RUNTIME_DIR as DEFAULT_ARCHIVE_RUNTIME_DIR,
+    canonical_bytes,
     load_stage_a_watchlist,
     market_context_items,
     utc_now,
@@ -338,6 +340,11 @@ class _Session:
         self.subscribed = False
         self.last_quote_at: datetime | None = None
         self.quote_started_at: datetime | None = None
+        self.subscription_generation = 0
+        self.ingest_sequence = 0
+        self._ingest_lock = threading.Lock()
+        self._raw_quote_status: dict[str, dict[str, Any]] = {}
+        self.archive_strategy_identity: dict[str, Any] = {}
 
     def _archive_quote(
         self,
@@ -346,6 +353,11 @@ class _Session:
         symbol: str,
         value,
         payload: dict[str, Any] | None = None,
+        callback_received_at: datetime | None = None,
+        exchange_time: datetime | None = None,
+        ingest_sequence: int | None = None,
+        ingest_accepted: bool | None = None,
+        ingest_reason: str = "NOT_PROCESSED_NO_ENGINE",
     ) -> None:
         """Mirror one already-received quote callback into the raw archive.
 
@@ -364,7 +376,10 @@ class _Session:
         )
         if item is None:
             try:
-                self.archive.callback_error()
+                self.archive.callback_error(
+                    "UNKNOWN_WATCHLIST_SYMBOL", callback_name=kind,
+                    stock_id=symbol, phase="ARCHIVE_ROUTING",
+                )
             except Exception:
                 pass
             self.logger(
@@ -374,8 +389,18 @@ class _Session:
             )
             return
 
+        received = callback_received_at or datetime.now(TAIPEI)
         base = {
-            "received_at": utc_now(),
+            "run_id": getattr(self.archive, "run_id", "TEST_OR_LEGACY_ARCHIVE"),
+            "received_at": received.isoformat(),
+            "callback_received_at": received.isoformat(),
+            "subscription_generation": self.subscription_generation,
+            "event_kind": "STOCK_TICK" if kind == "ticks" else "FIVE_LEVEL",
+            "ingest_sequence": ingest_sequence,
+            "ingest_accepted": ingest_accepted,
+            "ingest_reason": ingest_reason,
+            "exchange_time": exchange_time.isoformat() if exchange_time else None,
+            "raw_serial_no": int(getattr(value, "SerialNo", 0) or 0),
             "signal_date": self.archive_signal_date,
             "stock_id": symbol,
             "stock_name": item.stock_name,
@@ -437,7 +462,13 @@ class _Session:
 
         except Exception as exc:
             try:
-                self.archive.callback_error()
+                if hasattr(self.archive, "observation_failure"):
+                    self.archive.observation_failure(
+                        phase="ARCHIVE_QUOTE_WRITE", stock_id=symbol,
+                        event_kind=kind,
+                    )
+                else:
+                    self.archive.callback_error()
             except Exception:
                 pass
             self.logger(
@@ -446,6 +477,79 @@ class _Session:
                 quote_kind=kind,
                 error=f"{type(exc).__name__}: {exc}",
             )
+
+    def _archive_subscription(self, event: str, **payload: Any) -> None:
+        if self.archive is None:
+            return
+        try:
+            self.archive.append_subscription_evidence({
+                "run_id": self.archive.run_id,
+                "at": datetime.now(TAIPEI).isoformat(),
+                "event": event,
+                "subscription_generation": self.subscription_generation,
+                **payload,
+            })
+        except Exception as exc:
+            try:
+                self.archive.observation_failure(
+                    phase="SUBSCRIPTION_EVIDENCE_WRITE",
+                    event_kind="SUBSCRIPTION",
+                )
+            except Exception:
+                pass
+            try:
+                self.logger(
+                    "ARCHIVE_OBSERVATION_ERROR",
+                    phase="SUBSCRIPTION_EVIDENCE_WRITE",
+                    error_type=type(exc).__name__,
+                )
+            except Exception:
+                pass
+
+    def archive_decision_evidence(
+        self, decision: datetime, *, diagnostics: dict, candidate: Any | None,
+    ) -> None:
+        """Persist compact watermarks; failure never changes strategy/exit flow."""
+        if self.archive is None or self.engine is None:
+            return
+        try:
+            with self._ingest_lock:
+                watermark = self.ingest_sequence
+                raw_status = json.loads(json.dumps(self._raw_quote_status))
+                engine_summary = self.engine.observation_state_summary(decision)
+            event = {
+                "run_id": self.archive.run_id,
+                "decision_time": decision.isoformat(),
+                "ingest_sequence_watermark": watermark,
+                "subscription_generation": self.subscription_generation,
+                "strategy_identity": self.archive_strategy_identity,
+                "stage_a_identity": {
+                    "signal_date": self.archive.snapshot["signal_date"],
+                    "stage_a_seal_hash": self.archive.snapshot["stage_a_seal_hash"],
+                },
+                "raw_quote_status": raw_status,
+                "engine_state_summary": engine_summary,
+                "diagnostics": diagnostics,
+                "selected_signal": None if candidate is None else asdict(candidate),
+            }
+            self.archive.append_decision_evidence(
+                json.loads(json.dumps(event, default=str))
+            )
+        except Exception as exc:
+            try:
+                self.archive.observation_failure(
+                    phase="DECISION_EVIDENCE_WRITE", event_kind="DECISION",
+                )
+            except Exception:
+                pass
+            try:
+                self.logger(
+                    "ARCHIVE_OBSERVATION_ERROR",
+                    phase="DECISION_EVIDENCE_WRITE",
+                    error_type=type(exc).__name__,
+                )
+            except Exception:
+                pass
 
     def _on_response(self, int_mark, _index, response_name, _handle, value) -> None:
         name = _safe_text(response_name)
@@ -463,61 +567,138 @@ class _Session:
             if name in {"SubscribeStockTick", "SubscribeStocktick"}:
                 symbol = _safe_text(getattr(value, "StkCode", ""))
                 stamp = _exchange_tick_time(getattr(value, "Time", None), now)
-                accepted = False
-                if stamp is not None:
-                    accepted = self.engine.record_tick(
-                        symbol,
-                        at=stamp,
-                        received_at=now,
-                        price=getattr(value, "DealPrice", ""),
-                        volume=getattr(value, "DealVol", ""),
-                        bid=getattr(value, "BuyPrice", ""),
-                        ask=getattr(value, "SellPrice", ""),
-                        flag=getattr(value, "InOutFlag", ""),
-                        serial=getattr(value, "SerialNo", 0),
+                with self._ingest_lock:
+                    self.ingest_sequence += 1
+                    sequence = self.ingest_sequence
+                    if stamp is None:
+                        outcome = SimpleNamespace(
+                            accepted=False,
+                            reason="ADAPTER_INVALID_EXCHANGE_TIME",
+                        )
+                    elif hasattr(self.engine, "ingest_tick"):
+                        outcome = self.engine.ingest_tick(
+                            symbol, at=stamp, received_at=now,
+                            price=getattr(value, "DealPrice", ""),
+                            volume=getattr(value, "DealVol", ""),
+                            bid=getattr(value, "BuyPrice", ""),
+                            ask=getattr(value, "SellPrice", ""),
+                            flag=getattr(value, "InOutFlag", ""),
+                            serial=getattr(value, "SerialNo", 0),
+                        )
+                    else:
+                        accepted = bool(self.engine.record_tick(
+                            symbol, at=stamp, received_at=now,
+                            price=getattr(value, "DealPrice", ""),
+                            volume=getattr(value, "DealVol", ""),
+                            bid=getattr(value, "BuyPrice", ""),
+                            ask=getattr(value, "SellPrice", ""),
+                            flag=getattr(value, "InOutFlag", ""),
+                            serial=getattr(value, "SerialNo", 0),
+                        ))
+                        outcome = SimpleNamespace(
+                            accepted=accepted,
+                            reason="ACCEPTED" if accepted else "LEGACY_ENGINE_REJECTED",
+                        )
+                    status = self._raw_quote_status.setdefault(symbol, {})
+                    status["last_raw_tick_callback_at"] = now.isoformat()
+                    status["last_raw_tick_exchange_time"] = (
+                        stamp.isoformat() if stamp else None
                     )
+                    status["last_tick_ingest_sequence"] = sequence
+                    status["last_tick_ingest_accepted"] = bool(outcome.accepted)
+                    status["last_tick_ingest_reason"] = str(outcome.reason)
+                    status["subscription_generation"] = self.subscription_generation
+                    if outcome.accepted:
+                        status["last_accepted_tick_exchange_time"] = stamp.isoformat()
+                        status["last_accepted_tick_received_at"] = now.isoformat()
                 self._archive_quote(
-                    kind="ticks",
-                    symbol=symbol,
-                    value=value,
+                    kind="ticks", symbol=symbol, value=value,
+                    callback_received_at=now, exchange_time=stamp,
+                    ingest_sequence=sequence,
+                    ingest_accepted=bool(outcome.accepted),
+                    ingest_reason=str(outcome.reason),
                 )
-                if accepted and (
+                if outcome.accepted and (
                     self.strategy_symbols is None or symbol in self.strategy_symbols
                 ):
                     self.last_quote_at = now
                 return
             if name == "SubscribeFiveTickA":
                 symbol = _safe_text(getattr(value, "StkCode", ""))
+                stamp = _exchange_tick_time(getattr(value, "Time", None), now)
                 payload = _book_payload(value)
-                if all(key in payload for key in ("buy_prices", "buy_volumes", "sell_prices", "sell_volumes")):
-                    self.engine.record_book_combined(
-                        symbol,
-                        at=now,
-                        buy_prices=payload["buy_prices"],
-                        buy_volumes=payload["buy_volumes"],
-                        sell_prices=payload["sell_prices"],
-                        sell_volumes=payload["sell_volumes"],
+                with self._ingest_lock:
+                    self.ingest_sequence += 1
+                    sequence = self.ingest_sequence
+                    outcome = SimpleNamespace(
+                        accepted=False, reason="ADAPTER_BOOK_PAYLOAD_INCOMPLETE",
                     )
-                elif "prices" in payload and "volumes" in payload:
-                    flag = str(payload.get("index_flag", ""))
-                    side = "BUY" if "20" in flag else "SELL" if "21" in flag else ""
-                    if side:
-                        self.engine.record_book_side(
-                            symbol,
-                            at=now,
-                            side=side,
-                            prices=payload["prices"],
-                            volumes=payload["volumes"],
-                        )
+                    if all(key in payload for key in ("buy_prices", "buy_volumes", "sell_prices", "sell_volumes")):
+                        if hasattr(self.engine, "ingest_book_combined"):
+                            outcome = self.engine.ingest_book_combined(
+                                symbol, at=now,
+                                buy_prices=payload["buy_prices"],
+                                buy_volumes=payload["buy_volumes"],
+                                sell_prices=payload["sell_prices"],
+                                sell_volumes=payload["sell_volumes"],
+                            )
+                        else:
+                            self.engine.record_book_combined(
+                                symbol, at=now,
+                                buy_prices=payload["buy_prices"],
+                                buy_volumes=payload["buy_volumes"],
+                                sell_prices=payload["sell_prices"],
+                                sell_volumes=payload["sell_volumes"],
+                            )
+                            outcome = SimpleNamespace(accepted=True, reason="ACCEPTED")
+                    elif "prices" in payload and "volumes" in payload:
+                        flag = str(payload.get("index_flag", ""))
+                        side = "BUY" if "20" in flag else "SELL" if "21" in flag else ""
+                        if side and hasattr(self.engine, "ingest_book_side"):
+                            outcome = self.engine.ingest_book_side(
+                                symbol, at=now, side=side,
+                                prices=payload["prices"], volumes=payload["volumes"],
+                            )
+                        elif side:
+                            self.engine.record_book_side(
+                                symbol, at=now, side=side,
+                                prices=payload["prices"], volumes=payload["volumes"],
+                            )
+                            outcome = SimpleNamespace(accepted=True, reason="ACCEPTED")
+                        else:
+                            outcome = SimpleNamespace(
+                                accepted=False, reason="ADAPTER_UNKNOWN_BOOK_SIDE",
+                            )
+                    status = self._raw_quote_status.setdefault(symbol, {})
+                    status["last_raw_book_callback_at"] = now.isoformat()
+                    status["last_raw_book_exchange_time"] = (
+                        stamp.isoformat() if stamp else None
+                    )
+                    status["last_book_ingest_sequence"] = sequence
+                    status["last_book_ingest_accepted"] = bool(outcome.accepted)
+                    status["last_book_ingest_reason"] = str(outcome.reason)
+                    status["subscription_generation"] = self.subscription_generation
+                    if outcome.accepted:
+                        status["last_accepted_book_received_at"] = now.isoformat()
                 self._archive_quote(
-                    kind="books",
-                    symbol=symbol,
-                    value=value,
-                    payload=payload,
+                    kind="books", symbol=symbol, value=value, payload=payload,
+                    callback_received_at=now, exchange_time=stamp,
+                    ingest_sequence=sequence,
+                    ingest_accepted=bool(outcome.accepted),
+                    ingest_reason=str(outcome.reason),
                 )
                 if self.strategy_symbols is None or symbol in self.strategy_symbols:
                     self.last_quote_at = now
         except Exception as exc:
+            if self.archive is not None:
+                try:
+                    self.archive.callback_error(
+                        type(exc).__name__, callback_name=name,
+                        stock_id=str(locals().get("symbol", "")),
+                        phase="QUOTE_CALLBACK",
+                    )
+                except Exception:
+                    pass
             self.logger("QUOTE_CALLBACK_ERROR", error=f"{type(exc).__name__}: {exc}")
 
     def connect(self) -> None:
@@ -575,6 +756,11 @@ class _Session:
     def subscribe(self, items) -> None:
         if self.api is None:
             raise RuntimeError("session is not connected")
+        self.subscription_generation += 1
+        generation = self.subscription_generation
+        self._archive_subscription(
+            "SUBSCRIBE_BEGIN", symbol_count=len(items),
+        )
         self.stock_list = self.api_types["List"][self.api_types["StockTick"]]()
         self.book_list = self.api_types["List"][self.api_types["FiveTickA"]]()
         markets = {"TWSE": self.api_types["Market"].TWSE, "TPEX": self.api_types["Market"].TWOTC}
@@ -594,11 +780,22 @@ class _Session:
             self.account, self.book_list, self.api_types["Language"].UTF8
         )
         if stock_ok is False or book_ok is False:
+            self._archive_subscription(
+                "SUBSCRIBE_REJECTED", symbol_count=len(items),
+                stock_api_result=str(stock_ok), book_api_result=str(book_ok),
+            )
             raise RuntimeError("quote subscription was rejected by broker API")
         self.subscribed = True
         self.last_quote_at = None
         self.quote_started_at = datetime.now(TAIPEI)
-        self.logger("QUOTES_SUBSCRIBED", count=len(items))
+        self._archive_subscription(
+            "SUBSCRIBE_ACCEPTED", symbol_count=len(items),
+            stock_api_result=str(stock_ok), book_api_result=str(book_ok),
+        )
+        self.logger(
+            "QUOTES_SUBSCRIBED", count=len(items),
+            subscription_generation=generation,
+        )
 
     def close(self) -> None:
         api = self.api
@@ -609,6 +806,7 @@ class _Session:
                 api.UnSubscribeStockTick(self.account, self.stock_list, self.api_types["Language"].UTF8)
             except Exception:
                 pass
+            self._archive_subscription("UNSUBSCRIBE_REQUESTED")
             try:
                 api.UnSubscribeFiveTickA(self.account, self.book_list, self.api_types["Language"].UTF8)
             except Exception:
@@ -1083,6 +1281,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     archive = None
     archive_started_at = ""
     archive_error_type = ""
+    broker_flat_confirmed_at: str | None = None
     failure_code = ""
     startup_stage = "LOCAL_SETUP"
     archive_counter_baseline = _store_archive_counters(store)
@@ -1135,6 +1334,20 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         session.archive_items = {
             item.stock_id: item
             for item in items
+        }
+        strategy_identity_payload = {
+            "entry_spec": SPEC,
+            "market_regime_policy": LONG_MARKET_REGIME_POLICY,
+            "anti_chase_policy": ANTI_CHASE_ENTRY_POLICY,
+            "exit_policy": LIVE_EXIT_POLICY,
+        }
+        session.archive_strategy_identity = {
+            "entry_policy_id": LONG_MARKET_REGIME_POLICY["policy_id"],
+            "anti_chase_policy_id": ANTI_CHASE_ENTRY_POLICY["policy_id"],
+            "exit_policy_id": LIVE_EXIT_POLICY["policy_id"],
+            "config_hash": hashlib.sha256(
+                canonical_bytes(strategy_identity_payload)
+            ).hexdigest(),
         }
 
         log(
@@ -1344,6 +1557,14 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         decision,
                     )
                     engine.last_decision = decision
+                    session.archive_decision_evidence(
+                        decision,
+                        diagnostics={
+                            "decision": "POSITION_MANAGEMENT",
+                            "opposite_signal": reversal,
+                        },
+                        candidate=None,
+                    )
 
                 elif (
                     not emergency
@@ -1360,6 +1581,12 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             "ENTRY_GATE_DIAGNOSTICS",
                             diagnostics=engine.last_entry_diagnostics,
                         )
+
+                    session.archive_decision_evidence(
+                        decision,
+                        diagnostics=engine.last_entry_diagnostics,
+                        candidate=candidate,
+                    )
 
                     if candidate is not None:
                         signal_id = _signal_identifier(
@@ -1496,6 +1723,14 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
 
                 else:
                     engine.last_decision = decision
+                    session.archive_decision_evidence(
+                        decision,
+                        diagnostics={
+                            "decision": "ENTRY_NOT_EVALUATED",
+                            "reason": "ENTRY_OR_EXIT_LIFECYCLE_ACTIVE",
+                        },
+                        candidate=None,
+                    )
 
             # The daily loss guard must keep running while an EXIT is partial/pending.
             if position is not None:
@@ -1625,6 +1860,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 exit_order = store.get(exit_order_id)
                 if exit_order.status == BrokerOrderStatus.FILLED:
                     _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
+                    broker_flat_confirmed_at = utc_now()
                     completed_exit_order_id = exit_order_id
 
                     log(
@@ -1722,6 +1958,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
 
                     if recovery_action == "CLOSED":
                         _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
+                        broker_flat_confirmed_at = utc_now()
                         log(
                             "POSITION_CLOSED_AFTER_RECONCILIATION",
                             client_order_id=exit_order_id,
@@ -1986,6 +2223,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     broker_order_calls=counter_delta[
                         "requests"
                     ],
+                    terminal_flat_confirmed_at=broker_flat_confirmed_at,
                 )
 
                 log(

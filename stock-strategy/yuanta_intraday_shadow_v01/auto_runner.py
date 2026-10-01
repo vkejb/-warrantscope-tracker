@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 from prospective_notifications_v01.keychain import load_into_environment
 from prospective_notifications_v01.notifier import notify
 from paper_shadow_v01.comparison import write_comparison
+from paper_shadow_v01.dual_track import publish_dual_track
 from paper_shadow_v01.runner import publish_paper_day
 
 from .collector import DEFAULT_RUNTIME_DIR, DEFAULT_STAGE_A_RUNTIME, utc_now
@@ -164,6 +165,7 @@ def main() -> int:
                 raise RuntimeError(f"coverage failed: max_gap={session.get('max_market_event_gap_seconds')}")
             paper = publish_paper_day(run_dir, session)
             comparison = write_comparison()
+            dual_track = publish_dual_track()
             _append({
                 "at": utc_now(), "date": day, "signal_date": signal_date, "status": "COMPLETE",
                 "run_id": session["source_run_id"], "analysis_hash": result["quality"]["analysis_hash"],
@@ -183,6 +185,12 @@ def main() -> int:
                     for name, row in comparison["paired_comparisons"].items()
                 },
                 "paper_comparison_hash": comparison["report_hash"],
+                "paper_dual_track_pairs": dual_track["paired_trades"],
+                "paper_dual_track_zero_pair_reason": dual_track[
+                    "zero_pair_reason"
+                ],
+                "paper_dual_track_hash": dual_track["report_hash"],
+                "paper_dual_track_output": dual_track["output_path"],
             })
             return 0
         except Exception as exc:

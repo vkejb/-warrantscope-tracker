@@ -137,10 +137,17 @@ class AutomationTests(unittest.TestCase):
 
     def test_automation_sources_have_no_order_api(self):
         root = Path(__file__).parents[1]
-        source = "".join((root / name).read_text() for name in ("auto_runner.py", "yuanta_keychain.py", "postprocess.py"))
+        auto_source = (root / "auto_runner.py").read_text()
+        self.assertIn("publish_dual_track()", auto_source)
+        source = auto_source + "".join(
+            (root / name).read_text()
+            for name in ("yuanta_keychain.py", "postprocess.py")
+        )
         source += "".join(
             (root.parent / "paper_shadow_v01" / name).read_text()
-            for name in ("runner.py", "buffered_exit.py", "comparison.py")
+            for name in (
+                "runner.py", "buffered_exit.py", "comparison.py", "dual_track.py",
+            )
         )
         for forbidden in ("SendStockOrder", "SendFutureOrder", "StockOrder(", "FutureOrder("):
             self.assertNotIn(forbidden, source)
