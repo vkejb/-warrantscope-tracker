@@ -1,0 +1,1121 @@
+{
+  "analysis_id": "ENTRY_CONFIRMATION_SENSITIVITY_V0_1",
+  "capital_twd": 190000,
+  "session_dates": [
+    "20260929",
+    "20260930",
+    "20261001"
+  ],
+  "strong_signal_minimums": {
+    "score": 0.65,
+    "volume_delta": 0.55,
+    "large_trade_delta": 0.7,
+    "book_imbalance": 0.15
+  },
+  "variants": [
+    {
+      "variant_id": "BASELINE",
+      "kind": "baseline",
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "selection": {
+            "selection_reason": "BASELINE_APPROVED"
+          }
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          }
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          }
+        }
+      ],
+      "metrics": {
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0,
+        "days_changed_vs_baseline": 0,
+        "days_improved_vs_baseline": 0,
+        "days_worsened_vs_baseline": 0,
+        "daily_pnl_differences_twd": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fragile_best_day_deletion": false
+      }
+    },
+    {
+      "variant_id": "ROLLING_90S_TWO_HITS",
+      "kind": "rolling",
+      "window_seconds": 90,
+      "opening_limit": 0.02,
+      "vwap_limit": 0.0125,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "selection": {
+            "selection_reason": "BASELINE_APPROVED"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_QUALIFYING_PAIR"
+          }
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_QUALIFYING_PAIR"
+          }
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_QUALIFYING_PAIR"
+          }
+        }
+      ],
+      "metrics": {
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0,
+        "days_changed_vs_baseline": 0,
+        "days_improved_vs_baseline": 0,
+        "days_worsened_vs_baseline": 0,
+        "daily_pnl_differences_twd": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fragile_best_day_deletion": false
+      }
+    },
+    {
+      "variant_id": "STRONG_ONESHOT_BASE_CHASE",
+      "kind": "strong",
+      "minimum_relative_strength": 0.005,
+      "opening_limit": 0.02,
+      "vwap_limit": 0.0125,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "selection": {
+            "selection_reason": "BASELINE_APPROVED"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_STRONG_ONESHOT"
+          }
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "stock_id": "3016",
+          "stock_name": "嘉晶",
+          "entry_time": "2026-09-30T09:07:00+08:00",
+          "entry_price": 171.0,
+          "exit_time": "2026-09-30T09:09:00.197000+08:00",
+          "exit_price": 168.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3543.0,
+          "mfe_net_pnl_twd": -1049.0,
+          "mae_net_pnl_twd": -3543.0,
+          "selection": {
+            "selection_reason": "STRONG_ONESHOT",
+            "checks": {
+              "gate_relaxable": true,
+              "anti_chase": true,
+              "score": true,
+              "volume_delta": true,
+              "large_trade_delta": true,
+              "book_imbalance": true,
+              "relative_strength": true
+            }
+          }
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_STRONG_ONESHOT"
+          }
+        }
+      ],
+      "metrics": {
+        "trade_count": 2,
+        "winning_trades": 0,
+        "losing_trades": 2,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -7122.0,
+        "net_pnl_twd": -7122.0,
+        "average_pnl_per_trade_twd": -3561.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": -3543.0,
+        "days_changed_vs_baseline": 1,
+        "days_improved_vs_baseline": 0,
+        "days_worsened_vs_baseline": 1,
+        "daily_pnl_differences_twd": [
+          0.0,
+          -3543.0,
+          0.0
+        ],
+        "fragile_best_day_deletion": false
+      }
+    },
+    {
+      "variant_id": "STRONG_ONESHOT_RELAXED_CHASE",
+      "kind": "strong",
+      "minimum_relative_strength": 0.005,
+      "opening_limit": 0.04,
+      "vwap_limit": 0.025,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "selection": {
+            "selection_reason": "BASELINE_APPROVED"
+          },
+          "variant_selection": {
+            "selection_reason": "STRONG_ONESHOT",
+            "checks": {
+              "gate_relaxable": true,
+              "anti_chase": true,
+              "score": true,
+              "volume_delta": true,
+              "large_trade_delta": true,
+              "book_imbalance": true,
+              "relative_strength": true
+            },
+            "candidate_ignored_because_baseline_entered_first": true
+          }
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "stock_id": "3016",
+          "stock_name": "嘉晶",
+          "entry_time": "2026-09-30T09:07:00+08:00",
+          "entry_price": 171.0,
+          "exit_time": "2026-09-30T09:09:00.197000+08:00",
+          "exit_price": 168.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3543.0,
+          "mfe_net_pnl_twd": -1049.0,
+          "mae_net_pnl_twd": -3543.0,
+          "selection": {
+            "selection_reason": "STRONG_ONESHOT",
+            "checks": {
+              "gate_relaxable": true,
+              "anti_chase": true,
+              "score": true,
+              "volume_delta": true,
+              "large_trade_delta": true,
+              "book_imbalance": true,
+              "relative_strength": true
+            }
+          }
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3094",
+          "stock_name": "聯傑",
+          "entry_time": "2026-10-01T09:37:30+08:00",
+          "entry_price": 64.19999999999999,
+          "exit_time": "2026-10-01T10:15:48.191000+08:00",
+          "exit_price": 66.5,
+          "exit_reason": "MFE_PROFIT_PROTECTION",
+          "net_pnl_twd": 4176.0,
+          "mfe_net_pnl_twd": 6171.0,
+          "mae_net_pnl_twd": -1212.0,
+          "selection": {
+            "selection_reason": "STRONG_ONESHOT",
+            "checks": {
+              "gate_relaxable": true,
+              "anti_chase": true,
+              "score": true,
+              "volume_delta": true,
+              "large_trade_delta": true,
+              "book_imbalance": true,
+              "relative_strength": true
+            }
+          }
+        }
+      ],
+      "metrics": {
+        "trade_count": 3,
+        "winning_trades": 1,
+        "losing_trades": 2,
+        "win_rate": 0.3333333333333333,
+        "gross_profit_twd": 4176.0,
+        "gross_loss_twd": -7122.0,
+        "net_pnl_twd": -2946.0,
+        "average_pnl_per_trade_twd": -982.0,
+        "profit_factor": 0.586352,
+        "net_pnl_difference_vs_baseline_twd": 633.0,
+        "days_changed_vs_baseline": 2,
+        "days_improved_vs_baseline": 1,
+        "days_worsened_vs_baseline": 1,
+        "daily_pnl_differences_twd": [
+          0.0,
+          -3543.0,
+          4176.0
+        ],
+        "fragile_best_day_deletion": true
+      }
+    },
+    {
+      "variant_id": "STRONG_ONESHOT_RELAXED_RS_2PCT",
+      "kind": "strong",
+      "minimum_relative_strength": 0.02,
+      "opening_limit": 0.04,
+      "vwap_limit": 0.025,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "selection": {
+            "selection_reason": "BASELINE_APPROVED"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_STRONG_ONESHOT"
+          }
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_STRONG_ONESHOT"
+          }
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3094",
+          "stock_name": "聯傑",
+          "entry_time": "2026-10-01T09:37:30+08:00",
+          "entry_price": 64.19999999999999,
+          "exit_time": "2026-10-01T10:15:48.191000+08:00",
+          "exit_price": 66.5,
+          "exit_reason": "MFE_PROFIT_PROTECTION",
+          "net_pnl_twd": 4176.0,
+          "mfe_net_pnl_twd": 6171.0,
+          "mae_net_pnl_twd": -1212.0,
+          "selection": {
+            "selection_reason": "STRONG_ONESHOT",
+            "checks": {
+              "gate_relaxable": true,
+              "anti_chase": true,
+              "score": true,
+              "volume_delta": true,
+              "large_trade_delta": true,
+              "book_imbalance": true,
+              "relative_strength": true
+            }
+          }
+        }
+      ],
+      "metrics": {
+        "trade_count": 2,
+        "winning_trades": 1,
+        "losing_trades": 1,
+        "win_rate": 0.5,
+        "gross_profit_twd": 4176.0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": 597.0,
+        "average_pnl_per_trade_twd": 298.5,
+        "profit_factor": 1.166806,
+        "net_pnl_difference_vs_baseline_twd": 4176.0,
+        "days_changed_vs_baseline": 1,
+        "days_improved_vs_baseline": 1,
+        "days_worsened_vs_baseline": 0,
+        "daily_pnl_differences_twd": [
+          0.0,
+          0.0,
+          4176.0
+        ],
+        "fragile_best_day_deletion": true
+      }
+    },
+    {
+      "variant_id": "HOLD_30S_BASE_CHASE",
+      "kind": "hold",
+      "delay_seconds": 30,
+      "opening_limit": 0.02,
+      "vwap_limit": 0.0125,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "selection": {
+            "selection_reason": "BASELINE_APPROVED"
+          },
+          "variant_selection": {
+            "selection_reason": "DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3624",
+                "signal_time": "2026-09-29T09:16:30+08:00",
+                "confirmation_time": "2026-09-29T09:17:00+08:00",
+                "confirmation_volume_delta": 0.5064935064935064,
+                "confirmation_large_trade_delta": 1.0,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.017985611510791477,
+                "confirmation_vwap_extension": 0.0029984704133425577,
+                "observation_age_seconds": 1.959,
+                "execution_delay_seconds": 1.642,
+                "confirmation_reason": "CONFIRMED",
+                "original_signal_time": "2026-09-29T09:16:30+08:00",
+                "delayed_entry_time": "2026-09-29T09:17:01.642000+08:00",
+                "delayed_entry_price": 142.0,
+                "delayed_quantity": 1000,
+                "market_recheck": "PASSED",
+                "market_regime": "BEARISH",
+                "stock_return_5m": 0.007117437722419906,
+                "benchmark_return_5m": -0.001338090990187224,
+                "benchmark_vwap_gap": -8.123077460098216e-05,
+                "relative_strength_5m": 0.00845552871260713,
+                "minimum_relative_strength": 0.005,
+                "book_recheck": "PASSED",
+                "book_age_seconds": 0.331,
+                "book_imbalance": 0.1532994923857868
+              }
+            ],
+            "candidate_ignored_because_baseline_entered_first": true
+          }
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3016",
+                "signal_time": "2026-09-30T09:07:00+08:00",
+                "confirmation_time": "2026-09-30T09:07:30+08:00",
+                "confirmation_volume_delta": 0.09430051813471503,
+                "confirmation_large_trade_delta": -0.36395759717314485,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": -0.002941176470588225,
+                "confirmation_vwap_extension": 0.007919083607340394,
+                "observation_age_seconds": 0.164,
+                "execution_delay_seconds": 0.223,
+                "confirmation_reason": "VOLUME_NOT_PERSISTENT+LARGE_TRADE_NOT_PERSISTENT"
+              }
+            ]
+          }
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_DELAYED_HOLD_CONFIRMED",
+            "attempts": []
+          }
+        }
+      ],
+      "metrics": {
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0,
+        "days_changed_vs_baseline": 0,
+        "days_improved_vs_baseline": 0,
+        "days_worsened_vs_baseline": 0,
+        "daily_pnl_differences_twd": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fragile_best_day_deletion": false
+      }
+    },
+    {
+      "variant_id": "HOLD_60S_BASE_CHASE",
+      "kind": "hold",
+      "delay_seconds": 60,
+      "opening_limit": 0.02,
+      "vwap_limit": 0.0125,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "selection": {
+            "selection_reason": "BASELINE_APPROVED"
+          },
+          "variant_selection": {
+            "selection_reason": "DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3624",
+                "signal_time": "2026-09-29T09:16:30+08:00",
+                "confirmation_time": "2026-09-29T09:17:30+08:00",
+                "confirmation_volume_delta": 0.6062992125984252,
+                "confirmation_large_trade_delta": 0.6153846153846154,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.017985611510791477,
+                "confirmation_vwap_extension": 0.002973765683558671,
+                "observation_age_seconds": 0.647,
+                "execution_delay_seconds": 0.277,
+                "confirmation_reason": "CONFIRMED",
+                "original_signal_time": "2026-09-29T09:16:30+08:00",
+                "delayed_entry_time": "2026-09-29T09:17:30.277000+08:00",
+                "delayed_entry_price": 142.0,
+                "delayed_quantity": 1000,
+                "market_recheck": "PASSED",
+                "market_regime": "BEARISH",
+                "stock_return_5m": 0.010714285714285676,
+                "benchmark_return_5m": -0.001338090990187224,
+                "benchmark_vwap_gap": -6.754846959633465e-05,
+                "relative_strength_5m": 0.0120523767044729,
+                "minimum_relative_strength": 0.005,
+                "book_recheck": "PASSED",
+                "book_age_seconds": 0.0,
+                "book_imbalance": 0.22323049001814882
+              }
+            ],
+            "candidate_ignored_because_baseline_entered_first": true
+          }
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3016",
+                "signal_time": "2026-09-30T09:07:00+08:00",
+                "confirmation_time": "2026-09-30T09:08:00+08:00",
+                "confirmation_volume_delta": 0.22940776038121172,
+                "confirmation_large_trade_delta": 0.035398230088495575,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.008823529411764675,
+                "confirmation_vwap_extension": 0.019113713504598007,
+                "observation_age_seconds": 0.119,
+                "execution_delay_seconds": 0.151,
+                "confirmation_reason": "VWAP_EXTENSION_TOO_HIGH"
+              }
+            ]
+          }
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_DELAYED_HOLD_CONFIRMED",
+            "attempts": []
+          }
+        }
+      ],
+      "metrics": {
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0,
+        "days_changed_vs_baseline": 0,
+        "days_improved_vs_baseline": 0,
+        "days_worsened_vs_baseline": 0,
+        "daily_pnl_differences_twd": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fragile_best_day_deletion": false
+      }
+    },
+    {
+      "variant_id": "HOLD_30S_RELAXED_CHASE",
+      "kind": "hold",
+      "delay_seconds": 30,
+      "opening_limit": 0.04,
+      "vwap_limit": 0.025,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "selection": {
+            "selection_reason": "BASELINE_APPROVED"
+          },
+          "variant_selection": {
+            "selection_reason": "DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3016",
+                "signal_time": "2026-09-29T09:10:00+08:00",
+                "confirmation_time": "2026-09-29T09:10:30+08:00",
+                "confirmation_volume_delta": -0.547945205479452,
+                "confirmation_large_trade_delta": -0.7917109458023379,
+                "confirmation_structure_held": false,
+                "confirmation_opening_extension": 0.003030303030302939,
+                "confirmation_vwap_extension": 0.007060627286882726,
+                "observation_age_seconds": 0.288,
+                "execution_delay_seconds": 0.292,
+                "confirmation_reason": "VOLUME_NOT_PERSISTENT+LARGE_TRADE_NOT_PERSISTENT+BREAKOUT_NOT_HELD"
+              },
+              {
+                "stock_id": "3624",
+                "signal_time": "2026-09-29T09:16:30+08:00",
+                "confirmation_time": "2026-09-29T09:17:00+08:00",
+                "confirmation_volume_delta": 0.5064935064935064,
+                "confirmation_large_trade_delta": 1.0,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.017985611510791477,
+                "confirmation_vwap_extension": 0.0029984704133425577,
+                "observation_age_seconds": 1.959,
+                "execution_delay_seconds": 1.642,
+                "confirmation_reason": "CONFIRMED",
+                "original_signal_time": "2026-09-29T09:16:30+08:00",
+                "delayed_entry_time": "2026-09-29T09:17:01.642000+08:00",
+                "delayed_entry_price": 142.0,
+                "delayed_quantity": 1000,
+                "market_recheck": "PASSED",
+                "market_regime": "BEARISH",
+                "stock_return_5m": 0.007117437722419906,
+                "benchmark_return_5m": -0.001338090990187224,
+                "benchmark_vwap_gap": -8.123077460098216e-05,
+                "relative_strength_5m": 0.00845552871260713,
+                "minimum_relative_strength": 0.005,
+                "book_recheck": "PASSED",
+                "book_age_seconds": 0.331,
+                "book_imbalance": 0.1532994923857868
+              }
+            ],
+            "candidate_ignored_because_baseline_entered_first": true
+          }
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3016",
+                "signal_time": "2026-09-30T09:07:00+08:00",
+                "confirmation_time": "2026-09-30T09:07:30+08:00",
+                "confirmation_volume_delta": 0.09430051813471503,
+                "confirmation_large_trade_delta": -0.36395759717314485,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": -0.002941176470588225,
+                "confirmation_vwap_extension": 0.007919083607340394,
+                "observation_age_seconds": 0.164,
+                "execution_delay_seconds": 0.223,
+                "confirmation_reason": "VOLUME_NOT_PERSISTENT+LARGE_TRADE_NOT_PERSISTENT"
+              },
+              {
+                "stock_id": "2033",
+                "signal_time": "2026-09-30T09:11:00+08:00",
+                "confirmation_time": "2026-09-30T09:11:30+08:00",
+                "confirmation_volume_delta": -0.45714285714285713,
+                "confirmation_large_trade_delta": -1.0,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.03732303732303732,
+                "confirmation_vwap_extension": 0.016553317813406077,
+                "observation_age_seconds": 4.659,
+                "execution_delay_seconds": 0.547,
+                "confirmation_reason": "VOLUME_NOT_PERSISTENT+LARGE_TRADE_NOT_PERSISTENT"
+              },
+              {
+                "stock_id": "6456",
+                "signal_time": "2026-09-30T10:30:30+08:00",
+                "confirmation_time": "2026-09-30T10:31:00+08:00",
+                "confirmation_volume_delta": 0.3333333333333333,
+                "confirmation_large_trade_delta": null,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.024043715846994607,
+                "confirmation_vwap_extension": 0.006512877313071819,
+                "observation_age_seconds": 4.45,
+                "execution_delay_seconds": 1.097,
+                "confirmation_reason": "LARGE_TRADE_NOT_PERSISTENT"
+              }
+            ]
+          }
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3094",
+          "stock_name": "聯傑",
+          "entry_time": "2026-10-01T09:38:00.356000+08:00",
+          "entry_price": 64.39999999999999,
+          "exit_time": "2026-10-01T09:44:06.008000+08:00",
+          "exit_price": 65.80000000000001,
+          "exit_reason": "MFE_PROFIT_PROTECTION",
+          "net_pnl_twd": 2378.0,
+          "mfe_net_pnl_twd": 4373.0,
+          "mae_net_pnl_twd": -1014.0,
+          "selection": {
+            "selection_reason": "DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3094",
+                "signal_time": "2026-10-01T09:37:30+08:00",
+                "confirmation_time": "2026-10-01T09:38:00+08:00",
+                "confirmation_volume_delta": 0.23515439429928742,
+                "confirmation_large_trade_delta": 0.21052631578947367,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.03721682847896446,
+                "confirmation_vwap_extension": 0.01625194092816029,
+                "observation_age_seconds": 0.059,
+                "execution_delay_seconds": 0.356,
+                "confirmation_reason": "CONFIRMED",
+                "original_signal_time": "2026-10-01T09:37:30+08:00",
+                "delayed_entry_time": "2026-10-01T09:38:00.356000+08:00",
+                "delayed_entry_price": 64.39999999999999,
+                "delayed_quantity": 2000,
+                "market_recheck": "PASSED",
+                "market_regime": "BEARISH",
+                "stock_return_5m": 0.03044871794871784,
+                "benchmark_return_5m": -0.0004458314757023185,
+                "benchmark_vwap_gap": -0.000786940598051511,
+                "relative_strength_5m": 0.03089454942442016,
+                "minimum_relative_strength": 0.005,
+                "book_recheck": "PASSED",
+                "book_age_seconds": 0.375,
+                "book_imbalance": 0.014285714285714285
+              }
+            ]
+          }
+        }
+      ],
+      "metrics": {
+        "trade_count": 2,
+        "winning_trades": 1,
+        "losing_trades": 1,
+        "win_rate": 0.5,
+        "gross_profit_twd": 2378.0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -1201.0,
+        "average_pnl_per_trade_twd": -600.5,
+        "profit_factor": 0.664431,
+        "net_pnl_difference_vs_baseline_twd": 2378.0,
+        "days_changed_vs_baseline": 1,
+        "days_improved_vs_baseline": 1,
+        "days_worsened_vs_baseline": 0,
+        "daily_pnl_differences_twd": [
+          0.0,
+          0.0,
+          2378.0
+        ],
+        "fragile_best_day_deletion": true
+      }
+    },
+    {
+      "variant_id": "HOLD_60S_RELAXED_CHASE",
+      "kind": "hold",
+      "delay_seconds": 60,
+      "opening_limit": 0.04,
+      "vwap_limit": 0.025,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "selection": {
+            "selection_reason": "BASELINE_APPROVED"
+          },
+          "variant_selection": {
+            "selection_reason": "DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3016",
+                "signal_time": "2026-09-29T09:10:00+08:00",
+                "confirmation_time": "2026-09-29T09:11:00+08:00",
+                "confirmation_volume_delta": -0.563845050215208,
+                "confirmation_large_trade_delta": -0.7873134328358209,
+                "confirmation_structure_held": false,
+                "confirmation_opening_extension": -0.00303030303030305,
+                "confirmation_vwap_extension": 0.0009226249231633066,
+                "observation_age_seconds": 0.587,
+                "execution_delay_seconds": 0.556,
+                "confirmation_reason": "VOLUME_NOT_PERSISTENT+LARGE_TRADE_NOT_PERSISTENT+BREAKOUT_NOT_HELD"
+              },
+              {
+                "stock_id": "3624",
+                "signal_time": "2026-09-29T09:16:30+08:00",
+                "confirmation_time": "2026-09-29T09:17:30+08:00",
+                "confirmation_volume_delta": 0.6062992125984252,
+                "confirmation_large_trade_delta": 0.6153846153846154,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.017985611510791477,
+                "confirmation_vwap_extension": 0.002973765683558671,
+                "observation_age_seconds": 0.647,
+                "execution_delay_seconds": 0.277,
+                "confirmation_reason": "CONFIRMED",
+                "original_signal_time": "2026-09-29T09:16:30+08:00",
+                "delayed_entry_time": "2026-09-29T09:17:30.277000+08:00",
+                "delayed_entry_price": 142.0,
+                "delayed_quantity": 1000,
+                "market_recheck": "PASSED",
+                "market_regime": "BEARISH",
+                "stock_return_5m": 0.010714285714285676,
+                "benchmark_return_5m": -0.001338090990187224,
+                "benchmark_vwap_gap": -6.754846959633465e-05,
+                "relative_strength_5m": 0.0120523767044729,
+                "minimum_relative_strength": 0.005,
+                "book_recheck": "PASSED",
+                "book_age_seconds": 0.0,
+                "book_imbalance": 0.22323049001814882
+              }
+            ],
+            "candidate_ignored_because_baseline_entered_first": true
+          }
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3016",
+                "signal_time": "2026-09-30T09:07:00+08:00",
+                "confirmation_time": "2026-09-30T09:08:00+08:00",
+                "confirmation_volume_delta": 0.22940776038121172,
+                "confirmation_large_trade_delta": 0.035398230088495575,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.008823529411764675,
+                "confirmation_vwap_extension": 0.019113713504598007,
+                "observation_age_seconds": 0.119,
+                "execution_delay_seconds": 0.151,
+                "confirmation_reason": "CONFIRMED",
+                "original_signal_time": "2026-09-30T09:07:00+08:00",
+                "delayed_entry_time": "2026-09-30T09:08:00.151000+08:00",
+                "delayed_entry_price": 172.0,
+                "delayed_quantity": 1000,
+                "market_recheck": "PASSED",
+                "market_regime": "BEARISH",
+                "stock_return_5m": 0.020895522388059806,
+                "benchmark_return_5m": -0.0004444444444444695,
+                "benchmark_vwap_gap": -0.0008814615585571728,
+                "relative_strength_5m": 0.021339966832504276,
+                "minimum_relative_strength": 0.005,
+                "book_recheck": "FAILED",
+                "book_age_seconds": 0.258,
+                "book_imbalance": -0.30823529411764705
+              },
+              {
+                "stock_id": "2033",
+                "signal_time": "2026-09-30T09:11:00+08:00",
+                "confirmation_time": "2026-09-30T09:12:00+08:00",
+                "confirmation_reason": "QUOTE_STALE",
+                "observation_age_seconds": 0.169,
+                "execution_delay_seconds": 13.033
+              },
+              {
+                "stock_id": "6456",
+                "signal_time": "2026-09-30T10:30:30+08:00",
+                "confirmation_time": "2026-09-30T10:31:30+08:00",
+                "confirmation_volume_delta": 0.11864406779661017,
+                "confirmation_large_trade_delta": -0.14285714285714285,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.024043715846994607,
+                "confirmation_vwap_extension": 0.006505796464126634,
+                "observation_age_seconds": 0.365,
+                "execution_delay_seconds": 1.592,
+                "confirmation_reason": "LARGE_TRADE_NOT_PERSISTENT"
+              }
+            ]
+          }
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "selection": {
+            "selection_reason": "NO_APPROVED_LONG_ENTRY"
+          },
+          "variant_selection": {
+            "selection_reason": "NO_DELAYED_HOLD_CONFIRMED",
+            "attempts": [
+              {
+                "stock_id": "3094",
+                "signal_time": "2026-10-01T09:37:30+08:00",
+                "confirmation_time": "2026-10-01T09:38:30+08:00",
+                "confirmation_volume_delta": 0.42857142857142855,
+                "confirmation_large_trade_delta": 0.5207920792079208,
+                "confirmation_structure_held": true,
+                "confirmation_opening_extension": 0.04854368932038833,
+                "confirmation_vwap_extension": 0.026118819914157543,
+                "observation_age_seconds": 0.356,
+                "execution_delay_seconds": 0.34,
+                "confirmation_reason": "OPENING_EXTENSION_TOO_HIGH+VWAP_EXTENSION_TOO_HIGH"
+              }
+            ]
+          }
+        }
+      ],
+      "metrics": {
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0,
+        "days_changed_vs_baseline": 0,
+        "days_improved_vs_baseline": 0,
+        "days_worsened_vs_baseline": 0,
+        "daily_pnl_differences_twd": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fragile_best_day_deletion": false
+      }
+    }
+  ],
+  "sample_warning": "Only three synchronized-0050 sessions are available; 20260930 is a diagnostic stitch with four untimestamped callback errors.",
+  "production_behavior_changed": false,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "report_hash": "81acff9c0e37fcd37b87b17507375df3bddc2303183c97e79a2310ae9d4f1cca"
+}
