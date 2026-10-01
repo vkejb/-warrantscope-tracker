@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.linyunyan.warrantscope.trading-bot</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Library/Frameworks/Python.framework/Versions/3.10/bin/python3</string>
+		<string>-m</string>
+		<string>yuanta_live_runtime_v01.trading_bot_service</string>
+		<string>serve</string>
+		<string>--runtime-dir</string>
+		<string>/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_live_runtime_v01/runtime</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ThrottleInterval</key>
+	<integer>5</integer>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>StandardOutPath</key>
+	<string>/Users/linyunyan/Library/Logs/WarrantScope/trading-bot.out.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/linyunyan/Library/Logs/WarrantScope/trading-bot.err.log</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PYTHONUNBUFFERED</key>
+		<string>1</string>
+		<key>PYTHONPATH</key>
+		<string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy</string>
+	</dict>
+</dict>
+</plist>
