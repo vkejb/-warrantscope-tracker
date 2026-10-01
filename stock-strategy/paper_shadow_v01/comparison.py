@@ -57,6 +57,7 @@ def _metrics(variant: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     retentions = []
     for row in rows:
         full_mfe = max(
+            float(row.get("full_path_mfe_net_pnl") or 0),
             float(row.get("mfe_net_pnl_at_exit") or 0),
             float(row.get("post_exit_best_net_pnl") or 0),
         )
@@ -73,6 +74,7 @@ def _metrics(variant: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
         "net_pnl_twd": round(sum(pnls), 2),
         "average_pnl_twd": round(mean(pnls), 2) if pnls else None,
         "average_winner_twd": round(mean(wins), 2) if wins else None,
+        "maximum_winner_twd": round(max(wins), 2) if wins else None,
         "average_loser_twd": round(mean(losses), 2) if losses else None,
         "profit_factor": _profit_factor(pnls),
         "maximum_drawdown_twd": _drawdown(rows),
@@ -149,6 +151,43 @@ def build_comparison(runtime_dir: Path = DEFAULT_RUNTIME_DIR) -> dict[str, Any]:
             f"{variant}_MATCHED_REFERENCE", [reference for reference, _candidate in pairs]
         )
         candidate_metric = metrics[variant]
+        original_winner_pairs = [
+            (reference, candidate)
+            for reference, candidate in pairs
+            if float(reference["net_pnl"]) > 0
+        ]
+        original_winner_reference_total = round(sum(
+            float(reference["net_pnl"])
+            for reference, _candidate in original_winner_pairs
+        ), 2)
+        original_winner_candidate_total = round(sum(
+            float(candidate["net_pnl"])
+            for _reference, candidate in original_winner_pairs
+        ), 2)
+        original_winners_made_nonpositive = sum(
+            float(candidate["net_pnl"]) <= 0
+            for _reference, candidate in original_winner_pairs
+        )
+        largest_reference_winner_preserved = True
+        if original_winner_pairs:
+            largest_reference, largest_candidate = max(
+                original_winner_pairs,
+                key=lambda pair: float(pair[0]["net_pnl"]),
+            )
+            largest_reference_winner_preserved = (
+                float(largest_candidate["net_pnl"])
+                >= float(largest_reference["net_pnl"])
+            )
+        reference_retention = ref_metric["average_profit_retention_ratio"]
+        candidate_retention = candidate_metric["average_profit_retention_ratio"]
+        retention_not_worse = (
+            reference_retention is not None
+            and candidate_retention is not None
+            and float(candidate_retention) >= float(reference_retention)
+        )
+        original_winner_pnl_not_worse = (
+            original_winner_candidate_total >= original_winner_reference_total
+        )
         avg_loss_not_worse = (
             candidate_metric["average_loser_twd"] is None
             or ref_metric["average_loser_twd"] is None
@@ -163,6 +202,10 @@ def build_comparison(runtime_dir: Path = DEFAULT_RUNTIME_DIR) -> dict[str, Any]:
             >= _numeric_pf(ref_metric["profit_factor"])
             and avg_loss_not_worse
             and candidate_metric["negative_mfe_exits"] == 0
+            and original_winners_made_nonpositive == 0
+            and original_winner_pnl_not_worse
+            and largest_reference_winner_preserved
+            and retention_not_worse
         )
         pair_summaries[variant] = {
             "paired_trades": len(pairs),
@@ -175,6 +218,21 @@ def build_comparison(runtime_dir: Path = DEFAULT_RUNTIME_DIR) -> dict[str, Any]:
                 bool(differences) and total > 0 and all(value > 0 for value in leave_one_out)
             ),
             "average_loss_not_worse": avg_loss_not_worse,
+            "original_winner_count": len(original_winner_pairs),
+            "original_winners_improved": sum(
+                float(candidate["net_pnl"]) > float(reference["net_pnl"])
+                for reference, candidate in original_winner_pairs
+            ),
+            "original_winners_worsened": sum(
+                float(candidate["net_pnl"]) < float(reference["net_pnl"])
+                for reference, candidate in original_winner_pairs
+            ),
+            "original_winners_made_nonpositive": original_winners_made_nonpositive,
+            "original_winner_reference_pnl_twd": original_winner_reference_total,
+            "original_winner_candidate_pnl_twd": original_winner_candidate_total,
+            "original_winner_pnl_not_worse": original_winner_pnl_not_worse,
+            "largest_reference_winner_preserved": largest_reference_winner_preserved,
+            "average_profit_retention_not_worse": retention_not_worse,
             "shadow_evidence_gate_pass": evidence_gate,
         }
 
@@ -192,6 +250,18 @@ def build_comparison(runtime_dir: Path = DEFAULT_RUNTIME_DIR) -> dict[str, Any]:
         "ambiguous_duplicate_session_days": sorted(duplicate_days),
         "rejected_manifests": rejected,
         "minimum_paired_trades_required": MINIMUM_PAIRED_TRADES,
+        "shadow_evidence_gate_definition": {
+            "minimum_paired_trades": MINIMUM_PAIRED_TRADES,
+            "positive_total_net_difference": True,
+            "positive_every_leave_one_trade_out_difference": True,
+            "profit_factor_not_worse": True,
+            "average_loss_not_worse": True,
+            "negative_mfe_exits_allowed": 0,
+            "original_winners_made_nonpositive_allowed": 0,
+            "original_winner_total_pnl_not_worse": True,
+            "largest_reference_winner_not_worse": True,
+            "average_full_path_mfe_retention_not_worse": True,
+        },
         "metrics": metrics,
         "paired_comparisons": pair_summaries,
         "production_change_authorized": False,

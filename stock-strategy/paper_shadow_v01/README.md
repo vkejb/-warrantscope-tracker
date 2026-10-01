@@ -56,7 +56,10 @@ Every successful automatic paper publication also refreshes a verified
 cross-day comparison. It excludes older contract versions, corrupted manifests,
 and ambiguous duplicate dates. Until each buffered variant has at least 20
 paired trades it remains `COLLECTING`; even after that threshold it only reports
-a shadow evidence gate and never changes production behavior:
+a shadow evidence gate and never changes production behavior. The gate requires
+lower losses without sacrificing profit retention: no original winner may turn
+non-positive, original winners' combined PnL and the largest winner may not
+decline, and average full-path MFE retention may not worsen:
 
 ```bash
 PYTHONPATH=stock-strategy python3 -m paper_shadow_v01.comparison

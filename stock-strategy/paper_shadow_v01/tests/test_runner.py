@@ -107,6 +107,12 @@ class PaperShadowTests(unittest.TestCase):
         self.assertEqual(result["trade"]["side"], "LONG")
         self.assertEqual(result["trade"]["strategy_variant"], "PRODUCTION_ANTI_CHASE")
         self.assertEqual(result["trade"]["exit_reason"], "HARD_EXIT")
+        self.assertIn("full_path_mfe_net_pnl", result["trade"])
+        self.assertIn("post_exit_best_net_pnl", result["trade"])
+        self.assertGreaterEqual(
+            result["trade"]["full_path_mfe_net_pnl"],
+            result["trade"]["mfe_net_pnl_at_exit"],
+        )
         self.assertIsNotNone(result["confirmation_trade"])
         self.assertEqual(
             result["confirmation_trade"]["strategy_variant"],
@@ -244,6 +250,9 @@ class PaperShadowTests(unittest.TestCase):
         self.assertEqual(
             PAPER_CONTRACT["buffered_exit_policy"]["mode"],
             "POST_SESSION_PAPER_ONLY",
+        )
+        self.assertEqual(
+            PAPER_CONTRACT["profit_retention_diagnostics"]["version"], 1,
         )
         self.assertEqual(PAPER_CONTRACT["actual_orders"], 0)
 

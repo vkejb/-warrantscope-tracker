@@ -100,6 +100,11 @@ PAPER_CONTRACT = {
         "retain_3_0": 0.70,
         "hard_stop_net_twd": 3500.0,
     },
+    "profit_retention_diagnostics": {
+        "version": 1,
+        "mfe_basis": "FULL_RECORDED_NET_PNL_PATH_AFTER_FEES_AND_TAX",
+        "post_exit_path_preserved": True,
+    },
     "actual_orders": 0,
     "actual_fills": 0,
     "broker_connections": 0,
@@ -383,6 +388,31 @@ def _research_trade(candidate: Any, data: dict, end_time: datetime) -> ResearchT
     )
 
 
+def _path_diagnostics(
+    research: ResearchTrade,
+    exit_time: datetime,
+) -> dict[str, float]:
+    """Return comparable net-PnL path evidence for every paper variant."""
+    through_exit = [
+        float(point.projected_net_pnl)
+        for point in research.points
+        if point.at <= exit_time
+    ]
+    after_exit = [
+        float(point.projected_net_pnl)
+        for point in research.points
+        if point.at > exit_time
+    ]
+    entry_net_pnl = float(research.pnl_at_price(research.entry_price))
+    observed = through_exit or [entry_net_pnl]
+    return {
+        "mfe_net_pnl_at_exit": max(observed),
+        "mae_net_pnl_at_exit": min(observed),
+        "post_exit_best_net_pnl": max(after_exit, default=observed[-1]),
+        "post_exit_worst_net_pnl": min(after_exit, default=observed[-1]),
+        "full_path_mfe_net_pnl": max(observed + after_exit),
+        "full_path_mae_net_pnl": min(observed + after_exit),
+    }
 def _buffered_shadow_trades(
     production_trade: dict[str, Any], research: ResearchTrade,
 ) -> dict[str, dict[str, Any]]:
@@ -599,6 +629,7 @@ def _replay_paper_track(
         "paper_only": True,
     }
     research = _research_trade(candidate, data, end_time)
+    trade.update(_path_diagnostics(research, exit_time))
     outcome = Outcome(
         "SCORED", exit_time, exit_decision.price, exit_decision.reason,
         net_pnl, trade["holding_seconds"],

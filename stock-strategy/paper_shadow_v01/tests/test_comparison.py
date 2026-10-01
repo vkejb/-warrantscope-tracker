@@ -17,7 +17,15 @@ from yuanta_intraday_shadow_v01.collector import canonical_bytes, sha256_file
 
 class PaperComparisonTests(unittest.TestCase):
     @staticmethod
-    def _day(root: Path, day: str, production: float, buffer30: float, buffer40: float) -> None:
+    def _day(
+        root: Path,
+        day: str,
+        production: float,
+        buffer30: float,
+        buffer40: float,
+        *,
+        buffered_exit_reason: str = "BUFFERED_NET_MFE_PROFIT_PROTECTION",
+    ) -> None:
         target = root / "days" / day / f"paper-{day}"
         target.mkdir(parents=True)
         rows = [
@@ -25,18 +33,25 @@ class PaperComparisonTests(unittest.TestCase):
                 "session_date": day, "stock_id": "3094", "entry_time": f"{day[:4]}-{day[4:6]}-{day[6:]}T09:10:00+08:00",
                 "strategy_variant": "PRODUCTION_ANTI_CHASE", "net_pnl": production,
                 "exit_reason": "HARD_EXIT",
+                "mfe_net_pnl_at_exit": max(production, 1000.0),
+                "post_exit_best_net_pnl": 1200.0,
+                "full_path_mfe_net_pnl": 1200.0,
             },
             {
                 "session_date": day, "stock_id": "3094", "entry_time": f"{day[:4]}-{day[4:6]}-{day[6:]}T09:10:00+08:00",
                 "strategy_variant": BUFFERED_VARIANTS[0], "net_pnl": buffer30,
-                "exit_reason": "BUFFERED_NET_MFE_PROFIT_PROTECTION",
-                "mfe_net_pnl_at_exit": 1000.0, "post_exit_best_net_pnl": 1200.0,
+                "exit_reason": buffered_exit_reason,
+                "mfe_net_pnl_at_exit": max(1000.0, buffer30),
+                "post_exit_best_net_pnl": max(1200.0, buffer30),
+                "full_path_mfe_net_pnl": max(1200.0, buffer30),
             },
             {
                 "session_date": day, "stock_id": "3094", "entry_time": f"{day[:4]}-{day[4:6]}-{day[6:]}T09:10:00+08:00",
                 "strategy_variant": BUFFERED_VARIANTS[1], "net_pnl": buffer40,
-                "exit_reason": "BUFFERED_NET_MFE_PROFIT_PROTECTION",
-                "mfe_net_pnl_at_exit": 1000.0, "post_exit_best_net_pnl": 1200.0,
+                "exit_reason": buffered_exit_reason,
+                "mfe_net_pnl_at_exit": max(1000.0, buffer40),
+                "post_exit_best_net_pnl": max(1200.0, buffer40),
+                "full_path_mfe_net_pnl": max(1200.0, buffer40),
             },
         ]
         trades = target / "paper_trades.jsonl"
@@ -60,10 +75,18 @@ class PaperComparisonTests(unittest.TestCase):
             self.assertEqual(report["status"], "COLLECTING")
             self.assertEqual(report["verified_session_count"], 2)
             self.assertEqual(
+                report["shadow_evidence_gate_definition"]
+                ["original_winners_made_nonpositive_allowed"],
+                0,
+            )
+            self.assertEqual(
                 report["paired_comparisons"][BUFFERED_VARIANTS[1]]["net_difference_twd"],
                 1100.0,
             )
             self.assertEqual(report["metrics"][BUFFERED_VARIANTS[1]]["negative_mfe_exits"], 1)
+            guard = report["paired_comparisons"][BUFFERED_VARIANTS[1]]
+            self.assertEqual(guard["original_winners_made_nonpositive"], 0)
+            self.assertTrue(guard["average_profit_retention_not_worse"])
             written = write_comparison(root)
             saved = json.loads((root / "comparison" / "latest.json").read_text())
             self.assertEqual(saved["report_hash"], written["report_hash"])
@@ -80,6 +103,40 @@ class PaperComparisonTests(unittest.TestCase):
             report = build_comparison(root)
             self.assertEqual(report["verified_session_count"], 0)
             self.assertEqual(report["ambiguous_duplicate_session_days"], ["20261002"])
+
+    def test_gate_rejects_candidate_that_cuts_largest_original_winner(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for index in range(20):
+                day = f"202611{index + 1:02d}"
+                production = 5000.0 if index == 0 else -1000.0
+                candidate = 4000.0 if index == 0 else -100.0
+                self._day(root, day, production, candidate, candidate)
+            report = build_comparison(root)
+            guard = report["paired_comparisons"][BUFFERED_VARIANTS[0]]
+            self.assertGreater(guard["net_difference_twd"], 0)
+            self.assertFalse(guard["largest_reference_winner_preserved"])
+            self.assertFalse(guard["original_winner_pnl_not_worse"])
+            self.assertFalse(guard["shadow_evidence_gate_pass"])
+
+    def test_gate_can_pass_when_losses_and_profit_retention_both_improve(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for index in range(20):
+                day = f"202612{index + 1:02d}"
+                production = 5000.0 if index == 0 else -1000.0
+                candidate = 5500.0 if index == 0 else -100.0
+                self._day(
+                    root, day, production, candidate, candidate,
+                    buffered_exit_reason="RECOVERY_AWARE_EARLY_FAILURE",
+                )
+            report = build_comparison(root)
+            guard = report["paired_comparisons"][BUFFERED_VARIANTS[0]]
+            self.assertTrue(guard["average_loss_not_worse"])
+            self.assertTrue(guard["original_winner_pnl_not_worse"])
+            self.assertTrue(guard["largest_reference_winner_preserved"])
+            self.assertTrue(guard["average_profit_retention_not_worse"])
+            self.assertTrue(guard["shadow_evidence_gate_pass"])
 
 
 if __name__ == "__main__":
