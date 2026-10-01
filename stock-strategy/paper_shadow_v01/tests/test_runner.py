@@ -89,6 +89,7 @@ class PaperShadowTests(unittest.TestCase):
             result = latest_status(Path(temp))
         self.assertEqual(result["status"], "NO_PAPER_DAY_YET")
         self.assertEqual(result["actual_orders"], 0)
+        self.assertEqual(result["comparison"]["status"], "NOT_BUILT")
 
     def test_causal_long_paper_trade_collects_checkpoints_and_grid(self):
         coverage = {

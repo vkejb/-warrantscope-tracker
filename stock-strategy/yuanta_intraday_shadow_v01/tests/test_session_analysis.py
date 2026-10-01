@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
+import json
 from pathlib import Path
 import tempfile
 import unittest
 
-from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem
+from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem, canonical_bytes
 from yuanta_intraday_shadow_v01.session_analysis import build_session_rows, publish_session_analysis
 
 
@@ -40,6 +42,21 @@ class SessionAnalysisTests(unittest.TestCase):
             publish_session_analysis(run, root / "analysis")
             with self.assertRaises(FileExistsError):
                 publish_session_analysis(run, root / "analysis")
+
+    def test_callback_errors_force_partial_session(self):
+        with tempfile.TemporaryDirectory() as temp:
+            run = self._full_run(Path(temp) / "quotes")
+            path = run / "run_manifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            manifest["event_counts"]["callback_errors"] = 1
+            unsigned = {key: value for key, value in manifest.items() if key != "manifest_hash"}
+            manifest["manifest_hash"] = hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
+            path.write_bytes(canonical_bytes(manifest) + b"\n")
+            _features, outcomes, summary = build_session_rows(run)
+            self.assertEqual(summary["coverage_status"], "PARTIAL_SESSION")
+            self.assertEqual(summary["callback_errors"], 1)
+            self.assertEqual(summary["mature_outcome_rows"], 0)
+            self.assertTrue(all(row["outcome_status"] == "PARTIAL_NOT_MATURED" for row in outcomes))
 
 
 if __name__ == "__main__":

@@ -51,3 +51,13 @@ direct status command is available without broker access:
 ```bash
 PYTHONPATH=stock-strategy python3 -m paper_shadow_v01.status
 ```
+
+Every successful automatic paper publication also refreshes a verified
+cross-day comparison. It excludes older contract versions, corrupted manifests,
+and ambiguous duplicate dates. Until each buffered variant has at least 20
+paired trades it remains `COLLECTING`; even after that threshold it only reports
+a shadow evidence gate and never changes production behavior:
+
+```bash
+PYTHONPATH=stock-strategy python3 -m paper_shadow_v01.comparison
+```

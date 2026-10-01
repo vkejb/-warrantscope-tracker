@@ -23,6 +23,7 @@ SPEC = {
     "full_session_start_deadline": "09:00:30",
     "outcome_maturity_time": "13:30",
     "market_wide_max_gap_seconds": 120,
+    "callback_errors_must_be_zero": True,
     "features_use_events_received_at_or_before_checkpoint": True,
     "outcomes_use_events_after_checkpoint": True,
     "partial_runs_never_mark_outcomes_mature": True,
@@ -97,7 +98,14 @@ def build_session_rows(run_dir: Path) -> tuple[list[dict], list[dict], dict]:
         and market_stamps[-1] >= datetime.combine(ended.date(), _clock("13:29"), tzinfo=TAIPEI)
         and max_market_gap <= 120
     )
-    full_session = started.time() <= _clock("09:00:30") and ended.time() >= _clock("13:30") and manifest["status"] == "COMPLETE" and stream_coverage
+    callback_errors = int(manifest.get("event_counts", {}).get("callback_errors", 0))
+    full_session = (
+        started.time() <= _clock("09:00:30")
+        and ended.time() >= _clock("13:30")
+        and manifest["status"] == "COMPLETE"
+        and stream_coverage
+        and callback_errors == 0
+    )
 
     features, outcomes = [], []
     for checkpoint in CHECKPOINTS:
@@ -150,6 +158,7 @@ def build_session_rows(run_dir: Path) -> tuple[list[dict], list[dict], dict]:
         "signal_date": watch["signal_date"], "session_date": session_date,
         "coverage_status": "FULL_SESSION" if full_session else "PARTIAL_SESSION",
         "stream_coverage_pass": stream_coverage,
+        "callback_errors": callback_errors,
         "max_market_event_gap_seconds": max_market_gap if max_market_gap != float("inf") else None,
         "started_at_taipei": started.isoformat(), "ended_at_taipei": ended.isoformat(),
         "feature_rows": len(features), "outcome_rows": len(outcomes),
