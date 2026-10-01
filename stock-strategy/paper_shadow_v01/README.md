@@ -2,16 +2,25 @@
 
 This module is invoked automatically after the existing Yuanta read-only
 collector seals a `FULL_SESSION`. It replays the archived stream causally through
-two independent, long-only paper tracks:
+four independent, long-only paper tracks:
 
 - `PRODUCTION_ANTI_CHASE`: the production engine with the 2.0% opening-extension
   and 1.25% VWAP-extension entry limits.
 - `ANTI_CHASE_PLUS_60S_CONFIRMATION`: the same gate followed by the fixed,
   paper-only 60-second flow and breakout confirmation with a newly calculated
   delayed fill.
+- `RECOVERY_NET_MFE_BUFFER_0_30_SHADOW`: the production anti-chase entry with
+  the existing NT$3,500 hard stop, a one-time recovery-aware 120-second failure
+  check, and a cost-aware net-MFE floor armed at 0.75R with 0.30R initially
+  locked.
+- `RECOVERY_NET_MFE_BUFFER_0_40_SHADOW`: the same diagnostic with 0.40R
+  initially locked.
 
-Both tracks retain permanent 0050 market context, the current NT$3,500 disaster
-stop, MFE_V1 profit protection, reversal exit, and force-flat behavior.
+The two production-comparison tracks retain permanent 0050 market context, the
+current NT$3,500 disaster stop, MFE_V1 profit protection, reversal exit, and
+force-flat behavior. The two buffered variants reuse the exact production entry
+and replace only the exit overlay in post-session paper replay. Existing
+non-MFE exits remain authoritative.
 
 It never connects to a broker and never imports or calls an order adapter. The
 paper fill model remains the existing immediate full-fill adverse-one-tick
@@ -23,9 +32,10 @@ paper_shadow_v01/runtime/days/YYYYMMDD/<paper_run_id>/
 
 Each day preserves the two paper variants, normal entry-decision diagnostics,
 separate 60-second confirmation diagnostics, 5/10/15 minute EARLY_FAILURE
-observations for the production-policy track, a per-variant daily summary, and a
-SHA-256 manifest. EARLY_FAILURE remains observe-only and cannot close a paper
-position.
+observations for the production-policy track, both buffered-exit outcomes, a
+per-variant daily summary, and a SHA-256 manifest. EARLY_FAILURE remains
+observe-only on the production tracks; the one-time 120-second recovery-aware
+exit applies only to the two explicitly named buffered paper variants.
 
 Manual replay is available for a sealed full session:
 

@@ -111,6 +111,16 @@ class PaperShadowTests(unittest.TestCase):
             result["confirmation_trade"]["strategy_variant"],
             "ANTI_CHASE_PLUS_60S_CONFIRMATION",
         )
+        self.assertEqual(
+            set(result["buffered_trades"]),
+            {
+                "RECOVERY_NET_MFE_BUFFER_0_30_SHADOW",
+                "RECOVERY_NET_MFE_BUFFER_0_40_SHADOW",
+            },
+        )
+        self.assertTrue(
+            all(trade["paper_only"] for trade in result["buffered_trades"].values())
+        )
         self.assertGreater(
             datetime.fromisoformat(result["confirmation_trade"]["entry_time"]),
             datetime.fromisoformat(result["confirmation_trade"]["signal_time"]),
@@ -188,6 +198,16 @@ class PaperShadowTests(unittest.TestCase):
                 "confirmation_trade": None,
                 "confirmation_reason": "NO_CONFIRMED_LONG_ENTRY",
                 "confirmation_decision_diagnostics": [],
+                "buffered_trades": {
+                    "RECOVERY_NET_MFE_BUFFER_0_30_SHADOW": {
+                        "strategy_variant": "RECOVERY_NET_MFE_BUFFER_0_30_SHADOW",
+                        "net_pnl": 300.0,
+                    },
+                    "RECOVERY_NET_MFE_BUFFER_0_40_SHADOW": {
+                        "strategy_variant": "RECOVERY_NET_MFE_BUFFER_0_40_SHADOW",
+                        "net_pnl": 400.0,
+                    },
+                },
             }
             runtime = root / "paper"
             with patch("paper_shadow_v01.runner.load_session", return_value=({}, coverage)), patch(
@@ -206,12 +226,24 @@ class PaperShadowTests(unittest.TestCase):
             self.assertEqual(first["actual_orders"], 0)
             self.assertEqual(first["actual_fills"], 0)
             self.assertEqual(first["broker_connections"], 0)
+            self.assertEqual(first["paper_trade_count"], 2)
+            self.assertEqual(
+                first["variant_results"]["RECOVERY_NET_MFE_BUFFER_0_40_SHADOW"]["net_pnl"],
+                400.0,
+            )
 
     def test_contract_is_paper_only(self):
         self.assertEqual(PAPER_CONTRACT["mode"], "POST_SESSION_CAUSAL_PAPER_REPLAY")
         self.assertEqual(PAPER_CONTRACT["direction"], "LONG_ONLY")
-        self.assertEqual(PAPER_CONTRACT["early_failure_mode"], "OBSERVE_ONLY_DO_NOT_EXIT")
-        self.assertEqual(len(PAPER_CONTRACT["paper_variants"]), 2)
+        self.assertEqual(
+            PAPER_CONTRACT["early_failure_mode"]["production_tracks"],
+            "OBSERVE_ONLY_DO_NOT_EXIT",
+        )
+        self.assertEqual(len(PAPER_CONTRACT["paper_variants"]), 4)
+        self.assertEqual(
+            PAPER_CONTRACT["buffered_exit_policy"]["mode"],
+            "POST_SESSION_PAPER_ONLY",
+        )
         self.assertEqual(PAPER_CONTRACT["actual_orders"], 0)
 
 

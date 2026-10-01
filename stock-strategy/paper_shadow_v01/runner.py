@@ -13,6 +13,12 @@ import shutil
 from typing import Any, Iterable
 
 from mfe_profit_protection_study_v01.analysis import ResearchTrade, derive_initial_stop_price
+from paper_shadow_v01.buffered_exit import (
+    POLICIES as BUFFERED_EXIT_POLICIES,
+    ExistingExit,
+    result_dict as buffered_result_dict,
+    simulate_buffered_exit,
+)
 from trade_path_diagnostics_v01.analysis import Outcome
 from trade_path_diagnostics_v01.early_failure import (
     TradeCase,
@@ -71,14 +77,29 @@ PAPER_CONTRACT = {
     "paper_variants": [
         "PRODUCTION_ANTI_CHASE",
         "ANTI_CHASE_PLUS_60S_CONFIRMATION",
+        "RECOVERY_NET_MFE_BUFFER_0_30_SHADOW",
+        "RECOVERY_NET_MFE_BUFFER_0_40_SHADOW",
     ],
     "production_anti_chase_policy": ANTI_CHASE_ENTRY_POLICY,
     "confirmation_60s": PAPER_CONFIRMATION_POLICY,
     "execution_model": EXECUTION_MODEL,
     "exit_policy": LIVE_EXIT_POLICY,
     "market_regime_policy": LONG_MARKET_REGIME_POLICY,
-    "early_failure_mode": "OBSERVE_ONLY_DO_NOT_EXIT",
+    "early_failure_mode": {
+        "production_tracks": "OBSERVE_ONLY_DO_NOT_EXIT",
+        "buffered_exit_tracks": "ONE_TIME_120_SECOND_RECOVERY_AWARE_SHADOW_EXIT",
+    },
     "early_failure_checkpoints_minutes": [5, 10, 15],
+    "buffered_exit_policy": {
+        "mode": "POST_SESSION_PAPER_ONLY",
+        "activation_r": 0.75,
+        "initial_lock_r_variants": [0.30, 0.40],
+        "r_basis": "NET_PNL_AFTER_FEES_AND_TAX",
+        "retain_1_5": 0.50,
+        "retain_2_0": 0.60,
+        "retain_3_0": 0.70,
+        "hard_stop_net_twd": 3500.0,
+    },
     "actual_orders": 0,
     "actual_fills": 0,
     "broker_connections": 0,
@@ -362,6 +383,49 @@ def _research_trade(candidate: Any, data: dict, end_time: datetime) -> ResearchT
     )
 
 
+def _buffered_shadow_trades(
+    production_trade: dict[str, Any], research: ResearchTrade,
+) -> dict[str, dict[str, Any]]:
+    existing = ExistingExit(
+        at=_parse_stamp(production_trade["exit_time"]),
+        price=float(production_trade["exit_price"]),
+        net_pnl=float(production_trade["net_pnl"]),
+        reason=str(production_trade["exit_reason"]),
+    )
+    output = {}
+    for policy in BUFFERED_EXIT_POLICIES:
+        result = simulate_buffered_exit(
+            research, policy, existing_exit=existing,
+        )
+        gross, commission, sell_tax, net_pnl = _projected_net_pnl(
+            "LONG", research.entry_price, result.exit_price, research.quantity,
+        )
+        trade = {
+            **production_trade,
+            "paper_trade_id": f"{production_trade['paper_trade_id']}-{policy.name}",
+            "strategy_variant": policy.name,
+            "exit_time": result.exit_time.isoformat(),
+            "exit_price": result.exit_price,
+            "exit_reason": result.exit_reason,
+            "gross_pnl": gross,
+            "commission": commission,
+            "sell_tax": sell_tax,
+            "net_pnl": net_pnl,
+            "holding_seconds": result.holding_seconds,
+            "source_entry_variant": "PRODUCTION_ANTI_CHASE",
+            "original_exit_time": production_trade["exit_time"],
+            "original_exit_price": production_trade["exit_price"],
+            "original_exit_reason": production_trade["exit_reason"],
+            "original_net_pnl": production_trade["net_pnl"],
+            "buffered_exit_policy": asdict(policy),
+            **buffered_result_dict(result),
+        }
+        # Recomputed costs are authoritative for the selected observed quote.
+        trade["net_pnl"] = net_pnl
+        output[policy.name] = trade
+    return output
+
+
 def _replay_paper_track(
     candidates: dict[str, dict],
     market_context: dict[str, dict],
@@ -432,6 +496,7 @@ def _replay_paper_track(
             "candidate_impacts": [],
             "candidate_grid": [],
             "decision_diagnostics": decisions,
+            "buffered_trades": {},
             "reason": (
                 "NO_CONFIRMED_LONG_ENTRY"
                 if confirmation_60s else "NO_APPROVED_LONG_ENTRY"
@@ -484,6 +549,7 @@ def _replay_paper_track(
             "candidate_impacts": [],
             "candidate_grid": [],
             "decision_diagnostics": decisions,
+            "buffered_trades": {},
             "reason": "EXIT_NOT_SCORABLE_FROM_FRESH_QUOTES",
             "selected_signal": _jsonable(asdict(candidate)),
         }
@@ -541,12 +607,17 @@ def _replay_paper_track(
     case = TradeCase(research, outcome, tuple(checkpoint_rows))
     impacts = _impact_rows([case])
     grid = _grid_rows(impacts)
+    buffered_trades = (
+        _buffered_shadow_trades(trade, research)
+        if not confirmation_60s else {}
+    )
     return {
         "trade": trade,
         "checkpoint_rows": checkpoint_rows,
         "candidate_impacts": impacts,
         "candidate_grid": grid,
         "decision_diagnostics": decisions,
+        "buffered_trades": buffered_trades,
         "reason": "PAPER_TRADE_SCORED",
         "selected_signal": _jsonable(asdict(candidate)),
     }
@@ -574,12 +645,22 @@ def replay_paper_session(
         capital_twd=capital_twd,
         confirmation_60s=True,
     )
+    buffered_trades = anti_chase.get("buffered_trades", {})
     return {
         **anti_chase,
         "variants": {
             "PRODUCTION_ANTI_CHASE": anti_chase,
             "ANTI_CHASE_PLUS_60S_CONFIRMATION": confirmed,
+            **{
+                name: {
+                    "trade": trade,
+                    "reason": "PAPER_TRADE_SCORED",
+                    "source_entry_variant": "PRODUCTION_ANTI_CHASE",
+                }
+                for name, trade in buffered_trades.items()
+            },
         },
+        "buffered_trades": buffered_trades,
         "confirmation_trade": confirmed["trade"],
         "confirmation_reason": confirmed["reason"],
         "confirmation_decision_diagnostics": confirmed["decision_diagnostics"],
@@ -656,8 +737,12 @@ def publish_paper_day(
         shutil.rmtree(temporary)
     temporary.mkdir()
     try:
+        buffered_trades = result.get("buffered_trades", {})
         trade_rows = [
-            trade for trade in (result["trade"], result["confirmation_trade"])
+            trade for trade in (
+                result["trade"], result["confirmation_trade"],
+                *buffered_trades.values(),
+            )
             if trade is not None
         ]
         _write_jsonl(temporary / "paper_trades.jsonl", trade_rows)
@@ -692,6 +777,21 @@ def publish_paper_day(
                         result["confirmation_trade"]["net_pnl"]
                         if result["confirmation_trade"] else 0
                     ),
+                },
+                **{
+                    policy.name: {
+                        "status": (
+                            "PAPER_TRADE_SCORED"
+                            if policy.name in buffered_trades
+                            else "NO_APPROVED_LONG_ENTRY"
+                        ),
+                        "trade_count": int(policy.name in buffered_trades),
+                        "net_pnl": (
+                            buffered_trades[policy.name]["net_pnl"]
+                            if policy.name in buffered_trades else 0
+                        ),
+                    }
+                    for policy in BUFFERED_EXIT_POLICIES
                 },
             },
             "checkpoint_rows": len(result["checkpoint_rows"]),
