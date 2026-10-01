@@ -369,6 +369,7 @@ def _replay_paper_track(
     *,
     capital_twd: int = 190_000,
     confirmation_60s: bool = False,
+    engine_factory: Any = LiveDirectionEngine,
 ) -> dict[str, Any]:
     benchmark = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
     combined = {**candidates, **market_context}
@@ -376,7 +377,7 @@ def _replay_paper_track(
         symbol: str(data.get("meta", {}).get("stock_name", symbol))
         for symbol, data in combined.items()
     }
-    engine = LiveDirectionEngine(
+    engine = engine_factory(
         metadata,
         capital_twd=capital_twd,
         candidate_symbols=set(candidates),

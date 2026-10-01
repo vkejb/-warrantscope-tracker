@@ -1,0 +1,1712 @@
+{
+  "analysis_id": "ANTI_CHASE_SENSITIVITY_STUDY_V0_1",
+  "capital_twd": 190000,
+  "session_dates": [
+    "20260929",
+    "20260930",
+    "20261001"
+  ],
+  "controlled_constants": [
+    "stock selection",
+    "base signal",
+    "0050 relative-strength gate",
+    "confirmation counts",
+    "position sizing",
+    "exit policy",
+    "fees",
+    "tax",
+    "slippage proxy"
+  ],
+  "variants": [
+    {
+      "variant_id": "BASELINE_2_0_1_25",
+      "opening_limit": 0.02,
+      "vwap_limit": 0.0125,
+      "exempt_until": null,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260928T233201.400374Z_fe5a7b98"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "quantity": 1000,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "gate_reason_counts": {
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-29T09:09:30+08:00",
+              "stock_id": "3605",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": -0.0027472527472527375,
+              "directional_vwap_extension": 0.00471831172682502
+            }
+          ]
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260930T005009.221028Z_c408fefe",
+            "20260930T012715.505778Z_08bdc748"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 1,
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2,
+            "ANTI_CHASE_OPENING_EXTENSION": 6
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-30T09:07:00+08:00",
+              "stock_id": "3016",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.0,
+              "directional_vwap_extension": 0.012314256599576634
+            },
+            {
+              "decision_time": "2026-09-30T09:08:00+08:00",
+              "stock_id": "1709",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.012471655328798015,
+              "directional_vwap_extension": 0.006067815885557826
+            },
+            {
+              "decision_time": "2026-09-30T09:11:00+08:00",
+              "stock_id": "2033",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03732303732303732,
+              "directional_vwap_extension": 0.01787802580253306
+            },
+            {
+              "decision_time": "2026-09-30T09:13:30+08:00",
+              "stock_id": "2033",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.05534105534105538,
+              "directional_vwap_extension": 0.030247545624284333
+            },
+            {
+              "decision_time": "2026-09-30T09:56:00+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.043243243243243246,
+              "directional_vwap_extension": 0.034414116740818956
+            },
+            {
+              "decision_time": "2026-09-30T09:56:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 2,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.051891891891891806,
+              "directional_vwap_extension": 0.04163418162347976
+            },
+            {
+              "decision_time": "2026-09-30T10:14:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03243243243243232,
+              "directional_vwap_extension": 0.007678937090781268
+            },
+            {
+              "decision_time": "2026-09-30T10:30:30+08:00",
+              "stock_id": "6456",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.021857923497267784,
+              "directional_vwap_extension": 0.004366209174770708
+            },
+            {
+              "decision_time": "2026-09-30T10:48:30+08:00",
+              "stock_id": "1709",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.07482993197278898,
+              "directional_vwap_extension": 0.04477048769745662
+            }
+          ]
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20261001T004849.174778Z_feb27b61"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "ANTI_CHASE_OPENING_EXTENSION": 1,
+            "STOCK_5M_HISTORY_MISSING": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-10-01T09:37:30+08:00",
+              "stock_id": "3094",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03721682847896446,
+              "directional_vwap_extension": 0.016948138265085344
+            },
+            {
+              "decision_time": "2026-10-01T10:18:00+08:00",
+              "stock_id": "3094",
+              "gate_reason": "STOCK_5M_HISTORY_MISSING",
+              "streak": 1,
+              "required_confirmations": null,
+              "directional_opening_extension": 0.09546925566343045,
+              "directional_vwap_extension": 0.043502795104664704
+            }
+          ]
+        }
+      ],
+      "metrics": {
+        "session_count": 3,
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0
+      }
+    },
+    {
+      "variant_id": "RELAXED_3_0_2_0",
+      "opening_limit": 0.03,
+      "vwap_limit": 0.02,
+      "exempt_until": null,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260928T233201.400374Z_fe5a7b98"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "quantity": 1000,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "gate_reason_counts": {
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-29T09:09:30+08:00",
+              "stock_id": "3605",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": -0.0027472527472527375,
+              "directional_vwap_extension": 0.00471831172682502
+            }
+          ]
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260930T005009.221028Z_c408fefe",
+            "20260930T012715.505778Z_08bdc748"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 2,
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2,
+            "ANTI_CHASE_OPENING_EXTENSION": 5
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-30T09:07:00+08:00",
+              "stock_id": "3016",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.0,
+              "directional_vwap_extension": 0.012314256599576634
+            },
+            {
+              "decision_time": "2026-09-30T09:08:00+08:00",
+              "stock_id": "1709",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.012471655328798015,
+              "directional_vwap_extension": 0.006067815885557826
+            },
+            {
+              "decision_time": "2026-09-30T09:11:00+08:00",
+              "stock_id": "2033",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03732303732303732,
+              "directional_vwap_extension": 0.01787802580253306
+            },
+            {
+              "decision_time": "2026-09-30T09:13:30+08:00",
+              "stock_id": "2033",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.05534105534105538,
+              "directional_vwap_extension": 0.030247545624284333
+            },
+            {
+              "decision_time": "2026-09-30T09:56:00+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.043243243243243246,
+              "directional_vwap_extension": 0.034414116740818956
+            },
+            {
+              "decision_time": "2026-09-30T09:56:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 2,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.051891891891891806,
+              "directional_vwap_extension": 0.04163418162347976
+            },
+            {
+              "decision_time": "2026-09-30T10:14:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03243243243243232,
+              "directional_vwap_extension": 0.007678937090781268
+            },
+            {
+              "decision_time": "2026-09-30T10:30:30+08:00",
+              "stock_id": "6456",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.021857923497267784,
+              "directional_vwap_extension": 0.004366209174770708
+            },
+            {
+              "decision_time": "2026-09-30T10:48:30+08:00",
+              "stock_id": "1709",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.07482993197278898,
+              "directional_vwap_extension": 0.04477048769745662
+            }
+          ]
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20261001T004849.174778Z_feb27b61"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "ANTI_CHASE_OPENING_EXTENSION": 1,
+            "STOCK_5M_HISTORY_MISSING": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-10-01T09:37:30+08:00",
+              "stock_id": "3094",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03721682847896446,
+              "directional_vwap_extension": 0.016948138265085344
+            },
+            {
+              "decision_time": "2026-10-01T10:18:00+08:00",
+              "stock_id": "3094",
+              "gate_reason": "STOCK_5M_HISTORY_MISSING",
+              "streak": 1,
+              "required_confirmations": null,
+              "directional_opening_extension": 0.09546925566343045,
+              "directional_vwap_extension": 0.043502795104664704
+            }
+          ]
+        }
+      ],
+      "metrics": {
+        "session_count": 3,
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0
+      }
+    },
+    {
+      "variant_id": "RELAXED_4_0_2_5",
+      "opening_limit": 0.04,
+      "vwap_limit": 0.025,
+      "exempt_until": null,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260928T233201.400374Z_fe5a7b98"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "quantity": 1000,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "gate_reason_counts": {
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-29T09:09:30+08:00",
+              "stock_id": "3605",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": -0.0027472527472527375,
+              "directional_vwap_extension": 0.00471831172682502
+            }
+          ]
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260930T005009.221028Z_c408fefe",
+            "20260930T012715.505778Z_08bdc748"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 3,
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2,
+            "ANTI_CHASE_OPENING_EXTENSION": 4
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-30T09:07:00+08:00",
+              "stock_id": "3016",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.0,
+              "directional_vwap_extension": 0.012314256599576634
+            },
+            {
+              "decision_time": "2026-09-30T09:08:00+08:00",
+              "stock_id": "1709",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.012471655328798015,
+              "directional_vwap_extension": 0.006067815885557826
+            },
+            {
+              "decision_time": "2026-09-30T09:11:00+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03732303732303732,
+              "directional_vwap_extension": 0.01787802580253306
+            },
+            {
+              "decision_time": "2026-09-30T09:13:30+08:00",
+              "stock_id": "2033",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.05534105534105538,
+              "directional_vwap_extension": 0.030247545624284333
+            },
+            {
+              "decision_time": "2026-09-30T09:56:00+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.043243243243243246,
+              "directional_vwap_extension": 0.034414116740818956
+            },
+            {
+              "decision_time": "2026-09-30T09:56:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 2,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.051891891891891806,
+              "directional_vwap_extension": 0.04163418162347976
+            },
+            {
+              "decision_time": "2026-09-30T10:14:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03243243243243232,
+              "directional_vwap_extension": 0.007678937090781268
+            },
+            {
+              "decision_time": "2026-09-30T10:30:30+08:00",
+              "stock_id": "6456",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.021857923497267784,
+              "directional_vwap_extension": 0.004366209174770708
+            },
+            {
+              "decision_time": "2026-09-30T10:48:30+08:00",
+              "stock_id": "1709",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.07482993197278898,
+              "directional_vwap_extension": 0.04477048769745662
+            }
+          ]
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20261001T004849.174778Z_feb27b61"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 1,
+            "STOCK_5M_HISTORY_MISSING": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-10-01T09:37:30+08:00",
+              "stock_id": "3094",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03721682847896446,
+              "directional_vwap_extension": 0.016948138265085344
+            },
+            {
+              "decision_time": "2026-10-01T10:18:00+08:00",
+              "stock_id": "3094",
+              "gate_reason": "STOCK_5M_HISTORY_MISSING",
+              "streak": 1,
+              "required_confirmations": null,
+              "directional_opening_extension": 0.09546925566343045,
+              "directional_vwap_extension": 0.043502795104664704
+            }
+          ]
+        }
+      ],
+      "metrics": {
+        "session_count": 3,
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0
+      }
+    },
+    {
+      "variant_id": "RELAXED_5_0_4_0",
+      "opening_limit": 0.05,
+      "vwap_limit": 0.04,
+      "exempt_until": null,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260928T233201.400374Z_fe5a7b98"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "quantity": 1000,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "gate_reason_counts": {
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-29T09:09:30+08:00",
+              "stock_id": "3605",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": -0.0027472527472527375,
+              "directional_vwap_extension": 0.00471831172682502
+            }
+          ]
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260930T005009.221028Z_c408fefe",
+            "20260930T012715.505778Z_08bdc748"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "4956",
+          "stock_name": "光鋐",
+          "entry_time": "2026-09-30T09:56:00+08:00",
+          "entry_price": 48.3,
+          "quantity": 3000,
+          "exit_time": "2026-09-30T10:02:39.128000+08:00",
+          "exit_price": 48.25,
+          "exit_reason": "MFE_PROFIT_PROTECTION",
+          "net_pnl_twd": -616.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 2,
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": 1,
+            "ANTI_CHASE_OPENING_EXTENSION": 1,
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-30T09:07:00+08:00",
+              "stock_id": "3016",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.0,
+              "directional_vwap_extension": 0.012314256599576634
+            },
+            {
+              "decision_time": "2026-09-30T09:08:00+08:00",
+              "stock_id": "1709",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.012471655328798015,
+              "directional_vwap_extension": 0.006067815885557826
+            },
+            {
+              "decision_time": "2026-09-30T09:11:00+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03732303732303732,
+              "directional_vwap_extension": 0.01787802580253306
+            },
+            {
+              "decision_time": "2026-09-30T09:13:30+08:00",
+              "stock_id": "2033",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.05534105534105538,
+              "directional_vwap_extension": 0.030247545624284333
+            },
+            {
+              "decision_time": "2026-09-30T09:56:00+08:00",
+              "stock_id": "4956",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.043243243243243246,
+              "directional_vwap_extension": 0.034414116740818956
+            }
+          ]
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20261001T004849.174778Z_feb27b61"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 1,
+            "STOCK_5M_HISTORY_MISSING": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-10-01T09:37:30+08:00",
+              "stock_id": "3094",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03721682847896446,
+              "directional_vwap_extension": 0.016948138265085344
+            },
+            {
+              "decision_time": "2026-10-01T10:18:00+08:00",
+              "stock_id": "3094",
+              "gate_reason": "STOCK_5M_HISTORY_MISSING",
+              "streak": 1,
+              "required_confirmations": null,
+              "directional_opening_extension": 0.09546925566343045,
+              "directional_vwap_extension": 0.043502795104664704
+            }
+          ]
+        }
+      ],
+      "metrics": {
+        "session_count": 3,
+        "trade_count": 2,
+        "winning_trades": 0,
+        "losing_trades": 2,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -4195.0,
+        "net_pnl_twd": -4195.0,
+        "average_pnl_per_trade_twd": -2097.5,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": -616.0
+      }
+    },
+    {
+      "variant_id": "RELAXED_6_0_5_0",
+      "opening_limit": 0.06,
+      "vwap_limit": 0.05,
+      "exempt_until": null,
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260928T233201.400374Z_fe5a7b98"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "quantity": 1000,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "gate_reason_counts": {
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-29T09:09:30+08:00",
+              "stock_id": "3605",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": -0.0027472527472527375,
+              "directional_vwap_extension": 0.00471831172682502
+            }
+          ]
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260930T005009.221028Z_c408fefe",
+            "20260930T012715.505778Z_08bdc748"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "4956",
+          "stock_name": "光鋐",
+          "entry_time": "2026-09-30T09:56:00+08:00",
+          "entry_price": 48.3,
+          "quantity": 3000,
+          "exit_time": "2026-09-30T10:02:39.128000+08:00",
+          "exit_price": 48.25,
+          "exit_reason": "MFE_PROFIT_PROTECTION",
+          "net_pnl_twd": -616.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 3,
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": 1,
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-30T09:07:00+08:00",
+              "stock_id": "3016",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.0,
+              "directional_vwap_extension": 0.012314256599576634
+            },
+            {
+              "decision_time": "2026-09-30T09:08:00+08:00",
+              "stock_id": "1709",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.012471655328798015,
+              "directional_vwap_extension": 0.006067815885557826
+            },
+            {
+              "decision_time": "2026-09-30T09:11:00+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03732303732303732,
+              "directional_vwap_extension": 0.01787802580253306
+            },
+            {
+              "decision_time": "2026-09-30T09:13:30+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.05534105534105538,
+              "directional_vwap_extension": 0.030247545624284333
+            },
+            {
+              "decision_time": "2026-09-30T09:56:00+08:00",
+              "stock_id": "4956",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.043243243243243246,
+              "directional_vwap_extension": 0.034414116740818956
+            }
+          ]
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20261001T004849.174778Z_feb27b61"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 1,
+            "STOCK_5M_HISTORY_MISSING": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-10-01T09:37:30+08:00",
+              "stock_id": "3094",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03721682847896446,
+              "directional_vwap_extension": 0.016948138265085344
+            },
+            {
+              "decision_time": "2026-10-01T10:18:00+08:00",
+              "stock_id": "3094",
+              "gate_reason": "STOCK_5M_HISTORY_MISSING",
+              "streak": 1,
+              "required_confirmations": null,
+              "directional_opening_extension": 0.09546925566343045,
+              "directional_vwap_extension": 0.043502795104664704
+            }
+          ]
+        }
+      ],
+      "metrics": {
+        "session_count": 3,
+        "trade_count": 2,
+        "winning_trades": 0,
+        "losing_trades": 2,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -4195.0,
+        "net_pnl_twd": -4195.0,
+        "average_pnl_per_trade_twd": -2097.5,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": -616.0
+      }
+    },
+    {
+      "variant_id": "EARLY_EXEMPT_UNTIL_0915",
+      "opening_limit": 0.02,
+      "vwap_limit": 0.0125,
+      "exempt_until": "09:15",
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260928T233201.400374Z_fe5a7b98"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "quantity": 1000,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "gate_reason_counts": {
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-29T09:09:30+08:00",
+              "stock_id": "3605",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": -0.0027472527472527375,
+              "directional_vwap_extension": 0.00471831172682502
+            }
+          ]
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260930T005009.221028Z_c408fefe",
+            "20260930T012715.505778Z_08bdc748"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 3,
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2,
+            "ANTI_CHASE_OPENING_EXTENSION": 4
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-30T09:07:00+08:00",
+              "stock_id": "3016",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.0,
+              "directional_vwap_extension": 0.012314256599576634
+            },
+            {
+              "decision_time": "2026-09-30T09:08:00+08:00",
+              "stock_id": "1709",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.012471655328798015,
+              "directional_vwap_extension": 0.006067815885557826
+            },
+            {
+              "decision_time": "2026-09-30T09:11:00+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03732303732303732,
+              "directional_vwap_extension": 0.01787802580253306
+            },
+            {
+              "decision_time": "2026-09-30T09:13:30+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.05534105534105538,
+              "directional_vwap_extension": 0.030247545624284333
+            },
+            {
+              "decision_time": "2026-09-30T09:56:00+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.043243243243243246,
+              "directional_vwap_extension": 0.034414116740818956
+            },
+            {
+              "decision_time": "2026-09-30T09:56:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 2,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.051891891891891806,
+              "directional_vwap_extension": 0.04163418162347976
+            },
+            {
+              "decision_time": "2026-09-30T10:14:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03243243243243232,
+              "directional_vwap_extension": 0.007678937090781268
+            },
+            {
+              "decision_time": "2026-09-30T10:30:30+08:00",
+              "stock_id": "6456",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.021857923497267784,
+              "directional_vwap_extension": 0.004366209174770708
+            },
+            {
+              "decision_time": "2026-09-30T10:48:30+08:00",
+              "stock_id": "1709",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.07482993197278898,
+              "directional_vwap_extension": 0.04477048769745662
+            }
+          ]
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20261001T004849.174778Z_feb27b61"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "ANTI_CHASE_OPENING_EXTENSION": 1,
+            "STOCK_5M_HISTORY_MISSING": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-10-01T09:37:30+08:00",
+              "stock_id": "3094",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03721682847896446,
+              "directional_vwap_extension": 0.016948138265085344
+            },
+            {
+              "decision_time": "2026-10-01T10:18:00+08:00",
+              "stock_id": "3094",
+              "gate_reason": "STOCK_5M_HISTORY_MISSING",
+              "streak": 1,
+              "required_confirmations": null,
+              "directional_opening_extension": 0.09546925566343045,
+              "directional_vwap_extension": 0.043502795104664704
+            }
+          ]
+        }
+      ],
+      "metrics": {
+        "session_count": 3,
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0
+      }
+    },
+    {
+      "variant_id": "EARLY_EXEMPT_UNTIL_0930",
+      "opening_limit": 0.02,
+      "vwap_limit": 0.0125,
+      "exempt_until": "09:30",
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260928T233201.400374Z_fe5a7b98"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "quantity": 1000,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "gate_reason_counts": {
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-29T09:09:30+08:00",
+              "stock_id": "3605",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": -0.0027472527472527375,
+              "directional_vwap_extension": 0.00471831172682502
+            }
+          ]
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260930T005009.221028Z_c408fefe",
+            "20260930T012715.505778Z_08bdc748"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 3,
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2,
+            "ANTI_CHASE_OPENING_EXTENSION": 4
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-30T09:07:00+08:00",
+              "stock_id": "3016",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.0,
+              "directional_vwap_extension": 0.012314256599576634
+            },
+            {
+              "decision_time": "2026-09-30T09:08:00+08:00",
+              "stock_id": "1709",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.012471655328798015,
+              "directional_vwap_extension": 0.006067815885557826
+            },
+            {
+              "decision_time": "2026-09-30T09:11:00+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03732303732303732,
+              "directional_vwap_extension": 0.01787802580253306
+            },
+            {
+              "decision_time": "2026-09-30T09:13:30+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.05534105534105538,
+              "directional_vwap_extension": 0.030247545624284333
+            },
+            {
+              "decision_time": "2026-09-30T09:56:00+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.043243243243243246,
+              "directional_vwap_extension": 0.034414116740818956
+            },
+            {
+              "decision_time": "2026-09-30T09:56:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 2,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.051891891891891806,
+              "directional_vwap_extension": 0.04163418162347976
+            },
+            {
+              "decision_time": "2026-09-30T10:14:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03243243243243232,
+              "directional_vwap_extension": 0.007678937090781268
+            },
+            {
+              "decision_time": "2026-09-30T10:30:30+08:00",
+              "stock_id": "6456",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.021857923497267784,
+              "directional_vwap_extension": 0.004366209174770708
+            },
+            {
+              "decision_time": "2026-09-30T10:48:30+08:00",
+              "stock_id": "1709",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.07482993197278898,
+              "directional_vwap_extension": 0.04477048769745662
+            }
+          ]
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20261001T004849.174778Z_feb27b61"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "ANTI_CHASE_OPENING_EXTENSION": 1,
+            "STOCK_5M_HISTORY_MISSING": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-10-01T09:37:30+08:00",
+              "stock_id": "3094",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03721682847896446,
+              "directional_vwap_extension": 0.016948138265085344
+            },
+            {
+              "decision_time": "2026-10-01T10:18:00+08:00",
+              "stock_id": "3094",
+              "gate_reason": "STOCK_5M_HISTORY_MISSING",
+              "streak": 1,
+              "required_confirmations": null,
+              "directional_opening_extension": 0.09546925566343045,
+              "directional_vwap_extension": 0.043502795104664704
+            }
+          ]
+        }
+      ],
+      "metrics": {
+        "session_count": 3,
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0
+      }
+    },
+    {
+      "variant_id": "EARLY_EXEMPT_UNTIL_0945",
+      "opening_limit": 0.02,
+      "vwap_limit": 0.0125,
+      "exempt_until": "09:45",
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260928T233201.400374Z_fe5a7b98"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "quantity": 1000,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "gate_reason_counts": {
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-29T09:09:30+08:00",
+              "stock_id": "3605",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": -0.0027472527472527375,
+              "directional_vwap_extension": 0.00471831172682502
+            }
+          ]
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260930T005009.221028Z_c408fefe",
+            "20260930T012715.505778Z_08bdc748"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 3,
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": 2,
+            "ANTI_CHASE_OPENING_EXTENSION": 4
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-30T09:07:00+08:00",
+              "stock_id": "3016",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.0,
+              "directional_vwap_extension": 0.012314256599576634
+            },
+            {
+              "decision_time": "2026-09-30T09:08:00+08:00",
+              "stock_id": "1709",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.012471655328798015,
+              "directional_vwap_extension": 0.006067815885557826
+            },
+            {
+              "decision_time": "2026-09-30T09:11:00+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03732303732303732,
+              "directional_vwap_extension": 0.01787802580253306
+            },
+            {
+              "decision_time": "2026-09-30T09:13:30+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.05534105534105538,
+              "directional_vwap_extension": 0.030247545624284333
+            },
+            {
+              "decision_time": "2026-09-30T09:56:00+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.043243243243243246,
+              "directional_vwap_extension": 0.034414116740818956
+            },
+            {
+              "decision_time": "2026-09-30T09:56:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 2,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.051891891891891806,
+              "directional_vwap_extension": 0.04163418162347976
+            },
+            {
+              "decision_time": "2026-09-30T10:14:30+08:00",
+              "stock_id": "4956",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03243243243243232,
+              "directional_vwap_extension": 0.007678937090781268
+            },
+            {
+              "decision_time": "2026-09-30T10:30:30+08:00",
+              "stock_id": "6456",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.021857923497267784,
+              "directional_vwap_extension": 0.004366209174770708
+            },
+            {
+              "decision_time": "2026-09-30T10:48:30+08:00",
+              "stock_id": "1709",
+              "gate_reason": "ANTI_CHASE_OPENING_EXTENSION",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.07482993197278898,
+              "directional_vwap_extension": 0.04477048769745662
+            }
+          ]
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20261001T004849.174778Z_feb27b61"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 1,
+            "STOCK_5M_HISTORY_MISSING": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-10-01T09:37:30+08:00",
+              "stock_id": "3094",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03721682847896446,
+              "directional_vwap_extension": 0.016948138265085344
+            },
+            {
+              "decision_time": "2026-10-01T10:18:00+08:00",
+              "stock_id": "3094",
+              "gate_reason": "STOCK_5M_HISTORY_MISSING",
+              "streak": 1,
+              "required_confirmations": null,
+              "directional_opening_extension": 0.09546925566343045,
+              "directional_vwap_extension": 0.043502795104664704
+            }
+          ]
+        }
+      ],
+      "metrics": {
+        "session_count": 3,
+        "trade_count": 1,
+        "winning_trades": 0,
+        "losing_trades": 1,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -3579.0,
+        "net_pnl_twd": -3579.0,
+        "average_pnl_per_trade_twd": -3579.0,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": 0.0
+      }
+    },
+    {
+      "variant_id": "EARLY_EXEMPT_UNTIL_1000",
+      "opening_limit": 0.02,
+      "vwap_limit": 0.0125,
+      "exempt_until": "10:00",
+      "trades": [
+        {
+          "session_date": "20260929",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260928T233201.400374Z_fe5a7b98"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "3605",
+          "stock_name": "宏致",
+          "entry_time": "2026-09-29T09:09:30+08:00",
+          "entry_price": 182.0,
+          "quantity": 1000,
+          "exit_time": "2026-09-29T09:11:22.578000+08:00",
+          "exit_price": 179.0,
+          "exit_reason": "STOP_LOSS",
+          "net_pnl_twd": -3579.0,
+          "gate_reason_counts": {
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-29T09:09:30+08:00",
+              "stock_id": "3605",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": -0.0027472527472527375,
+              "directional_vwap_extension": 0.00471831172682502
+            }
+          ]
+        },
+        {
+          "session_date": "20260930",
+          "quality": "DIAGNOSTIC_STITCH_WITH_4_UNTIMESTAMPED_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20260930T005009.221028Z_c408fefe",
+            "20260930T012715.505778Z_08bdc748"
+          ],
+          "status": "PAPER_TRADE_SCORED",
+          "stock_id": "4956",
+          "stock_name": "光鋐",
+          "entry_time": "2026-09-30T09:56:00+08:00",
+          "entry_price": 48.3,
+          "quantity": 3000,
+          "exit_time": "2026-09-30T10:02:39.128000+08:00",
+          "exit_price": 48.25,
+          "exit_reason": "MFE_PROFIT_PROTECTION",
+          "net_pnl_twd": -616.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 3,
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": 1,
+            "MARKET_GATE_PASSED": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-09-30T09:07:00+08:00",
+              "stock_id": "3016",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.0,
+              "directional_vwap_extension": 0.012314256599576634
+            },
+            {
+              "decision_time": "2026-09-30T09:08:00+08:00",
+              "stock_id": "1709",
+              "gate_reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.012471655328798015,
+              "directional_vwap_extension": 0.006067815885557826
+            },
+            {
+              "decision_time": "2026-09-30T09:11:00+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03732303732303732,
+              "directional_vwap_extension": 0.01787802580253306
+            },
+            {
+              "decision_time": "2026-09-30T09:13:30+08:00",
+              "stock_id": "2033",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.05534105534105538,
+              "directional_vwap_extension": 0.030247545624284333
+            },
+            {
+              "decision_time": "2026-09-30T09:56:00+08:00",
+              "stock_id": "4956",
+              "gate_reason": "MARKET_GATE_PASSED",
+              "streak": 1,
+              "required_confirmations": 1,
+              "directional_opening_extension": 0.043243243243243246,
+              "directional_vwap_extension": 0.034414116740818956
+            }
+          ]
+        },
+        {
+          "session_date": "20261001",
+          "quality": "COMPLETE_ZERO_CALLBACK_ERRORS",
+          "source_run_ids": [
+            "20261001T004849.174778Z_feb27b61"
+          ],
+          "status": "NO_APPROVED_LONG_ENTRY",
+          "stock_id": null,
+          "stock_name": null,
+          "entry_time": null,
+          "entry_price": null,
+          "quantity": 0,
+          "exit_time": null,
+          "exit_price": null,
+          "exit_reason": null,
+          "net_pnl_twd": 0.0,
+          "gate_reason_counts": {
+            "CONFIRMATIONS_INCOMPLETE": 1,
+            "STOCK_5M_HISTORY_MISSING": 1
+          },
+          "candidate_observations": [
+            {
+              "decision_time": "2026-10-01T09:37:30+08:00",
+              "stock_id": "3094",
+              "gate_reason": "CONFIRMATIONS_INCOMPLETE",
+              "streak": 1,
+              "required_confirmations": 2,
+              "directional_opening_extension": 0.03721682847896446,
+              "directional_vwap_extension": 0.016948138265085344
+            },
+            {
+              "decision_time": "2026-10-01T10:18:00+08:00",
+              "stock_id": "3094",
+              "gate_reason": "STOCK_5M_HISTORY_MISSING",
+              "streak": 1,
+              "required_confirmations": null,
+              "directional_opening_extension": 0.09546925566343045,
+              "directional_vwap_extension": 0.043502795104664704
+            }
+          ]
+        }
+      ],
+      "metrics": {
+        "session_count": 3,
+        "trade_count": 2,
+        "winning_trades": 0,
+        "losing_trades": 2,
+        "win_rate": 0.0,
+        "gross_profit_twd": 0,
+        "gross_loss_twd": -4195.0,
+        "net_pnl_twd": -4195.0,
+        "average_pnl_per_trade_twd": -2097.5,
+        "profit_factor": 0.0,
+        "net_pnl_difference_vs_baseline_twd": -616.0
+      }
+    }
+  ],
+  "sample_warning": "Only three synchronized-0050 sessions are available; one is a diagnostic stitch. Results are descriptive and not production-ready.",
+  "production_behavior_changed": false,
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "report_hash": "3a925df80d383c1a197d8e17fbaba6f4f633156783b64ce8f65a221e5c8385e7"
+}

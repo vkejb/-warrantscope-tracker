@@ -9,7 +9,15 @@ from stitched_session_backtest_v01.near_miss_counterfactual import (
 from stitched_session_backtest_v01.relative_strength_gate_study import (
     relative_strength_gate,
 )
-from yuanta_live_runtime_v01.strategy import LONG_MARKET_REGIME_POLICY
+from stitched_session_backtest_v01.anti_chase_sensitivity_study import (
+    VARIANTS,
+    _anti_chase_limits,
+    effective_limits,
+)
+from yuanta_live_runtime_v01.strategy import (
+    ANTI_CHASE_ENTRY_POLICY,
+    LONG_MARKET_REGIME_POLICY,
+)
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -107,6 +115,37 @@ class StitchTests(unittest.TestCase):
 
         self.assertEqual(
             {key: LONG_MARKET_REGIME_POLICY[key] for key in keys}, original
+        )
+
+    def test_early_anti_chase_exemption_has_exact_time_boundary(self):
+        variant = next(
+            row for row in VARIANTS
+            if row["variant_id"] == "EARLY_EXEMPT_UNTIL_0915"
+        )
+        before = datetime(2026, 10, 1, 9, 14, 59, tzinfo=TAIPEI)
+        boundary = datetime(2026, 10, 1, 9, 15, 0, tzinfo=TAIPEI)
+
+        self.assertEqual(effective_limits(variant, before), (float("inf"), float("inf")))
+        self.assertEqual(effective_limits(variant, boundary), (0.020, 0.0125))
+
+    def test_backtest_anti_chase_overlay_restores_production_policy(self):
+        opening_key = "maximum_directional_opening_extension"
+        vwap_key = "maximum_directional_vwap_extension"
+        original = (
+            ANTI_CHASE_ENTRY_POLICY[opening_key],
+            ANTI_CHASE_ENTRY_POLICY[vwap_key],
+        )
+
+        with _anti_chase_limits(0.99, 0.88):
+            self.assertEqual(ANTI_CHASE_ENTRY_POLICY[opening_key], 0.99)
+            self.assertEqual(ANTI_CHASE_ENTRY_POLICY[vwap_key], 0.88)
+
+        self.assertEqual(
+            (
+                ANTI_CHASE_ENTRY_POLICY[opening_key],
+                ANTI_CHASE_ENTRY_POLICY[vwap_key],
+            ),
+            original,
         )
 
 
