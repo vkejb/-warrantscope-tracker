@@ -95,6 +95,46 @@ class AutomationTests(unittest.TestCase):
                 }
             })
 
+    def test_callback_failure_context_is_sanitized_and_actionable(self):
+        manifest = {
+            "run_id": "run-1",
+            "event_counts": {"callback_errors": 3},
+            "callback_error_types": {"ValueError": 2, "TypeError": 1},
+            "artifacts": {"callback_errors.jsonl": {"sha256": "a" * 64}},
+        }
+        self.assertEqual(
+            auto_runner._callback_failure_context(manifest),
+            {
+                "failure_code": "CALLBACK_ERRORS_PRESENT",
+                "run_id": "run-1",
+                "callback_errors": 3,
+                "callback_error_types": {"TypeError": 1, "ValueError": 2},
+                "callback_error_artifact": "callback_errors.jsonl",
+            },
+        )
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"CALLBACK_ERRORS_PRESENT: count=3; types=TypeError=1, ValueError=2",
+        ):
+            auto_runner._require_clean_callbacks(manifest)
+
+    def test_callback_failure_context_supports_legacy_manifest(self):
+        manifest = {
+            "run_id": "legacy-run",
+            "event_counts": {"callback_errors": 17},
+        }
+        context = auto_runner._callback_failure_context(manifest)
+        self.assertEqual(context["callback_errors"], 17)
+        self.assertEqual(context["callback_error_types"], {})
+        self.assertIsNone(context["callback_error_artifact"])
+        with self.assertRaisesRegex(RuntimeError, "UNKNOWN_LEGACY_ERROR=17"):
+            auto_runner._require_clean_callbacks(manifest)
+
+    def test_clean_callbacks_do_not_block_automatic_run(self):
+        manifest = {"event_counts": {"callback_errors": 0}}
+        self.assertEqual(auto_runner._callback_failure_context(manifest), {})
+        self.assertIsNone(auto_runner._require_clean_callbacks(manifest))
+
     def test_automation_sources_have_no_order_api(self):
         root = Path(__file__).parents[1]
         source = "".join((root / name).read_text() for name in ("auto_runner.py", "yuanta_keychain.py", "postprocess.py"))

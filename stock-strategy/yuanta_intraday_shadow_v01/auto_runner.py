@@ -84,11 +84,47 @@ def _require_market_context(manifest: dict, symbol: str = "0050") -> dict:
     return {"ticks": int(counts["ticks"]), "books": int(counts["books"])}
 
 
+def _callback_failure_context(manifest: dict) -> dict:
+    """Return sanitized callback diagnostics safe for logs and notifications."""
+    count = int(manifest.get("event_counts", {}).get("callback_errors", 0))
+    if count <= 0:
+        return {}
+    raw_types = manifest.get("callback_error_types", {})
+    error_types = {
+        str(name): int(value)
+        for name, value in raw_types.items()
+        if isinstance(name, str) and isinstance(value, int) and value > 0
+    } if isinstance(raw_types, dict) else {}
+    artifacts = manifest.get("artifacts", {})
+    artifact = "callback_errors.jsonl" if (
+        isinstance(artifacts, dict) and "callback_errors.jsonl" in artifacts
+    ) else None
+    return {
+        "failure_code": "CALLBACK_ERRORS_PRESENT",
+        "run_id": manifest.get("run_id"),
+        "callback_errors": count,
+        "callback_error_types": dict(sorted(error_types.items())),
+        "callback_error_artifact": artifact,
+    }
+
+
+def _require_clean_callbacks(manifest: dict) -> None:
+    context = _callback_failure_context(manifest)
+    if not context:
+        return
+    types = context["callback_error_types"] or {"UNKNOWN_LEGACY_ERROR": context["callback_errors"]}
+    summary = ", ".join(f"{name}={count}" for name, count in types.items())
+    raise RuntimeError(
+        f"CALLBACK_ERRORS_PRESENT: count={context['callback_errors']}; types={summary}"
+    )
+
+
 def main() -> int:
     now = datetime.now(TAIPEI)
     day = now.strftime("%Y%m%d")
     LOCK.parent.mkdir(parents=True, exist_ok=True)
     with LOCK.open("a+b") as lock:
+        failure_context: dict = {}
         try:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
@@ -119,6 +155,8 @@ def main() -> int:
             run_manifest = json.loads(
                 (run_dir / "run_manifest.json").read_text(encoding="utf-8")
             )
+            failure_context = _callback_failure_context(run_manifest)
+            _require_clean_callbacks(run_manifest)
             context_counts = _require_market_context(run_manifest)
             result = process_run(run_dir)
             session = result["session"]
@@ -149,7 +187,9 @@ def main() -> int:
             return 0
         except Exception as exc:
             reason = f"{type(exc).__name__}: {exc}"
-            _append({"at": utc_now(), "date": day, "status": "FAILED", "reason": reason, "actual_orders": 0, "actual_fills": 0, "broker_order_calls": 0})
+            record = {"at": utc_now(), "date": day, "status": "FAILED", "reason": reason, "actual_orders": 0, "actual_fills": 0, "broker_order_calls": 0}
+            record.update(failure_context)
+            _append(record)
             _warning(day, reason)
             print(reason, file=sys.stderr)
             return 1
