@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from bisect import bisect_left, bisect_right
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -18,17 +19,36 @@ class BufferedExitPolicy:
     checkpoint_loss_r: float = 0.20
     checkpoint_maximum_mfe_r: float = 0.10
     checkpoint_maximum_recovery_r: float = 0.20
+    minimum_tick_count_30s: int | None = None
+    minimum_volume_ratio_30s: float | None = None
 
     def __post_init__(self) -> None:
         if not 0 <= self.initial_lock_r < self.activation_r:
             raise ValueError("initial lock must be non-negative and below activation")
         if self.hard_stop_net_twd <= 0 or self.checkpoint_seconds <= 0:
             raise ValueError("hard stop and checkpoint must be positive")
+        qualifiers = (
+            self.minimum_tick_count_30s is not None,
+            self.minimum_volume_ratio_30s is not None,
+        )
+        if qualifiers[0] != qualifiers[1]:
+            raise ValueError("liquidity qualifiers must be configured together")
+        if self.minimum_tick_count_30s is not None:
+            if self.minimum_tick_count_30s <= 0:
+                raise ValueError("minimum tick count must be positive")
+            if float(self.minimum_volume_ratio_30s) < 0:
+                raise ValueError("minimum volume ratio must be non-negative")
 
 
 POLICIES = (
     BufferedExitPolicy("RECOVERY_NET_MFE_BUFFER_0_30_SHADOW", 0.75, 0.30),
     BufferedExitPolicy("RECOVERY_NET_MFE_BUFFER_0_40_SHADOW", 0.75, 0.40),
+    BufferedExitPolicy(
+        "LIQUIDITY_QUALIFIED_RECOVERY_NET_MFE_0_30_SHADOW",
+        0.75, 0.30,
+        minimum_tick_count_30s=1,
+        minimum_volume_ratio_30s=0.10,
+    ),
 )
 
 
@@ -52,6 +72,11 @@ class BufferedExitResult:
     mfe_activation_time: datetime | None
     max_locked_profit_r: float | None
     checkpoint_action: str
+    checkpoint_tick_count_30s: int | None
+    checkpoint_tick_count_previous_30s: int | None
+    checkpoint_volume_30s: float | None
+    checkpoint_volume_previous_30s: float | None
+    checkpoint_volume_ratio_30s: float | None
     post_exit_best_net_pnl: float
     post_exit_worst_net_pnl: float
 
@@ -68,11 +93,35 @@ def candidate_locked_r(policy: BufferedExitPolicy, mfe_net_r: float) -> float | 
     return max(policy.initial_lock_r, 0.70 * mfe_net_r)
 
 
+def _checkpoint_liquidity(data: dict[str, Any], at: datetime) -> dict[str, Any]:
+    times = data["tick_times"]
+    current = data["ticks"][
+        bisect_left(times, at - timedelta(seconds=30)):
+        bisect_right(times, at)
+    ]
+    previous = data["ticks"][
+        bisect_left(times, at - timedelta(seconds=60)):
+        bisect_left(times, at - timedelta(seconds=30))
+    ]
+    current_volume = sum(float(row["volume"]) for row in current)
+    previous_volume = sum(float(row["volume"]) for row in previous)
+    return {
+        "tick_count_30s": len(current),
+        "tick_count_previous_30s": len(previous),
+        "volume_30s": current_volume,
+        "volume_previous_30s": previous_volume,
+        "volume_ratio_30s": (
+            current_volume / previous_volume if previous_volume > 0 else None
+        ),
+    }
+
+
 def simulate_buffered_exit(
     trade: ResearchTrade,
     policy: BufferedExitPolicy,
     *,
     existing_exit: ExistingExit | None = None,
+    market_data: dict[str, Any] | None = None,
 ) -> BufferedExitResult:
     """Replay one fixed entry; existing non-MFE exits remain authoritative."""
     if not trade.points:
@@ -84,6 +133,7 @@ def simulate_buffered_exit(
     locked_r: float | None = None
     activation_time = None
     selected: tuple[int, datetime, float, float, str] | None = None
+    checkpoint_liquidity: dict[str, Any] = {}
 
     for index, point in enumerate(trade.points):
         pnl = float(point.projected_net_pnl)
@@ -111,9 +161,28 @@ def simulate_buffered_exit(
                 and mfe <= policy.checkpoint_maximum_mfe_r * policy.hard_stop_net_twd
                 and recovery <= policy.checkpoint_maximum_recovery_r * policy.hard_stop_net_twd
             )
-            checkpoint_action = "EXIT" if triggered else "HOLD"
             if triggered:
-                reason = "RECOVERY_AWARE_EARLY_FAILURE"
+                qualified = True
+                if policy.minimum_tick_count_30s is not None:
+                    if market_data is None:
+                        raise ValueError("liquidity-qualified policy requires market data")
+                    checkpoint_liquidity = _checkpoint_liquidity(
+                        market_data, point.at,
+                    )
+                    ratio = checkpoint_liquidity["volume_ratio_30s"]
+                    qualified = (
+                        checkpoint_liquidity["tick_count_30s"]
+                        >= policy.minimum_tick_count_30s
+                        and ratio is not None
+                        and ratio >= float(policy.minimum_volume_ratio_30s)
+                    )
+                if qualified:
+                    checkpoint_action = "EXIT_SUFFICIENT_ACTIVITY"
+                    reason = "RECOVERY_AWARE_EARLY_FAILURE"
+                else:
+                    checkpoint_action = "HOLD_INSUFFICIENT_ACTIVITY"
+            else:
+                checkpoint_action = "HOLD_NO_FAILURE"
 
         # The variant replaces only the existing price-R MFE exit. Reversal,
         # hard exit and any other production exit remain valid competitors.
@@ -148,6 +217,15 @@ def simulate_buffered_exit(
         mfe_activation_time=activation_time,
         max_locked_profit_r=locked_r,
         checkpoint_action=checkpoint_action,
+        checkpoint_tick_count_30s=checkpoint_liquidity.get("tick_count_30s"),
+        checkpoint_tick_count_previous_30s=checkpoint_liquidity.get(
+            "tick_count_previous_30s"
+        ),
+        checkpoint_volume_30s=checkpoint_liquidity.get("volume_30s"),
+        checkpoint_volume_previous_30s=checkpoint_liquidity.get(
+            "volume_previous_30s"
+        ),
+        checkpoint_volume_ratio_30s=checkpoint_liquidity.get("volume_ratio_30s"),
         post_exit_best_net_pnl=max(
             (float(item.projected_net_pnl) for item in later), default=realized,
         ),
@@ -172,6 +250,11 @@ def result_dict(result: BufferedExitResult) -> dict[str, Any]:
         ),
         "max_locked_profit_r": result.max_locked_profit_r,
         "checkpoint_action": result.checkpoint_action,
+        "checkpoint_tick_count_30s": result.checkpoint_tick_count_30s,
+        "checkpoint_tick_count_previous_30s": result.checkpoint_tick_count_previous_30s,
+        "checkpoint_volume_30s": result.checkpoint_volume_30s,
+        "checkpoint_volume_previous_30s": result.checkpoint_volume_previous_30s,
+        "checkpoint_volume_ratio_30s": result.checkpoint_volume_ratio_30s,
         "post_exit_best_net_pnl": result.post_exit_best_net_pnl,
         "post_exit_worst_net_pnl": result.post_exit_worst_net_pnl,
     }

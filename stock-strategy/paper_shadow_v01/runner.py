@@ -79,6 +79,7 @@ PAPER_CONTRACT = {
         "ANTI_CHASE_PLUS_60S_CONFIRMATION",
         "RECOVERY_NET_MFE_BUFFER_0_30_SHADOW",
         "RECOVERY_NET_MFE_BUFFER_0_40_SHADOW",
+        "LIQUIDITY_QUALIFIED_RECOVERY_NET_MFE_0_30_SHADOW",
     ],
     "production_anti_chase_policy": ANTI_CHASE_ENTRY_POLICY,
     "confirmation_60s": PAPER_CONFIRMATION_POLICY,
@@ -99,6 +100,11 @@ PAPER_CONTRACT = {
         "retain_2_0": 0.60,
         "retain_3_0": 0.70,
         "hard_stop_net_twd": 3500.0,
+        "liquidity_qualified_challenger": {
+            "minimum_tick_count_30s": 1,
+            "minimum_volume_ratio_vs_previous_30s": 0.10,
+            "hypothesis_status": "POST_HOC_REQUIRES_UNTOUCHED_FUTURE_SESSIONS",
+        },
     },
     "profit_retention_diagnostics": {
         "version": 1,
@@ -415,6 +421,7 @@ def _path_diagnostics(
     }
 def _buffered_shadow_trades(
     production_trade: dict[str, Any], research: ResearchTrade,
+    market_data: dict[str, Any],
 ) -> dict[str, dict[str, Any]]:
     existing = ExistingExit(
         at=_parse_stamp(production_trade["exit_time"]),
@@ -425,7 +432,7 @@ def _buffered_shadow_trades(
     output = {}
     for policy in BUFFERED_EXIT_POLICIES:
         result = simulate_buffered_exit(
-            research, policy, existing_exit=existing,
+            research, policy, existing_exit=existing, market_data=market_data,
         )
         gross, commission, sell_tax, net_pnl = _projected_net_pnl(
             "LONG", research.entry_price, result.exit_price, research.quantity,
@@ -639,7 +646,7 @@ def _replay_paper_track(
     impacts = _impact_rows([case])
     grid = _grid_rows(impacts)
     buffered_trades = (
-        _buffered_shadow_trades(trade, research)
+        _buffered_shadow_trades(trade, research, data)
         if not confirmation_60s else {}
     )
     return {

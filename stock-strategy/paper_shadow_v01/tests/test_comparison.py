@@ -25,6 +25,7 @@ class PaperComparisonTests(unittest.TestCase):
         buffer40: float,
         *,
         buffered_exit_reason: str = "BUFFERED_NET_MFE_PROFIT_PROTECTION",
+        contract_hash: str = PAPER_CONTRACT_HASH,
     ) -> None:
         target = root / "days" / day / f"paper-{day}"
         target.mkdir(parents=True)
@@ -60,7 +61,7 @@ class PaperComparisonTests(unittest.TestCase):
             "session_date": day,
             "paper_run_id": f"paper-{day}",
             "status": "PAPER_VARIANTS_EVALUATED",
-            "paper_contract_hash": PAPER_CONTRACT_HASH,
+            "paper_contract_hash": contract_hash,
             "artifacts": {"paper_trades.jsonl": sha256_file(trades)},
         }
         manifest["manifest_hash"] = hashlib.sha256(canonical_bytes(manifest)).hexdigest()
@@ -103,6 +104,27 @@ class PaperComparisonTests(unittest.TestCase):
             report = build_comparison(root)
             self.assertEqual(report["verified_session_count"], 0)
             self.assertEqual(report["ambiguous_duplicate_session_days"], ["20261002"])
+
+    def test_previous_two_buffer_contract_remains_comparable(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self._day(
+                root, "20261002", -1000.0, -400.0, -200.0,
+                contract_hash=(
+                    "ceff174a5c3ae16db529ceae9a08fd145e94e42310412c9da"
+                    "931b75860a27966"
+                ),
+            )
+            report = build_comparison(root)
+            self.assertEqual(report["verified_session_count"], 1)
+            self.assertEqual(
+                report["paired_comparisons"][BUFFERED_VARIANTS[0]]["paired_trades"],
+                1,
+            )
+            self.assertEqual(
+                report["paired_comparisons"][BUFFERED_VARIANTS[2]]["paired_trades"],
+                0,
+            )
 
     def test_gate_rejects_candidate_that_cuts_largest_original_winner(self):
         with tempfile.TemporaryDirectory() as temp:

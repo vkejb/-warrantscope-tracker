@@ -123,6 +123,7 @@ class PaperShadowTests(unittest.TestCase):
             {
                 "RECOVERY_NET_MFE_BUFFER_0_30_SHADOW",
                 "RECOVERY_NET_MFE_BUFFER_0_40_SHADOW",
+                "LIQUIDITY_QUALIFIED_RECOVERY_NET_MFE_0_30_SHADOW",
             },
         )
         self.assertTrue(
@@ -246,7 +247,7 @@ class PaperShadowTests(unittest.TestCase):
             PAPER_CONTRACT["early_failure_mode"]["production_tracks"],
             "OBSERVE_ONLY_DO_NOT_EXIT",
         )
-        self.assertEqual(len(PAPER_CONTRACT["paper_variants"]), 4)
+        self.assertEqual(len(PAPER_CONTRACT["paper_variants"]), 5)
         self.assertEqual(
             PAPER_CONTRACT["buffered_exit_policy"]["mode"],
             "POST_SESSION_PAPER_ONLY",

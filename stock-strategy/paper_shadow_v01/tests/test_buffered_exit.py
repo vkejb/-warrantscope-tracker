@@ -78,6 +78,40 @@ class BufferedExitTests(unittest.TestCase):
         )
         self.assertGreater(result.exit_time, existing.at)
 
+    def test_liquidity_qualified_checkpoint_holds_thin_activity(self):
+        trade = self._trade(((60, 99.8, -200.0), (120, 99.1, -900.0),
+                             (180, 102.5, 2500.0)))
+        ticks = [
+            {"time": trade.entry_time + timedelta(seconds=65), "volume": 20.0},
+            {"time": trade.entry_time + timedelta(seconds=80), "volume": 20.0},
+            {"time": trade.entry_time + timedelta(seconds=120), "volume": 1.0},
+        ]
+        data = {"ticks": ticks, "tick_times": [row["time"] for row in ticks]}
+        result = simulate_buffered_exit(
+            trade,
+            BufferedExitPolicy(
+                "LIQUIDITY", 0.75, 0.30,
+                minimum_tick_count_30s=1,
+                minimum_volume_ratio_30s=0.10,
+            ),
+            market_data=data,
+        )
+        self.assertEqual(result.checkpoint_action, "HOLD_INSUFFICIENT_ACTIVITY")
+        self.assertEqual(result.exit_reason, "HARD_EXIT")
+        self.assertEqual(result.net_pnl, 2500.0)
+
+    def test_liquidity_policy_requires_market_data(self):
+        trade = self._trade(((120, 99.1, -900.0), (180, 102.5, 2500.0)))
+        with self.assertRaisesRegex(ValueError, "requires market data"):
+            simulate_buffered_exit(
+                trade,
+                BufferedExitPolicy(
+                    "LIQUIDITY", 0.75, 0.30,
+                    minimum_tick_count_30s=1,
+                    minimum_volume_ratio_30s=0.10,
+                ),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

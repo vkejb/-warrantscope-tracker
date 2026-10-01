@@ -2,7 +2,7 @@
 
 This module is invoked automatically after the existing Yuanta read-only
 collector seals a `FULL_SESSION`. It replays the archived stream causally through
-four independent, long-only paper tracks:
+five independent, long-only paper tracks:
 
 - `PRODUCTION_ANTI_CHASE`: the production engine with the 2.0% opening-extension
   and 1.25% VWAP-extension entry limits.
@@ -15,6 +15,11 @@ four independent, long-only paper tracks:
   locked.
 - `RECOVERY_NET_MFE_BUFFER_0_40_SHADOW`: the same diagnostic with 0.40R
   initially locked.
+- `LIQUIDITY_QUALIFIED_RECOVERY_NET_MFE_0_30_SHADOW`: the 0.30R buffered
+  diagnostic, but its one-time early-failure exit also requires at least one
+  trade in the latest 30 seconds and at least 10% of the preceding 30-second
+  volume. This is a post-hoc hypothesis and must be validated only on untouched
+  future sessions.
 
 The two production-comparison tracks retain permanent 0050 market context, the
 current NT$3,500 disaster stop, MFE_V1 profit protection, reversal exit, and
@@ -32,10 +37,10 @@ paper_shadow_v01/runtime/days/YYYYMMDD/<paper_run_id>/
 
 Each day preserves the two paper variants, normal entry-decision diagnostics,
 separate 60-second confirmation diagnostics, 5/10/15 minute EARLY_FAILURE
-observations for the production-policy track, both buffered-exit outcomes, a
+observations for the production-policy track, all three buffered-exit outcomes, a
 per-variant daily summary, and a SHA-256 manifest. EARLY_FAILURE remains
 observe-only on the production tracks; the one-time 120-second recovery-aware
-exit applies only to the two explicitly named buffered paper variants.
+exit applies only to the three explicitly named buffered paper variants.
 
 Manual replay is available for a sealed full session:
 

@@ -24,7 +24,13 @@ REFERENCE_VARIANT = "PRODUCTION_ANTI_CHASE"
 BUFFERED_VARIANTS = (
     "RECOVERY_NET_MFE_BUFFER_0_30_SHADOW",
     "RECOVERY_NET_MFE_BUFFER_0_40_SHADOW",
+    "LIQUIDITY_QUALIFIED_RECOVERY_NET_MFE_0_30_SHADOW",
 )
+COMPATIBLE_CONTRACT_HASHES = frozenset({
+    PAPER_CONTRACT_HASH,
+    # Two-buffer contract used before the liquidity challenger was added.
+    "ceff174a5c3ae16db529ceae9a08fd145e94e42310412c9da931b75860a27966",
+})
 MINIMUM_PAIRED_TRADES = 20
 
 
@@ -107,7 +113,7 @@ def build_comparison(runtime_dir: Path = DEFAULT_RUNTIME_DIR) -> dict[str, Any]:
         except Exception as exc:
             rejected.append({"path": str(path), "reason": f"{type(exc).__name__}: {exc}"})
             continue
-        if manifest.get("paper_contract_hash") != PAPER_CONTRACT_HASH:
+        if manifest.get("paper_contract_hash") not in COMPATIBLE_CONTRACT_HASHES:
             continue
         day = str(manifest["session_date"])
         if day in verified_by_day:
@@ -242,6 +248,7 @@ def build_comparison(runtime_dir: Path = DEFAULT_RUNTIME_DIR) -> dict[str, Any]:
     report = {
         "analysis_id": ANALYSIS_ID,
         "paper_contract_hash": PAPER_CONTRACT_HASH,
+        "compatible_paper_contract_hashes": sorted(COMPATIBLE_CONTRACT_HASHES),
         "status": (
             "EVALUATION_READY" if minimum_pairs >= MINIMUM_PAIRED_TRADES else "COLLECTING"
         ),
