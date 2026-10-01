@@ -10,7 +10,10 @@ from yuanta_intraday_shadow_v01.collector import (
     canonical_bytes,
     subscription_items,
 )
-from yuanta_intraday_shadow_v01.collector_main import _connect_and_login
+from yuanta_intraday_shadow_v01.collector_main import (
+    _connect_and_login,
+    _is_quote_callback,
+)
 
 
 class _EventHook:
@@ -67,6 +70,27 @@ class CollectorContractTests(unittest.TestCase):
             self.assertEqual(manifest["artifacts"]["ticks.jsonl"], hashlib.sha256(run.tick_path.read_bytes()).hexdigest())
             self.assertEqual(manifest["actual_orders"], 0)
             self.assertEqual(manifest["broker_order_calls"], 0)
+
+    def test_callback_error_types_are_preserved_in_manifest(self):
+        seal, stocks = self._fixture()
+        with tempfile.TemporaryDirectory() as temp:
+            run = AppendOnlyRun(Path(temp), seal, stocks, {})
+            run.callback_error("ValueError")
+            run.callback_error("ValueError")
+            run.callback_error("UNKNOWN_WATCHLIST_SYMBOL")
+            manifest = run.finalize(status="COMPLETE", started_at="a", ended_at="b")
+
+            self.assertEqual(manifest["event_counts"]["callback_errors"], 3)
+            self.assertEqual(
+                manifest["callback_error_types"],
+                {"UNKNOWN_WATCHLIST_SYMBOL": 1, "ValueError": 2},
+            )
+
+    def test_non_quote_market_callback_is_not_treated_as_quote_error(self):
+        self.assertFalse(_is_quote_callback("SubscribeAck"))
+        self.assertFalse(_is_quote_callback("Heartbeat"))
+        self.assertTrue(_is_quote_callback("SubscribeStockTick"))
+        self.assertTrue(_is_quote_callback("SubscribeFiveTickA"))
 
     def test_subscription_is_top30_plus_permanent_0050(self):
         _seal, stocks = self._fixture()

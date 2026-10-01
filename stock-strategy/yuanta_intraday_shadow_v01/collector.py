@@ -198,6 +198,7 @@ class AppendOnlyRun:
             "market_context_books": 0,
             "callback_errors": 0,
         }
+        self.callback_error_types: dict[str, int] = {}
         self.market_context_counts = {
             item.stock_id: {"ticks": 0, "books": 0}
             for item in market_context_items()
@@ -243,9 +244,11 @@ class AppendOnlyRun:
             if not self.compressed or self.counts[kind] % 100 == 0:
                 handle.flush()
 
-    def callback_error(self) -> None:
+    def callback_error(self, error_type: str = "UNSPECIFIED") -> None:
         with self._lock:
             self.counts["callback_errors"] += 1
+            key = str(error_type or "UNSPECIFIED")
+            self.callback_error_types[key] = self.callback_error_types.get(key, 0) + 1
 
     def finalize(
         self,
@@ -285,6 +288,7 @@ class AppendOnlyRun:
             "watchlist_count": len(self.snapshot["stocks"]),
             "subscription_count": self.subscription_count,
             "event_counts": dict(self.counts),
+            "callback_error_types": dict(sorted(self.callback_error_types.items())),
             "market_context_event_counts": self.market_context_counts,
             "artifacts": {
                 "watchlist.json": sha256_file(self.run_dir / "watchlist.json"),

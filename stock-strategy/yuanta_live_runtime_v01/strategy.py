@@ -576,6 +576,10 @@ class LiveDirectionEngine:
         if self.last_decision is not None and decision <= self.last_decision:
             return None
         self.last_decision = decision
+        # Do not let the realtime loop re-log the prior in-window decision
+        # after the entry cutoff. An empty value explicitly means that no new
+        # entry diagnostic was produced for this clock tick.
+        self.last_entry_diagnostics = {}
         if not self._clock(SPEC["entry_start"]) <= decision.time() <= self._clock(SPEC["last_entry_time"]):
             return None
         market = self._market_context(decision)

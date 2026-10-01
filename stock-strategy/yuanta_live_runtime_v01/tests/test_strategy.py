@@ -218,6 +218,15 @@ class StrategyTests(unittest.TestCase):
         engine, decision = self._engine_with_long_signal(at_open)
         self.assertIsNotNone(engine.choose_entry(decision, allow_short=False))
 
+    def test_post_cutoff_does_not_reuse_prior_entry_diagnostics(self):
+        engine, decision = self._engine_with_long_signal()
+        self.assertIsNotNone(engine.choose_entry(decision, allow_short=False))
+        self.assertTrue(engine.last_entry_diagnostics)
+
+        after_cutoff = decision.replace(hour=13, minute=10, second=30)
+        self.assertIsNone(engine.choose_entry(after_cutoff, allow_short=False))
+        self.assertEqual(engine.last_entry_diagnostics, {})
+
     def test_hard_exit_is_generated(self):
         engine, _ = self._engine_with_long_signal()
         now = datetime(2026, 9, 24, 13, 20, 1, tzinfo=TAIPEI)

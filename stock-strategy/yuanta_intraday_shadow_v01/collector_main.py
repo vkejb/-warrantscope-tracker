@@ -24,6 +24,16 @@ from .main import DEFAULT_VENDOR_DIR, _dragged_path, _load_api, _normalise_accou
 
 LOGIN_CONNECT_WAIT_SECONDS = 5
 LOGIN_RETRY_DELAYS = (5, 10, 20)
+QUOTE_CALLBACK_NAMES = frozenset({
+    "SubscribeStockTick",
+    "SubscribeStocktick",
+    "SubscribeFiveTickA",
+})
+
+
+def _is_quote_callback(name: str) -> bool:
+    """Ignore subscription/system responses that do not carry quote rows."""
+    return str(name) in QUOTE_CALLBACK_NAMES
 
 
 def _close_failed_connection(api) -> None:
@@ -185,11 +195,16 @@ def run(
                 return
             if int(int_mark) != 2:
                 return
+            # Yuanta may emit other int_mark=2 subscription/system responses.
+            # They are not malformed quote callbacks and must not pollute the
+            # data-quality error count.
+            if not _is_quote_callback(name):
+                return
             stock_id = _safe_text(getattr(value, "StkCode", ""))
             item = meta.get(stock_id)
             context_item = context_meta.get(stock_id)
             if item is None and context_item is None:
-                artifact.callback_error()
+                artifact.callback_error("UNKNOWN_WATCHLIST_SYMBOL")
                 return
             received_at = utc_now()
 
@@ -231,8 +246,8 @@ def run(
                     artifact.append("market_context_books", {
                         **base_for(context_item, role="MARKET_BENCHMARK"), **payload,
                     })
-        except Exception:
-            artifact.callback_error()
+        except Exception as exc:
+            artifact.callback_error(type(exc).__name__)
 
     try:
         api = _connect_and_login(
