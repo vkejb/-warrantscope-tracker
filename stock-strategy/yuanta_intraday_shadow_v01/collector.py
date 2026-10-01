@@ -174,6 +174,11 @@ class AppendOnlyRun:
         self.market_book_path = self.run_dir / (
             "market_context_books.jsonl.gz" if compress else "market_context_books.jsonl"
         )
+        # Callback diagnostics intentionally live in a separate, uncompressed
+        # append-only artifact.  Only a small allow-list of non-secret routing
+        # metadata is accepted by callback_error(); raw broker payloads and
+        # exception messages must never be persisted here.
+        self.callback_error_path = self.run_dir / "callback_errors.jsonl"
         self._raw_files = []
         if compress:
             tick_raw = self.tick_path.open("xb")
@@ -190,6 +195,9 @@ class AppendOnlyRun:
             self._book = self.book_path.open("x", encoding="utf-8", buffering=1)
             self._market_tick = self.market_tick_path.open("x", encoding="utf-8", buffering=1)
             self._market_book = self.market_book_path.open("x", encoding="utf-8", buffering=1)
+        self._callback_errors = self.callback_error_path.open(
+            "x", encoding="utf-8", buffering=1,
+        )
         self._lock = threading.Lock()
         self.counts = {
             "ticks": 0,
@@ -244,11 +252,36 @@ class AppendOnlyRun:
             if not self.compressed or self.counts[kind] % 100 == 0:
                 handle.flush()
 
-    def callback_error(self, error_type: str = "UNSPECIFIED") -> None:
+    def callback_error(
+        self,
+        error_type: str = "UNSPECIFIED",
+        *,
+        callback_name: str = "",
+        stock_id: str = "",
+        phase: str = "",
+    ) -> None:
+        """Persist a sanitized callback failure without the broker payload.
+
+        Callback names, listed stock codes and parser phases are sufficient to
+        locate recurring adapter defects.  Free-form exception messages are
+        deliberately excluded because a vendor exception may contain account
+        or certificate details.
+        """
         with self._lock:
             self.counts["callback_errors"] += 1
             key = str(error_type or "UNSPECIFIED")
             self.callback_error_types[key] = self.callback_error_types.get(key, 0) + 1
+            event = {
+                "received_at": utc_now(),
+                "error_type": key[:120],
+                "callback_name": str(callback_name or "")[:120],
+                "stock_id": str(stock_id or "")[:16],
+                "phase": str(phase or "")[:120],
+            }
+            self._callback_errors.write(
+                canonical_bytes(event).decode("utf-8") + "\n"
+            )
+            self._callback_errors.flush()
 
     def finalize(
         self,
@@ -275,6 +308,7 @@ class AppendOnlyRun:
                 self._book,
                 self._market_tick,
                 self._market_book,
+                self._callback_errors,
             ):
                 handle.flush()
                 handle.close()
@@ -296,6 +330,9 @@ class AppendOnlyRun:
                 self.book_path.name: sha256_file(self.book_path),
                 self.market_tick_path.name: sha256_file(self.market_tick_path),
                 self.market_book_path.name: sha256_file(self.market_book_path),
+                self.callback_error_path.name: sha256_file(
+                    self.callback_error_path
+                ),
             },
             "mode": self.mode,
             "error_type": error_type,

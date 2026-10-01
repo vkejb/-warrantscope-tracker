@@ -1,5 +1,6 @@
 from pathlib import Path
 import hashlib
+import json
 import tempfile
 import unittest
 from unittest.mock import Mock
@@ -75,7 +76,12 @@ class CollectorContractTests(unittest.TestCase):
         seal, stocks = self._fixture()
         with tempfile.TemporaryDirectory() as temp:
             run = AppendOnlyRun(Path(temp), seal, stocks, {})
-            run.callback_error("ValueError")
+            run.callback_error(
+                "ValueError",
+                callback_name="SubscribeStockTick",
+                stock_id="2330",
+                phase="STOCK_TICK_PAYLOAD",
+            )
             run.callback_error("ValueError")
             run.callback_error("UNKNOWN_WATCHLIST_SYMBOL")
             manifest = run.finalize(status="COMPLETE", started_at="a", ended_at="b")
@@ -85,6 +91,30 @@ class CollectorContractTests(unittest.TestCase):
                 manifest["callback_error_types"],
                 {"UNKNOWN_WATCHLIST_SYMBOL": 1, "ValueError": 2},
             )
+            self.assertIn("callback_errors.jsonl", manifest["artifacts"])
+            events = [
+                json.loads(line)
+                for line in run.callback_error_path.read_text(
+                    encoding="utf-8"
+                ).splitlines()
+            ]
+            self.assertEqual(events[0]["callback_name"], "SubscribeStockTick")
+            self.assertEqual(events[0]["stock_id"], "2330")
+            self.assertEqual(events[0]["phase"], "STOCK_TICK_PAYLOAD")
+            self.assertNotIn("message", events[0])
+
+    def test_callback_diagnostic_does_not_accept_raw_payload_or_message(self):
+        seal, stocks = self._fixture()
+        with tempfile.TemporaryDirectory() as temp:
+            run = AppendOnlyRun(Path(temp), seal, stocks, {})
+            with self.assertRaises(TypeError):
+                run.callback_error(
+                    "ValueError",
+                    message="account=SECRET",
+                    raw_payload={"password": "SECRET"},
+                )
+            run.finalize(status="COMPLETE", started_at="a", ended_at="b")
+            self.assertEqual(run.callback_error_path.read_text(), "")
 
     def test_non_quote_market_callback_is_not_treated_as_quote_error(self):
         self.assertFalse(_is_quote_callback("SubscribeAck"))

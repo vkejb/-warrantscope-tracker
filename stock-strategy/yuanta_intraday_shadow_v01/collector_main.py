@@ -184,8 +184,11 @@ def run(
 
     def on_response(int_mark, _index, response_name, _handle, value):
         name = _safe_text(response_name)
+        stock_id = ""
+        callback_phase = "DISPATCH"
         try:
             if int(int_mark) == 1 and name == "Login":
+                callback_phase = "LOGIN_RESPONSE"
                 code = _safe_text(value.LoginStatus.MsgCode)
                 login_state.update({"ok": code in {"0001", "00001"}, "code": code})
                 print(f"登入結果：{code}｜{_safe_text(value.LoginStatus.MsgContent)}｜帳戶筆數 {_safe_text(value.LoginStatus.Count)}")
@@ -200,11 +203,17 @@ def run(
             # data-quality error count.
             if not _is_quote_callback(name):
                 return
+            callback_phase = "SYMBOL_ROUTING"
             stock_id = _safe_text(getattr(value, "StkCode", ""))
             item = meta.get(stock_id)
             context_item = context_meta.get(stock_id)
             if item is None and context_item is None:
-                artifact.callback_error("UNKNOWN_WATCHLIST_SYMBOL")
+                artifact.callback_error(
+                    "UNKNOWN_WATCHLIST_SYMBOL",
+                    callback_name=name,
+                    stock_id=stock_id,
+                    phase=callback_phase,
+                )
                 return
             received_at = utc_now()
 
@@ -221,6 +230,7 @@ def run(
                 }
 
             if name in {"SubscribeStockTick", "SubscribeStocktick"}:
+                callback_phase = "STOCK_TICK_PAYLOAD"
                 payload = {
                     "event_type": "STOCK_TICK", "quote_time": _quote_time(value.Time),
                     "serial_no": int(value.SerialNo), "buy_price": _safe_text(value.BuyPrice),
@@ -229,25 +239,35 @@ def run(
                     "tick_type": _safe_text(value.Type),
                 }
                 if item is not None:
+                    callback_phase = "STOCK_TICK_STAGE_A_APPEND"
                     artifact.append("ticks", {
                         **base_for(item, role="STAGE_A_CANDIDATE"), **payload,
                     })
                 if context_item is not None:
+                    callback_phase = "STOCK_TICK_MARKET_CONTEXT_APPEND"
                     artifact.append("market_context_ticks", {
                         **base_for(context_item, role="MARKET_BENCHMARK"), **payload,
                     })
             elif name == "SubscribeFiveTickA":
+                callback_phase = "FIVE_LEVEL_PAYLOAD"
                 payload = {"event_type": "FIVE_LEVEL", **_book_payload(value)}
                 if item is not None:
+                    callback_phase = "FIVE_LEVEL_STAGE_A_APPEND"
                     artifact.append("books", {
                         **base_for(item, role="STAGE_A_CANDIDATE"), **payload,
                     })
                 if context_item is not None:
+                    callback_phase = "FIVE_LEVEL_MARKET_CONTEXT_APPEND"
                     artifact.append("market_context_books", {
                         **base_for(context_item, role="MARKET_BENCHMARK"), **payload,
                     })
         except Exception as exc:
-            artifact.callback_error(type(exc).__name__)
+            artifact.callback_error(
+                type(exc).__name__,
+                callback_name=name,
+                stock_id=stock_id,
+                phase=callback_phase,
+            )
 
     try:
         api = _connect_and_login(

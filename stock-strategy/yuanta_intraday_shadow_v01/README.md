@@ -14,6 +14,9 @@ Stage A Top30 加上永久 0050 市場基準的 append-only 即時行情收集�
 - 每日訂閱範圍固定為前一交易日 sealed Top30 再加 0050；0050 不佔 Top30 名額、不參與選股或排名。
 - 0050 逐筆與五檔寫入獨立 `market_context_*` 檔案，不混入 Top30 研究原始檔。
 - 每次收集建立獨立 run 目錄，保存逐筆、五檔、輸入 seal 與 SHA-256 摘要。
+- callback 解析失敗會另存 `callback_errors.jsonl`，只記錄錯誤類型、callback
+  名稱、股票代號與處理階段；不保存例外訊息、原始券商 payload 或任何登入秘密。
+  只要錯誤數不為零，當日仍不得成為完整策略比較樣本。
 - 收集完成後使用固定 V0.1 定義計算價格路徑、VWAP、量能節奏、spread 與五檔失衡。
 
 元大 `YuantaSparkAPI.dll` 2.0.0.1 的逐筆與五檔訂閱函式實際回傳
