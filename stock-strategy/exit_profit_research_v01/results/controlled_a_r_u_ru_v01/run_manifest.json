@@ -1,0 +1,17 @@
+{
+  "actual_fills": 0,
+  "actual_orders": 0,
+  "analysis_id": "CONTROLLED_PROFIT_GIVEBACK_A_R_U_RU_V0_2",
+  "artifact_sha256": {
+    "conditional_still_holding.csv": "52ce9747afa91d592ed7024fcf0a8a1a85e7aded70d7569f9d79bbf113242d47",
+    "controlled_profit_exit_per_trade.csv": "d6af5dfd36f106f99199584a322967fe35d2efd370b08ea581f769a04083326d",
+    "controlled_profit_exit_results.json": "5ac1c4dda7b76425a2f03b4c64f139139a77dd5bef9cbe8abeeb6222ac249bb5",
+    "controlled_profit_exit_summary.csv": "76bcfa343fd4983dab13d785baada69247c1e749d75f5d546fbe43afaf7abee3",
+    "official_limit_audit.csv": "ec2112f7378ad9c3f9f7ab11273f8727841975ae5851485728d143950a3121dd",
+    "report.md": "18833390ea0ca7c7302af5321e066af465c3f14de422582abe1e6623b1ac864d",
+    "resistance_filter_impact.csv": "4c65cee015cc4a7310af137e64819880476731af3d6b6f43f4f3ce9d20f10fe1"
+  },
+  "broker_connections": 0,
+  "production_behavior_changed": false,
+  "report_hash": "eb593606bc8c0039f0500fac5bf0d662d45203717e8eaac6491c72a5cccfe46c"
+}

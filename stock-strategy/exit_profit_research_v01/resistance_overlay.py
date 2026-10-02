@@ -114,9 +114,15 @@ def load_books(run_dir: Path, symbol: str) -> list[Book]:
         sell_prices = tuple(float(value) for value in row.get("sell_prices", ()))
         buy_volumes = tuple(int(value) for value in row.get("buy_volumes", ()))
         sell_volumes = tuple(int(value) for value in row.get("sell_volumes", ()))
-        if not buy_prices or not sell_prices or not buy_volumes or not sell_volumes:
+        if not buy_prices or not buy_volumes:
             continue
-        if buy_prices[0] <= 0 or sell_prices[0] <= 0 or sell_prices[0] < buy_prices[0]:
+        if buy_prices[0] <= 0:
+            continue
+        # A locked limit-up book can legitimately have bids and no displayed
+        # asks.  Keep that state for research execution; a zero ask must not be
+        # invented, and production quote validation remains unchanged.
+        positive_asks = [value for value in sell_prices if value > 0]
+        if positive_asks and min(positive_asks) < buy_prices[0]:
             continue
         result.append(Book(
             received_at=_received(str(row["received_at"])),
@@ -158,12 +164,15 @@ def _same_ask_pressure(
     latest = _latest_book(books, now)
     if latest is None:
         return False, None, 0, 0.0
-    ask = latest.sell_prices[0]
+    ask = next((value for value in latest.sell_prices if value > 0), None)
+    if ask is None:
+        return False, None, 0, 0.0
     observations = []
     for book in reversed(books):
         if book.received_at > now:
             continue
-        if book.sell_prices[0] != ask:
+        current_ask = next((value for value in book.sell_prices if value > 0), None)
+        if current_ask != ask:
             break
         observations.append(book)
     observations.reverse()
