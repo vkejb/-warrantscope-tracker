@@ -1,0 +1,285 @@
+{
+  "analysis_id": "RESISTANCE_EXIT_OVERLAY_DIAGNOSTIC_V0_1",
+  "five_level_exchange_timestamp_present": false,
+  "five_level_fields_present": true,
+  "latency_ms": 0,
+  "paper_only": true,
+  "rows": [
+    {
+      "analysis_id": "RESISTANCE_EXIT_OVERLAY_DIAGNOSTIC_V0_1",
+      "book_latency_ms": 1.0,
+      "config": null,
+      "entry_price": 70.05,
+      "entry_time": "2026-10-02T09:13:31+08:00",
+      "execution_levels": [
+        {
+          "lots": 2.0,
+          "price": 71.6
+        }
+      ],
+      "exit_reason": "MFE_PROFIT_PROTECTION",
+      "exit_trigger_time": "2026-10-02T09:19:54.107000+08:00",
+      "family": "BASELINE",
+      "fill_price": 71.6,
+      "fill_scorable": true,
+      "fill_time": "2026-10-02T09:19:54.108000+08:00",
+      "giveback_twd": 1995.0,
+      "known_prior_high_at_entry": 71.0,
+      "mfe_bid": 72.6,
+      "mfe_net_pnl": 4637.0,
+      "mfe_time": "2026-10-02T09:19:23.178000+08:00",
+      "net_pnl": 2642.0,
+      "overlay_triggered": false,
+      "pnl_vs_a": 0.0,
+      "quantity": 2000,
+      "symbol": "3094",
+      "trigger_details": null,
+      "variant": "A_BASELINE"
+    },
+    {
+      "analysis_id": "RESISTANCE_EXIT_OVERLAY_DIAGNOSTIC_V0_1",
+      "book_latency_ms": 1.0,
+      "config": {
+        "ask_pressure_ratio": 0.0,
+        "family": "PRIOR_HIGH",
+        "maximum_buy_flow_delta": 0.1,
+        "minimum_same_ask_seconds": 0.0,
+        "minimum_same_ask_updates": 0,
+        "rejection_ticks": 1,
+        "variant": "PRIOR_HIGH_1",
+        "weakening_seconds": 5
+      },
+      "entry_price": 70.05,
+      "entry_time": "2026-10-02T09:13:31+08:00",
+      "execution_levels": [
+        {
+          "lots": 2.0,
+          "price": 71.6
+        }
+      ],
+      "exit_reason": "MFE_PROFIT_PROTECTION",
+      "exit_trigger_time": "2026-10-02T09:19:54.107000+08:00",
+      "family": "PRIOR_HIGH",
+      "fill_price": 71.6,
+      "fill_scorable": true,
+      "fill_time": "2026-10-02T09:19:54.108000+08:00",
+      "giveback_twd": 1995.0,
+      "known_prior_high_at_entry": 71.0,
+      "mfe_bid": 72.6,
+      "mfe_net_pnl": 4637.0,
+      "mfe_time": "2026-10-02T09:19:23.178000+08:00",
+      "net_pnl": 2642.0,
+      "overlay_triggered": false,
+      "pnl_vs_a": 0.0,
+      "quantity": 2000,
+      "symbol": "3094",
+      "trigger_details": null,
+      "variant": "PRIOR_HIGH_1"
+    },
+    {
+      "analysis_id": "RESISTANCE_EXIT_OVERLAY_DIAGNOSTIC_V0_1",
+      "book_latency_ms": 1.0,
+      "config": {
+        "ask_pressure_ratio": 0.0,
+        "family": "PRIOR_HIGH",
+        "maximum_buy_flow_delta": 0.1,
+        "minimum_same_ask_seconds": 0.0,
+        "minimum_same_ask_updates": 0,
+        "rejection_ticks": 2,
+        "variant": "PRIOR_HIGH_2",
+        "weakening_seconds": 10
+      },
+      "entry_price": 70.05,
+      "entry_time": "2026-10-02T09:13:31+08:00",
+      "execution_levels": [
+        {
+          "lots": 2.0,
+          "price": 71.6
+        }
+      ],
+      "exit_reason": "MFE_PROFIT_PROTECTION",
+      "exit_trigger_time": "2026-10-02T09:19:54.107000+08:00",
+      "family": "PRIOR_HIGH",
+      "fill_price": 71.6,
+      "fill_scorable": true,
+      "fill_time": "2026-10-02T09:19:54.108000+08:00",
+      "giveback_twd": 1995.0,
+      "known_prior_high_at_entry": 71.0,
+      "mfe_bid": 72.6,
+      "mfe_net_pnl": 4637.0,
+      "mfe_time": "2026-10-02T09:19:23.178000+08:00",
+      "net_pnl": 2642.0,
+      "overlay_triggered": false,
+      "pnl_vs_a": 0.0,
+      "quantity": 2000,
+      "symbol": "3094",
+      "trigger_details": null,
+      "variant": "PRIOR_HIGH_2"
+    },
+    {
+      "analysis_id": "RESISTANCE_EXIT_OVERLAY_DIAGNOSTIC_V0_1",
+      "book_latency_ms": 1.0,
+      "config": {
+        "ask_pressure_ratio": 0.0,
+        "family": "PRIOR_HIGH",
+        "maximum_buy_flow_delta": 0.0,
+        "minimum_same_ask_seconds": 0.0,
+        "minimum_same_ask_updates": 0,
+        "rejection_ticks": 3,
+        "variant": "PRIOR_HIGH_3",
+        "weakening_seconds": 20
+      },
+      "entry_price": 70.05,
+      "entry_time": "2026-10-02T09:13:31+08:00",
+      "execution_levels": [
+        {
+          "lots": 2.0,
+          "price": 71.6
+        }
+      ],
+      "exit_reason": "MFE_PROFIT_PROTECTION",
+      "exit_trigger_time": "2026-10-02T09:19:54.107000+08:00",
+      "family": "PRIOR_HIGH",
+      "fill_price": 71.6,
+      "fill_scorable": true,
+      "fill_time": "2026-10-02T09:19:54.108000+08:00",
+      "giveback_twd": 1995.0,
+      "known_prior_high_at_entry": 71.0,
+      "mfe_bid": 72.6,
+      "mfe_net_pnl": 4637.0,
+      "mfe_time": "2026-10-02T09:19:23.178000+08:00",
+      "net_pnl": 2642.0,
+      "overlay_triggered": false,
+      "pnl_vs_a": 0.0,
+      "quantity": 2000,
+      "symbol": "3094",
+      "trigger_details": null,
+      "variant": "PRIOR_HIGH_3"
+    },
+    {
+      "analysis_id": "RESISTANCE_EXIT_OVERLAY_DIAGNOSTIC_V0_1",
+      "book_latency_ms": 1.0,
+      "config": {
+        "ask_pressure_ratio": 1.25,
+        "family": "SAME_PRICE_ASK",
+        "maximum_buy_flow_delta": 0.1,
+        "minimum_same_ask_seconds": 1.0,
+        "minimum_same_ask_updates": 3,
+        "rejection_ticks": 1,
+        "variant": "SAME_PRICE_ASK_1",
+        "weakening_seconds": 5
+      },
+      "entry_price": 70.05,
+      "entry_time": "2026-10-02T09:13:31+08:00",
+      "execution_levels": [
+        {
+          "lots": 2.0,
+          "price": 71.6
+        }
+      ],
+      "exit_reason": "MFE_PROFIT_PROTECTION",
+      "exit_trigger_time": "2026-10-02T09:19:54.107000+08:00",
+      "family": "SAME_PRICE_ASK",
+      "fill_price": 71.6,
+      "fill_scorable": true,
+      "fill_time": "2026-10-02T09:19:54.108000+08:00",
+      "giveback_twd": 1995.0,
+      "known_prior_high_at_entry": 71.0,
+      "mfe_bid": 72.6,
+      "mfe_net_pnl": 4637.0,
+      "mfe_time": "2026-10-02T09:19:23.178000+08:00",
+      "net_pnl": 2642.0,
+      "overlay_triggered": false,
+      "pnl_vs_a": 0.0,
+      "quantity": 2000,
+      "symbol": "3094",
+      "trigger_details": null,
+      "variant": "SAME_PRICE_ASK_1"
+    },
+    {
+      "analysis_id": "RESISTANCE_EXIT_OVERLAY_DIAGNOSTIC_V0_1",
+      "book_latency_ms": 1.0,
+      "config": {
+        "ask_pressure_ratio": 1.5,
+        "family": "SAME_PRICE_ASK",
+        "maximum_buy_flow_delta": 0.1,
+        "minimum_same_ask_seconds": 2.0,
+        "minimum_same_ask_updates": 5,
+        "rejection_ticks": 2,
+        "variant": "SAME_PRICE_ASK_2",
+        "weakening_seconds": 10
+      },
+      "entry_price": 70.05,
+      "entry_time": "2026-10-02T09:13:31+08:00",
+      "execution_levels": [
+        {
+          "lots": 2.0,
+          "price": 71.6
+        }
+      ],
+      "exit_reason": "MFE_PROFIT_PROTECTION",
+      "exit_trigger_time": "2026-10-02T09:19:54.107000+08:00",
+      "family": "SAME_PRICE_ASK",
+      "fill_price": 71.6,
+      "fill_scorable": true,
+      "fill_time": "2026-10-02T09:19:54.108000+08:00",
+      "giveback_twd": 1995.0,
+      "known_prior_high_at_entry": 71.0,
+      "mfe_bid": 72.6,
+      "mfe_net_pnl": 4637.0,
+      "mfe_time": "2026-10-02T09:19:23.178000+08:00",
+      "net_pnl": 2642.0,
+      "overlay_triggered": false,
+      "pnl_vs_a": 0.0,
+      "quantity": 2000,
+      "symbol": "3094",
+      "trigger_details": null,
+      "variant": "SAME_PRICE_ASK_2"
+    },
+    {
+      "analysis_id": "RESISTANCE_EXIT_OVERLAY_DIAGNOSTIC_V0_1",
+      "book_latency_ms": 1.0,
+      "config": {
+        "ask_pressure_ratio": 2.0,
+        "family": "SAME_PRICE_ASK",
+        "maximum_buy_flow_delta": 0.0,
+        "minimum_same_ask_seconds": 3.0,
+        "minimum_same_ask_updates": 8,
+        "rejection_ticks": 3,
+        "variant": "SAME_PRICE_ASK_3",
+        "weakening_seconds": 20
+      },
+      "entry_price": 70.05,
+      "entry_time": "2026-10-02T09:13:31+08:00",
+      "execution_levels": [
+        {
+          "lots": 2.0,
+          "price": 71.6
+        }
+      ],
+      "exit_reason": "MFE_PROFIT_PROTECTION",
+      "exit_trigger_time": "2026-10-02T09:19:54.107000+08:00",
+      "family": "SAME_PRICE_ASK",
+      "fill_price": 71.6,
+      "fill_scorable": true,
+      "fill_time": "2026-10-02T09:19:54.108000+08:00",
+      "giveback_twd": 1995.0,
+      "known_prior_high_at_entry": 71.0,
+      "mfe_bid": 72.6,
+      "mfe_net_pnl": 4637.0,
+      "mfe_time": "2026-10-02T09:19:23.178000+08:00",
+      "net_pnl": 2642.0,
+      "overlay_triggered": false,
+      "pnl_vs_a": 0.0,
+      "quantity": 2000,
+      "symbol": "3094",
+      "trigger_details": null,
+      "variant": "SAME_PRICE_ASK_3"
+    }
+  ],
+  "source_manifest_hash": "046f083c4f9db8995cc9730e19ccad9672026bea7ed9996c2381d55dd4dbeaf4",
+  "source_mode": "SHADOW_ONLY_READ_ONLY_QUOTES",
+  "source_run": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261002T005007.842444Z_e3c519f7",
+  "source_run_id": "20261002T005007.842444Z_e3c519f7",
+  "source_status": "COMPLETE"
+}

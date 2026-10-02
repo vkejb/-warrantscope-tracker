@@ -356,7 +356,7 @@ class AsyncTradingNotifier:
         self._thread.join(timeout=timeout)
 
 
-def send_critical_async(event: str, message: str) -> None:
+def send_critical_async(event: str, message: str) -> threading.Thread:
     def worker() -> None:
         try:
             token, chat_id = load_trading_bot_credentials()
@@ -364,8 +364,12 @@ def send_critical_async(event: str, message: str) -> None:
         except Exception:
             return
 
-    threading.Thread(
+    thread = threading.Thread(
         target=worker,
         name="warrantscope-trading-critical",
-        daemon=True,
-    ).start()
+        # Critical shutdown alerts must survive the runtime process leaving its
+        # main loop.  The caller retains and joins this bounded network task.
+        daemon=False,
+    )
+    thread.start()
+    return thread

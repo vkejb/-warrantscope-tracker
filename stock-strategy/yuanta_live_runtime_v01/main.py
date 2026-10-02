@@ -22,6 +22,7 @@ import signal
 import sys
 import threading
 import time
+import traceback
 from types import SimpleNamespace
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -2146,6 +2147,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 failure_code=failure_code,
                 failure_stage=startup_stage,
                 error_type=archive_error_type,
+                error=str(exc),
+                traceback=traceback.format_exc(),
             )
         except Exception:
             pass
@@ -2252,6 +2255,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
 
         try:
             trading_notifier.close(timeout=3.0)
+        except Exception:
+            pass
+
+        try:
+            notifier.close(timeout=12.0)
         except Exception:
             pass
 

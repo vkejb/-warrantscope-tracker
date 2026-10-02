@@ -384,6 +384,167 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(updated.broker_order_no, "f0001")
         self.assertEqual(updated.status, BrokerOrderStatus.ACKNOWLEDGED)
 
+    def test_reused_broker_result_identifier_does_not_corrupt_prior_order(self):
+        """SPARK may return Identify=1 again for a later one-row send.
+
+        The 2026-10-02 incident proved that treating Identify as a durable,
+        process-wide key can bind a current broker order number and fills to a
+        historical local order.  A sole current SEND_PENDING request must own
+        the response; an already completed historical request must never be
+        mutated by a reused broker identifier.
+        """
+        first = self.adapter.submit(self.intent(intent_id="old-day-order"))
+        self.store.reject(first.client_order_id, "historical terminal order")
+        with self.store._lock, self.store.connection:
+            self.store.connection.execute(
+                "UPDATE live_orders SET created_at=?, updated_at=? WHERE client_order_id=?",
+                (
+                    "2020-01-01T00:00:00.000Z",
+                    "2020-01-01T00:00:00.000Z",
+                    first.client_order_id,
+                ),
+            )
+
+        second = self.adapter.submit(
+            self.intent(intent_id="current-order", quantity=2000)
+        )
+        self.assertNotEqual(first.identify, second.identify)
+
+        # Actual SPARK evidence: the next one-row call returned Identify=1,
+        # despite StockOrder.Identify being set to the second durable request.
+        reused_result = Obj(
+            ResultList=[
+                Obj(
+                    Identify=first.identify,
+                    ReplyCode=0,
+                    OrderNO="new-no",
+                    ErrType="",
+                    ErrNO="",
+                    Advisory="委託成功",
+                )
+            ]
+        )
+        self.api.OnResponse.emit(1, 1, "SendStockOrder", None, reused_result)
+        self.drain()
+
+        old_order = self.store.get(first.client_order_id)
+        current_order = self.store.get(second.client_order_id)
+        self.assertIsNone(old_order.broker_order_no)
+        self.assertEqual(old_order.status, BrokerOrderStatus.REJECTED)
+        self.assertEqual(current_order.broker_order_no, "new-no")
+        self.assertEqual(current_order.status, BrokerOrderStatus.ACKNOWLEDGED)
+
+        for sequence, price in (("670069", 70.0), ("670070", 70.1)):
+            fill = Obj(
+                Account="S12341234567",
+                RptType=51,
+                OrderNo="new-no",
+                CompanyNo="3605",
+                BS="B",
+                Price=price,
+                BeforeQty=0,
+                OrderQty=1000,
+                TradeKind=0,
+                APCode=0,
+                BasketNo=current_order.basket_no,
+                OrderStatus=8,
+                SeqNo=sequence,
+                StkErrorNo="",
+                OrderErrorNo="",
+            )
+            self.api.OnResponse.emit(2, 2, "RR_RealReport", None, fill)
+        self.drain()
+
+        completed = self.store.get(second.client_order_id)
+        self.assertEqual(completed.status, BrokerOrderStatus.FILLED)
+        self.assertEqual(completed.filled_quantity, 2000)
+        self.assertEqual(completed.average_fill_price, Decimal("70.05"))
+        self.assertEqual(self.store.get(first.client_order_id).filled_quantity, 0)
+
+    def test_ambiguous_reused_identifier_halts_without_guessing(self):
+        first, _ = self.store.reserve(self.intent(intent_id="pending-one"))
+        second_intent = ExecutionIntent(
+            intent_id="pending-two",
+            symbol="3094",
+            side=Side.BUY,
+            quantity=1000,
+            price=Decimal("70.1"),
+        )
+        second, _ = self.store.reserve(second_intent)
+        self.store.create_request(first.client_order_id, "NEW")
+        self.store.create_request(second.client_order_id, "NEW")
+
+        result = Obj(
+            ResultList=[
+                Obj(
+                    Identify=999,
+                    ReplyCode=0,
+                    OrderNO="ambiguous",
+                    ErrType="",
+                    ErrNO="",
+                    Advisory="",
+                )
+            ]
+        )
+        self.api.OnResponse.emit(1, 1, "SendStockOrder", None, result)
+        self.drain()
+
+        self.assertTrue(self.store.control_state()["halted"])
+        self.assertEqual(
+            self.store.control_state()["reason"],
+            "AMBIGUOUS_BROKER_ORDER_RESULT",
+        )
+        self.assertIsNone(self.store.get(first.client_order_id).broker_order_no)
+        self.assertIsNone(self.store.get(second.client_order_id).broker_order_no)
+
+    def test_real_report_basket_precedes_reused_order_number(self):
+        old, _ = self.store.reserve(self.intent(intent_id="old-order-number"))
+        self.store.bind_broker_order(old.client_order_id, "J00bE")
+        self.store.reject(old.client_order_id, "historical terminal order")
+        with self.store._lock, self.store.connection:
+            self.store.connection.execute(
+                "UPDATE live_orders SET created_at=?, updated_at=? WHERE client_order_id=?",
+                (
+                    "2020-01-01T00:00:00.000Z",
+                    "2020-01-01T00:00:00.000Z",
+                    old.client_order_id,
+                ),
+            )
+
+        current_intent = ExecutionIntent(
+            intent_id="current-basket",
+            symbol="3094",
+            side=Side.BUY,
+            quantity=2000,
+            price=Decimal("70.1"),
+        )
+        current, _ = self.store.reserve(current_intent)
+        report = {
+            "account": "S12341234567",
+            "rpt_type": 51,
+            "order_no": "J00bE",
+            "symbol": "3094",
+            "side": "B",
+            "price": "70.0",
+            "before_qty": 0,
+            "order_qty": 1000,
+            "trade_kind": 0,
+            "ap_code": 0,
+            "basket_no": current.basket_no,
+            "order_status": 8,
+            "seq_no": "670069",
+            "stk_error_no": "",
+            "order_error_no": "",
+        }
+
+        self.adapter._apply_real_report(report)
+
+        self.assertEqual(self.store.get(old.client_order_id).filled_quantity, 0)
+        self.assertIsNone(self.store.get(old.client_order_id).broker_order_no)
+        updated = self.store.get(current.client_order_id)
+        self.assertEqual(updated.filled_quantity, 1000)
+        self.assertEqual(updated.average_fill_price, Decimal("70.0"))
+
     def test_partial_fill_then_cancel(self):
         stored = self.adapter.submit(self.intent())
         self.store.bind_broker_order(stored.client_order_id, "f0002")
@@ -665,6 +826,45 @@ class AdapterTests(unittest.TestCase):
         self.api.positions = {"2330": 1000}
         with self.assertRaises(ReconciliationMismatch):
             self.adapter.reconcile(timeout=1)
+        self.assertTrue(self.store.control_state()["halted"])
+
+    def test_manual_partial_sale_is_detected_as_position_mismatch(self):
+        stored = self.adapter.submit(self.intent(intent_id="two-lot-entry", quantity=2000))
+        self.store.bind_broker_order(stored.client_order_id, "entry-two-lots")
+        self.store.acknowledge(stored.client_order_id)
+        self.store.record_fill(
+            stored.client_order_id,
+            fill_id="entry-two-lots:1",
+            quantity=2000,
+            price="70.05",
+            broker_order_no="entry-two-lots",
+            seq_no="1",
+        )
+        self.api.merge_rows = [{
+            "Account": "S12341234567",
+            "RptType": 1,
+            "OrderNo": "entry-two-lots",
+            "CompanyNo": "3605",
+            "BS": "B",
+            "Price": 70.05,
+            "LastDealPrice": 70.05,
+            "AvgDealPrice": 70.05,
+            "BeforeQty": 0,
+            "OrderQty": 2000,
+            "OkQty": 2000,
+            "APCode": 0,
+            "OrderStatus": 20,
+            "LastOrderStatus": 8,
+            "BasketNo": stored.basket_no,
+            "StkErrorNo": "",
+        }]
+        # A manual sale removed half the exposure at the broker, while local
+        # strategy state still owns 2,000 shares.  Never guess or absorb it.
+        self.api.positions = {"3605": 1000}
+
+        with self.assertRaises(ReconciliationMismatch):
+            self.adapter.reconcile(timeout=1, strict_positions=True)
+
         self.assertTrue(self.store.control_state()["halted"])
 
 

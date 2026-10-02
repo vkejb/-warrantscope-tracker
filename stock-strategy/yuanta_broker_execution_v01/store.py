@@ -12,6 +12,7 @@ import sqlite3
 import threading
 from typing import Any, Mapping
 import uuid
+from zoneinfo import ZoneInfo
 
 from .models import (
     APCode,
@@ -30,6 +31,13 @@ from .models import (
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+TAIPEI = ZoneInfo("Asia/Taipei")
+
+
+def _trading_day(value: str) -> object:
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(TAIPEI).date()
 
 
 class StoreError(RuntimeError):
@@ -420,6 +428,57 @@ class LiveOrderStore:
                 "updated_at": row["updated_at"],
             }
 
+    def pending_requests(self) -> list[dict[str, Any]]:
+        """Return broker mutations still awaiting a SendStockOrder result.
+
+        SPARK's result ``Identify`` is not durable across one-row sends on all
+        supported SDK builds.  The adapter therefore needs the persisted set
+        of genuinely pending mutations to correlate a reused broker value
+        without ever reopening a completed historical request.
+        """
+        with self._lock:
+            rows = list(
+                self.connection.execute(
+                    """
+                    SELECT r.*, o.created_at AS order_created_at
+                    FROM broker_requests r
+                    JOIN live_orders o ON o.client_order_id=r.client_order_id
+                    WHERE r.request_status='SEND_PENDING'
+                    ORDER BY r.created_at,r.identify
+                    """
+                )
+            )
+        return [
+            {
+                "identify": int(row["identify"]),
+                "client_order_id": row["client_order_id"],
+                "operation": row["operation"],
+                "payload": json.loads(row["payload"]),
+                "request_status": row["request_status"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "order_created_at": row["order_created_at"],
+            }
+            for row in rows
+        ]
+
+    def record_broker_result_correlation(
+        self,
+        *,
+        broker_identify: int,
+        request_identify: int,
+        client_order_id: str,
+    ) -> None:
+        with self._lock, self.connection:
+            self._event(
+                "BROKER_RESULT_IDENTIFIER_REMAPPED",
+                client_order_id,
+                {
+                    "broker_identify": int(broker_identify),
+                    "request_identify": int(request_identify),
+                },
+            )
+
     def latest_request(
         self, client_order_id: str, operation: str
     ) -> dict[str, Any] | None:
@@ -521,6 +580,32 @@ class LiveOrderStore:
             if current.broker_order_no and current.broker_order_no != clean:
                 raise StoreError("broker order number changed for existing order")
             with self.connection:
+                prior = self.get_by_broker_order_no(clean)
+                if prior is not None and prior.client_order_id != client_order_id:
+                    try:
+                        reusable = (
+                            prior.status in TERMINAL_STATUSES
+                            and _trading_day(prior.created_at)
+                            < _trading_day(current.created_at)
+                        )
+                    except (TypeError, ValueError):
+                        reusable = False
+                    if not reusable:
+                        raise StoreError(
+                            "broker order number already belongs to a current or non-terminal order"
+                        )
+                    self.connection.execute(
+                        "UPDATE live_orders SET broker_order_no=NULL, updated_at=? WHERE client_order_id=?",
+                        (utc_now(), prior.client_order_id),
+                    )
+                    self._event(
+                        "HISTORICAL_BROKER_ORDER_NO_RELEASED",
+                        prior.client_order_id,
+                        {
+                            "broker_order_no": clean,
+                            "replacement_client_order_id": client_order_id,
+                        },
+                    )
                 self.connection.execute(
                     "UPDATE live_orders SET broker_order_no=?, updated_at=? WHERE client_order_id=?",
                     (clean, utc_now(), client_order_id),

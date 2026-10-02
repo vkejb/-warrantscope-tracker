@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import threading
 
 from .trading_bot_notifier import send_critical_async
 
@@ -12,6 +13,7 @@ class RuntimeNotifier:
     def __init__(self, runtime_dir: Path):
         self.runtime_dir = Path(runtime_dir)
         self.local_ledger = self.runtime_dir / "critical_notifications.jsonl"
+        self._delivery_threads: list[threading.Thread] = []
 
     def critical(self, event: str, message: str, **details) -> dict[str, str]:
         row = {
@@ -30,8 +32,15 @@ class RuntimeNotifier:
             handle.flush()
             os.fsync(handle.fileno())
 
-        send_critical_async(event, message)
+        self._delivery_threads.append(send_critical_async(event, message))
         return {
             "LOCAL_LEDGER": "SUCCESS",
             "TRADING_BOT": "QUEUED",
         }
+
+    def close(self, timeout: float = 12.0) -> None:
+        """Give queued critical alerts a bounded chance to leave the process."""
+        deadline = datetime.now(timezone.utc).timestamp() + max(0.0, timeout)
+        for thread in list(self._delivery_threads):
+            remaining = max(0.0, deadline - datetime.now(timezone.utc).timestamp())
+            thread.join(remaining)
