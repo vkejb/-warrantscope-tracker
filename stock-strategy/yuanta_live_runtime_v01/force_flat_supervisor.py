@@ -215,6 +215,13 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0) -> int:
     if os.environ.get(SCHEDULE_GATE, "").strip().upper() != "YES":
         raise RuntimeError("scheduled force-flat gate is not enabled")
     runtime_dir = Path(runtime_dir).resolve()
+    _append(
+        runtime_dir / LEDGER,
+        "SUPERVISOR_STARTED",
+        pid=os.getpid(),
+        trigger_start=TRIGGER_START.isoformat(timespec="minutes"),
+        trigger_end=TRIGGER_END.isoformat(timespec="minutes"),
+    )
     last_attempt_date = None
     while True:
         now = datetime.now(TAIPEI)

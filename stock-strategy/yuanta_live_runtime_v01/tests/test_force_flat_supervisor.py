@@ -201,6 +201,25 @@ class SupervisorTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 scheduler_loop(Path("/tmp/not-used"), interval_seconds=.25)
 
+    def test_scheduler_writes_durable_start_evidence(self):
+        with TemporaryDirectory() as tmp, patch.dict(
+            os.environ,
+            {SCHEDULE_GATE: "YES"},
+            clear=False,
+        ), patch(
+            "yuanta_live_runtime_v01.force_flat_supervisor.time.sleep",
+            side_effect=KeyboardInterrupt,
+        ):
+            runtime = Path(tmp)
+            with self.assertRaises(KeyboardInterrupt):
+                scheduler_loop(runtime, interval_seconds=.25)
+            ledger = (runtime / "force_flat_supervisor.jsonl").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("SUPERVISOR_STARTED", ledger)
+            self.assertIn('"trigger_start": "13:20"', ledger)
+            self.assertIn('"trigger_end": "13:27"', ledger)
+
     def test_trigger_window_never_retroactively_runs_after_market(self):
         self.assertFalse(_within_trigger_window(
             datetime(2026, 10, 2, 13, 19, 59, tzinfo=TAIPEI)
