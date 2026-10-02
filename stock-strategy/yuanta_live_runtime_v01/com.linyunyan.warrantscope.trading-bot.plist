@@ -33,6 +33,8 @@
 		<string>1</string>
 		<key>PYTHONPATH</key>
 		<string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy</string>
+		<key>ENABLE_SCHEDULED_FORCE_FLAT</key>
+		<string>YES</string>
 	</dict>
 </dict>
 </plist>
