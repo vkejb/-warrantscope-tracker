@@ -13,7 +13,7 @@ from dataclasses import asdict, replace
 import errno
 import fcntl
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, time as datetime_time, timedelta
 from decimal import Decimal
 import json
 import os
@@ -87,6 +87,17 @@ ACTIVE_EXIT_STATUSES = {
 }
 
 RUNTIME_LOCK_FILENAME = "runtime.lock"
+FORCE_FLAT_MARKET_TIME = datetime_time(13, 23)
+FORCE_FLAT_MARKET_CUTOFF = datetime_time(13, 29, 50)
+
+
+def _force_flat_market_phase(now: datetime) -> str:
+    local_time = now.astimezone(TAIPEI).time().replace(tzinfo=None)
+    if local_time < FORCE_FLAT_MARKET_TIME:
+        return "LIMIT"
+    if local_time < FORCE_FLAT_MARKET_CUTOFF:
+        return "MARKET"
+    return "CLOSED"
 
 
 def _quote_universe(items):
@@ -1390,6 +1401,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     next_exit_reconcile_at: datetime | None = None
     exit_quote_alerted = False
     market_fallback_cancel_requested = False
+    market_cutoff_alerted = False
     clean_shutdown = False
     archive = None
     archive_started_at = ""
@@ -1555,7 +1567,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             graceful_stop = stop_path.exists()
             scheduled_force_flat = force_flat_path.exists()
             exit_only = emergency or scheduled_force_flat
-            market_fallback_due = now.time() >= time_from_text("13:23")
+            force_flat_phase = _force_flat_market_phase(now)
+            market_fallback_due = force_flat_phase == "MARKET"
+            market_cutoff_reached = force_flat_phase == "CLOSED"
 
             # Emergency always takes precedence over a graceful stop request.
             if exit_only and graceful_stop:
@@ -1907,6 +1921,22 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 and not position.exit_submitted
                 and (next_exit_retry_at is None or now >= next_exit_retry_at)
             ):
+                if market_cutoff_reached:
+                    if not market_cutoff_alerted:
+                        market_cutoff_alerted = True
+                        store.halt("FORCE_FLAT_MARKET_CLOSED_WITH_EXPOSURE")
+                        notifier.critical(
+                            "FORCE_FLAT_MARKET_CLOSED_WITH_EXPOSURE",
+                            "Market cutoff reached with broker exposure; no new after-close order was created",
+                            stock_id=position.stock_id,
+                        )
+                        log(
+                            "FORCE_FLAT_MARKET_CLOSED_WITH_EXPOSURE",
+                            stock_id=position.stock_id,
+                            quantity=position.quantity,
+                        )
+                    time.sleep(0.10)
+                    continue
                 if market_fallback_due:
                     remaining_delta = _authoritative_cash_long_delta(
                         adapter,
@@ -2136,6 +2166,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     next_exit_reconcile_at = None
                     exit_quote_alerted = False
                     market_fallback_cancel_requested = False
+                    market_cutoff_alerted = False
 
                     log(
                         "LIVE_TRADE_COMPLETE_CONTINUE_ARCHIVE",
@@ -2274,7 +2305,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     )
                     continue
                 if (
-                    exit_order.broker_order_no
+                    not market_cutoff_reached
+                    and exit_order.broker_order_no
                     and last_exit_reprice is not None
                     and (now - last_exit_reprice).total_seconds() >= args.exit_reprice_seconds
                     and store.pending_mutation(exit_order_id) is None

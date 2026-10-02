@@ -312,6 +312,32 @@ class ArchiveRuntimeTests(unittest.TestCase):
 
 
 class RuntimeGateTests(unittest.TestCase):
+    def test_force_flat_market_phase_boundaries(self):
+        self.assertEqual(
+            runtime_main._force_flat_market_phase(
+                datetime(2026, 10, 2, 13, 22, 59, tzinfo=TAIPEI)
+            ),
+            "LIMIT",
+        )
+        self.assertEqual(
+            runtime_main._force_flat_market_phase(
+                datetime(2026, 10, 2, 13, 23, 0, tzinfo=TAIPEI)
+            ),
+            "MARKET",
+        )
+        self.assertEqual(
+            runtime_main._force_flat_market_phase(
+                datetime(2026, 10, 2, 13, 29, 49, tzinfo=TAIPEI)
+            ),
+            "MARKET",
+        )
+        self.assertEqual(
+            runtime_main._force_flat_market_phase(
+                datetime(2026, 10, 2, 13, 29, 50, tzinfo=TAIPEI)
+            ),
+            "CLOSED",
+        )
+
     def test_baseline_capture_refuses_broker_open_orders_without_writing(self):
         with tempfile.TemporaryDirectory() as temporary:
             runtime = Path(temporary)

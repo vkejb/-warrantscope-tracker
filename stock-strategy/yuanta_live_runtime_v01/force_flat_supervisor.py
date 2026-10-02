@@ -32,7 +32,8 @@ META = "position_baseline.meta.json"
 LEDGER = "force_flat_supervisor.jsonl"
 SCHEDULE_GATE = "ENABLE_SCHEDULED_FORCE_FLAT"
 TRIGGER_START = time_cls(13, 20)
-TRIGGER_END = time_cls(13, 27)
+TRIGGER_END = time_cls(13, 29, 30)
+MARKET_CUTOFF = time_cls(13, 29, 50)
 
 
 def _append(path: Path, event: str, **details: Any) -> None:
@@ -103,6 +104,12 @@ def _within_trigger_window(now: datetime) -> bool:
     return TRIGGER_START <= local_time < TRIGGER_END
 
 
+def _seconds_until_market_cutoff(now: datetime) -> float:
+    local = now.astimezone(TAIPEI)
+    cutoff = datetime.combine(local.date(), MARKET_CUTOFF, tzinfo=TAIPEI)
+    return max(0.0, (cutoff - local).total_seconds())
+
+
 def _launch_exit_only(runtime_dir: Path) -> subprocess.Popen:
     if os.environ.get(SCHEDULE_GATE, "").strip().upper() != "YES":
         raise RuntimeError("scheduled force-flat gate is not enabled")
@@ -137,7 +144,7 @@ def trigger_once(
     runtime_dir: Path,
     *,
     now: datetime | None = None,
-    wait_seconds: float = 370.0,
+    wait_seconds: float = 600.0,
     poll_seconds: float = 1.0,
     launch_retry_seconds: float = 30.0,
     max_launch_attempts: int = 3,
@@ -161,7 +168,11 @@ def trigger_once(
         _append(ledger, "FORCE_FLAT_REQUESTED", request=str(request))
         launch_attempts = 0
         last_launch_at: float | None = None
-        deadline = time.monotonic() + max(0.0, wait_seconds)
+        effective_wait = min(
+            max(0.0, wait_seconds),
+            _seconds_until_market_cutoff(current),
+        )
+        deadline = time.monotonic() + effective_wait
 
         while time.monotonic() <= deadline:
             if not request.exists():
@@ -219,8 +230,8 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0) -> int:
         runtime_dir / LEDGER,
         "SUPERVISOR_STARTED",
         pid=os.getpid(),
-        trigger_start=TRIGGER_START.isoformat(timespec="minutes"),
-        trigger_end=TRIGGER_END.isoformat(timespec="minutes"),
+        trigger_start=TRIGGER_START.isoformat(timespec="seconds"),
+        trigger_end=TRIGGER_END.isoformat(timespec="seconds"),
     )
     last_attempt_date = None
     while True:

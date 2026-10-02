@@ -20,6 +20,7 @@ from yuanta_live_runtime_v01.force_flat_supervisor import (
     TAIPEI,
     _baseline_ready,
     _launch_exit_only,
+    _seconds_until_market_cutoff,
     _within_trigger_window,
     scheduler_loop,
     trigger_once,
@@ -217,8 +218,8 @@ class SupervisorTests(unittest.TestCase):
                 encoding="utf-8"
             )
             self.assertIn("SUPERVISOR_STARTED", ledger)
-            self.assertIn('"trigger_start": "13:20"', ledger)
-            self.assertIn('"trigger_end": "13:27"', ledger)
+            self.assertIn('"trigger_start": "13:20:00"', ledger)
+            self.assertIn('"trigger_end": "13:29:30"', ledger)
 
     def test_trigger_window_never_retroactively_runs_after_market(self):
         self.assertFalse(_within_trigger_window(
@@ -228,14 +229,28 @@ class SupervisorTests(unittest.TestCase):
             datetime(2026, 10, 2, 13, 20, 0, tzinfo=TAIPEI)
         ))
         self.assertTrue(_within_trigger_window(
-            datetime(2026, 10, 2, 13, 26, 59, tzinfo=TAIPEI)
+            datetime(2026, 10, 2, 13, 29, 29, tzinfo=TAIPEI)
         ))
         self.assertFalse(_within_trigger_window(
-            datetime(2026, 10, 2, 13, 27, 0, tzinfo=TAIPEI)
+            datetime(2026, 10, 2, 13, 29, 30, tzinfo=TAIPEI)
         ))
         self.assertFalse(_within_trigger_window(
             datetime(2026, 10, 2, 16, 0, 0, tzinfo=TAIPEI)
         ))
+
+    def test_supervisor_never_waits_past_market_cutoff(self):
+        self.assertEqual(
+            _seconds_until_market_cutoff(
+                datetime(2026, 10, 2, 13, 29, 30, tzinfo=TAIPEI)
+            ),
+            20.0,
+        )
+        self.assertEqual(
+            _seconds_until_market_cutoff(
+                datetime(2026, 10, 2, 13, 30, 0, tzinfo=TAIPEI)
+            ),
+            0.0,
+        )
 
     def test_exit_only_child_has_three_live_gates_and_recovery_flag(self):
         with TemporaryDirectory() as tmp, patch.dict(
