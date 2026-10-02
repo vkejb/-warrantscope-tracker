@@ -5,13 +5,13 @@
   "artifact_sha256": {
     "conditional_still_holding.csv": "52ce9747afa91d592ed7024fcf0a8a1a85e7aded70d7569f9d79bbf113242d47",
     "controlled_profit_exit_per_trade.csv": "d6af5dfd36f106f99199584a322967fe35d2efd370b08ea581f769a04083326d",
-    "controlled_profit_exit_results.json": "5ac1c4dda7b76425a2f03b4c64f139139a77dd5bef9cbe8abeeb6222ac249bb5",
-    "controlled_profit_exit_summary.csv": "76bcfa343fd4983dab13d785baada69247c1e749d75f5d546fbe43afaf7abee3",
+    "controlled_profit_exit_results.json": "36e1c9faacc164ce927bbf7cb9b9860b15f6055b4d37e2cb060cb295d34b1d6e",
+    "controlled_profit_exit_summary.csv": "2f9f8a0501bfac8d6416c0a13344f8211bbccc678267caeea444b0ca17058e6f",
     "official_limit_audit.csv": "ec2112f7378ad9c3f9f7ab11273f8727841975ae5851485728d143950a3121dd",
-    "report.md": "18833390ea0ca7c7302af5321e066af465c3f14de422582abe1e6623b1ac864d",
+    "report.md": "9e784c9b55425020f60e5ea8ed0265271daf6887f9577978d65f4b9ae90be079",
     "resistance_filter_impact.csv": "4c65cee015cc4a7310af137e64819880476731af3d6b6f43f4f3ce9d20f10fe1"
   },
   "broker_connections": 0,
   "production_behavior_changed": false,
-  "report_hash": "eb593606bc8c0039f0500fac5bf0d662d45203717e8eaac6491c72a5cccfe46c"
+  "report_hash": "012a64575ee7334478c56925936868f540061457ec66b08538ca1157f12a1e18"
 }

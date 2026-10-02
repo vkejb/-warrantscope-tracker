@@ -12,25 +12,25 @@ Research only. No broker login, order, process restart, LIVE change, or deployme
 
 ## Four-version comparison
 
-| Latency | Variant | Scorable/All | Net PnL | vs A | R exits | Limit-touch cases | U exits | Partial | Giveback | Post-exit opportunity |
-|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 0ms | A | 11/11 | 498.0 | 0.0 | 0 | 1 | 0 | 0 | 25439.0 | 33919.0 |
-| 0ms | R | 11/11 | -3194.0 | -3692.0 | 2 | 0 | 0 | 0 | 22049.0 | 38609.0 |
-| 0ms | U | 11/11 | 1695.0 | 1197.0 | 0 | 1 | 1 | 0 | 23245.0 | 32722.0 |
-| 0ms | RU | 11/11 | -3194.0 | -3692.0 | 2 | 0 | 0 | 0 | 22049.0 | 38609.0 |
-| 250ms | A | 10/11 | 1184.0 | 0.0 | 0 | 1 | 0 | 0 | 21348.0 | 30826.0 |
-| 250ms | R | 11/11 | -3393.0 | -4577.0 | 2 | 0 | 0 | 0 | 22248.0 | 38808.0 |
-| 250ms | U | 10/11 | 1483.0 | 299.0 | 0 | 1 | 1 | 0 | 20850.0 | 30527.0 |
-| 250ms | RU | 11/11 | -3393.0 | -4577.0 | 2 | 0 | 0 | 0 | 22248.0 | 38808.0 |
-| 1000ms | A | 10/11 | 1183.0 | 0.0 | 0 | 1 | 0 | 0 | 21349.0 | 30827.0 |
-| 1000ms | R | 11/11 | -2794.0 | -3977.0 | 2 | 0 | 0 | 0 | 21649.0 | 38209.0 |
-| 1000ms | U | 10/11 | 2979.0 | 1796.0 | 0 | 1 | 1 | 0 | 19553.0 | 29031.0 |
-| 1000ms | RU | 11/11 | -2794.0 | -3977.0 | 2 | 0 | 0 | 0 | 21649.0 | 38209.0 |
+| Latency | Variant | Scorable/All | Net PnL | Matched vs A | vs A | R exits | Limit-touch cases | U exits | Partial | Giveback | Post-exit opportunity |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0ms | A | 11/11 | 498.0 | 11 | 0.0 | 0 | 1 | 0 | 0 | 25439.0 | 33919.0 |
+| 0ms | R | 11/11 | -3194.0 | 11 | -3692.0 | 2 | 0 | 0 | 0 | 22049.0 | 38609.0 |
+| 0ms | U | 11/11 | 1695.0 | 11 | 1197.0 | 0 | 1 | 1 | 0 | 23245.0 | 32722.0 |
+| 0ms | RU | 11/11 | -3194.0 | 11 | -3692.0 | 2 | 0 | 0 | 0 | 22049.0 | 38609.0 |
+| 250ms | A | 10/11 | 1184.0 | 10 | 0.0 | 0 | 1 | 0 | 0 | 21348.0 | 30826.0 |
+| 250ms | R | 11/11 | -3393.0 | 10 | -4989.0 | 2 | 0 | 0 | 0 | 22248.0 | 38808.0 |
+| 250ms | U | 10/11 | 1483.0 | 10 | 299.0 | 0 | 1 | 1 | 0 | 20850.0 | 30527.0 |
+| 250ms | RU | 11/11 | -3393.0 | 10 | -4989.0 | 2 | 0 | 0 | 0 | 22248.0 | 38808.0 |
+| 1000ms | A | 10/11 | 1183.0 | 10 | 0.0 | 0 | 1 | 0 | 0 | 21349.0 | 30827.0 |
+| 1000ms | R | 11/11 | -2794.0 | 10 | -4389.0 | 2 | 0 | 0 | 0 | 21649.0 | 38209.0 |
+| 1000ms | U | 10/11 | 2979.0 | 10 | 1796.0 | 0 | 1 | 1 | 0 | 19553.0 | 29031.0 |
+| 1000ms | RU | 11/11 | -2794.0 | 10 | -4389.0 | 2 | 0 | 0 | 0 | 21649.0 | 38209.0 |
 
 ## Fixed-rule result
 
-- At 250ms, primary R changes net PnL from 1184.0 to -3393.0 TWD (-4577.0 vs A); it is not supported for deployment.
-- U changes the same comparable total to 1483.0 TWD (299.0 vs A), but only 1 trade triggered U, so this is not broad evidence.
+- At 250ms across 10 matched scorable trades, primary R changes net PnL from 1184.0 to -3805.0 TWD (-4989.0 vs A); it is not supported for deployment.
+- Across 10 matched trades, U changes net PnL from 1184.0 to 1483.0 TWD (299.0 vs A), but only 1 trade triggered U, so this is not broad evidence.
 - The conditional still-holding table is descriptive only and is excluded from these totals.
 
 ## Resistance filter impact (250ms)

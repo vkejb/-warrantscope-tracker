@@ -973,14 +973,29 @@ def build_report(
             else round(float(row["net_pnl_twd"]) - float(baseline["net_pnl_twd"]), 2)
         )
     for summary in summaries:
-        baseline = next(
-            item for item in summaries
-            if item["variant"] == "A" and item["latency_ms"] == summary["latency_ms"]
-        )
-        summary["net_pnl_vs_a_twd"] = (
-            None if summary["net_pnl_twd"] is None or baseline["net_pnl_twd"] is None
-            else round(float(summary["net_pnl_twd"]) - float(baseline["net_pnl_twd"]), 2)
-        )
+        selected = {
+            row["trade_id"]: row for row in rows
+            if row["variant"] == summary["variant"]
+            and row["latency_ms"] == summary["latency_ms"]
+        }
+        baseline = {
+            row["trade_id"]: row for row in rows
+            if row["variant"] == "A"
+            and row["latency_ms"] == summary["latency_ms"]
+        }
+        matched = [
+            (baseline[trade_id], row)
+            for trade_id, row in selected.items()
+            if trade_id in baseline
+            and baseline[trade_id]["net_pnl_twd"] is not None
+            and row["net_pnl_twd"] is not None
+        ]
+        comparable_a = sum(float(a["net_pnl_twd"]) for a, _row in matched)
+        comparable_variant = sum(float(row["net_pnl_twd"]) for _a, row in matched)
+        summary["comparable_trades_vs_a"] = len(matched)
+        summary["comparable_a_net_pnl_twd"] = round(comparable_a, 2)
+        summary["comparable_variant_net_pnl_twd"] = round(comparable_variant, 2)
+        summary["net_pnl_vs_a_twd"] = round(comparable_variant - comparable_a, 2)
     report = {
         "analysis_id": ANALYSIS_ID,
         "interpretation": "BACKTEST_ONLY_CONTROLLED_PROFIT_GIVEBACK_DIAGNOSTIC",
@@ -1034,13 +1049,14 @@ def markdown_report(report: dict[str, Any]) -> str:
         "- U: first actual trade at the verified official daily upper limit immediately creates one market-IOC sell intent for the remaining quantity.",
         "- RU: earliest valid A, R, or U trigger wins. No duplicate sell is created.", "",
         "## Four-version comparison", "",
-        "| Latency | Variant | Scorable/All | Net PnL | vs A | R exits | Limit-touch cases | U exits | Partial | Giveback | Post-exit opportunity |",
-        "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Latency | Variant | Scorable/All | Net PnL | Matched vs A | vs A | R exits | Limit-touch cases | U exits | Partial | Giveback | Post-exit opportunity |",
+        "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in report["summaries"]:
         lines.append(
             f"| {row['latency_ms']}ms | {row['variant']} | {row['scorable_trades']}/{row['trade_count']} | "
-            f"{_fmt(row['net_pnl_twd'])} | {_fmt(row['net_pnl_vs_a_twd'])} | {row['r_triggers']} | "
+            f"{_fmt(row['net_pnl_twd'])} | {row['comparable_trades_vs_a']} | "
+            f"{_fmt(row['net_pnl_vs_a_twd'])} | {row['r_triggers']} | "
             f"{row['upper_limit_touch_cases']} | {row['u_winning_triggers']} | {row['partial_fills']} | "
             f"{row['total_profit_giveback_twd']} | {row['total_post_exit_opportunity_twd']} |"
         )
@@ -1049,8 +1065,8 @@ def markdown_report(report: dict[str, Any]) -> str:
     u_250 = next(row for row in report["summaries"] if row["variant"] == "U" and row["latency_ms"] == 250)
     lines.extend([
         "", "## Fixed-rule result", "",
-        f"- At 250ms, primary R changes net PnL from {base_250['net_pnl_twd']} to {r_250['net_pnl_twd']} TWD ({r_250['net_pnl_vs_a_twd']} vs A); it is not supported for deployment.",
-        f"- U changes the same comparable total to {u_250['net_pnl_twd']} TWD ({u_250['net_pnl_vs_a_twd']} vs A), but only {u_250['u_winning_triggers']} trade triggered U, so this is not broad evidence.",
+        f"- At 250ms across {r_250['comparable_trades_vs_a']} matched scorable trades, primary R changes net PnL from {r_250['comparable_a_net_pnl_twd']} to {r_250['comparable_variant_net_pnl_twd']} TWD ({r_250['net_pnl_vs_a_twd']} vs A); it is not supported for deployment.",
+        f"- Across {u_250['comparable_trades_vs_a']} matched trades, U changes net PnL from {u_250['comparable_a_net_pnl_twd']} to {u_250['comparable_variant_net_pnl_twd']} TWD ({u_250['net_pnl_vs_a_twd']} vs A), but only {u_250['u_winning_triggers']} trade triggered U, so this is not broad evidence.",
         "- The conditional still-holding table is descriptive only and is excluded from these totals.",
     ])
     lines.extend(["", "## Resistance filter impact (250ms)", ""])
