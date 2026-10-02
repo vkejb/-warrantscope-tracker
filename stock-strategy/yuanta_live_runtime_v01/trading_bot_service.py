@@ -9,6 +9,7 @@ from pathlib import Path
 import secrets
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -16,6 +17,10 @@ import urllib.request
 from typing import Any
 
 from .trading_bot_keychain import load_trading_bot_credentials
+from .force_flat_supervisor import (
+    SCHEDULE_GATE,
+    scheduler_loop as force_flat_scheduler_loop,
+)
 
 MODULE_DIR = Path(__file__).resolve().parent
 DEFAULT_RUNTIME_DIR = MODULE_DIR / "runtime"
@@ -106,7 +111,9 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
     else:
         heartbeat_age = _age_seconds(heartbeat.get("at"))
         state = str(heartbeat.get("state", "UNKNOWN"))
-        if state in {"STARTING", "RUNNING", "EMERGENCY_EXIT", "STOPPING"}:
+        if state in {
+            "STARTING", "RUNNING", "EMERGENCY_EXIT", "FORCE_FLAT_EXIT", "STOPPING",
+        }:
             if heartbeat_age is not None and heartbeat_age <= 15:
                 if state == "STARTING":
                     runtime_state = (
@@ -558,7 +565,9 @@ def _runtime_process_active(runtime_dir: Path) -> bool:
         return False
 
     state = str(heartbeat.get("state", ""))
-    if state not in {"STARTING", "RUNNING", "STOPPING", "EMERGENCY_EXIT"}:
+    if state not in {
+        "STARTING", "RUNNING", "STOPPING", "EMERGENCY_EXIT", "FORCE_FLAT_EXIT",
+    }:
         return False
 
     age = _age_seconds(heartbeat.get("at"))
@@ -597,9 +606,11 @@ def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
     if (runtime_dir / "EMERGENCY_STOP").exists():
         return False, "EMERGENCY_STOP_ACTIVE"
 
+    baseline_ok, baseline_status = _ensure_daily_position_baseline(runtime_dir)
+    if not baseline_ok:
+        return False, baseline_status
+
     baseline = runtime_dir / "position_baseline.json"
-    if not baseline.is_file():
-        return False, "BASELINE_MISSING"
 
     command = [
         sys.executable,
@@ -647,6 +658,52 @@ def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
         return True, "START_PREFLIGHT_READY"
 
     return False, "START_PREFLIGHT_FAILED"
+
+
+def _ensure_daily_position_baseline(runtime_dir: Path) -> tuple[bool, str]:
+    """Capture or reuse today's broker-backed pre-LIVE inventory baseline.
+
+    The baseline CLI refuses recapture after any entry order on the same day,
+    while strategy exposure or local/broker orders are active, or when the
+    runtime singleton is owned.  This wrapper never enables the LIVE gate.
+    """
+    runtime_dir = Path(runtime_dir).resolve()
+    command = [
+        sys.executable,
+        "-m",
+        "yuanta_live_runtime_v01.main",
+        "baseline-prod",
+        "--runtime-dir",
+        str(runtime_dir),
+        "--baseline",
+        str(runtime_dir / "position_baseline.json"),
+        "--for-live-start",
+    ]
+    child_env = os.environ.copy()
+    child_env["EXECUTION_MODE"] = "DRY_RUN"
+    child_env["ENABLE_LIVE_TRADING"] = "NO"
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(MODULE_DIR.parent),
+            env=child_env,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False, "AUTO_BASELINE_EXECUTION_ERROR"
+
+    stdout = str(completed.stdout or "")
+    if completed.returncode == 0 and (
+        '"status": "BASELINE_CAPTURED"' in stdout
+        or '"status":"BASELINE_CAPTURED"' in stdout
+        or '"status": "BASELINE_REUSED"' in stdout
+        or '"status":"BASELINE_REUSED"' in stdout
+    ):
+        return True, "AUTO_BASELINE_READY"
+    return False, "AUTO_BASELINE_FAILED"
 
 
 def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
@@ -1197,6 +1254,19 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
     token, configured_chat_id = load_trading_bot_credentials()
     offset = _load_offset(runtime_dir)
     controls = _RemoteControl(runtime_dir)
+    if os.environ.get(SCHEDULE_GATE, "").strip().upper() == "YES":
+        force_flat_thread = threading.Thread(
+            target=force_flat_scheduler_loop,
+            args=(runtime_dir,),
+            name="scheduled-force-flat-supervisor",
+            daemon=True,
+        )
+        force_flat_thread.start()
+    else:
+        print(
+            "Scheduled force-flat supervisor disabled by explicit gate.",
+            flush=True,
+        )
     print(
         "Trading Bot service started. Commands: "
         "/status /start /stop /kill /clear-halt /sync-baseline /confirm /help",

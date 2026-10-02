@@ -13,6 +13,7 @@ from unittest.mock import patch
 from yuanta_live_runtime_v01.trading_bot_service import (
     _RemoteControl,
     _invoke_runtime_control,
+    _ensure_daily_position_baseline,
     _launch_runtime_start,
     _run_start_preflight,
     _sync_position_baseline,
@@ -299,6 +300,34 @@ class TradingBotStatusTests(unittest.TestCase):
 
 
 class TradingBotRemoteControlTests(unittest.TestCase):
+    def test_auto_baseline_is_dry_run_and_uses_first_start_guard(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            completed = SimpleNamespace(
+                returncode=0,
+                stdout='{"status":"BASELINE_CAPTURED"}',
+                stderr="",
+            )
+            with patch.dict(
+                os.environ,
+                {"EXECUTION_MODE": "LIVE", "ENABLE_LIVE_TRADING": "YES"},
+                clear=False,
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
+                return_value=completed,
+            ) as run:
+                ok, status = _ensure_daily_position_baseline(runtime)
+
+            self.assertTrue(ok)
+            self.assertEqual(status, "AUTO_BASELINE_READY")
+            command = run.call_args.args[0]
+            kwargs = run.call_args.kwargs
+            self.assertIn("baseline-prod", command)
+            self.assertIn("--for-live-start", command)
+            self.assertNotIn("--live", command)
+            self.assertEqual(kwargs["env"]["EXECUTION_MODE"], "DRY_RUN")
+            self.assertEqual(kwargs["env"]["ENABLE_LIVE_TRADING"], "NO")
+
     def test_remote_sync_baseline_requires_confirmation_and_executes_once(self):
         with tempfile.TemporaryDirectory() as tmp:
             runtime = Path(tmp)
@@ -607,6 +636,9 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             )
 
             with patch(
+                "yuanta_live_runtime_v01.trading_bot_service._ensure_daily_position_baseline",
+                return_value=(True, "AUTO_BASELINE_READY"),
+            ), patch(
                 "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
                 return_value=completed,
             ):
@@ -638,6 +670,9 @@ class TradingBotRemoteControlTests(unittest.TestCase):
                     "ENABLE_LIVE_TRADING": "YES",
                 },
                 clear=False,
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service._ensure_daily_position_baseline",
+                return_value=(True, "AUTO_BASELINE_READY"),
             ), patch(
                 "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
                 return_value=completed,

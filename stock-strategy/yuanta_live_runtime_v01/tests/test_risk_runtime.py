@@ -7,7 +7,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from yuanta_broker_execution_v01 import ExecutionIntent, IntentPurpose, LiveOrderStore, Side
+from yuanta_broker_execution_v01 import (
+    BrokerOrderStatus,
+    ExecutionIntent,
+    IntentPurpose,
+    LiveOrderStore,
+    Side,
+)
 from yuanta_live_runtime_v01 import main as runtime_main
 from yuanta_live_runtime_v01.risk_manager import RiskLimits, RiskManager
 from yuanta_live_runtime_v01.strategy import LiveDirectionEngine, ManagedPosition, TAIPEI
@@ -220,6 +226,16 @@ class ArchiveRuntimeTests(unittest.TestCase):
             "STOP_GRACEFUL",
         )
 
+    def test_scheduled_force_flat_stops_after_broker_confirmation(self):
+        self.assertEqual(
+            runtime_main._post_close_action(
+                emergency=False,
+                graceful_stop=False,
+                scheduled_force_flat=True,
+            ),
+            "STOP_FORCE_FLAT",
+        )
+
     def test_emergency_has_priority_over_graceful(self):
         self.assertEqual(
             runtime_main._post_close_action(
@@ -306,7 +322,10 @@ class RuntimeGateTests(unittest.TestCase):
                 reconcile_timeout=1,
             )
             credentials = {"pfx_password": "secret", "trading_password": "secret"}
-            session = SimpleNamespace(close=lambda: None)
+            session = SimpleNamespace(
+                account="S12345678901",
+                close=lambda: None,
+            )
             store = SimpleNamespace(
                 position_buckets=lambda: {},
                 orders=lambda: [],
@@ -341,7 +360,10 @@ class RuntimeGateTests(unittest.TestCase):
                 reconcile_timeout=1,
             )
             credentials = {"pfx_password": "secret", "trading_password": "secret"}
-            session = SimpleNamespace(close=lambda: None)
+            session = SimpleNamespace(
+                account="S12345678901",
+                close=lambda: None,
+            )
             store = SimpleNamespace(
                 position_buckets=lambda: {},
                 orders=lambda: [],
@@ -364,6 +386,46 @@ class RuntimeGateTests(unittest.TestCase):
 
             self.assertEqual(0, result)
             self.assertEqual({"0050|0": 1000}, runtime_main._load_baseline(baseline))
+            self.assertTrue(runtime_main._baseline_meta_path(baseline).is_file())
+
+    def test_automatic_baseline_never_rebases_after_today_entry(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            baseline = runtime / "position_baseline.json"
+            args = SimpleNamespace(
+                accept_existing_positions=False,
+                for_live_start=True,
+                runtime_dir=runtime,
+                baseline=baseline,
+                reconcile_timeout=1,
+            )
+            credentials = {"pfx_password": "secret", "trading_password": "secret"}
+            session = SimpleNamespace(account="S12345678901", close=lambda: None)
+            entry = SimpleNamespace(
+                purpose=SimpleNamespace(value="ENTRY"),
+                created_at=datetime.now(runtime_main.TAIPEI).isoformat(),
+                status=BrokerOrderStatus.FILLED,
+            )
+            store = SimpleNamespace(
+                position_buckets=lambda: {},
+                orders=lambda: [entry],
+                close=lambda: None,
+            )
+            adapter = SimpleNamespace(
+                inspect_broker_state=lambda timeout: SimpleNamespace(
+                    open_orders=[],
+                    positions={"3094|0": 1000},
+                ),
+                close=lambda: None,
+            )
+            with patch.object(
+                runtime_main,
+                "_connect_for_control",
+                return_value=(credentials, session, store, adapter),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "today's first entry"):
+                    runtime_main._capture_baseline(args, "PROD")
+            self.assertFalse(baseline.exists())
 
     def test_live_environment_flags_are_checked_before_credentials(self):
         with tempfile.TemporaryDirectory() as temporary:

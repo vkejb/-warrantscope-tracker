@@ -9,7 +9,7 @@ gate is authorized and startup reconciliation has passed.
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import errno
 import fcntl
 import hashlib
@@ -28,10 +28,13 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from yuanta_broker_execution_v01 import (
+    APCode,
     BrokerOrderStatus,
     LiveOrderStore,
     LiveTradingGate,
+    PriceType,
     StockOrderType,
+    TimeInForce,
     YuantaSparkExecutionAdapter,
     bridge_strategy_intent,
     load_api_types,
@@ -56,6 +59,7 @@ from .strategy import (
     ANTI_CHASE_ENTRY_POLICY,
     LIVE_EXIT_POLICY,
     LONG_MARKET_REGIME_POLICY,
+    ExitDecision,
     LiveDirectionEngine,
     ManagedPosition,
     SPEC,
@@ -255,6 +259,54 @@ def _write_baseline(path: Path, positions: dict[str, int]) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(positions, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     os.replace(tmp, path)
+
+
+def _baseline_meta_path(path: Path) -> Path:
+    return path.with_name(f"{path.stem}.meta.json")
+
+
+def _write_baseline_metadata(path: Path, *, account: str, captured_at: str) -> None:
+    """Persist only non-secret provenance needed to prevent intraday rebasing."""
+    stamp = datetime.fromisoformat(captured_at.replace("Z", "+00:00"))
+    payload = {
+        "version": 1,
+        "trading_date": stamp.astimezone(TAIPEI).date().isoformat(),
+        "captured_at": captured_at,
+        "account_fingerprint": hashlib.sha256(account.encode("utf-8")).hexdigest()[:12],
+    }
+    meta = _baseline_meta_path(path)
+    tmp = meta.with_suffix(meta.suffix + ".tmp")
+    tmp.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(tmp, meta)
+
+
+def _load_baseline_metadata(path: Path) -> dict[str, Any] | None:
+    meta = _baseline_meta_path(path)
+    if not meta.is_file():
+        return None
+    raw = json.loads(meta.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict) or int(raw.get("version", 0)) != 1:
+        raise ValueError("baseline metadata is invalid")
+    datetime.fromisoformat(str(raw["captured_at"]).replace("Z", "+00:00"))
+    datetime.fromisoformat(str(raw["trading_date"])).date()
+    if len(str(raw.get("account_fingerprint", ""))) != 12:
+        raise ValueError("baseline account fingerprint is invalid")
+    return raw
+
+
+def _baseline_is_current(path: Path, *, account: str, now: datetime) -> bool:
+    if not path.is_file():
+        return False
+    meta = _load_baseline_metadata(path)
+    if meta is None:
+        return False
+    expected = hashlib.sha256(account.encode("utf-8")).hexdigest()[:12]
+    if str(meta["account_fingerprint"]) != expected:
+        raise RuntimeError("baseline belongs to a different broker account")
+    return str(meta["trading_date"]) == now.astimezone(TAIPEI).date().isoformat()
 
 
 def _validate_watchlist_day(signal_date: str) -> None:
@@ -856,6 +908,35 @@ def _confirm_strategy_flat(adapter, store, timeout: float) -> None:
         raise RuntimeError("broker has remaining exposure or unresolved orders; flat not confirmed")
 
 
+def _authoritative_cash_long_delta(
+    adapter,
+    store: LiveOrderStore,
+    *,
+    baseline: dict[str, int],
+    symbol: str,
+    timeout: float,
+) -> int:
+    """Return only broker-proven cash-long shares above the frozen baseline.
+
+    The strict reconciliation also rejects any unexpected broker order before
+    the 13:23 fallback can create a new sell.  A local/broker discrepancy is a
+    hard failure, never a reason to guess a quantity.
+    """
+    result = adapter.reconcile(timeout=timeout, strict_positions=True)
+    key = f"{symbol}|0"
+    broker_delta = int(result.broker_positions.get(key, 0)) - int(baseline.get(key, 0))
+    local_delta = int(store.position_buckets().get(key, 0))
+    if broker_delta != local_delta:
+        raise RuntimeError(
+            "13:23 fallback refused: broker/local baseline delta mismatch"
+        )
+    if broker_delta < 0:
+        raise RuntimeError(
+            "13:23 fallback refused: actual cash inventory is below baseline"
+        )
+    return broker_delta
+
+
 def _checkpoint_position(store, position, pending_exit_reason) -> None:
     store.save_position_checkpoint(position.entry_order_id, {
         "version": 2,
@@ -1089,6 +1170,32 @@ def _order_type(value: str | None) -> StockOrderType | None:
     return StockOrderType(str(value))
 
 
+def _as_market_fallback(intent):
+    """Convert an approved exposure-reducing intent to the 13:23 fallback.
+
+    Regular-board positions are always whole lots in this strategy.  Refuse a
+    mixed/odd quantity rather than silently sending it with the wrong Yuanta
+    APCode; the supervisor will keep the incident critical and retry only after
+    broker reconciliation proves a valid remaining quantity.
+    """
+    quantity = int(intent.quantity)
+    if quantity % 1000:
+        if quantity >= 1000:
+            raise RuntimeError(
+                "13:23 market fallback cannot encode a mixed board/odd-lot quantity"
+            )
+        ap_code = APCode.INTRADAY_ODD_LOT
+    else:
+        ap_code = APCode.REGULAR
+    return replace(
+        intent,
+        price=None,
+        price_type=PriceType.MARKET,
+        time_in_force=TimeInForce.IOC,
+        ap_code=ap_code,
+    )
+
+
 def _decision_floor(now: datetime) -> datetime:
     step = 30
     second = (now.second // step) * step
@@ -1142,10 +1249,13 @@ def _post_close_action(
     *,
     emergency: bool,
     graceful_stop: bool,
+    scheduled_force_flat: bool = False,
 ) -> str:
     """Decide whether a flat runtime stops or continues quote archiving."""
     if emergency:
         return "STOP_EMERGENCY"
+    if scheduled_force_flat:
+        return "STOP_FORCE_FLAT"
     if graceful_stop:
         return "STOP_GRACEFUL"
     return "CONTINUE_ARCHIVE"
@@ -1171,6 +1281,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     signal_ledger_path = runtime_dir / "signal-ledger.jsonl"
     kill_path = runtime_dir / "EMERGENCY_STOP"
     stop_path = runtime_dir / "STOP_REQUEST"
+    force_flat_path = runtime_dir / "FORCE_FLAT_REQUEST"
     baseline_path = args.baseline.resolve()
     db_path = runtime_dir / "live-orders.sqlite"
     notifier = RuntimeNotifier(runtime_dir)
@@ -1278,6 +1389,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     next_exit_retry_at: datetime | None = None
     next_exit_reconcile_at: datetime | None = None
     exit_quote_alerted = False
+    market_fallback_cancel_requested = False
     clean_shutdown = False
     archive = None
     archive_started_at = ""
@@ -1362,6 +1474,15 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         session.connect()
         startup_stage = "BROKER_CONNECTED"
         assert session.api is not None
+        if submit_live and not _baseline_is_current(
+            baseline_path,
+            account=session.account,
+            now=datetime.now(TAIPEI),
+        ):
+            failure_code = "DAILY_BASELINE_NOT_READY"
+            raise RuntimeError(
+                "LIVE runtime requires today's account-scoped position baseline"
+            )
         adapter = YuantaSparkExecutionAdapter(
             api=session.api,
             api_types=api_types,
@@ -1374,9 +1495,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         reconciliation = adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
         startup_stage = "BROKER_RECONCILED"
         log("RECONCILIATION_PASSED", result=asdict(reconciliation), gate=gate.public_snapshot())
-        if store.control_state()["halted"] and not (
-            submit_live and args.recover_emergency and kill_path.exists()
-        ):
+        recovery_authorized = submit_live and (
+            (args.recover_emergency and kill_path.exists())
+            or (args.recover_force_flat and force_flat_path.exists())
+        )
+        if store.control_state()["halted"] and not recovery_authorized:
             failure_code = "BROKER_EXECUTION_HALTED"
             raise RuntimeError(f"broker execution store is halted: {store.control_state().get('reason')}")
         startup_stage = "LOCAL_STATE_RECOVERY"
@@ -1430,16 +1553,23 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             now = datetime.now(TAIPEI)
             emergency = kill_path.exists() or stop_event.is_set()
             graceful_stop = stop_path.exists()
+            scheduled_force_flat = force_flat_path.exists()
+            exit_only = emergency or scheduled_force_flat
+            market_fallback_due = now.time() >= time_from_text("13:23")
 
             # Emergency always takes precedence over a graceful stop request.
-            if emergency and graceful_stop:
+            if exit_only and graceful_stop:
                 stop_path.unlink(missing_ok=True)
                 graceful_stop = False
 
             runtime_state = (
                 "EMERGENCY_EXIT"
                 if emergency
-                else ("STOPPING" if graceful_stop else "RUNNING")
+                else (
+                    "FORCE_FLAT_EXIT"
+                    if scheduled_force_flat
+                    else ("STOPPING" if graceful_stop else "RUNNING")
+                )
             )
             heartbeat.beat(
                 runtime_state,
@@ -1467,6 +1597,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 pending_exit_reason = "EMERGENCY_STOP"
                 log("EMERGENCY_STOP_REQUESTED")
 
+            if scheduled_force_flat and pending_exit_reason is None:
+                pending_exit_reason = "SCHEDULED_FORCE_FLAT_1320"
+                log("SCHEDULED_FORCE_FLAT_REQUESTED")
+
             if graceful_stop and not emergency and pending_exit_reason is None:
                 pending_exit_reason = "GRACEFUL_STOP"
                 log("GRACEFUL_STOP_REQUESTED")
@@ -1475,6 +1609,18 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 if submit_live:
                     store.halt("MANUAL_EMERGENCY_STOP_NO_EXPOSURE")
                 log("EMERGENCY_STOP_COMPLETE", exposure="NONE")
+                clean_shutdown = True
+                return 0
+
+            if (
+                scheduled_force_flat
+                and entry_order_id is None
+                and position is None
+                and exit_order_id is None
+            ):
+                _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
+                force_flat_path.unlink(missing_ok=True)
+                log("SCHEDULED_FORCE_FLAT_COMPLETE", exposure="BASELINE_ONLY")
                 clean_shutdown = True
                 return 0
 
@@ -1515,7 +1661,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
 
                 if order.status not in TERMINAL and entry_submitted_at is not None:
                     expired = (now - entry_submitted_at).total_seconds() >= args.entry_timeout
-                    if (emergency or pending_exit_reason is not None or expired) and not entry_cancel_requested:
+                    if (exit_only or pending_exit_reason is not None or expired) and not entry_cancel_requested:
                         if order.broker_order_no:
                             adapter.cancel(entry_order_id, "runtime entry protection")
                             entry_cancel_requested = True
@@ -1537,6 +1683,12 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         if submit_live:
                             store.halt("MANUAL_EMERGENCY_STOP_NO_EXPOSURE")
                         log("EMERGENCY_STOP_COMPLETE", exposure="NONE")
+                        return 0
+                    if scheduled_force_flat:
+                        _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
+                        force_flat_path.unlink(missing_ok=True)
+                        log("SCHEDULED_FORCE_FLAT_COMPLETE", exposure="BASELINE_ONLY")
+                        clean_shutdown = True
                         return 0
                     if graceful_stop:
                         stop_path.unlink(missing_ok=True)
@@ -1568,7 +1720,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     )
 
                 elif (
-                    not emergency
+                    not exit_only
                     and pending_exit_reason is None
                     and entry_order_id is None
                 ):
@@ -1755,6 +1907,26 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 and not position.exit_submitted
                 and (next_exit_retry_at is None or now >= next_exit_retry_at)
             ):
+                if market_fallback_due:
+                    remaining_delta = _authoritative_cash_long_delta(
+                        adapter,
+                        store,
+                        baseline=baseline,
+                        symbol=position.stock_id,
+                        timeout=args.reconcile_timeout,
+                    )
+                    if remaining_delta <= 0:
+                        _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
+                        broker_flat_confirmed_at = utc_now()
+                        if scheduled_force_flat:
+                            force_flat_path.unlink(missing_ok=True)
+                        log(
+                            "HARD_EXIT_MARKET_FALLBACK_ALREADY_FLAT",
+                            stock_id=position.stock_id,
+                        )
+                        clean_shutdown = True
+                        return 0
+                    position.quantity = remaining_delta
                 safe_quote = engine.safe_exit_quote(
                     position, now, max_age_seconds=args.exit_quote_staleness
                 )
@@ -1766,19 +1938,33 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     reversal=reversal,
                     max_quote_age_seconds=args.exit_quote_staleness,
                 )
+                if market_fallback_due and exit_decision is None:
+                    exit_decision = ExitDecision(
+                        "HARD_EXIT_MARKET_FALLBACK",
+                        position.entry_price,
+                        0.0,
+                        0.0,
+                    )
                 _checkpoint_position(store, position, pending_exit_reason)
-                if (emergency or graceful_stop) and exit_decision is None:
+                if (exit_only or graceful_stop) and exit_decision is None:
                     if safe_quote is not None:
-                        from .strategy import ExitDecision
                         projected = engine.projected_net(position, safe_quote.price)
                         exit_decision = ExitDecision(
                             pending_exit_reason
-                            or ("EMERGENCY_STOP" if emergency else "GRACEFUL_STOP"),
+                            or (
+                                "EMERGENCY_STOP"
+                                if emergency
+                                else (
+                                    "SCHEDULED_FORCE_FLAT_1320"
+                                    if scheduled_force_flat
+                                    else "GRACEFUL_STOP"
+                                )
+                            ),
                             safe_quote.price,
                             projected,
                             projected / (position.entry_price * position.quantity),
                         )
-                    elif not exit_quote_alerted:
+                    elif not market_fallback_due and not exit_quote_alerted:
                         exit_quote_alerted = True
                         notifier.critical(
                             "EXIT_QUOTE_UNAVAILABLE",
@@ -1794,7 +1980,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             adapter.cancel(
                                 entry_order_id,
                                 f"exit:{exit_decision.reason}",
-                                emergency=emergency,
+                                emergency=exit_only,
                             )
                             entry_cancel_requested = True
                             log("ENTRY_CANCEL_SENT", client_order_id=entry_order_id, reason=exit_decision.reason)
@@ -1812,16 +1998,26 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             short_entry_order_type=short_entry,
                             short_cover_order_type=short_cover,
                         )
+                        if market_fallback_due:
+                            intent = _as_market_fallback(intent)
                         order = (
                             adapter.submit_rescue(intent)
-                            if emergency or store.control_state()["halted"] or exit_attempt > 1
+                            if exit_only or store.control_state()["halted"] or exit_attempt > 1
                             else adapter.submit(intent)
                         )
                         exit_order_id = order.client_order_id
                         position.exit_submitted = True
                         next_exit_retry_at = None
                         last_exit_reprice = now
-                        log("EXIT_SUBMITTED", client_order_id=exit_order_id, reason=exit_decision.reason, quantity=intent.quantity, price=str(intent.price), projected_net_pnl=exit_decision.projected_net_pnl)
+                        log(
+                            "EXIT_SUBMITTED",
+                            client_order_id=exit_order_id,
+                            reason=exit_decision.reason,
+                            quantity=intent.quantity,
+                            price=str(intent.price),
+                            price_type=intent.price_type.value,
+                            projected_net_pnl=exit_decision.projected_net_pnl,
+                        )
 
             # If an exit trigger was waiting for the entry cancel to settle, submit it as soon as terminal.
             if (
@@ -1848,7 +2044,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     intent = bridge_strategy_intent(raw, short_entry_order_type=short_entry, short_cover_order_type=short_cover)
                     order = (
                         adapter.submit_rescue(intent)
-                        if emergency or store.control_state()["halted"] or exit_attempt > 1
+                        if exit_only or store.control_state()["halted"] or exit_attempt > 1
                         else adapter.submit(intent)
                     )
                     exit_order_id = order.client_order_id
@@ -1859,6 +2055,23 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
 
             if exit_order_id is not None:
                 exit_order = store.get(exit_order_id)
+                if (
+                    market_fallback_due
+                    and exit_order.status in ACTIVE_EXIT_STATUSES
+                    and exit_order.price_type != PriceType.MARKET
+                    and store.pending_mutation(exit_order_id) is None
+                ):
+                    adapter.cancel(
+                        exit_order_id,
+                        "13:23 market fallback",
+                        emergency=True,
+                    )
+                    market_fallback_cancel_requested = True
+                    log(
+                        "EXIT_CANCEL_FOR_MARKET_FALLBACK_SENT",
+                        client_order_id=exit_order_id,
+                    )
+                    continue
                 if exit_order.status == BrokerOrderStatus.FILLED:
                     _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
                     broker_flat_confirmed_at = utc_now()
@@ -1876,6 +2089,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     close_action = _post_close_action(
                         emergency=emergency,
                         graceful_stop=graceful_stop,
+                        scheduled_force_flat=scheduled_force_flat,
                     )
 
                     if close_action == "STOP_EMERGENCY":
@@ -1893,6 +2107,12 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             "GRACEFUL_STOP_COMPLETE",
                             exposure="FLAT",
                         )
+                        clean_shutdown = True
+                        return 0
+
+                    if close_action == "STOP_FORCE_FLAT":
+                        force_flat_path.unlink(missing_ok=True)
+                        log("SCHEDULED_FORCE_FLAT_COMPLETE", exposure="BASELINE_ONLY")
                         clean_shutdown = True
                         return 0
 
@@ -1915,6 +2135,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     next_exit_retry_at = None
                     next_exit_reconcile_at = None
                     exit_quote_alerted = False
+                    market_fallback_cancel_requested = False
 
                     log(
                         "LIVE_TRADE_COMPLETE_CONTINUE_ARCHIVE",
@@ -1936,8 +2157,16 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         continue
 
                     reason = f"EXIT_NOT_FILLED:{exit_order.status.value}"
-                    store.halt(reason)
-                    kill_path.write_text(f"{utc_now()} EXIT_NOT_FILLED:{exit_order.status.value}\n", encoding="utf-8")
+                    planned_market_cancel = (
+                        market_fallback_cancel_requested
+                        and exit_order.status == BrokerOrderStatus.CANCELED
+                    )
+                    if not planned_market_cancel:
+                        store.halt(reason)
+                        kill_path.write_text(
+                            f"{utc_now()} EXIT_NOT_FILLED:{exit_order.status.value}\n",
+                            encoding="utf-8",
+                        )
                     notifier.critical(
                         "EXIT_RESCUE_REQUIRED",
                         "Exit order did not fully close the position; reconciling and retrying remaining exposure",
@@ -2024,6 +2253,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         position.exit_submitted = False
 
                     exit_order_id = None
+                    market_fallback_cancel_requested = False
                     last_exit_reprice = None
                     pending_exit_reason = pending_exit_reason or reason
 
@@ -2058,7 +2288,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         adapter.modify_price(
                             exit_order_id,
                             Decimal(str(new_price)),
-                            emergency=emergency or store.control_state()["halted"],
+                            emergency=exit_only or store.control_state()["halted"],
                         )
                         last_exit_reprice = now
                         log("EXIT_REPRICE_SENT", client_order_id=exit_order_id, price=new_price)
@@ -2367,6 +2597,14 @@ def _preflight(args, environment: str) -> int:
 
         session.connect()
         assert session.api is not None
+        if not _baseline_is_current(
+            args.baseline.resolve(),
+            account=session.account,
+            now=datetime.now(TAIPEI),
+        ):
+            raise RuntimeError(
+                "preflight requires today's account-scoped position baseline"
+            )
 
         adapter = YuantaSparkExecutionAdapter(
             api=session.api,
@@ -2430,8 +2668,11 @@ def _preflight(args, environment: str) -> int:
 
 
 def _capture_baseline(args, environment: str) -> int:
-    if not args.accept_existing_positions:
-        raise RuntimeError("baseline capture requires --accept-existing-positions")
+    automatic = bool(getattr(args, "for_live_start", False))
+    if not (args.accept_existing_positions or automatic):
+        raise RuntimeError(
+            "baseline capture requires --accept-existing-positions or --for-live-start"
+        )
     runtime_dir = args.runtime_dir.resolve()
     if (runtime_dir / "STOP_REQUEST").exists():
         raise RuntimeError("baseline capture refused while STOP_REQUEST is active")
@@ -2456,6 +2697,20 @@ def _capture_baseline(args, environment: str) -> int:
             baseline={},
             cli_live=False,
         )
+        baseline_path = args.baseline.resolve()
+        now = datetime.now(TAIPEI)
+        if automatic and _baseline_is_current(
+            baseline_path,
+            account=session.account,
+            now=now,
+        ):
+            print(json.dumps({
+                "status": "BASELINE_REUSED",
+                "path": str(baseline_path),
+                "trading_date": now.date().isoformat(),
+            }, ensure_ascii=False, indent=2))
+            return 0
+
         snapshot = adapter.inspect_broker_state(timeout=args.reconcile_timeout)
         if snapshot.open_orders:
             raise RuntimeError("baseline capture refused while broker has open orders")
@@ -2468,9 +2723,32 @@ def _capture_baseline(args, environment: str) -> int:
         ]
         if active_local_orders:
             raise RuntimeError("baseline capture refused while local active orders exist")
+        if automatic:
+            today = now.date()
+            entries_today = [
+                order
+                for order in store.orders()
+                if order.purpose.value == "ENTRY"
+                and _stamp(order.created_at).date() == today
+            ]
+            if entries_today:
+                raise RuntimeError(
+                    "automatic baseline capture refused after today's first entry order"
+                )
         positions = dict(snapshot.positions)
-        _write_baseline(args.baseline.resolve(), positions)
-        print(json.dumps({"status": "BASELINE_CAPTURED", "path": str(args.baseline.resolve()), "positions": positions}, ensure_ascii=False, indent=2))
+        captured_at = utc_now()
+        _write_baseline(baseline_path, positions)
+        _write_baseline_metadata(
+            baseline_path,
+            account=session.account,
+            captured_at=captured_at,
+        )
+        print(json.dumps({
+            "status": "BASELINE_CAPTURED",
+            "path": str(baseline_path),
+            "trading_date": now.date().isoformat(),
+            "positions": positions,
+        }, ensure_ascii=False, indent=2))
         return 0
     finally:
         if credentials is not None:
@@ -2675,6 +2953,11 @@ def _start_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--max-concurrent-positions", type=int, default=1)
     parser.add_argument("--max-trades-per-day", type=int, default=1)
     parser.add_argument("--recover-emergency", action="store_true", help="allow exit-only restart while the persistent emergency marker exists")
+    parser.add_argument(
+        "--recover-force-flat",
+        action="store_true",
+        help="allow an exit-only restart for an independent scheduled force-flat request",
+    )
     parser.add_argument("--short-entry-order-type", choices=["4", "5", "6", "9"], default=None)
     parser.add_argument("--short-cover-order-type", choices=["4", "5", "6", "9"], default=None)
 
@@ -2694,6 +2977,7 @@ def parse_args(argv=None):
         cmd = sub.add_parser(name)
         _common(cmd)
         cmd.add_argument("--accept-existing-positions", action="store_true")
+        cmd.add_argument("--for-live-start", action="store_true")
 
     for name in ("observe-uat", "observe-prod", "start-uat", "start-prod"):
         cmd = sub.add_parser(name)

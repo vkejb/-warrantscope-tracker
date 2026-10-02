@@ -40,6 +40,9 @@
 - 不再使用「先虧損、回正即出場」；未達 1R 前仍由災難停損、反向訊號與強制出場管理
 - 反向訊號連續確認出場
 - 13:20 強制出場
+- 13:23 若 13:20 退場仍未完成，先撤銷原退場單並重新以元大實際庫存核對
+  `actual cash position - 當日 baseline`；只有 broker/local 差額完全一致時，才對剩餘差額送
+  市價 IOC。原始庫存不在賣出數量內，實際庫存低於 baseline 時不反向買回。
 
 實際進出場使用 broker 回報的成交股數與平均成交價，而不是 replay 的假成交。
 
@@ -84,7 +87,25 @@ python3 -m yuanta_live_runtime_v01.main baseline-prod --accept-existing-position
 python3 -m yuanta_live_runtime_v01.main preflight-prod
 ```
 
-baseline 不會在 `start-prod` 時自動吞掉現有庫存；沒有明確建立 baseline 而庫存不符時會 fail closed。
+`start-prod` 本身不會改寫 baseline；baseline 只由啟動前的獨立唯讀步驟建立，缺少或庫存不符時會 fail closed。
+
+Trading Bot 的 `/start` 前置檢查現在會先以正式帳戶唯讀查詢自動建立或沿用「當日
+baseline」。同一交易日只會建立一次；當日本機已有任何 ENTRY 委託歷史、策略部位、
+進行中委託，或券商仍有未成交單時，禁止重新建立，避免盤中重啟把新增部位誤認成原始
+庫存。baseline 另有日期及帳戶雜湊 metadata；不保存完整帳號或密碼。
+
+## 獨立 13:20 force-flat supervisor
+
+Trading Bot service 可在明確設定 `ENABLE_SCHEDULED_FORCE_FLAT=YES` 時，同時啟動獨立
+排程執行緒。13:20 它建立持久 `FORCE_FLAT_REQUEST`；主交易 child 正常時由原本的
+13:20 退場流程接手，child 已中斷時則以 `start-prod --live --recover-force-flat` 啟動
+exit-only recovery。恢復子程序仍必須通過原本三重 LIVE gate、singleton lock、broker
+reconciliation 與 baseline 差額檢查，不能建立新倉。
+
+`FORCE_FLAT_REQUEST` 只有在重新查詢券商並確認實際庫存等於 baseline、券商與本機都無
+未決委託後才刪除。到 13:23 尚未完成時，runtime 取消仍在市場的限價退場單，待取消與
+部分成交完成對帳後，才以市價 IOC 送剩餘差額。委託狀態不明、外部未成交單、差額不一致、
+或混合整股／零股數量不能安全編碼時，一律停止猜測並發 CRITICAL；「市價」仍不保證成交。
 
 已安裝 Trading Bot 時，可在 Telegram 私人對話使用：
 
