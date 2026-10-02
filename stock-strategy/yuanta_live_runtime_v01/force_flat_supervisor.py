@@ -31,6 +31,8 @@ REQUEST = "FORCE_FLAT_REQUEST"
 META = "position_baseline.meta.json"
 LEDGER = "force_flat_supervisor.jsonl"
 SCHEDULE_GATE = "ENABLE_SCHEDULED_FORCE_FLAT"
+TRIGGER_START = time_cls(13, 20)
+TRIGGER_END = time_cls(13, 27)
 
 
 def _append(path: Path, event: str, **details: Any) -> None:
@@ -94,6 +96,11 @@ def _write_request(runtime_dir: Path, now: datetime) -> Path:
     )
     os.replace(tmp, request)
     return request
+
+
+def _within_trigger_window(now: datetime) -> bool:
+    local_time = now.astimezone(TAIPEI).time().replace(tzinfo=None)
+    return TRIGGER_START <= local_time < TRIGGER_END
 
 
 def _launch_exit_only(runtime_dir: Path) -> subprocess.Popen:
@@ -214,7 +221,7 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0) -> int:
         today = now.date().isoformat()
         if (
             now.weekday() < 5
-            and now.time() >= time_cls(13, 20)
+            and _within_trigger_window(now)
             and last_attempt_date != today
         ):
             last_attempt_date = today

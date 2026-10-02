@@ -20,6 +20,7 @@ from yuanta_live_runtime_v01.force_flat_supervisor import (
     TAIPEI,
     _baseline_ready,
     _launch_exit_only,
+    _within_trigger_window,
     scheduler_loop,
     trigger_once,
 )
@@ -199,6 +200,23 @@ class SupervisorTests(unittest.TestCase):
         with patch.dict(os.environ, {SCHEDULE_GATE: "NO"}, clear=False):
             with self.assertRaises(RuntimeError):
                 scheduler_loop(Path("/tmp/not-used"), interval_seconds=.25)
+
+    def test_trigger_window_never_retroactively_runs_after_market(self):
+        self.assertFalse(_within_trigger_window(
+            datetime(2026, 10, 2, 13, 19, 59, tzinfo=TAIPEI)
+        ))
+        self.assertTrue(_within_trigger_window(
+            datetime(2026, 10, 2, 13, 20, 0, tzinfo=TAIPEI)
+        ))
+        self.assertTrue(_within_trigger_window(
+            datetime(2026, 10, 2, 13, 26, 59, tzinfo=TAIPEI)
+        ))
+        self.assertFalse(_within_trigger_window(
+            datetime(2026, 10, 2, 13, 27, 0, tzinfo=TAIPEI)
+        ))
+        self.assertFalse(_within_trigger_window(
+            datetime(2026, 10, 2, 16, 0, 0, tzinfo=TAIPEI)
+        ))
 
     def test_exit_only_child_has_three_live_gates_and_recovery_flag(self):
         with TemporaryDirectory() as tmp, patch.dict(
