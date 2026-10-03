@@ -1,9 +1,9 @@
-"""Audit evidence for currently reproducible broker-state defects.
+"""Mock safety regressions for the ten independently reproduced broker defects.
 
-These tests intentionally assert the observed defective behavior. A passing
-test establishes that a defect is reproducible; it does NOT certify trading
-safety. They belong to an audit-only suite and should be replaced by safety
-regressions when the corresponding production defect is repaired.
+The original failure evidence is preserved in the audit report. After the
+user-authorized repair, these tests now assert the intended safe invariants,
+not the former defective behavior. Passing establishes those covered mock
+invariants only; it is not proof of production connectivity or execution.
 
 Only pure-Python adapter/store code, synthetic accounts, and temporary SQLite
 files are used. The vendor SDK, credentials, real sessions, subprocesses and
@@ -21,14 +21,11 @@ import unittest
 from unittest.mock import patch
 
 from yuanta_broker_execution_v01 import (
-    BrokerAdapterError,
     BrokerOrderStatus,
-    DuplicateIntentConflict,
     ExecutionIntent,
     LiveOrderStore,
     LiveTradingGate,
     Side,
-    StoreError,
     YuantaSparkExecutionAdapter,
 )
 
@@ -104,8 +101,8 @@ class AuditOnlyApi:
         return True
 
 
-class BrokerFailureAuditEvidenceTests(unittest.TestCase):
-    """Passing assertions below mean failure evidence remains reproducible."""
+class BrokerSafetyRegressionTests(unittest.TestCase):
+    """B01-B10 use synthetic identities and test the repaired invariants."""
 
     def setUp(self):
         stack = ExitStack()
@@ -184,36 +181,34 @@ class BrokerFailureAuditEvidenceTests(unittest.TestCase):
                 (stamp, order.client_order_id),
             )
 
-    def test_audit_evidence_duplicate_completed_new_ack_halts(self):
+    def test_b01_duplicate_completed_new_ack_is_idempotent(self):
         order = self.bind("duplicate-new-ack")
         identify = self.store.create_request(order.client_order_id, "NEW")
         self.store.complete_request(identify, success=True)
         self.adapter._apply_order_result(
             [{"identify": identify, "reply_code": 0, "order_no": order.broker_order_no}]
         )
-        self.assertEqual(
-            self.store.control_state()["reason"], "AMBIGUOUS_BROKER_ORDER_RESULT"
-        )
+        self.assertFalse(self.store.control_state()["halted"])
         self.assertEqual(self.api.send_calls, [])
 
-    def test_audit_evidence_duplicate_old_ack_corrupts_next_pending_request(self):
+    def test_b02_duplicate_old_ack_cannot_steal_next_pending_request(self):
         old = self.bind("old-ack")
         old_id = self.store.create_request(old.client_order_id, "NEW")
         self.store.complete_request(old_id, success=True)
         new = self.reserve("next-pending")
         new_id = self.store.create_request(new.client_order_id, "NEW")
         self.store.mark_send_pending(new.client_order_id)
-        with self.assertRaisesRegex(StoreError, "already belongs"):
-            self.adapter._apply_order_result(
-                [{"identify": old_id, "reply_code": 0, "order_no": old.broker_order_no}]
-            )
-        self.assertEqual(self.store.get_request(new_id)["request_status"], "ACCEPTED")
+        self.adapter._apply_order_result(
+            [{"identify": old_id, "reply_code": 0, "order_no": old.broker_order_no}]
+        )
+        self.assertEqual(self.store.get_request(new_id)["request_status"], "SEND_PENDING")
+        self.assertFalse(self.store.control_state()["halted"])
         self.assertEqual(
             self.store.get(new.client_order_id).status, BrokerOrderStatus.SEND_PENDING
         )
         self.assertEqual(self.api.send_calls, [])
 
-    def test_audit_evidence_cancel_confirmation_before_api_ack_halts(self):
+    def test_b03_cancel_confirmation_before_api_ack_preserves_confirmation(self):
         order = self.bind("cancel-ack-ordering")
         identify = self.store.create_request(order.client_order_id, "CANCEL")
         self.store.request_cancel(order.client_order_id, "AUDIT fake cancellation")
@@ -222,37 +217,36 @@ class BrokerFailureAuditEvidenceTests(unittest.TestCase):
         self.adapter._apply_order_result(
             [{"identify": identify, "reply_code": 0, "order_no": order.broker_order_no}]
         )
-        self.assertEqual(
-            self.store.control_state()["reason"], "AMBIGUOUS_BROKER_ORDER_RESULT"
-        )
+        self.assertFalse(self.store.control_state()["halted"])
+        self.assertEqual(self.store.get_request(identify)["request_status"], "CONFIRMED")
         self.assertEqual(
             self.store.get(order.client_order_id).status, BrokerOrderStatus.CANCELED
         )
         self.assertEqual(self.api.send_calls, [])
 
-    def test_audit_evidence_duplicate_reduction_applies_quantity_twice(self):
+    def test_b04_duplicate_reduction_applies_effective_quantity_once(self):
         order = self.bind("duplicate-reduction", 3000)
         identify = self.store.create_request(
-            order.client_order_id, "REDUCE", {"reduce_by": 1000}
+            order.client_order_id, "REDUCE", {"reduce_by": 1000, "before_quantity": 3000, "expected_quantity": 2000}
         )
         self.store.complete_request(identify, success=True)
-        report = self.report(order, order_status=4)
+        report = self.report(order, order_status=4, order_qty=2000)
         self.adapter._apply_real_report(report)
         self.assertEqual(self.store.get(order.client_order_id).quantity, 2000)
         self.adapter._apply_real_report(report)
-        self.assertEqual(self.store.get(order.client_order_id).quantity, 1000)
+        self.assertEqual(self.store.get(order.client_order_id).quantity, 2000)
         self.assertEqual(self.store.get_request(identify)["request_status"], "CONFIRMED")
 
-    def test_audit_evidence_delayed_ack_resurrects_canceled_order(self):
+    def test_b05_delayed_ack_cannot_resurrect_canceled_order(self):
         order = self.bind("terminal-ack")
         self.store.canceled(order.client_order_id)
         self.adapter._apply_real_report(self.report(order, order_status=18))
         self.assertEqual(
-            self.store.get(order.client_order_id).status, BrokerOrderStatus.ACKNOWLEDGED
+            self.store.get(order.client_order_id).status, BrokerOrderStatus.CANCELED
         )
-        self.assertIn(order.client_order_id, [x.client_order_id for x in self.store.orders(open_only=True)])
+        self.assertNotIn(order.client_order_id, [x.client_order_id for x in self.store.orders(open_only=True)])
 
-    def test_audit_evidence_late_partial_fill_reopens_canceled_residual(self):
+    def test_b06_late_partial_fill_is_booked_without_reopening_residual(self):
         order = self.bind("late-partial", 2000)
         self.store.canceled(order.client_order_id)
         self.adapter._apply_real_report(
@@ -261,9 +255,9 @@ class BrokerFailureAuditEvidenceTests(unittest.TestCase):
         current = self.store.get(order.client_order_id)
         self.assertEqual(current.filled_quantity, 1000)
         self.assertEqual(current.remaining_quantity, 1000)
-        self.assertEqual(current.status, BrokerOrderStatus.PARTIALLY_FILLED)
+        self.assertEqual(current.status, BrokerOrderStatus.CANCELED)
 
-    def test_audit_evidence_reused_cross_day_fill_identity_loses_today_fill(self):
+    def test_b07_reused_cross_day_fill_identity_records_both_owned_fills(self):
         old = self.bind("reused-cross-day")
         self.adapter._apply_real_report(
             self.report(old, rpt_type=51, order_qty=1000, price="100", seq_no="AUDIT-1")
@@ -272,14 +266,13 @@ class BrokerFailureAuditEvidenceTests(unittest.TestCase):
         new = self.reserve("today-different-basket")
         self.store.bind_broker_order(new.client_order_id, old.broker_order_no)
         new = self.store.get(new.client_order_id)
-        with self.assertRaisesRegex(DuplicateIntentConflict, "different payload"):
-            self.adapter._apply_real_report(
-                self.report(new, rpt_type=51, order_qty=1000, price="100", seq_no="AUDIT-1")
-            )
-        self.assertEqual(self.store.get(new.client_order_id).filled_quantity, 0)
-        self.assertEqual(len(self.store.fills()), 1)
+        self.adapter._apply_real_report(
+            self.report(new, rpt_type=51, order_qty=1000, price="100", seq_no="AUDIT-1")
+        )
+        self.assertEqual(self.store.get(new.client_order_id).filled_quantity, 1000)
+        self.assertEqual(len(self.store.fills()), 2)
 
-    def test_audit_evidence_conflicting_report_identity_updates_wrong_position(self):
+    def test_b08_conflicting_report_identity_cannot_update_owned_position(self):
         order = self.bind("foreign-identity")
         self.adapter._apply_real_report(
             self.report(
@@ -294,10 +287,10 @@ class BrokerFailureAuditEvidenceTests(unittest.TestCase):
                 seq_no="AUDIT-foreign-1",
             )
         )
-        self.assertEqual(self.store.get(order.client_order_id).filled_quantity, 1000)
-        self.assertEqual(self.store.positions(), {"3605": 1000})
+        self.assertEqual(self.store.get(order.client_order_id).filled_quantity, 0)
+        self.assertEqual(self.store.positions(), {})
 
-    def test_audit_evidence_historical_number_hides_external_open_order(self):
+    def test_b09_historical_number_cannot_hide_external_open_order(self):
         historical = self.bind("historical-external-number")
         self.store.reject(historical.client_order_id, "AUDIT historical terminal order")
         self.mark_previous_day(historical)
@@ -312,9 +305,9 @@ class BrokerFailureAuditEvidenceTests(unittest.TestCase):
             "order_qty": 1000,
             "ok_qty": 0,
         }
-        self.assertEqual(self.adapter._compare_orders([remote]), [])
+        self.assertEqual(self.adapter._compare_orders([remote])[0]["reason"], "unexpected_remote_open_order")
 
-    def test_audit_evidence_merge_confirmed_modify_blocks_emergency_cancel(self):
+    def test_b10_authoritative_modify_price_allows_emergency_cancel(self):
         order = self.bind("lost-modify-detail")
         identify = self.store.create_request(
             order.client_order_id, "MODIFY_PRICE", {"new_price": "101"}
@@ -327,14 +320,13 @@ class BrokerFailureAuditEvidenceTests(unittest.TestCase):
                 ok_qty=0,
                 order_status=20,
                 last_order_status=20,
+                price="101",
             )
         )
-        self.assertEqual(
-            self.store.pending_mutation(order.client_order_id)["request_status"], "ACCEPTED"
-        )
-        with self.assertRaisesRegex(BrokerAdapterError, "mutation already in flight: MODIFY_PRICE"):
-            self.adapter.cancel(order.client_order_id, "AUDIT force flat", emergency=True)
-        self.assertEqual(self.api.send_calls, [])
+        self.assertIsNone(self.store.pending_mutation(order.client_order_id))
+        current = self.adapter.cancel(order.client_order_id, "AUDIT force flat", emergency=True)
+        self.assertEqual(current.status, BrokerOrderStatus.CANCEL_PENDING)
+        self.assertEqual(len(self.api.send_calls), 1)
 
 
 if __name__ == "__main__":

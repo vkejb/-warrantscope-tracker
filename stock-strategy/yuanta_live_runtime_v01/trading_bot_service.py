@@ -21,6 +21,9 @@ from .force_flat_supervisor import (
     SCHEDULE_GATE,
     scheduler_loop as force_flat_scheduler_loop,
 )
+from .watchdog import runtime_health
+from .notifications import RuntimeNotifier
+from .trading_bot_notifier import AsyncTradingNotifier
 
 MODULE_DIR = Path(__file__).resolve().parent
 DEFAULT_RUNTIME_DIR = MODULE_DIR / "runtime"
@@ -70,10 +73,9 @@ def _age_seconds(value: Any) -> float | None:
     stamp = _stamp(value)
     if stamp is None:
         return None
-    return max(
-        0.0,
-        (datetime.now(timezone.utc) - stamp.astimezone(timezone.utc)).total_seconds(),
-    )
+    if stamp.tzinfo is None:
+        return None
+    return (datetime.now(timezone.utc) - stamp.astimezone(timezone.utc)).total_seconds()
 
 
 def _compact_signal(row: dict[str, Any] | None) -> dict[str, Any] | None:
@@ -112,9 +114,10 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
         heartbeat_age = _age_seconds(heartbeat.get("at"))
         state = str(heartbeat.get("state", "UNKNOWN"))
         if state in {
-            "STARTING", "RUNNING", "EMERGENCY_EXIT", "FORCE_FLAT_EXIT", "STOPPING",
+            "STARTING", "RUNNING", "EMERGENCY_EXIT", "FORCE_FLAT_EXIT", "EXIT_ONLY_RECOVERY", "STOPPING",
         }:
-            if heartbeat_age is not None and heartbeat_age <= 15:
+            health = runtime_health(runtime_dir)
+            if health.healthy:
                 if state == "STARTING":
                     runtime_state = (
                         "LIVE_STARTING"
@@ -127,6 +130,8 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
                         if bool(heartbeat.get("submit_live"))
                         else "OBSERVE_STOPPING"
                     )
+                elif state in {"EMERGENCY_EXIT", "FORCE_FLAT_EXIT", "EXIT_ONLY_RECOVERY"}:
+                    runtime_state = "LIVE_EXIT_ONLY_RECOVERY" if bool(heartbeat.get("submit_live")) else "OBSERVE_EXIT_ONLY_RECOVERY"
                 else:
                     runtime_state = (
                         "LIVE_RUNNING"
@@ -134,7 +139,7 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
                         else "OBSERVE_RUNNING"
                     )
             else:
-                runtime_state = "HEARTBEAT_STALE"
+                runtime_state = "HEARTBEAT_STALE" if health.reason == "HEARTBEAT_STALE" else "RUNTIME_LIVENESS_UNPROVEN"
         elif state in {"STOPPED_CLEAN", "STOPPED_UNSAFE"}:
             runtime_state = state
         else:
@@ -147,10 +152,14 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
         "OBSERVE_RUNNING",
         "LIVE_STOPPING",
         "OBSERVE_STOPPING",
+        "LIVE_EXIT_ONLY_RECOVERY",
+        "OBSERVE_EXIT_ONLY_RECOVERY",
     }:
         quote_age = _age_seconds((heartbeat or {}).get("last_quote_at"))
         if quote_age is None:
             quote_health = "NO_QUOTE_YET"
+        elif quote_age < 0:
+            quote_health = "FUTURE_TIMESTAMP"
         elif quote_age <= 5:
             quote_health = "FRESH"
         elif quote_age <= 30:
@@ -206,7 +215,10 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
         "trade_attempted": (heartbeat or {}).get("trade_attempted"),
         "failure_code": (heartbeat or {}).get("failure_code"),
         "failure_stage": (heartbeat or {}).get("failure_stage"),
-        "monitoring_market": runtime_state in {"LIVE_RUNNING", "OBSERVE_RUNNING"},
+        # A healthy controller can perform broker-only risk reduction without
+        # fresh quotes. Do not present that as normal market monitoring.
+        "monitoring_market": runtime_state in {"LIVE_RUNNING", "OBSERVE_RUNNING"} and quote_health == "FRESH",
+        "exit_only_recovery": runtime_state in {"LIVE_EXIT_ONLY_RECOVERY", "OBSERVE_EXIT_ONLY_RECOVERY"},
         "last_signal": _compact_signal(last_signal_row),
         "last_order": _compact_order(last_order_row),
     }
@@ -350,6 +362,8 @@ def render_status(status: dict[str, Any]) -> str:
             else "否"
         )
     )
+    if status.get("exit_only_recovery"):
+        lines.append("退出恢復：進行中（禁止新倉；行情狀態另列）")
 
     lines.append(
         f"監控標的："
@@ -560,29 +574,10 @@ def _audit_control(
 
 
 def _runtime_process_active(runtime_dir: Path) -> bool:
-    heartbeat = _read_json(Path(runtime_dir) / "heartbeat.json")
-    if not heartbeat:
-        return False
-
-    state = str(heartbeat.get("state", ""))
-    if state not in {
-        "STARTING", "RUNNING", "STOPPING", "EMERGENCY_EXIT", "FORCE_FLAT_EXIT",
-    }:
-        return False
-
-    age = _age_seconds(heartbeat.get("at"))
-    if age is None or age > 15:
-        return False
-
-    try:
-        pid = int(heartbeat.get("pid", 0))
-        if pid <= 0:
-            return False
-        os.kill(pid, 0)
-    except (OSError, TypeError, ValueError):
-        return False
-
-    return True
+    # Stale/legacy heartbeat is not healthy, but a live kernel lock owner still
+    # prevents another controller. Never infer a dead child from age alone.
+    health = runtime_health(runtime_dir)
+    return health.controller_present
 
 
 def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
@@ -744,16 +739,17 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
     )
 
     try:
-        process = subprocess.Popen(
-            command,
-            cwd=str(MODULE_DIR.parent),
-            env=child_env,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-            close_fds=True,
-        )
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        out_path = runtime_dir / "trading_runtime.out.log"
+        err_path = runtime_dir / "trading_runtime.err.log"
+        with out_path.open("a", encoding="utf-8") as stdout, err_path.open("a", encoding="utf-8") as stderr:
+            os.chmod(out_path, 0o600)
+            os.chmod(err_path, 0o600)
+            process = subprocess.Popen(
+                command, cwd=str(MODULE_DIR.parent), env=child_env,
+                stdin=subprocess.DEVNULL, stdout=stdout, stderr=stderr,
+                start_new_session=True, close_fds=True,
+            )
     except OSError:
         return False, "START_EXECUTION_ERROR"
 
@@ -774,12 +770,14 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
         if (
             heartbeat is not None
             and heartbeat.get("at") != previous_stamp
+            and heartbeat.get("pid") == getattr(process, "pid", None)
+            and heartbeat.get("pid") is not None
         ):
             state = str(
                 heartbeat.get("state", "")
             )
 
-            if state == "RUNNING":
+            if state == "RUNNING" and runtime_health(runtime_dir).healthy:
                 return True, "START_CONFIRMED_RUNNING"
 
             if state == "STOPPED_UNSAFE":
@@ -1250,31 +1248,70 @@ class _RemoteControl:
         return None
 
 
-def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
-    token, configured_chat_id = load_trading_bot_credentials()
+def _supervisor_thread(runtime_dir: Path, stop_event: threading.Event) -> threading.Thread:
+    def run() -> None:
+        try:
+            force_flat_scheduler_loop(runtime_dir, stop_event=stop_event)
+        except BaseException as exc:
+            print(f"CRITICAL: safety supervisor stopped: {type(exc).__name__}", flush=True)
+    thread = threading.Thread(target=run, name="scheduled-force-flat-supervisor", daemon=True)
+    thread.start()
+    return thread
+
+
+def _supervisor_thread_healthy(thread: threading.Thread, runtime_dir: Path, started_at: float) -> bool:
+    if not thread.is_alive():
+        return False
+    payload = _read_json(Path(runtime_dir) / "supervisor_heartbeat.json")
+    if payload is None:
+        return time.monotonic() - started_at <= 15
+    age = _age_seconds(payload.get("at"))
+    try:
+        return age is not None and 0 <= age <= 45 and int(payload.get("pid", 0)) == os.getpid()
+    except (ValueError, TypeError, OverflowError):
+        return False
+
+
+def serve(runtime_dir: Path, *, poll_timeout: int = 25,
+          stop_event: threading.Event | None = None) -> int:
+    # Telegram/Keychain availability must not be a prerequisite for the
+    # explicitly enabled safety supervisor. Polling reloads credentials below.
     offset = _load_offset(runtime_dir)
     controls = _RemoteControl(runtime_dir)
+    force_flat_thread = None
+    supervisor_stop = threading.Event()
+    supervisor_started = time.monotonic()
     if os.environ.get(SCHEDULE_GATE, "").strip().upper() == "YES":
-        force_flat_thread = threading.Thread(
-            target=force_flat_scheduler_loop,
-            args=(runtime_dir,),
-            name="scheduled-force-flat-supervisor",
-            daemon=True,
-        )
-        force_flat_thread.start()
+        force_flat_thread = _supervisor_thread(runtime_dir, supervisor_stop)
     else:
         print(
             "Scheduled force-flat supervisor disabled by explicit gate.",
             flush=True,
         )
+    try:
+        notification_worker = AsyncTradingNotifier(runtime_dir)
+    except Exception as exc:
+        print(f"CRITICAL: notification outbox unavailable: {type(exc).__name__}", flush=True)
+        notification_worker = RuntimeNotifier(runtime_dir)
     print(
         "Trading Bot service started. Commands: "
         "/status /start /stop /kill /clear-halt /sync-baseline /confirm /help",
         flush=True,
     )
 
-    while True:
+    while stop_event is None or not stop_event.is_set():
         try:
+            if force_flat_thread is not None and not _supervisor_thread_healthy(force_flat_thread, runtime_dir, supervisor_started):
+                notification_worker.critical(
+                    "SAFETY_SUPERVISOR_UNHEALTHY",
+                    "Safety supervision stopped or stalled; Bot is exiting nonzero so its existing service manager can restart it",
+                )
+                supervisor_stop.set()
+                notification_worker.close(timeout=0.25)
+                return 2
+            # Long-running Telegram polls must not retain stale credentials
+            # after a Keychain update. Safety supervision runs independently.
+            token, configured_chat_id = load_trading_bot_credentials()
             query = urllib.parse.urlencode(
                 {
                     "timeout": poll_timeout,
@@ -1352,13 +1389,22 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25) -> int:
             time.sleep(0.05)
         except KeyboardInterrupt:
             print("Trading Bot status service stopped.", flush=True)
+            supervisor_stop.set()
+            notification_worker.close(timeout=0.25)
+            if force_flat_thread is not None:
+                force_flat_thread.join(timeout=1)
             return 0
         except Exception as exc:
             print(
-                f"Trading Bot polling warning: {type(exc).__name__}: {exc}",
+                f"Trading Bot polling warning: {type(exc).__name__}",
                 flush=True,
             )
             time.sleep(5)
+    supervisor_stop.set()
+    notification_worker.close(timeout=0.25)
+    if force_flat_thread is not None:
+        force_flat_thread.join(timeout=1)
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:

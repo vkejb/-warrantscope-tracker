@@ -162,18 +162,20 @@ class SupervisorTests(unittest.TestCase):
 
             def launcher(path):
                 launched.append(path)
-                return Mock()
+                return Mock(poll=Mock(return_value=None))
 
             def sleeper(_seconds):
                 (runtime / "FORCE_FLAT_REQUEST").unlink(missing_ok=True)
                 (runtime / "heartbeat.json").write_text(
-                    json.dumps({"state": "STOPPED_CLEAN"}),
+                    json.dumps({"state": "STOPPED_CLEAN", "broker_flat_confirmed": True,
+                                "broker_flat_confirmed_at": now.isoformat()}),
                     encoding="utf-8",
                 )
 
             self.assertTrue(trigger_once(
                 runtime,
                 now=now,
+                clock=lambda: now,
                 wait_seconds=1,
                 poll_seconds=.05,
                 launcher=launcher,

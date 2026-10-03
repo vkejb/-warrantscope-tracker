@@ -212,6 +212,68 @@ class LiveDirectionEngine:
         self._previous: dict[str, tuple[str, int, datetime]] = {}
         self.last_decision: datetime | None = None
         self.last_entry_diagnostics: dict = {}
+        # EXIT-only quotes do not feed volume, VWAP, entry confirmations or
+        # stock selection. A locked/quiet market can still have an executable
+        # side even when a trade callback is invalid for entry calculations.
+        self._exit_quotes: dict[str, dict[str, tuple[float, datetime]]] = {}
+        self._exit_callback_symbols: set[str] = set()
+
+    @_locked
+    def add_monitor_symbol(self, symbol: str, name: str) -> None:
+        """Monitor recovered exposure without making it an entry candidate."""
+        self._states.setdefault(str(symbol), _StockState(str(name), deque()))
+
+    @_locked
+    def reset_exit_quotes(self) -> None:
+        self._exit_quotes.clear()
+
+    @_locked
+    def entry_data_ready(self, symbol: str, now: datetime, *, max_age_seconds: float) -> bool:
+        state = self._states.get(str(symbol))
+        if state is None or not state.ticks or state.latest_book is None:
+            return False
+        for stamp in (state.ticks[-1]["time"], state.latest_book["time"]):
+            age = (now.astimezone(TAIPEI) - stamp).total_seconds()
+            if age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS or age > max_age_seconds:
+                return False
+        return True
+
+    @_locked
+    def record_exit_quote(
+        self, symbol: str, *, at: datetime, received_at: datetime,
+        bid: object = None, ask: object = None,
+    ) -> bool:
+        """Keep a fresh executable side separately from ENTRY tick acceptance."""
+        symbol = str(symbol)
+        if symbol not in self._states:
+            return False
+        self._exit_callback_symbols.add(symbol)
+        stamp, received = at.astimezone(TAIPEI), received_at.astimezone(TAIPEI)
+        age = (received - stamp).total_seconds()
+        if age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS or age > float(SPEC["maximum_tick_staleness_seconds"]):
+            return False
+        bp, ap = self._num(bid), self._num(ask)
+        # SPARK uses 99999.9999 for a nonexistent side in locked markets.
+        bp = bp if bp is not None and 0 < bp < 99999 else None
+        ap = ap if ap is not None and 0 < ap < 99999 else None
+        if bp is not None and ap is not None and ap < bp:
+            return False
+        quote = self._exit_quotes.setdefault(symbol, {})
+        changed = False
+        for side, value, supplied in (("bid", bp, bid), ("ask", ap, ask)):
+            if supplied is None:
+                continue
+            previous = quote.get(side)
+            if previous is not None and stamp < previous[1]:
+                continue
+            if value is None:
+                # A newly absent side invalidates an older executable side;
+                # a timestamped tombstone must not resurrect a stale bid/ask.
+                quote[side] = (0.0, stamp)
+            else:
+                quote[side] = (value, stamp)
+                changed = True
+        return changed
 
     @staticmethod
     def _num(value: object) -> float | None:
@@ -967,23 +1029,41 @@ class LiveDirectionEngine:
     ) -> SafeExitQuote | None:
         """Return a fresh, bounded executable quote or fail closed."""
         state = self._states.get(position.stock_id)
-        if state is None or not state.ticks:
+        if state is None:
             return None
-        row = state.ticks[-1]
-        age = (now.astimezone(TAIPEI) - row["time"]).total_seconds()
-        bid, ask = float(row["bid"]), float(row["ask"])
-        if (
-            age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS
-            or age > max_age_seconds
-            or bid <= 0
-            or ask <= 0
-            or ask < bid
-        ):
+        quotes = dict(self._exit_quotes.get(position.stock_id, {}))
+        if state.ticks:
+            row = state.ticks[-1]
+            for side in ("bid", "ask"):
+                value = self._num(row[side])
+                if value is not None and 0 < value < 99999 and (side not in quotes or row["time"] > quotes[side][1]):
+                    quotes[side] = (value, row["time"])
+        # Combined books remain available to historical/mock callers that do
+        # not go through _Session.record_exit_quote().
+        if state.latest_book and position.stock_id not in self._exit_callback_symbols:
+            book = state.latest_book
+            for side in ("bid", "ask"):
+                value = self._num(book.get(f"best_{side}", 0))
+                if value is not None and 0 < value < 99999 and (side not in quotes or book["time"] > quotes[side][1]):
+                    quotes[side] = (value, book["time"])
+        required = "bid" if position.side == "LONG" else "ask"
+        if required not in quotes:
             return None
+        executable, stamp = quotes[required]
+        age = (now.astimezone(TAIPEI) - stamp).total_seconds()
+        if age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS or age > max_age_seconds or not math.isfinite(executable) or not 0 < executable < 99999:
+            return None
+        fresh = {
+            side: value for side, (value, quote_time) in quotes.items()
+            if 0 < value < 99999 and -MAXIMUM_FUTURE_TICK_SKEW_SECONDS
+            <= (now.astimezone(TAIPEI) - quote_time).total_seconds() <= max_age_seconds
+        }
+        bid, ask = fresh.get("bid", 0.0), fresh.get("ask", 0.0)
+        if bid and ask:
+            midpoint = (bid + ask) / 2
+            if ask < bid or (ask - bid) / midpoint * 10_000 > max_spread_bps:
+                return None
         age = max(0.0, age)
-        midpoint = (bid + ask) / 2
-        if midpoint <= 0 or (ask - bid) / midpoint * 10_000 > max_spread_bps:
-            return None
         raw = (
             max(_tick_size(bid), bid - _tick_size(bid))
             if position.side == "LONG"
@@ -992,7 +1072,7 @@ class LiveDirectionEngine:
         price = raw
         if price <= 0:
             return None
-        return SafeExitQuote(price, row["time"], age, bid, ask)
+        return SafeExitQuote(price, stamp, age, bid, ask)
 
     def evaluate_exit(
         self,

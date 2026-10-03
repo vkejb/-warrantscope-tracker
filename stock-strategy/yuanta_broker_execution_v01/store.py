@@ -143,6 +143,12 @@ class LiveOrderStore:
                     payload TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS broker_result_receipts (
+                    result_key TEXT PRIMARY KEY,
+                    request_identify INTEGER NOT NULL REFERENCES broker_requests(identify),
+                    payload TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
                 INSERT OR IGNORE INTO live_control(singleton,halted,reason,next_identify,updated_at)
                 VALUES(1,0,NULL,1,'INITIAL');
                 """
@@ -546,6 +552,19 @@ class LiveOrderStore:
             request = self.get_request(identify)
             if request is None:
                 return None
+            # Exchange confirmation can beat the API's acceptance callback.
+            # Never reopen a finalized request or reverse its outcome merely
+            # because a duplicate/late acceptance arrived.
+            prior = request["request_status"]
+            if prior in {"CONFIRMED", "FAILED", "REJECTED", "UNSENT_REJECTED"}:
+                agrees = success == (prior == "CONFIRMED")
+                if not agrees and prior != "UNSENT_REJECTED":
+                    self.halt(f"CONFLICTING_BROKER_REQUEST_RESULT:{identify}")
+                return request
+            if prior == "ACCEPTED":
+                if not success:
+                    self.halt(f"CONFLICTING_BROKER_REQUEST_RESULT:{identify}")
+                return request
             with self.connection:
                 self.connection.execute(
                     "UPDATE broker_requests SET request_status=?,updated_at=? WHERE identify=?",
@@ -563,6 +582,58 @@ class LiveOrderStore:
                 )
             request["request_status"] = "ACCEPTED" if success else "REJECTED"
             return request
+
+    def broker_result_receipt(self, result_key: str) -> dict[str, Any] | None:
+        with self._lock:
+            row = self.connection.execute(
+                "SELECT * FROM broker_result_receipts WHERE result_key=?", (result_key,)
+            ).fetchone()
+            return None if row is None else dict(row)
+
+    def record_broker_result_receipt(
+        self, result_key: str, identify: int, payload: Mapping[str, Any]
+    ) -> None:
+        with self._lock, self.connection:
+            self.connection.execute(
+                "INSERT OR IGNORE INTO broker_result_receipts VALUES(?,?,?,?)",
+                (result_key, int(identify), json.dumps(dict(payload), sort_keys=True, default=str), utc_now()),
+            )
+
+    def reject_unsent_request(self, identify: int, reason: str) -> bool:
+        """Close only a request proven not to have reached SendStockOrder."""
+        with self._lock, self.connection:
+            request = self.get_request(identify)
+            if request is None or request["request_status"] != "SEND_PENDING":
+                return False
+            self.connection.execute(
+                "UPDATE broker_requests SET request_status='UNSENT_REJECTED',updated_at=? WHERE identify=?",
+                (utc_now(), identify),
+            )
+            self._event("BROKER_REQUEST_UNSENT_REJECTED", request["client_order_id"], {"identify": identify, "reason": reason})
+            return True
+
+    def is_proven_unsent_rejection(self, client_order_id: str) -> bool:
+        """Recognize only durable rejected NEW orders proven never submitted.
+
+        This is deliberately narrower than REJECTED: broker rejection, network
+        uncertainty, and sent requests must still be reconciled with the broker.
+        The zero-request case covers failures before creating any NEW request.
+        """
+        with self._lock:
+            order = self.get(client_order_id)
+            if order.status != BrokerOrderStatus.REJECTED or order.filled_quantity != 0 or order.broker_order_no:
+                return False
+            rows = self.connection.execute(
+                "SELECT request_status FROM broker_requests WHERE client_order_id=? AND operation='NEW'",
+                (client_order_id,),
+            ).fetchall()
+            if rows:
+                return all(row["request_status"] == "UNSENT_REJECTED" for row in rows)
+            return order.identify == 0 and str(order.last_error or "").startswith("UNSENT_")
+
+    def audit_event(self, event_type: str, payload: Mapping[str, Any]) -> None:
+        with self._lock, self.connection:
+            self._event(event_type, None, payload)
 
     def mark_send_pending(self, client_order_id: str) -> StoredOrder:
         return self._set_status(
@@ -624,7 +695,7 @@ class LiveOrderStore:
     ) -> StoredOrder:
         with self._lock:
             current = self.get(client_order_id)
-            if current.status == BrokerOrderStatus.FILLED and status != BrokerOrderStatus.FILLED:
+            if current.status in TERMINAL_STATUSES and status != BrokerOrderStatus.FILLED:
                 return current
             with self.connection:
                 self.connection.execute(
@@ -755,6 +826,8 @@ class LiveOrderStore:
             current = self.get(client_order_id)
             if quantity <= 0 or quantity < current.filled_quantity:
                 raise StoreError("authoritative quantity is invalid")
+            if quantity > current.quantity:
+                raise StoreError("broker quantity increase is not an authorized reduction")
             if quantity == current.quantity:
                 return current
             with self.connection:
@@ -767,6 +840,11 @@ class LiveOrderStore:
                     client_order_id,
                     {"old_quantity": current.quantity, "new_quantity": quantity},
                 )
+                if current.filled_quantity == quantity:
+                    self.connection.execute(
+                        "UPDATE live_orders SET status=? WHERE client_order_id=?",
+                        (BrokerOrderStatus.FILLED.value, client_order_id),
+                    )
             return self.get(client_order_id)
 
     def record_fill(
@@ -778,6 +856,7 @@ class LiveOrderStore:
         price: Any,
         broker_order_no: str | None = None,
         seq_no: str | None = None,
+        legacy_fill_id: str | None = None,
     ) -> StoredOrder:
         if not fill_id.strip():
             raise ValueError("fill_id is required")
@@ -792,6 +871,15 @@ class LiveOrderStore:
                 "SELECT client_order_id,quantity,price FROM live_fills WHERE fill_id=?",
                 (fill_id,),
             ).fetchone()
+            if existing is None and legacy_fill_id:
+                legacy = self.connection.execute(
+                    "SELECT client_order_id,quantity,price FROM live_fills WHERE fill_id=?",
+                    (legacy_fill_id,),
+                ).fetchone()
+                # Old databases used OrderNo:SeqNo globally. Only a receipt
+                # belonging to this exact local order is a valid duplicate.
+                if legacy is not None and legacy["client_order_id"] == client_order_id:
+                    existing = legacy
             if existing is not None:
                 if (
                     existing["client_order_id"] != client_order_id
@@ -814,7 +902,7 @@ class LiveOrderStore:
                 else (
                     BrokerOrderStatus.CANCEL_PENDING
                     if order.status == BrokerOrderStatus.CANCEL_PENDING
-                    else BrokerOrderStatus.PARTIALLY_FILLED
+                    else (order.status if order.status in TERMINAL_STATUSES else BrokerOrderStatus.PARTIALLY_FILLED)
                 )
             )
             with self.connection:

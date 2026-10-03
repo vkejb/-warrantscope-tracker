@@ -1,8 +1,7 @@
-"""Mock-only evidence tests for observed entry and final-send safety gaps.
+"""Mock-only regression invariants for repaired final-send safety gaps.
 
-A passing test means the described gap is reproduced in the current code.  It
-does not mean that production is safe or that the gap has been repaired.  No
-broker, credentials, runtime directory, or external service is used here.
+Passing means these synthetic failures are contained, not live certification.
+No broker, credentials, runtime directory, or external service is used here.
 """
 from datetime import datetime
 from decimal import Decimal
@@ -57,7 +56,7 @@ class EntryRiskEvidenceTests(unittest.TestCase):
             purpose=purpose,
         )
 
-    def test_entry_still_sent_if_halt_activates_during_preorder_reconciliation(self):
+    def test_entry_not_sent_if_halt_activates_during_preorder_reconciliation(self):
         original_reconcile = self.adapter.reconcile
 
         def reconcile_then_halt(**kwargs):
@@ -66,19 +65,20 @@ class EntryRiskEvidenceTests(unittest.TestCase):
             return result
 
         self.adapter.reconcile = reconcile_then_halt
-        self.adapter.submit(self.intent("halt-race"))
+        result = self.adapter.submit(self.intent("halt-race"))
         self.assertTrue(self.store.control_state()["halted"])
-        self.assertEqual(len(self.api.sent), 1)
+        self.assertEqual(result.status.value, "REJECTED")
+        self.assertEqual(self.api.sent, [])
 
-    def test_normal_exit_submission_can_create_sell_from_flat(self):
+    def test_normal_exit_submission_cannot_create_sell_from_flat(self):
         self.assertEqual(self.store.position_buckets(), {})
-        self.adapter.submit(self.intent(
-            "flat-exit", purpose=IntentPurpose.EXIT, side=Side.SELL,
-        ))
-        self.assertEqual(len(self.api.sent), 1)
-        self.assertEqual(self.api.sent[0][1][0].BuySell, "S")
+        with self.assertRaisesRegex(Exception, "reduce an existing"):
+            self.adapter.submit(self.intent(
+                "flat-exit", purpose=IntentPurpose.EXIT, side=Side.SELL,
+            ))
+        self.assertEqual(self.api.sent, [])
 
-    def test_normal_exit_submission_can_exceed_reconciled_position(self):
+    def test_normal_exit_submission_cannot_exceed_reconciled_position(self):
         entry = self.adapter.submit(self.intent("entry"))
         self.store.record_fill(
             entry.client_order_id, fill_id="mock-entry-fill", quantity=1000,
@@ -94,14 +94,16 @@ class EntryRiskEvidenceTests(unittest.TestCase):
         }]
         self.api.positions = {"TEST": 1000}
         self.adapter.reconcile(timeout=1)
-        self.adapter.submit(self.intent(
-            "oversized-exit", purpose=IntentPurpose.EXIT, side=Side.SELL,
-            quantity=2000,
-        ))
+        sent_before = len(self.api.sent)
+        with self.assertRaisesRegex(Exception, "exceeds reconciled"):
+            self.adapter.submit(self.intent(
+                "oversized-exit", purpose=IntentPurpose.EXIT, side=Side.SELL,
+                quantity=2000,
+            ))
         self.assertEqual(self.store.position_buckets(), {"TEST|0": 1000})
-        self.assertEqual(self.api.sent[-1][1][0].OrderQty, 2)
+        self.assertEqual(len(self.api.sent), sent_before)
 
-    def test_optional_share_cap_can_approve_non_board_lot(self):
+    def test_optional_share_cap_only_approves_whole_board_lots(self):
         risk = RiskManager(RiskLimits(max_position_per_stock=1500))
         signal = SimpleNamespace(
             stock_id="TEST", side="LONG", quantity=2000, entry_price=50.0,
@@ -112,7 +114,7 @@ class EntryRiskEvidenceTests(unittest.TestCase):
             open_orders=[], trades_today=0,
         )
         self.assertTrue(result.approved)
-        self.assertEqual(result.intent["quantity_lots"], "1.5")
+        self.assertEqual(result.intent["quantity_lots"], "1")
         with self.assertRaisesRegex(Exception, "multiple of 1000"):
             self.adapter.submit(self.intent("odd-cap", quantity=1500))
         self.assertEqual(self.api.sent, [])

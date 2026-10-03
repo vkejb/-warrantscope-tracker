@@ -87,7 +87,8 @@ class TradingBotStatusTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            status = build_status(runtime)
+            with patch("yuanta_live_runtime_v01.trading_bot_service.runtime_health", return_value=SimpleNamespace(healthy=True)):
+                status = build_status(runtime)
             self.assertEqual(status["runtime_state"], "LIVE_RUNNING")
             self.assertEqual(status["quote_health"], "FRESH")
             self.assertTrue(status["gate_authorized"])
@@ -248,7 +249,8 @@ class TradingBotStatusTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            status = build_status(runtime)
+            with patch("yuanta_live_runtime_v01.trading_bot_service.runtime_health", return_value=SimpleNamespace(healthy=True)):
+                status = build_status(runtime)
             self.assertEqual(status["runtime_state"], "LIVE_STOPPING")
             self.assertEqual(status["quote_health"], "FRESH")
 
@@ -703,12 +705,14 @@ class TradingBotRemoteControlTests(unittest.TestCase):
         class FakeProcess:
             def __init__(self, runtime):
                 self.runtime = runtime
+                self.pid = 123456
 
             def wait(self, timeout):
                 (self.runtime / "heartbeat.json").write_text(
                     json.dumps({
                         "at": datetime.now(timezone.utc).isoformat(),
                         "state": "RUNNING",
+                        "pid": self.pid,
                         "submit_live": True,
                     }),
                     encoding="utf-8",
@@ -721,7 +725,8 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             with patch(
                 "yuanta_live_runtime_v01.trading_bot_service.subprocess.Popen",
                 return_value=FakeProcess(runtime),
-            ) as popen:
+            ) as popen, patch("yuanta_live_runtime_v01.trading_bot_service.runtime_health",
+                               return_value=SimpleNamespace(healthy=True, controller_present=False)):
                 ok, status = _launch_runtime_start(runtime)
 
             self.assertTrue(ok)
@@ -742,20 +747,22 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             self.assertEqual(kwargs["env"]["ENABLE_LIVE_TRADING"], "YES")
 
             self.assertIs(kwargs["stdin"], subprocess.DEVNULL)
-            self.assertIs(kwargs["stdout"], subprocess.DEVNULL)
-            self.assertIs(kwargs["stderr"], subprocess.DEVNULL)
+            self.assertEqual(kwargs["stdout"].name, str(runtime.resolve() / "trading_runtime.out.log"))
+            self.assertEqual(kwargs["stderr"].name, str(runtime.resolve() / "trading_runtime.err.log"))
             self.assertTrue(kwargs["start_new_session"])
 
     def test_start_launcher_reports_fresh_unsafe_halt(self):
         class FakeProcess:
             def __init__(self, runtime):
                 self.runtime = runtime
+                self.pid = 123456
 
             def wait(self, timeout):
                 (self.runtime / "heartbeat.json").write_text(
                     json.dumps({
                         "at": datetime.now(timezone.utc).isoformat(),
                         "state": "STOPPED_UNSAFE",
+                        "pid": self.pid,
                         "failure_code": "BROKER_EXECUTION_HALTED",
                         "failure_stage": "BROKER_RECONCILED",
                     }),
@@ -791,7 +798,7 @@ class TradingBotRemoteControlTests(unittest.TestCase):
 
             with patch(
                 "yuanta_live_runtime_v01.trading_bot_service.subprocess.Popen",
-            ) as popen:
+            ) as popen, patch("yuanta_live_runtime_v01.trading_bot_service._runtime_process_active", return_value=True):
                 ok, status = _launch_runtime_start(runtime)
 
             self.assertFalse(ok)

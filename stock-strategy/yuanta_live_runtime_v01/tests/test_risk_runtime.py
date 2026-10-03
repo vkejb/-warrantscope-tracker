@@ -312,6 +312,13 @@ class ArchiveRuntimeTests(unittest.TestCase):
 
 
 class RuntimeGateTests(unittest.TestCase):
+    def setUp(self):
+        # No constructor/worker may reach a real notification transport.
+        for name in ("RuntimeNotifier", "AsyncTradingNotifier"):
+            patched = patch.object(runtime_main, name)
+            patched.start()
+            self.addCleanup(patched.stop)
+
     def test_force_flat_market_phase_boundaries(self):
         self.assertEqual(
             runtime_main._force_flat_market_phase(
@@ -1220,8 +1227,10 @@ class WatchdogTests(unittest.TestCase):
     def test_clean_heartbeat_is_healthy(self):
         with tempfile.TemporaryDirectory() as temporary:
             heartbeat = Heartbeat(Path(temporary))
-            heartbeat.stopped(True)
-            self.assertTrue(check_once(Path(temporary), stale_seconds=1))
+            heartbeat.stopped(True, broker_flat_confirmed=True,
+                              broker_flat_confirmed_at=datetime.now(TAIPEI).isoformat())
+            with patch("yuanta_live_runtime_v01.watchdog.RuntimeNotifier"):
+                self.assertTrue(check_once(Path(temporary), stale_seconds=1))
 
     def test_missing_heartbeat_is_critical(self):
         with tempfile.TemporaryDirectory() as temporary:

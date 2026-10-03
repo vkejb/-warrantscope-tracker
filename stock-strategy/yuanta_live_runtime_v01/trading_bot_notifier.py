@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import hashlib
+import os
 from pathlib import Path
-from queue import Queue
+import sqlite3
 import threading
+import time
 import urllib.error
 import urllib.request
-from typing import Any
+from typing import Any, Callable
+import uuid
 
 from .trading_bot_keychain import load_trading_bot_credentials
 
@@ -32,7 +38,14 @@ NORMAL_EVENTS = {
 }
 
 
-def _telegram_send(token: str, chat_id: str, message: str) -> None:
+@dataclass(frozen=True)
+class DeliveryResult:
+    delivered: bool
+    outcome: str
+    retry_after_seconds: float = 0.0
+
+
+def _telegram_send(token: str, chat_id: str, message: str) -> DeliveryResult:
     payload = json.dumps(
         {"chat_id": chat_id, "text": message},
         ensure_ascii=False,
@@ -46,10 +59,120 @@ def _telegram_send(token: str, chat_id: str, message: str) -> None:
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
             value = json.load(response)
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-        return
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+        # Exception text may contain the bot-token URL. Persist only a class.
+        return DeliveryResult(False, f"DELIVERY_UNKNOWN_{type(exc).__name__}")
     if not isinstance(value, dict) or value.get("ok") is not True:
-        return
+        retry_after = 0.0
+        if isinstance(value, dict):
+            try:
+                retry_after = max(0.0, float(value.get("parameters", {}).get("retry_after", 0)))
+            except (TypeError, ValueError, AttributeError):
+                pass
+        return DeliveryResult(False, "API_REJECTED", retry_after)
+    return DeliveryResult(True, "API_CONFIRMED")
+
+
+class NotificationOutbox:
+    """Durable at-least-once delivery, with a cross-process SQLite lease.
+
+    An API confirmation is not proof the person read the alert. A timeout may
+    already have delivered a message; retry can duplicate it. Credentials and
+    HTTP exception/response bodies are never persisted.
+    """
+    def __init__(self, runtime_dir: Path):
+        self.runtime_dir = Path(runtime_dir)
+        self.runtime_dir.mkdir(parents=True, exist_ok=True)
+        self.path = self.runtime_dir / "notification_outbox.sqlite"
+        self.ledger = self.runtime_dir / "notification_delivery.jsonl"
+        with self._connect() as db:
+            db.execute("""CREATE TABLE IF NOT EXISTS notifications (
+                notification_id TEXT PRIMARY KEY, event TEXT NOT NULL,
+                message TEXT NOT NULL, created_at REAL NOT NULL,
+                status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+                next_attempt_at REAL NOT NULL, lease_until REAL NOT NULL DEFAULT 0,
+                lease_owner TEXT, outcome TEXT, updated_at REAL NOT NULL)""")
+        os.chmod(self.path, 0o600)
+
+    def _connect(self):
+        db = sqlite3.connect(self.path, timeout=5)
+        db.row_factory = sqlite3.Row
+        return db
+
+    def enqueue(self, event: str, message: str, *, key: str | None = None) -> str:
+        now = time.time()
+        identifier = hashlib.sha256(key.encode()).hexdigest() if key else uuid.uuid4().hex
+        with self._connect() as db:
+            db.execute("""INSERT OR IGNORE INTO notifications
+                (notification_id,event,message,created_at,status,next_attempt_at,updated_at)
+                VALUES(?,?,?,?,?,?,?)""", (identifier, str(event), str(message), now, "PENDING", now, now))
+        return identifier
+
+    def _claim(self, now: float) -> dict | None:
+        owner = uuid.uuid4().hex
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("""SELECT * FROM notifications WHERE
+                (status IN ('PENDING','RETRY') AND next_attempt_at<=?) OR
+                (status='SENDING' AND lease_until<=?)
+                ORDER BY created_at LIMIT 1""", (now, now)).fetchone()
+            if row is None:
+                return None
+            db.execute("""UPDATE notifications SET status='SENDING', attempts=attempts+1,
+                lease_owner=?,lease_until=?,updated_at=? WHERE notification_id=?""",
+                (owner, now + 60, now, row["notification_id"]))
+            claimed = dict(row)
+            claimed.update(lease_owner=owner, attempts=int(row["attempts"]) + 1)
+            return claimed
+
+    def deliver_once(self, *, now: float | None = None,
+                     credential_loader: Callable | None = None,
+                     sender: Callable | None = None) -> DeliveryResult | None:
+        credential_loader = credential_loader or load_trading_bot_credentials
+        sender = sender or _telegram_send
+        current = time.time() if now is None else float(now)
+        row = self._claim(current)
+        if row is None:
+            return None
+        try:
+            # Reload every attempt: a temporarily missing Keychain item must
+            # not make this process discard its entire future notification feed.
+            token, chat_id = credential_loader()
+        except Exception as exc:
+            result = DeliveryResult(False, f"CREDENTIALS_UNAVAILABLE_{type(exc).__name__}")
+        else:
+            try:
+                result = sender(token, chat_id, row["message"])
+                if not isinstance(result, DeliveryResult):
+                    result = DeliveryResult(False, "DELIVERY_UNCONFIRMED")
+            except Exception as exc:
+                result = DeliveryResult(False, f"DELIVERY_UNKNOWN_{type(exc).__name__}")
+        retry = max(result.retry_after_seconds, min(300.0, 2 ** min(row["attempts"], 8)))
+        status = "SENT" if result.delivered else "RETRY"
+        finished = time.time() if now is None else current
+        with self._connect() as db:
+            changed = db.execute("""UPDATE notifications SET status=?,outcome=?,
+                next_attempt_at=?,lease_until=0,lease_owner=NULL,updated_at=?
+                WHERE notification_id=? AND lease_owner=?""",
+                (status, result.outcome, finished + retry, finished,
+                 row["notification_id"], row["lease_owner"])).rowcount
+        if changed:
+            self._record({"at": datetime.now(timezone.utc).isoformat(),
+                          "notification_id": row["notification_id"], "event": row["event"],
+                          "status": status, "outcome": result.outcome,
+                          "attempt": row["attempts"], "retry_seconds": 0 if result.delivered else retry})
+        return result
+
+    def _record(self, row: dict) -> None:
+        with self.ledger.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+
+    def snapshot(self) -> list[dict]:
+        with self._connect() as db:
+            return [dict(row) for row in db.execute(
+                "SELECT notification_id,event,status,attempts,outcome,next_attempt_at FROM notifications ORDER BY created_at")]
 
 
 def _fmt_float(value: Any, digits: int = 3) -> str:
@@ -315,54 +438,61 @@ def format_critical(event: str, message: str) -> str:
 
 
 class AsyncTradingNotifier:
-    def __init__(self, runtime_dir: Path):
+    def __init__(self, runtime_dir: Path, *, start_worker: bool = True):
         self.runtime_dir = Path(runtime_dir)
-        self._queue: Queue[tuple[str, dict[str, Any]] | None] = Queue()
+        self.outbox = NotificationOutbox(self.runtime_dir)
+        self._stop = threading.Event()
+        self._wake = threading.Event()
         self._thread = threading.Thread(
             target=self._worker,
             name="warrantscope-trading-notifier",
             daemon=True,
         )
-        self._thread.start()
+        if start_worker:
+            self._thread.start()
 
     def emit(self, event: str, row: dict[str, Any]) -> None:
-        if event in NORMAL_EVENTS:
-            self._queue.put((event, dict(row)))
+        message = format_runtime_event(event, row)
+        if message:
+            self.outbox.enqueue(event, message, key=f"{event}:{row.get('at')}:{message}")
+            self._wake.set()
+
+    def critical(self, event: str, message: str, *, key: str | None = None) -> str:
+        identifier = self.outbox.enqueue(event, format_critical(event, message), key=key)
+        self._wake.set()
+        return identifier
 
     def _worker(self) -> None:
-        try:
-            token, chat_id = load_trading_bot_credentials()
-        except Exception:
-            while True:
-                item = self._queue.get()
-                self._queue.task_done()
-                if item is None:
-                    return
-
-        while True:
-            item = self._queue.get()
+        while not self._stop.is_set():
             try:
-                if item is None:
-                    return
-                event, row = item
-                message = format_runtime_event(event, row)
-                if message:
-                    _telegram_send(token, chat_id, message)
-            finally:
-                self._queue.task_done()
+                result = self.outbox.deliver_once(
+                    credential_loader=load_trading_bot_credentials, sender=_telegram_send)
+                if result is not None:
+                    continue
+            except Exception as exc:
+                # Disk/SQLite failure must be visible, but must not terminate
+                # the primary trading or exit loop. Durable leases recover on
+                # restart if a process dies after claiming an alert.
+                print(f"Notification outbox warning: {type(exc).__name__}", flush=True)
+            self._wake.wait(1.0)
+            self._wake.clear()
 
     def close(self, timeout: float = 3.0) -> None:
-        self._queue.put(None)
-        self._thread.join(timeout=timeout)
+        self._stop.set()
+        self._wake.set()
+        if self._thread.ident is not None:
+            self._thread.join(timeout=max(0.0, timeout))
 
 
-def send_critical_async(event: str, message: str) -> threading.Thread:
+def send_critical_async(event: str, message: str, *, runtime_dir: Path | None = None) -> threading.Thread:
+    """Compatibility helper; durable callers should own AsyncTradingNotifier."""
     def worker() -> None:
         try:
-            token, chat_id = load_trading_bot_credentials()
-            _telegram_send(token, chat_id, format_critical(event, message))
-        except Exception:
-            return
+            outbox = NotificationOutbox(runtime_dir or Path(__file__).resolve().parent / "runtime")
+            outbox.enqueue(event, format_critical(event, message))
+            outbox.deliver_once(credential_loader=load_trading_bot_credentials, sender=_telegram_send)
+        except Exception as exc:
+            print(f"Critical notification warning: {type(exc).__name__}", flush=True)
 
     thread = threading.Thread(
         target=worker,

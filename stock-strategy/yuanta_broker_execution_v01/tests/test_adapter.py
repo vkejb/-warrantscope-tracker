@@ -389,9 +389,9 @@ class AdapterTests(unittest.TestCase):
 
         The 2026-10-02 incident proved that treating Identify as a durable,
         process-wide key can bind a current broker order number and fills to a
-        historical local order.  A sole current SEND_PENDING request must own
-        the response; an already completed historical request must never be
-        mutated by a reused broker identifier.
+        historical local order. Without a known broker OrderNo, a reused
+        identifier is ambiguous even if only one current request remains.
+        Basket-backed reports must establish ownership before fills attach.
         """
         first = self.adapter.submit(self.intent(intent_id="old-day-order"))
         self.store.reject(first.client_order_id, "historical terminal order")
@@ -431,8 +431,9 @@ class AdapterTests(unittest.TestCase):
         current_order = self.store.get(second.client_order_id)
         self.assertIsNone(old_order.broker_order_no)
         self.assertEqual(old_order.status, BrokerOrderStatus.REJECTED)
-        self.assertEqual(current_order.broker_order_no, "new-no")
-        self.assertEqual(current_order.status, BrokerOrderStatus.ACKNOWLEDGED)
+        self.assertIsNone(current_order.broker_order_no)
+        self.assertEqual(current_order.status, BrokerOrderStatus.SEND_PENDING)
+        self.assertEqual(self.store.control_state()["reason"], "AMBIGUOUS_BROKER_ORDER_RESULT")
 
         for sequence, price in (("670069", 70.0), ("670070", 70.1)):
             fill = Obj(
@@ -459,6 +460,7 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(completed.status, BrokerOrderStatus.FILLED)
         self.assertEqual(completed.filled_quantity, 2000)
         self.assertEqual(completed.average_fill_price, Decimal("70.05"))
+        self.assertEqual(completed.broker_order_no, "new-no")
         self.assertEqual(self.store.get(first.client_order_id).filled_quantity, 0)
 
     def test_ambiguous_reused_identifier_halts_without_guessing(self):

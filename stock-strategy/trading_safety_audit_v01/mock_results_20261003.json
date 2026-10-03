@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-03",
+  "timezone": "Asia/Taipei",
+  "base_commit": "689d07aa95c160b9b798d81a0e2a570b83a8eb95",
+  "scope": "MOCK_ONLY_NOT_LIVE_CERTIFICATION",
+  "source_and_mock_repair_complete": true,
+  "live_readiness_verified": false,
+  "deployment_performed": false,
+  "broker_login_performed": false,
+  "live_activated": false,
+  "real_order_submitted": false,
+  "persisted_live_gates_modified": false,
+  "real_runtime_state_modified": false,
+  "strategy_methods_and_policy_ast_unchanged": true,
+  "suite_counts_overlap": true,
+  "baseline": [
+    {"suite": "runtime", "python": "3.10.0b4", "tests_run": 145, "passed": 145, "skipped": 0, "failures": 0, "errors": 0},
+    {"suite": "broker", "python": "3.10.0b4", "tests_run": 40, "passed": 39, "skipped": 1, "failures": 0, "errors": 0},
+    {"suite": "stock-strategy full", "python": "3.12.14", "tests_run": 769, "passed": 768, "skipped": 1, "failures": 0, "errors": 0}
+  ],
+  "final": [
+    {
+      "suite": "stock-strategy full",
+      "python": "3.12.14",
+      "cwd": "stock-strategy",
+      "command": "/Users/linyunyan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir .",
+      "tests_run": 899, "passed": 898, "skipped": 1, "failures": 0, "errors": 0,
+      "forbidden_boundary_attempts": 0, "forbidden_boundary_categories": []
+    },
+    {
+      "suite": "runtime",
+      "python": "3.10.0b4",
+      "cwd": "stock-strategy",
+      "command": "/Library/Frameworks/Python.framework/Versions/3.10/bin/python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir yuanta_live_runtime_v01/tests",
+      "tests_run": 220, "passed": 220, "skipped": 0, "failures": 0, "errors": 0,
+      "forbidden_boundary_attempts": 0, "forbidden_boundary_categories": []
+    },
+    {
+      "suite": "broker",
+      "python": "3.10.0b4",
+      "cwd": "stock-strategy",
+      "command": "/Library/Frameworks/Python.framework/Versions/3.10/bin/python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir yuanta_broker_execution_v01/tests",
+      "tests_run": 95, "passed": 94, "skipped": 1, "failures": 0, "errors": 0,
+      "forbidden_boundary_attempts": 0, "forbidden_boundary_categories": []
+    },
+    {
+      "suite": "safety audit",
+      "python": "3.10.0b4",
+      "cwd": "stock-strategy",
+      "command": "/Library/Frameworks/Python.framework/Versions/3.10/bin/python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir trading_safety_audit_v01/tests",
+      "tests_run": 29, "passed": 29, "skipped": 0, "failures": 0, "errors": 0,
+      "forbidden_boundary_attempts": 0, "forbidden_boundary_categories": []
+    },
+    {
+      "suite": "website Node",
+      "cwd": "repository root",
+      "command": "node --test tests/*.test.js",
+      "tests_run": 75, "passed": 75, "skipped": 0, "failures": 0, "errors": 0
+    }
+  ],
+  "skip_reason": "Optional real SDK contract test intentionally excluded: YUANTA_VENDOR_DIR unset by mock runner.",
+  "guard_limitation": "Python audit hooks are a secondary boundary, not an arbitrary native SDK sandbox. Test broker/session/network/credential boundaries are synthetic fakes or mocks.",
+  "diff_check_passed": true,
+  "remaining_limitations": [
+    "R03: configured 190000 TWD cap is not verified broker buying power or settlement cash",
+    "Formal DTO, mutation and callback ordering compatibility not validated in this mock-only turn",
+    "Actual account reconciliation and old runtime HALT/baseline/uncertain order remediation not authorized or performed",
+    "Native login/connect/close blocking and physical sleep/power/network failures not end-to-end validated",
+    "No guarantee of exchange liquidity or forced-flat fills",
+    "Notification outbox at-least-once API acknowledgement is not user receipt or reading proof",
+    "Some runtime regressions test exact AST branches rather than the whole deployed loop",
+    "No installed service version or alias checkout deployment sync verified"
+  ]
+}

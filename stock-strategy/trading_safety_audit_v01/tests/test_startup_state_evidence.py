@@ -36,6 +36,7 @@ class StartupStateEvidenceTests(TestCase):
                                   quantity=1000, price="100")
             session, adapter = Mock(), Mock()
             session.account = "S00000000000"
+            session._execution_account_lock = None  # Control connection is mocked, no OS account lock.
             # Even a synthetic flat broker snapshot cannot establish which
             # unresolved old local records may be corrected or ignored.
             adapter.inspect_broker_state.return_value = SimpleNamespace(

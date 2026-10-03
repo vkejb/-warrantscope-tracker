@@ -6,12 +6,17 @@ position sizing, risk rules, or market-data logic.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
+import hashlib
+import json
+import math
 from queue import Empty, Queue
 import threading
-from typing import Any, Iterable, Mapping
+import time
+from typing import Any, Callable, Iterable, Mapping
 from zoneinfo import ZoneInfo
 
 from .models import (
@@ -20,6 +25,7 @@ from .models import (
     PRICE_FLAG,
     TIF_CODE,
     StoredOrder,
+    IntentPurpose,
     TERMINAL_STATUSES,
 )
 from .gate import LiveTradingGate
@@ -101,6 +107,89 @@ def _collection(value: Any) -> list[Any]:
     return result
 
 
+def _required_attribute(value: Any, name: str) -> Any:
+    try:
+        result = getattr(value, name)
+    except Exception as exc:
+        raise BrokerAdapterError(f"missing/unreadable broker field {name}") from exc
+    if result is None:
+        raise BrokerAdapterError(f"null broker field {name}")
+    return result
+
+
+def _strict_integer(value: Any, name: str, *, minimum: int = 0) -> int:
+    if isinstance(value, bool):
+        raise BrokerAdapterError(f"invalid broker integer {name}")
+    try:
+        number = Decimal(str(value))
+        if not number.is_finite() or number != number.to_integral_value() or number < minimum:
+            raise ValueError(name)
+        return int(number)
+    except (ValueError, ArithmeticError, TypeError) as exc:
+        raise BrokerAdapterError(f"invalid broker integer {name}") from exc
+
+
+def _optional_integer(value: Any, name: str, default: int = 0) -> int:
+    try:
+        raw = getattr(value, name)
+    except AttributeError:
+        return default
+    return _strict_integer(raw, name)
+
+
+def _required_collection(value: Any, name: str) -> list[Any]:
+    """Read an explicit complete Python/.NET list, never truncate to flat."""
+    collection = _required_attribute(value, name)
+    if isinstance(collection, (str, bytes, bytearray, Mapping)):
+        raise BrokerAdapterError(f"invalid broker collection {name}")
+    if isinstance(collection, (list, tuple)):
+        return list(collection)
+    # SPARK exposes .NET List<T>. Count + indexed access proves the whole
+    # collection was read; falling back to a partial iterator is not safe.
+    count = _strict_integer(_required_attribute(collection, "Count"), f"{name}.Count")
+    try:
+        return [collection[index] for index in range(count)]
+    except Exception as exc:
+        raise BrokerAdapterError(f"incomplete broker collection {name}") from exc
+
+
+def _validate_snapshot_order(value: Any, *, merge: bool, account: str) -> None:
+    report_account = str(_required_attribute(value, "Account")).strip().upper()
+    if report_account != account:
+        raise BrokerAdapterError("broker snapshot account mismatch")
+    if not str(_required_attribute(value, "OrderNo")).strip() or not str(_required_attribute(value, "CompanyNo")).strip():
+        raise BrokerAdapterError("broker snapshot missing order/symbol identity")
+    if str(_required_attribute(value, "BS")).strip().upper() not in {"B", "S", "BUY", "SELL"}:
+        raise BrokerAdapterError("invalid broker snapshot side")
+    _strict_integer(_required_attribute(value, "RptType"), "RptType")
+    _strict_integer(_required_attribute(value, "OrderStatus"), "OrderStatus")
+    quantity = _strict_integer(_required_attribute(value, "OrderQty"), "OrderQty")
+    if merge:
+        filled = _strict_integer(_required_attribute(value, "OkQty"), "OkQty")
+        _strict_integer(_required_attribute(value, "LastOrderStatus"), "LastOrderStatus")
+        if filled > quantity:
+            raise BrokerAdapterError("broker snapshot fill quantity exceeds order quantity")
+    # Any provided amount/price must also be valid; absent nonessential fields
+    # stay backward compatible with the official sparse report variants.
+    for field in ("BeforeQty", "APCode", "TradeKind"):
+        try:
+            raw = getattr(value, field)
+        except AttributeError:
+            continue
+        _strict_integer(raw, field)
+    for field in ("Price", "LastDealPrice", "AvgDealPrice"):
+        try:
+            raw = getattr(value, field)
+        except AttributeError:
+            continue
+        try:
+            number = Decimal(str(raw))
+            if not number.is_finite() or number < 0:
+                raise ValueError(field)
+        except (ValueError, ArithmeticError, TypeError) as exc:
+            raise BrokerAdapterError(f"invalid broker snapshot price {field}") from exc
+
+
 def _normalise_order_result(value: Any) -> list[dict[str, Any]]:
     result = []
     for item in _collection(_safe(value, "ResultList")):
@@ -120,52 +209,56 @@ def _normalise_order_result(value: Any) -> list[dict[str, Any]]:
 def _normalise_real_report(value: Any) -> dict[str, Any]:
     return {
         "account": _as_str(_safe(value, "Account", "")),
-        "rpt_type": _as_int(_safe(value, "RptType", 0)),
+        "rpt_type": _strict_integer(_required_attribute(value, "RptType"), "RptType"),
         "order_no": _as_str(_safe(value, "OrderNo", "")),
         "symbol": _as_str(_safe(value, "CompanyNo", "")),
         "side": _as_str(_safe(value, "BS", "")),
         "price": _as_str(_safe(value, "Price", "0")),
-        "before_qty": _as_int(_safe(value, "BeforeQty", 0)),
-        "order_qty": _as_int(_safe(value, "OrderQty", 0)),
-        "trade_kind": _as_int(_safe(value, "TradeKind", 0)),
-        "ap_code": _as_int(_safe(value, "APCode", 0)),
+        "before_qty": _optional_integer(value, "BeforeQty"),
+        "order_qty": _strict_integer(_required_attribute(value, "OrderQty"), "OrderQty"),
+        "trade_kind": _optional_integer(value, "TradeKind"),
+        "ap_code": _optional_integer(value, "APCode"),
         "basket_no": _as_str(_safe(value, "BasketNo", "")),
-        "order_status": _as_int(_safe(value, "OrderStatus", -1), -1),
+        "order_status": _strict_integer(_required_attribute(value, "OrderStatus"), "OrderStatus"),
         "seq_no": _as_str(_safe(value, "SeqNo", "")),
         "stk_error_no": _as_str(_safe(value, "StkErrorNo", "")),
         "order_error_no": _as_str(_safe(value, "OrderErrorNo", "")),
+        "trade_date": _as_str(_safe(value, "TradeDate", "")),
     }
 
 
 def _normalise_merge_report(value: Any) -> dict[str, Any]:
     return {
         "account": _as_str(_safe(value, "Account", "")),
-        "rpt_type": _as_int(_safe(value, "RptType", 0)),
+        "rpt_type": _strict_integer(_required_attribute(value, "RptType"), "RptType"),
         "order_no": _as_str(_safe(value, "OrderNo", "")),
         "symbol": _as_str(_safe(value, "CompanyNo", "")),
         "side": _as_str(_safe(value, "BS", "")),
         "price": _as_str(_safe(value, "Price", "0")),
         "last_deal_price": _as_str(_safe(value, "LastDealPrice", "0")),
         "avg_deal_price": _as_str(_safe(value, "AvgDealPrice", "0")),
-        "before_qty": _as_int(_safe(value, "BeforeQty", 0)),
-        "order_qty": _as_int(_safe(value, "OrderQty", 0)),
-        "ok_qty": _as_int(_safe(value, "OkQty", 0)),
-        "ap_code": _as_int(_safe(value, "APCode", 0)),
-        "order_status": _as_int(_safe(value, "OrderStatus", -1), -1),
-        "last_order_status": _as_int(_safe(value, "LastOrderStatus", -1), -1),
+        "before_qty": _optional_integer(value, "BeforeQty"),
+        "order_qty": _strict_integer(_required_attribute(value, "OrderQty"), "OrderQty"),
+        "ok_qty": _strict_integer(_required_attribute(value, "OkQty"), "OkQty"),
+        "ap_code": _optional_integer(value, "APCode"),
+        "order_status": _strict_integer(_required_attribute(value, "OrderStatus"), "OrderStatus"),
+        "last_order_status": _strict_integer(_required_attribute(value, "LastOrderStatus"), "LastOrderStatus"),
         "basket_no": _as_str(_safe(value, "BasketNo", "")),
         "stk_error_no": _as_str(_safe(value, "StkErrorNo", "")),
+        "trade_date": _as_str(_safe(value, "TradeDate", "")),
     }
 
 
 def _normalise_positions(value: Any) -> dict[str, int]:
     result: dict[str, int] = {}
-    for item in _collection(_safe(value, "StkStoreList")):
-        symbol = _as_str(_safe(item, "StkCode", ""))
+    for item in _required_collection(value, "StkStoreList"):
+        symbol = str(_required_attribute(item, "StkCode")).strip().upper()
         if not symbol:
-            continue
-        quantity = _as_int(_safe(item, "StockQty", 0))
-        trade_kind = _as_int(_safe(item, "TradeKind", 0))
+            raise BrokerAdapterError("broker inventory missing symbol")
+        quantity = _strict_integer(_required_attribute(item, "StockQty"), "StockQty")
+        trade_kind = _strict_integer(_required_attribute(item, "TradeKind"), "TradeKind")
+        if trade_kind not in {0, 3, 4, 6}:
+            raise BrokerAdapterError("unsupported broker inventory financing category")
         # GetStoreSummary reports StockQty as a positive magnitude.  Financing
         # buys are long, while short/borrow inventory is negative exposure.
         # Keep this conversion here so reconciliation never guesses from side.
@@ -229,7 +322,7 @@ class YuantaSparkExecutionAdapter:
         self.live_gate = live_gate or LiveTradingGate.from_environment(cli_live=False)
         self._reconciled = False
         self.pre_order_reconcile_timeout = float(pre_order_reconcile_timeout)
-        if self.pre_order_reconcile_timeout <= 0:
+        if not math.isfinite(self.pre_order_reconcile_timeout) or self.pre_order_reconcile_timeout <= 0:
             raise ValueError("pre_order_reconcile_timeout must be positive")
         self.position_baseline = {}
         for raw_key, raw_quantity in dict(position_baseline or {}).items():
@@ -260,11 +353,16 @@ class YuantaSparkExecutionAdapter:
             daemon=True,
         )
         self._reconcile_lock = threading.Lock()
+        self._submission_lock = threading.RLock()
         self._detail_event = threading.Event()
         self._merge_event = threading.Event()
         self._position_event = threading.Event()
         self._latest_merge: list[dict[str, Any]] | None = None
         self._latest_positions: dict[str, int] | None = None
+        self._query_worker: threading.Thread | None = None
+        self._query_error: Exception | None = None
+        self._query_uncertain = False
+        self._snapshot_complete = True
         self.api.OnResponse += self._on_response
         self._worker.start()
 
@@ -358,6 +456,28 @@ class YuantaSparkExecutionAdapter:
         quantity: int | None = None,
         price: Decimal | None = None,
     ) -> Any:
+        try:
+            return self._construct_stock_order(order, identify=identify, trade_kind=trade_kind, order_no=order_no, quantity=quantity, price=price)
+        except Exception as exc:
+            operation = {0: "NEW", 4: "CANCEL", 7: "MODIFY_PRICE", 3: "REDUCE"}.get(trade_kind, "NEW")
+            self._persist_unsent_failure(order, operation, identify, f"UNSENT_ORDER_BUILD:{type(exc).__name__}:{exc}")
+            raise
+
+    def _persist_unsent_failure(self, order: StoredOrder, operation: str, identify: int, reason: str) -> None:
+        if identify and not self.store.reject_unsent_request(identify, reason):
+            self.store.halt(f"UNSENT_REQUEST_IDENTITY_CONFLICT:{identify}")
+            return
+        if operation == "NEW":
+            self.store.reject(order.client_order_id, reason)
+        elif operation == "CANCEL":
+            self.store.cancel_failed(order.client_order_id, reason)
+        else:
+            self.store.modification_result(order.client_order_id, kind="price" if operation == "MODIFY_PRICE" else "reduce", success=False, reason=reason)
+
+    def _construct_stock_order(
+        self, order: StoredOrder, *, identify: int, trade_kind: int,
+        order_no: str = "", quantity: int | None = None, price: Decimal | None = None,
+    ) -> Any:
         stock = self.api_types["StockOrder"]()
         self._set_identity(stock, identify)
         stock.Account = self.account
@@ -387,8 +507,31 @@ class YuantaSparkExecutionAdapter:
         stock_order: Any,
         *,
         operation: str,
+        pre_send_guard: Callable[[ExecutionIntent | StoredOrder], Any] | None = None,
+        guard_subject: ExecutionIntent | StoredOrder | None = None,
     ) -> None:
-        payload = self._stock_list(stock_order)
+        operation_name = {"submit": "NEW", "rescue-submit": "NEW", "cancel": "CANCEL", "modify_price": "MODIFY_PRICE", "reduce_quantity": "REDUCE"}[operation]
+        try:
+            payload = self._stock_list(stock_order)
+        except Exception as exc:
+            request = self.store.latest_request(stored.client_order_id, operation_name)
+            self._persist_unsent_failure(stored, operation_name, int(request["identify"]) if request else 0, f"UNSENT_PAYLOAD_BUILD:{type(exc).__name__}:{exc}")
+            raise
+        # Request persistence, mark_send_pending, and SDK payload construction
+        # may be slow. Revalidate time/quote/safety at the actual send boundary,
+        # not before these steps. No broker invocation has occurred on failure.
+        try:
+            if pre_send_guard is not None and pre_send_guard(guard_subject or stored) is False:
+                raise BrokerAdapterError("pre_send_guard returned False")
+            if operation == "submit" and stored.purpose == IntentPurpose.ENTRY:
+                self.store.assert_not_halted()
+        except Exception as exc:
+            reason = f"UNSENT_PRE_SEND_GUARD:{type(exc).__name__}:{exc}"
+            request = self.store.latest_request(stored.client_order_id, operation_name)
+            self._persist_unsent_failure(stored, operation_name, int(request["identify"]) if request else 0, reason)
+            if operation_name == "NEW":
+                return
+            raise BrokerAdapterError(reason) from exc
         try:
             accepted = self.api.SendStockOrder(self.account, payload, self.language)
         except Exception as exc:
@@ -404,7 +547,15 @@ class YuantaSparkExecutionAdapter:
             )
             raise BrokerAdapterError(f"{operation} was not accepted by SendStockOrder")
 
-    def submit(self, intent: ExecutionIntent) -> StoredOrder:
+    def submit(
+        self, intent: ExecutionIntent, *, pre_send_guard: Callable[[ExecutionIntent], Any] | None = None
+    ) -> StoredOrder:
+        with self._submission_lock:
+            return self._submit(intent, pre_send_guard=pre_send_guard)
+
+    def _submit(
+        self, intent: ExecutionIntent, *, pre_send_guard: Callable[[ExecutionIntent], Any] | None = None
+    ) -> StoredOrder:
         self._require_live()
         if not isinstance(intent, ExecutionIntent):
             raise TypeError(
@@ -426,21 +577,50 @@ class YuantaSparkExecutionAdapter:
         # A newly-created NEW order must pass a fresh broker snapshot immediately
         # before any broker request is created. The RESERVED local order is
         # intentionally ignored when no remote order exists yet.
-        self.reconcile(
-            timeout=self.pre_order_reconcile_timeout,
-            strict_positions=True,
-        )
-
-        identify = self.store.create_request(stored.client_order_id, "NEW")
-        self.store.mark_send_pending(stored.client_order_id)
-        stored = self.store.get(stored.client_order_id)
+        try:
+            self.reconcile(
+                timeout=self.pre_order_reconcile_timeout,
+                strict_positions=True,
+            )
+        except Exception as exc:
+            self.store.reject(stored.client_order_id, f"UNSENT_PREORDER_RECONCILE:{type(exc).__name__}:{exc}")
+            raise
+        if intent.purpose == IntentPurpose.EXIT:
+            try:
+                self._assert_exit_reduces(intent)
+            except Exception as exc:
+                self.store.reject(stored.client_order_id, f"UNSENT_EXIT_VALIDATION:{exc}")
+                raise
         stock = self._build_stock_order(
             stored,
-            identify=identify,
+            identify=0,
             trade_kind=0,
         )
-        self._send(stored, stock, operation="submit")
+        identify = self.store.create_request(stored.client_order_id, "NEW")
+        try:
+            self._set_identity(stock, identify)
+        except Exception as exc:
+            self._persist_unsent_failure(stored, "NEW", identify, f"UNSENT_IDENTITY_BUILD:{type(exc).__name__}:{exc}")
+            raise
+        self.store.mark_send_pending(stored.client_order_id)
+        self._send(stored, stock, operation="submit", pre_send_guard=pre_send_guard, guard_subject=intent)
         return self.store.get(stored.client_order_id)
+
+    def _assert_exit_reduces(self, intent: ExecutionIntent) -> None:
+        category = {"0": 0, "9": 0, "3": 3, "4": 4, "5": 6, "6": 6}[intent.order_type.value]
+        key = f"{intent.symbol}|{category}"
+        local = int(self.store.position_buckets().get(key, 0))
+        actual = int((self._latest_positions or {}).get(key, 0)) - int(self.position_baseline.get(key, 0))
+        desired_sign = 1 if intent.side.value == "SELL" else -1
+        if local * desired_sign <= 0 or actual * desired_sign <= 0:
+            raise BrokerAdapterError("EXIT must reduce an existing reconciled strategy position")
+        if intent.quantity > min(abs(local), abs(actual)):
+            raise BrokerAdapterError("EXIT exceeds reconciled remaining strategy position")
+        if any(
+            row.get("symbol") == intent.symbol and _remote_status(row) not in TERMINAL_STATUSES
+            for row in (self._latest_merge or [])
+        ):
+            raise BrokerAdapterError("EXIT blocked: existing open broker order for symbol")
 
     def cancel(
         self,
@@ -451,11 +631,6 @@ class YuantaSparkExecutionAdapter:
     ) -> StoredOrder:
         self._require_live(allow_halted=emergency)
         stored = self.store.get(client_order_id)
-        inflight = self.store.pending_mutation(client_order_id)
-        if inflight is not None:
-            raise BrokerAdapterError(
-                f"broker mutation already in flight: {inflight['operation']}"
-            )
         if stored.status in {
             BrokerOrderStatus.FILLED,
             BrokerOrderStatus.CANCELED,
@@ -463,6 +638,11 @@ class YuantaSparkExecutionAdapter:
             BrokerOrderStatus.REJECTED,
         }:
             return stored
+        inflight = self.store.pending_mutation(client_order_id)
+        if inflight is not None:
+            raise BrokerAdapterError(
+                f"broker mutation already in flight: {inflight['operation']}"
+            )
         if not stored.broker_order_no:
             raise BrokerAdapterError("cannot cancel before broker OrderNo is known")
 
@@ -482,18 +662,18 @@ class YuantaSparkExecutionAdapter:
         self._send(pending, stock, operation="cancel")
         return self.store.get(client_order_id)
 
-    def submit_rescue(self, intent: ExecutionIntent) -> StoredOrder:
+    def submit_rescue(
+        self, intent: ExecutionIntent, *, pre_send_guard: Callable[[ExecutionIntent], Any] | None = None
+    ) -> StoredOrder:
+        with self._submission_lock:
+            return self._submit_rescue(intent, pre_send_guard=pre_send_guard)
+
+    def _submit_rescue(
+        self, intent: ExecutionIntent, *, pre_send_guard: Callable[[ExecutionIntent], Any] | None = None
+    ) -> StoredOrder:
         """Submit only an exposure-reducing EXIT while the persistent halt is active."""
         if not isinstance(intent, ExecutionIntent) or intent.purpose.value != "EXIT":
             raise BrokerAdapterError("rescue submission accepts EXIT intents only")
-        signed_position = int(self.store.positions().get(intent.symbol, 0))
-        reduces_long = signed_position > 0 and intent.side.value == "SELL"
-        reduces_short = signed_position < 0 and intent.side.value == "BUY"
-        if not (reduces_long or reduces_short):
-            raise BrokerAdapterError("rescue order must reduce an existing local position")
-        if intent.quantity > abs(signed_position):
-            raise BrokerAdapterError("rescue order exceeds remaining local position")
-
         # Rescue is also a NEW broker order, so validate its board-lot
         # quantity before reserving any durable local request.
         self._broker_order_quantity(
@@ -516,50 +696,31 @@ class YuantaSparkExecutionAdapter:
             timeout=self.pre_order_reconcile_timeout,
             strict_positions=True,
         )
-
-        # Detailed report replay during reconciliation may have changed the
-        # strategy's remaining filled position, so never trust the earlier copy.
-        signed_position = int(self.store.positions().get(intent.symbol, 0))
-        reduces_long = signed_position > 0 and intent.side.value == "SELL"
-        reduces_short = signed_position < 0 and intent.side.value == "BUY"
-        if not (reduces_long or reduces_short):
-            raise BrokerAdapterError(
-                "rescue order no longer reduces an existing reconciled position"
-            )
-        if intent.quantity > abs(signed_position):
-            raise BrokerAdapterError(
-                "rescue order exceeds reconciled remaining local position"
-            )
-
-        # Even a locally-known older EXIT may still be alive at the broker.
-        # Never create a second NEW order for the same symbol until the old one
-        # is terminal. This is the final adapter-level duplicate-exit barrier.
-        active_same_symbol = [
-            row
-            for row in list(self._latest_merge or [])
-            if str(row.get("symbol", "") or "") == intent.symbol
-            and _remote_status(row) not in TERMINAL_STATUSES
-        ]
-        if active_same_symbol:
-            raise BrokerAdapterError(
-                "rescue blocked: existing open broker order for symbol"
-            )
+        self._assert_exit_reduces(intent)
 
         stored, created = self.store.reserve(intent, allow_halted=True)
         if not created:
             return stored
+        stock = self._build_stock_order(stored, identify=0, trade_kind=0)
         identify = self.store.create_request(stored.client_order_id, "NEW")
+        try:
+            self._set_identity(stock, identify)
+        except Exception as exc:
+            self._persist_unsent_failure(stored, "NEW", identify, f"UNSENT_IDENTITY_BUILD:{type(exc).__name__}:{exc}")
+            raise
         self.store.mark_send_pending(stored.client_order_id)
         stored = self.store.get(stored.client_order_id)
-        stock = self._build_stock_order(stored, identify=identify, trade_kind=0)
-        self._send(stored, stock, operation="rescue-submit")
+        self._send(stored, stock, operation="rescue-submit", pre_send_guard=pre_send_guard, guard_subject=intent)
         return self.store.get(stored.client_order_id)
 
     def modify_price(
-        self, client_order_id: str, new_price: Any, *, emergency: bool = False
+        self, client_order_id: str, new_price: Any, *, emergency: bool = False,
+        pre_send_guard: Callable[[StoredOrder], Any] | None = None,
     ) -> StoredOrder:
         self._require_live(allow_halted=emergency)
         stored = self.store.get(client_order_id)
+        if stored.status in TERMINAL_STATUSES:
+            return stored
         inflight = self.store.pending_mutation(client_order_id)
         if inflight is not None:
             raise BrokerAdapterError(
@@ -584,7 +745,7 @@ class YuantaSparkExecutionAdapter:
             quantity=stored.remaining_quantity or stored.quantity,
             price=parsed,
         )
-        self._send(stored, stock, operation="modify_price")
+        self._send(stored, stock, operation="modify_price", pre_send_guard=pre_send_guard, guard_subject=replace(stored, price=parsed))
         return self.store.get(client_order_id)
 
     def reduce_quantity(self, client_order_id: str, reduce_by: int) -> StoredOrder:
@@ -595,6 +756,8 @@ class YuantaSparkExecutionAdapter:
         """
         self._require_live()
         stored = self.store.get(client_order_id)
+        if stored.status in TERMINAL_STATUSES:
+            return stored
         inflight = self.store.pending_mutation(client_order_id)
         if inflight is not None:
             raise BrokerAdapterError(
@@ -610,7 +773,7 @@ class YuantaSparkExecutionAdapter:
         identify = self.store.create_request(
             client_order_id,
             "REDUCE",
-            {"reduce_by": int(reduce_by)},
+            {"reduce_by": int(reduce_by), "before_quantity": stored.quantity, "expected_quantity": stored.quantity - reduce_by},
         )
         stock = self._build_stock_order(
             stored,
@@ -625,19 +788,96 @@ class YuantaSparkExecutionAdapter:
     def request_reconciliation(self) -> None:
         if self._closed:
             raise BrokerAdapterError("adapter is closed")
+        if self._query_uncertain:
+            raise BrokerAdapterError("snapshot query outcome is uncertain; reconnect with a fresh broker session")
         self._reconciled = False
         self._detail_event.clear()
         self._merge_event.clear()
         self._position_event.clear()
         self._latest_merge = None
         self._latest_positions = None
+        self._query_error = None
 
-        detail = self.api.GetRealReport(self.account, self.language)
-        merge = self.api.GetRealReportMerge(self.account, self.language)
-        positions = self.api.GetStoreSummary(self.account, self.language)
-        if detail is False or merge is False or positions is False:
-            self.store.halt("RECONCILIATION_QUERY_REJECTED")
-            raise BrokerAdapterError("broker rejected reconciliation query")
+        def dispatch_queries() -> None:
+            try:
+                for query in (self.api.GetRealReport, self.api.GetRealReportMerge, self.api.GetStoreSummary):
+                    if self._closed:
+                        raise BrokerAdapterError("adapter closed during snapshot query")
+                    if query(self.account, self.language) is False:
+                        raise BrokerAdapterError("broker rejected reconciliation query")
+            except Exception as exc:
+                self._query_error = exc
+                # Wake the deadline waiter; it rejects these events rather
+                # than accepting fabricated empty snapshots on query failure.
+                self._detail_event.set()
+                self._merge_event.set()
+                self._position_event.set()
+
+        # Vendor calls are expected to return promptly, but a blocked call
+        # must not suspend the main exit timer. A timeout poisons this adapter
+        # because SPARK snapshots have no trustworthy per-request identifier.
+        self._query_worker = threading.Thread(target=dispatch_queries, name="yuanta-reconciliation-query", daemon=True)
+        self._query_worker.start()
+
+    @contextmanager
+    def _snapshot_deadline(self, timeout: float):
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError("reconciliation timeout must be positive")
+        deadline = time.monotonic() + timeout
+        if not self._reconcile_lock.acquire(timeout=timeout):
+            self.store.halt("RECONCILIATION_LOCK_TIMEOUT")
+            raise BrokerAdapterError("reconciliation lock timed out")
+        self._snapshot_complete = False
+        try:
+            yield deadline
+        except Exception:
+            if not self._snapshot_complete:
+                self._query_uncertain = True
+            self._reconciled = False
+            raise
+        finally:
+            self._reconcile_lock.release()
+
+    def _wait_snapshot(self, deadline: float, *, inspection: bool = False) -> None:
+        prefix = "BROKER_INSPECTION" if inspection else "RECONCILIATION"
+        for event, suffix, query in (
+            (self._detail_event, "DETAIL", "GetRealReport"),
+            (self._merge_event, "ORDER", "GetRealReportMerge"),
+            (self._position_event, "POSITION", "GetStoreSummary"),
+        ):
+            while not event.is_set():
+                if self._query_error is not None:
+                    self.store.halt("RECONCILIATION_QUERY_FAILED")
+                    raise BrokerAdapterError(f"broker reconciliation query failed: {self._query_error}")
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    self.store.halt(f"{prefix}_{suffix}_TIMEOUT")
+                    raise BrokerAdapterError(f"{query} timed out")
+                event.wait(min(remaining, 0.02))
+            if self._query_error is not None:
+                self.store.halt("RECONCILIATION_QUERY_FAILED")
+                raise BrokerAdapterError(f"broker reconciliation query failed: {self._query_error}")
+        # Queue.join has no timeout and could otherwise suspend the exit timer
+        # indefinitely during a stuck callback or continuous event inflow.
+        with self._queue.all_tasks_done:
+            while self._queue.unfinished_tasks:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    self.store.halt(f"{prefix}_CALLBACK_DRAIN_TIMEOUT")
+                    raise BrokerAdapterError("callback queue drain timed out")
+                self._queue.all_tasks_done.wait(remaining)
+        if self._query_worker is not None:
+            self._query_worker.join(max(0.0, deadline - time.monotonic()))
+            if self._query_worker.is_alive():
+                self.store.halt(f"{prefix}_QUERY_DISPATCH_TIMEOUT")
+                raise BrokerAdapterError("broker query dispatch timed out")
+        if self._query_error is not None:
+            self.store.halt("RECONCILIATION_QUERY_FAILED")
+            raise BrokerAdapterError(f"broker reconciliation query failed: {self._query_error}")
+        if time.monotonic() > deadline:
+            self.store.halt(f"{prefix}_DEADLINE_EXCEEDED")
+            raise BrokerAdapterError("reconciliation total deadline exceeded")
+        self._snapshot_complete = True
 
     def reconcile(
         self,
@@ -652,20 +892,9 @@ class YuantaSparkExecutionAdapter:
         the caller has an independently reviewed ownership model for unmanaged
         positions.
         """
-        with self._reconcile_lock:
+        with self._snapshot_deadline(timeout) as deadline:
             self.request_reconciliation()
-            if not self._detail_event.wait(timeout):
-                self.store.halt("RECONCILIATION_DETAIL_TIMEOUT")
-                raise BrokerAdapterError("GetRealReport timed out")
-            if not self._merge_event.wait(timeout):
-                self.store.halt("RECONCILIATION_ORDER_TIMEOUT")
-                raise BrokerAdapterError("GetRealReportMerge timed out")
-            if not self._position_event.wait(timeout):
-                self.store.halt("RECONCILIATION_POSITION_TIMEOUT")
-                raise BrokerAdapterError("GetStoreSummary timed out")
-
-            # Ensure all detailed snapshot events have been applied before compare.
-            self._queue.join()
+            self._wait_snapshot(deadline)
 
             merge = list(self._latest_merge or [])
             broker_positions = dict(self._latest_positions or {})
@@ -697,18 +926,9 @@ class YuantaSparkExecutionAdapter:
 
     def inspect_broker_state(self, *, timeout: float = 20.0) -> BrokerStateSnapshot:
         """Query actual broker orders and inventory without trusting local SQLite."""
-        with self._reconcile_lock:
+        with self._snapshot_deadline(timeout) as deadline:
             self.request_reconciliation()
-            if not self._detail_event.wait(timeout):
-                self.store.halt("BROKER_INSPECTION_DETAIL_TIMEOUT")
-                raise BrokerAdapterError("GetRealReport timed out")
-            if not self._merge_event.wait(timeout):
-                self.store.halt("BROKER_INSPECTION_ORDER_TIMEOUT")
-                raise BrokerAdapterError("GetRealReportMerge timed out")
-            if not self._position_event.wait(timeout):
-                self.store.halt("BROKER_INSPECTION_POSITION_TIMEOUT")
-                raise BrokerAdapterError("GetStoreSummary timed out")
-            self._queue.join()
+            self._wait_snapshot(deadline, inspection=True)
             orders = list(self._latest_merge or [])
             terminal = {
                 BrokerOrderStatus.FILLED,
@@ -743,13 +963,24 @@ class YuantaSparkExecutionAdapter:
                 continue
             remote = by_basket.get(local.basket_no)
             if remote is None and local.broker_order_no:
-                remote = by_order.get(local.broker_order_no)
+                candidate = by_order.get(local.broker_order_no)
+                if candidate is not None and not candidate.get("basket_no") and self._is_current_order(local):
+                    remote = candidate
 
             if remote is None:
+                # A failed local build/guard is not a missing broker order.
+                # Only durable proof that NEW never reached SendStockOrder is
+                # sufficient; UNKNOWN and ordinary API rejection remain unsafe.
+                if self.store.is_proven_unsent_rejection(local.client_order_id):
+                    continue
                 if local.status not in {BrokerOrderStatus.RESERVED}:
                     mismatches.append(
                         {"client_order_id": local.client_order_id, "reason": "missing_remote_order"}
                     )
+                continue
+
+            if not self._identity_matches(local, remote):
+                mismatches.append({"client_order_id": local.client_order_id, "reason": "broker_identity"})
                 continue
 
             remote_order_no = str(remote.get("order_no", "") or "")
@@ -771,7 +1002,7 @@ class YuantaSparkExecutionAdapter:
             if remote_quantity > 0 and remote_quantity != local.quantity:
                 # A successful reduction changes effective broker quantity. It is
                 # safe to adopt only after the detailed fill count already matches.
-                if remote_filled == local.filled_quantity:
+                if remote_filled == local.filled_quantity and remote_quantity < local.quantity:
                     local = self.store.apply_authoritative_order_quantity(
                         local.client_order_id,
                         remote_quantity,
@@ -797,6 +1028,17 @@ class YuantaSparkExecutionAdapter:
                 )
 
             remote_status = _remote_status(remote)
+            self.store.finalize_latest_request(local.client_order_id, "NEW", success=remote_status != BrokerOrderStatus.REJECTED)
+            self._resolve_mutation_from_remote(local, remote)
+            # A terminal broker snapshot is authoritative even when the
+            # cancel/final callback was lost. No fill quantity is fabricated.
+            if remote_filled == local.filled_quantity:
+                if remote_status == BrokerOrderStatus.CANCELED:
+                    self.store.canceled(local.client_order_id)
+                elif remote_status == BrokerOrderStatus.EXPIRED:
+                    self.store.expired(local.client_order_id, "recovered from merge")
+                elif remote_status == BrokerOrderStatus.REJECTED:
+                    self.store.reject(local.client_order_id, "recovered from merge")
             local = self.store.get(local.client_order_id)
             comparable_local = local.status
             # A detailed replay may leave UNKNOWN/SEND_PENDING but the aggregate
@@ -850,17 +1092,6 @@ class YuantaSparkExecutionAdapter:
         # matched to a locally-owned basket/order number is external/manual
         # intervention. Terminal broker history is intentionally ignored.
         local_orders = self.store.orders()
-        known_baskets = {
-            str(order.basket_no)
-            for order in local_orders
-            if order.basket_no
-        }
-        known_order_nos = {
-            str(order.broker_order_no)
-            for order in local_orders
-            if order.broker_order_no
-        }
-
         for remote in merge:
             remote_status = _remote_status(remote)
             if remote_status in TERMINAL_STATUSES:
@@ -869,9 +1100,15 @@ class YuantaSparkExecutionAdapter:
             basket_no = str(remote.get("basket_no", "") or "")
             order_no = str(remote.get("order_no", "") or "")
 
-            if basket_no and basket_no in known_baskets:
-                continue
-            if order_no and order_no in known_order_nos:
+            owned = next((
+                order for order in local_orders
+                if self._is_current_order(order) and self._identity_matches(order, remote)
+                and (
+                    (basket_no and basket_no == order.basket_no)
+                    or (not basket_no and order_no and order_no == order.broker_order_no)
+                )
+            ), None)
+            if owned is not None:
                 continue
 
             mismatches.append(
@@ -887,6 +1124,61 @@ class YuantaSparkExecutionAdapter:
 
         return mismatches
 
+    @staticmethod
+    def _order_day(local: StoredOrder):
+        try:
+            return datetime.fromisoformat(local.created_at.replace("Z", "+00:00")).astimezone(TAIPEI).date()
+        except (TypeError, ValueError):
+            return None
+
+    def _is_current_order(self, local: StoredOrder) -> bool:
+        return self._order_day(local) == datetime.now(TAIPEI).date()
+
+    def _identity_matches(self, local: StoredOrder, report: Mapping[str, Any]) -> bool:
+        if str(report.get("account", "")).strip().upper() != self.account:
+            return False
+        if str(report.get("symbol", "")).strip().upper() != local.symbol:
+            return False
+        if str(report.get("side", "")).strip().upper() not in {local.side.value, "B" if local.side.value == "BUY" else "S"}:
+            return False
+        basket = str(report.get("basket_no", "") or "")
+        if basket and basket != local.basket_no:
+            return False
+        order_no = str(report.get("order_no", "") or "")
+        if local.broker_order_no and order_no and order_no != local.broker_order_no:
+            return False
+        raw_day = str(report.get("trade_date", "") or "").strip()
+        if raw_day:
+            try:
+                report_day = datetime.strptime(raw_day.replace("/", "").replace("-", "")[:8], "%Y%m%d").date()
+            except ValueError:
+                return False
+            if report_day != self._order_day(local):
+                return False
+        return True
+
+    def _resolve_mutation_from_remote(self, local: StoredOrder, remote: Mapping[str, Any]) -> None:
+        pending = self.store.pending_mutation(local.client_order_id)
+        if pending is None:
+            return
+        status = _remote_status(remote)
+        operation = pending["operation"]
+        if status in TERMINAL_STATUSES:
+            self.store.finalize_latest_request(local.client_order_id, operation, success=(operation == "CANCEL" and status == BrokerOrderStatus.CANCELED))
+            return
+        if operation == "MODIFY_PRICE":
+            try:
+                matches = Decimal(str(remote.get("price", "0"))) == Decimal(str(pending["payload"]["new_price"]))
+            except (KeyError, ValueError, ArithmeticError):
+                matches = False
+            if matches:
+                self.store.finalize_latest_request(local.client_order_id, operation, success=True)
+        elif operation == "REDUCE":
+            expected = pending["payload"].get("expected_quantity")
+            quantity = int(remote.get("order_qty", 0))
+            if expected is not None and quantity > 0 and quantity == int(expected):
+                self.store.finalize_latest_request(local.client_order_id, operation, success=True)
+
     def _on_response(
         self,
         int_mark: Any,
@@ -899,22 +1191,22 @@ class YuantaSparkExecutionAdapter:
         with self._callback_lock:
             if self._closed:
                 return
+            name = _as_str(response_name)
             try:
                 mark = int(int_mark)
-                name = str(response_name)
                 if mark == 1 and name == "SendStockOrder":
                     self._queue.put(("order_result", _normalise_order_result(value)))
                 elif mark == 1 and name == "GetRealReport":
-                    rows = [
-                        _normalise_real_report(x)
-                        for x in _collection(_safe(value, "RealReportList"))
-                    ]
+                    raw_rows = _required_collection(value, "RealReportList")
+                    for row in raw_rows:
+                        _validate_snapshot_order(row, merge=False, account=self.account)
+                    rows = [_normalise_real_report(x) for x in raw_rows]
                     self._queue.put(("detail_snapshot", rows))
                 elif mark == 1 and name == "GetRealReportMerge":
-                    rows = [
-                        _normalise_merge_report(x)
-                        for x in _collection(_safe(value, "RealReportMergeList"))
-                    ]
+                    raw_rows = _required_collection(value, "RealReportMergeList")
+                    for row in raw_rows:
+                        _validate_snapshot_order(row, merge=True, account=self.account)
+                    rows = [_normalise_merge_report(x) for x in raw_rows]
                     self._queue.put(("merge_snapshot", rows))
                 elif mark == 1 and name == "GetStoreSummary":
                     self._queue.put(("position_snapshot", _normalise_positions(value)))
@@ -923,6 +1215,13 @@ class YuantaSparkExecutionAdapter:
                 elif mark == 2 and name == "RR_RealReportMerge":
                     self._queue.put(("merge_live", _normalise_merge_report(value)))
             except Exception as exc:
+                # No completion event for a malformed snapshot. An explicit
+                # failure wakes the bounded waiter; reconnect must construct a
+                # fresh adapter so a late callback cannot certify false flat.
+                if name in {"GetRealReport", "GetRealReportMerge", "GetStoreSummary"}:
+                    self._query_error = exc
+                    self._query_uncertain = True
+                    self._reconciled = False
                 self._queue.put(
                     ("callback_error", f"{type(exc).__name__}: {exc}")
                 )
@@ -968,24 +1267,26 @@ class YuantaSparkExecutionAdapter:
         basket = str(report.get("basket_no", "") or "")
         if basket:
             local = self.store.get_by_basket_no(basket)
-            if local is not None:
+            if local is not None and self._identity_matches(local, report):
                 return local
+            # A nonempty unknown/conflicting basket is not permission to
+            # attach this report to some other (possibly historical) order.
+            return None
         order_no = str(report.get("order_no", "") or "")
         if order_no:
             local = self.store.get_by_broker_order_no(order_no)
-            if local is not None:
+            if local is not None and self._is_current_order(local) and self._identity_matches(local, report):
                 return local
         return None
 
     def _resolve_order_result_request(
-        self, broker_identify: int
+        self, broker_identify: int, *, order_no: str = ""
     ) -> dict[str, Any] | None:
-        """Correlate one-row SPARK results without trusting reused Identify.
+        """Use proven order identity; never let a sole pending request steal an ACK.
 
-        Some SPARK builds return ``Identify=1`` for each one-row
-        ``SendStockOrder`` call even when the submitted ``StockOrder.Identify``
-        is a later durable value.  Prefer the sole pending request created for
-        today's order.  Ambiguity halts execution instead of guessing.
+        Reused Identify plus an unknown OrderNo is genuinely ambiguous. A later
+        BasketNo report/query can bind the actual order; this function cannot
+        infer ownership from a count of pending requests alone.
         """
         pending = self.store.pending_requests()
         today = datetime.now(TAIPEI).date()
@@ -1004,27 +1305,32 @@ class YuantaSparkExecutionAdapter:
                 return False
 
         current = [request for request in pending if is_today(request)]
-        exact = next(
-            (
-                request
-                for request in current
-                if int(request["identify"]) == int(broker_identify)
-            ),
-            None,
-        )
-        if exact is not None:
-            return exact
-
-        candidates = current or pending
-        if len(candidates) == 1:
-            request = candidates[0]
-            if int(request["identify"]) != int(broker_identify):
+        exact = self.store.get_request(broker_identify)
+        owned = self.store.get_by_broker_order_no(order_no) if order_no else None
+        if owned is not None and self._is_current_order(owned):
+            if exact is not None and exact["client_order_id"] == owned.client_order_id:
+                return exact
+            same_order = [item for item in current if item["client_order_id"] == owned.client_order_id]
+            if len(same_order) == 1:
+                request = same_order[0]
                 self.store.record_broker_result_correlation(
-                    broker_identify=int(broker_identify),
+                    broker_identify=broker_identify,
                     request_identify=int(request["identify"]),
-                    client_order_id=str(request["client_order_id"]),
+                    client_order_id=owned.client_order_id,
                 )
-            return request
+                return request
+            # A basket-backed report can finalize NEW before its API ACK.
+            latest = self.store.latest_request(owned.client_order_id, "NEW")
+            if latest is not None and not same_order:
+                return latest
+        elif exact is not None:
+            local = self.store.get(exact["client_order_id"])
+            if self._is_current_order(local):
+                if exact["request_status"] != "SEND_PENDING":
+                    if not order_no or not local.broker_order_no or local.broker_order_no == order_no:
+                        return exact
+                elif len(current) == 1 and (not local.broker_order_no or local.broker_order_no == order_no):
+                    return exact
 
         self.store.halt("AMBIGUOUS_BROKER_ORDER_RESULT")
         return None
@@ -1032,7 +1338,14 @@ class YuantaSparkExecutionAdapter:
     def _apply_order_result(self, rows: Iterable[Mapping[str, Any]]) -> None:
         for row in rows:
             broker_identify = int(row.get("identify", 0))
-            request = self._resolve_order_result_request(broker_identify)
+            result_payload = {key: row.get(key, "") for key in ("identify", "reply_code", "order_no", "err_type", "err_no", "advisory")}
+            result_key = hashlib.sha256(json.dumps(
+                {"day": datetime.now(TAIPEI).date().isoformat(), "result": result_payload},
+                sort_keys=True, default=str,
+            ).encode()).hexdigest()
+            if self.store.broker_result_receipt(result_key) is not None:
+                continue
+            request = self._resolve_order_result_request(broker_identify, order_no=str(row.get("order_no", "") or ""))
             if request is None:
                 continue
             identify = int(request["identify"])
@@ -1045,16 +1358,26 @@ class YuantaSparkExecutionAdapter:
                 "err_no": str(row.get("err_no", "") or ""),
                 "advisory": str(row.get("advisory", "") or ""),
             }
-            self.store.complete_request(identify, success=success, payload=detail)
+            completed = self.store.complete_request(identify, success=success, payload=detail)
+            accepted_outcomes = {"ACCEPTED", "CONFIRMED"} if success else {"REJECTED", "FAILED"}
+            if completed is None or completed["request_status"] not in accepted_outcomes:
+                # Contradictory API results halt, but must not mark a live
+                # broker order rejected or reopen a failed/unsent request.
+                self.store.record_broker_result_receipt(result_key, identify, result_payload)
+                continue
 
             if success:
                 order_no = detail["order_no"]
                 if order_no:
                     self.store.bind_broker_order(client_order_id, order_no)
                 if operation == "NEW":
-                    self.store.acknowledge(client_order_id)
+                    if self.store.get(client_order_id).broker_order_no:
+                        self.store.acknowledge(client_order_id)
+                    else:
+                        self.store.mark_unknown(client_order_id, "ACK_WITHOUT_BROKER_ORDER_NO")
                 # CANCEL/MODIFY/REDUCE are only request-accepted here; terminal
                 # state is driven by RR_RealReport / RR_RealReportMerge.
+                self.store.record_broker_result_receipt(result_key, identify, result_payload)
                 continue
 
             reason = " ".join(
@@ -1071,6 +1394,7 @@ class YuantaSparkExecutionAdapter:
                     success=False,
                     reason=reason,
                 )
+            self.store.record_broker_result_receipt(result_key, identify, result_payload)
 
     def _apply_real_report(self, report: Mapping[str, Any]) -> None:
         local = self._lookup_report_order(report)
@@ -1085,11 +1409,12 @@ class YuantaSparkExecutionAdapter:
         if rpt_type == 51:
             quantity = int(report.get("order_qty", 0))
             price = Decimal(str(report.get("price", "0")))
-            seq_no = str(report.get("seq_no", "") or "0")
-            if quantity <= 0 or price <= 0:
+            seq_no = str(report.get("seq_no", "") or "")
+            if quantity <= 0 or not price.is_finite() or price <= 0 or seq_no in {"", "0"}:
                 self.store.halt(f"INVALID_FILL_REPORT:{local.client_order_id}")
                 return
-            fill_id = f"{order_no or local.client_order_id}:{seq_no}"
+            self.store.finalize_latest_request(local.client_order_id, "NEW", success=True)
+            fill_id = f"{local.client_order_id}:{seq_no}"
             self.store.record_fill(
                 local.client_order_id,
                 fill_id=fill_id,
@@ -1097,6 +1422,7 @@ class YuantaSparkExecutionAdapter:
                 price=price,
                 broker_order_no=order_no or local.broker_order_no,
                 seq_no=seq_no,
+                legacy_fill_id=f"{order_no}:{seq_no}" if order_no else None,
             )
             return
 
@@ -1109,58 +1435,43 @@ class YuantaSparkExecutionAdapter:
             or ""
         )
         if status in {0, 18}:
+            self.store.finalize_latest_request(local.client_order_id, "NEW", success=True)
             self.store.acknowledge(local.client_order_id)
         elif status == 1:
+            self.store.finalize_latest_request(local.client_order_id, "NEW", success=False)
             self.store.reject(local.client_order_id, error or "broker order failed")
         elif status == 2:
             self.store.finalize_latest_request(local.client_order_id, "CANCEL", success=True)
             self.store.canceled(local.client_order_id)
         elif status == 3:
-            self.store.finalize_latest_request(local.client_order_id, "CANCEL", success=False)
-            self.store.cancel_failed(local.client_order_id, error or "cancel failed")
+            # RR has order identity, not mutation identity. A delayed failure
+            # from an older cancel must not release a newer request's latch.
+            self.store.audit_event("MUTATION_FAILURE_REQUIRES_RECONCILIATION", {"client_order_id": local.client_order_id, "operation": "CANCEL", "error": error})
         elif status == 4:
-            self.store.finalize_latest_request(local.client_order_id, "REDUCE", success=True)
-            # If the matching REDUCE request is available, apply the requested
-            # reduction immediately. Merge reconciliation later validates it.
-            reduce_request = self._latest_request(local.client_order_id, "REDUCE")
-            if reduce_request and reduce_request["request_status"] in {"ACCEPTED", "CONFIRMED"}:
-                reduce_by = int(reduce_request["payload"].get("reduce_by", 0))
-                if reduce_by > 0:
-                    self.store.confirm_reduction(local.client_order_id, reduce_by)
-                else:
-                    self.store.modification_result(
-                        local.client_order_id, kind="reduce", success=True
-                    )
-            else:
-                self.store.modification_result(
-                    local.client_order_id, kind="reduce", success=True
-                )
+            # Accept the quantity only if it exactly proves the known request
+            # target in our canonical share unit. Never blindly interpret an
+            # arbitrary RR quantity as a reduction delta or broker lot count.
+            effective = int(report.get("order_qty", 0))
+            request = self.store.latest_request(local.client_order_id, "REDUCE")
+            expected = None if request is None else request["payload"].get("expected_quantity")
+            if expected is not None and effective == int(expected) and 0 < effective <= local.quantity:
+                self.store.apply_authoritative_order_quantity(local.client_order_id, effective)
+            self._resolve_mutation_from_remote(local, report)
+            self.store.modification_result(local.client_order_id, kind="reduce", success=True)
         elif status == 5:
-            self.store.finalize_latest_request(local.client_order_id, "REDUCE", success=False)
-            self.store.modification_result(
-                local.client_order_id,
-                kind="reduce",
-                success=False,
-                reason=error,
-            )
+            self.store.audit_event("MUTATION_FAILURE_REQUIRES_RECONCILIATION", {"client_order_id": local.client_order_id, "operation": "REDUCE", "error": error})
         elif status == 8:
             # Do not fabricate a fill from an order-status report. The RptType=51
             # fill can arrive before or after this event. Reconciliation catches
             # any genuinely missing fill after the replay window completes.
             pass
         elif status == 20:
-            self.store.finalize_latest_request(local.client_order_id, "MODIFY_PRICE", success=True)
+            self._resolve_mutation_from_remote(local, report)
             self.store.modification_result(
                 local.client_order_id, kind="price", success=True
             )
         elif status == 21:
-            self.store.finalize_latest_request(local.client_order_id, "MODIFY_PRICE", success=False)
-            self.store.modification_result(
-                local.client_order_id,
-                kind="price",
-                success=False,
-                reason=error,
-            )
+            self.store.audit_event("MUTATION_FAILURE_REQUIRES_RECONCILIATION", {"client_order_id": local.client_order_id, "operation": "MODIFY_PRICE", "error": error})
         elif status in {24, 25}:
             self.store.expired(
                 local.client_order_id,
@@ -1185,12 +1496,13 @@ class YuantaSparkExecutionAdapter:
         if (
             remote_qty > 0
             and remote_filled == local.filled_quantity
-            and remote_qty != local.quantity
+            and remote_qty < local.quantity
         ):
             local = self.store.apply_authoritative_order_quantity(
                 local.client_order_id,
                 remote_qty,
             )
+        self._resolve_mutation_from_remote(local, report)
 
         order_status = int(report.get("order_status", -1))
         last = int(report.get("last_order_status", -1))
