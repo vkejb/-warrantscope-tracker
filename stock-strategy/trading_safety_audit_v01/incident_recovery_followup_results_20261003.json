@@ -1,0 +1,61 @@
+{
+  "scope": "SOURCE_MOCK_READ_ONLY_AND_APPROVED_OFFLINE_LEDGER_REPAIR_NOT_LIVE_CERTIFICATION",
+  "date": "2026-10-03",
+  "status": "FORMAL_LEDGER_REPAIRED_TRADING_BLOCKED",
+  "normal_start_ready": false,
+  "formal_ledger_atomic_apply_count": 1,
+  "private_copy_repair_verified": true,
+  "private_copy_idempotency_verified": true,
+  "formal_postcheck_verified": true,
+  "broker_baseline_ledger_positions_equal_at_reviewed_snapshot": true,
+  "latest_completed_broker_snapshot_at": "2026-10-03T08:57:46Z",
+  "latest_read_only_query_total_process_deadline_seconds": 55,
+  "read_only_query_guard_tests": {"run": 11, "passed": 11},
+  "protected_runtime_files_unchanged_during_completed_queries": 11,
+  "baseline_halt_checkpoint_and_other_protected_files_preserved": true,
+  "baseline_metadata_applied": false,
+  "original_baseline_capture_proof_available": false,
+  "private_backup_permissions_hash_and_restore_source_verified": true,
+  "account_lock_provenance_created_or_refreshed_during_maintenance": true,
+  "live_runtime_starts": 0,
+  "broker_order_submission_calls": 0,
+  "broker_cancel_replace_calls": 0,
+  "bot_launchagent_restarts": 0,
+  "live_gates_changed": false,
+  "keychain_settings_changed": false,
+  "entry_sizing_or_strategy_logic_changed": false,
+  "mfe_strategy_or_checkpoint_rewritten": false,
+  "short_entry_enabled": false,
+  "force_flat_exit_routing_changed": true,
+  "force_flat_phases": {
+    "market_ioc_from": "13:23:00",
+    "closing_limit_rod_from": "13:25:00",
+    "new_order_cutoff": "13:29:50",
+    "unsupported_odd_or_mixed_lot_fallback": "FAIL_CLOSED_CRITICAL"
+  },
+  "native_logout_close_certified": false,
+  "future_non_ws_basket_contract_verified": false,
+  "private_broker_evidence_backup_or_plan_committed": false,
+  "tests": {
+    "initial_full_python_312": {"run": 1012, "passed": 1011, "skipped": 1, "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0},
+    "final_full_python_312": {"run": 1076, "passed": 1075, "skipped": 1, "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0},
+    "runtime_python_310": {"run": 296, "passed": 296, "skipped": 0, "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0},
+    "broker_python_310": {"run": 136, "passed": 135, "skipped": 1, "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0},
+    "incident_each_python_310_312": {"run": 40, "passed": 40, "forbidden_boundary_attempts": 0},
+    "closing_each_python_310_312": {"run": 28, "passed": 28, "forbidden_boundary_attempts": 0},
+    "history_each_python_310_312": {"run": 21, "passed": 21, "forbidden_boundary_attempts": 0},
+    "node": {"run": 75, "passed": 75, "skipped": 0, "failures": 0}
+  },
+  "test_suites_overlap": true,
+  "remaining_blockers": [
+    "STRATEGY_CARRYOVER_POSITION",
+    "UNCONFIRMED_MANUAL_REMAINDER",
+    "HALT_ACTIVE",
+    "ORIGINAL_BASELINE_CAPTURE_PROOF_MISSING"
+  ],
+  "unverified_recovery_capabilities": [
+    "MISSING_ORIGINAL_MFE_CHECKPOINT",
+    "FUTURE_WIRE_BASKET_MAPPING_CONTRACT",
+    "NATIVE_FORCE_FLAT_EXECUTION_AND_FILLS"
+  ]
+}

@@ -9,6 +9,8 @@ controller before applying it. Runtime/account locks are the caller's duty.
 An unconfirmed manual sell remainder is imported as PARTIALLY_FILLED, never
 invented cancelled/expired. HALT remains active and no LIVE readiness is claimed.
 No baseline, MFE checkpoint, intent identity, or next-identify is rewritten.
+The separate provenance tool may CREATE missing baseline metadata only from
+reviewed original capture evidence; it never rebases or claims LIVE readiness.
 """
 from __future__ import annotations
 
@@ -22,6 +24,7 @@ from pathlib import Path
 import re
 import sqlite3
 import stat
+import tempfile
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -101,6 +104,16 @@ def _native_time(row: dict) -> datetime:
         return parsed.replace(tzinfo=TAIPEI)
     except ValueError:
         _fail("BROKER_NATIVE_DATE_TIME_INVALID")
+
+
+def _history_native_time(row: dict, date_key: str, time_key: str) -> datetime:
+    """Normalize SDK YYYYMMDD explicitly; Python 3.10 rejects basic ISO dates."""
+    day = str(row.get(date_key, "")).replace("-", "")
+    clock = str(row.get(time_key, ""))
+    if (not re.fullmatch(r"[0-9]{8}", day)
+            or not re.fullmatch(r"[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?", clock)):
+        _fail("NATIVE_HISTORY_DATE_TIME_UNPROVEN")
+    return _aware(f"{day[:4]}-{day[4:6]}-{day[6:]}T{clock}+08:00")
 
 
 def _side(row: dict) -> str:
@@ -184,15 +197,183 @@ def _terminal_or_partial(row: dict) -> str:
         _fail("BROKER_OVERFILL")
     status = _integer(row.get("order_status"))
     last = _integer(row.get("last_order_status"))
+    proof = row.get("native_history_proof")
+    history_terminal = None
+    if proof is not None:
+        if (not isinstance(proof, dict) or proof.get("account_verified") is not True
+                or not re.fullmatch(r"[0-9a-f]{12}", str(proof.get("account_fingerprint", "")))):
+            _fail("NATIVE_HISTORY_ACCOUNT_UNPROVEN")
+        _aware(proof.get("queried_at"))
+        history_terminal = _validate_history_binding(row, proof.get("order"))
+    merged_terminal = None
     if status == 30 or last == 2:
-        return "CANCELED"
-    if status in {24, 25} or last in {24, 25}:
-        return "EXPIRED"
-    if status == 10 or last == 1:
-        return "REJECTED"
+        merged_terminal = "CANCELED"
+    elif status in {24, 25} or last in {24, 25}:
+        merged_terminal = "EXPIRED"
+    elif status == 10 or last == 1:
+        merged_terminal = "REJECTED"
+    if history_terminal and merged_terminal and history_terminal != merged_terminal:
+        _fail("NATIVE_HISTORY_TERMINAL_CONFLICT")
+    if history_terminal or merged_terminal:
+        return history_terminal or merged_terminal
     if filled == quantity:
         return "FILLED"
     return "PARTIALLY_FILLED" if filled else "ACKNOWLEDGED"
+
+
+def _validate_history_binding(row: dict, history: dict) -> str | None:
+    """Quantities are evidence, not an expiry contract or exposure calculation."""
+    if (not isinstance(history, dict)
+            or history.get("source") != "GetOrderTradeReport.StkOrderList"
+            or history.get("account_verified") is not True
+            or history.get("trade_date_source") != "TradeDate"
+            or history.get("accept_date_source") != "AcceptDate"
+            or history.get("accept_time_source") != "AcceptTime"):
+        _fail("NATIVE_HISTORY_SOURCE_UNPROVEN")
+    native = _native_time(row)
+    history_day = _history_native_time(history, "trade_date", "accept_time").date()
+    accepted = _history_native_time(history, "accept_date", "accept_time")
+    if (history_day != native.date() or accepted.date() != native.date()
+            or history.get("order_no") != row.get("order_no")
+            or history.get("symbol") != row.get("symbol")
+            or _side(history) != _side(row)
+            or _integer(history.get("original_qty"), minimum=1) != _integer(row.get("order_qty"), minimum=1)
+            or _integer(history.get("ok_qty")) != _integer(row.get("ok_qty"))
+            or _decimal(history.get("price")) != _decimal(row.get("price"))):
+        _fail("NATIVE_HISTORY_IDENTITY_CONFLICT")
+    for key in ("ap_code", "order_type", "price_type", "time_in_force"):
+        if history.get(key) in (None, "") or str(history[key]) != str(row.get(key)):
+            _fail("NATIVE_HISTORY_TYPE_CONFLICT")
+    basket = str(history.get("basket_no", ""))
+    if basket and basket != str(row.get("basket_no", "")):
+        _fail("NATIVE_HISTORY_BASKET_CONFLICT")
+    quantity, filled = _integer(row["order_qty"], minimum=1), _integer(row["ok_qty"])
+    after, cancelled = _integer(history.get("after_qty")), _integer(history.get("cancel_qty"))
+    if after > quantity or cancelled + filled > quantity:
+        _fail("NATIVE_HISTORY_QUANTITY_CONFLICT")
+    status = _integer(history.get("order_status"))
+    terminal = {10: "REJECTED", 24: "EXPIRED", 25: "EXPIRED", 30: "CANCELED"}.get(status)
+    if history.get("terminal_status") != (terminal or "UNKNOWN"):
+        _fail("NATIVE_HISTORY_STATUS_CONFLICT")
+    if terminal == "REJECTED" and filled:
+        _fail("NATIVE_HISTORY_REJECTED_WITH_FILLS")
+    return terminal
+
+
+def _validate_manual_ap_discrepancy(detail: dict, order: dict, account_hash: str) -> bool:
+    """One historical manual AP0 report/AP7 board discrepancy, not a callback fix."""
+    proof = detail.get("manual_history_ap_discrepancy_proof")
+    if proof is None:
+        return False
+    order_proof = order.get("native_history_proof")
+    if (not isinstance(proof, dict) or not isinstance(order_proof, dict)
+            or proof.get("account_fingerprint") != account_hash
+            or proof.get("account_verified") is not True
+            or proof.get("history_order") != order_proof.get("order")
+            or _side(detail) != "SELL" or _side(order) != "SELL"
+            or _integer(detail.get("ap_code")) != 0
+            or _integer(order.get("ap_code")) != 7
+            or str(detail.get("order_type")) != "0"
+            or str(order.get("order_type")) != "0"):
+        _fail("MANUAL_AP_DISCREPANCY_PROOF_CONFLICT")
+    contract = proof.get("contract", {})
+    if (contract != {"source": "YUANTA_NATIVE_IO_FIELD_DESCRIPTION", "verified": True,
+                      "exchange_code": 4, "ap_code": 7}):
+        _fail("MANUAL_AP_NATIVE_CONTRACT_UNPROVEN")
+    trade = proof.get("trade", {})
+    if (trade.get("source") != "GetOrderTradeReport.StkTradeList"
+            or trade.get("account_verified") is not True
+            or trade.get("trade_date_source") != "DateTime"
+            or trade.get("fill_time_source") != "DateTime"
+            or trade.get("order_no") != detail.get("order_no")
+            or trade.get("symbol") != detail.get("symbol")
+            or _side(trade) != "SELL" or str(trade.get("order_type")) != "0"
+            or _integer(trade.get("exchange_code")) != 4
+            or _integer(trade.get("ok_qty"), minimum=1) != _integer(detail.get("order_qty"), minimum=1)
+            or _decimal(trade.get("fill_price")) != _decimal(detail.get("price"))
+            or _history_native_time(trade, "trade_date", "fill_time") != _native_time(detail)):
+        _fail("MANUAL_HISTORY_TRADE_IDENTITY_CONFLICT")
+    return True
+
+
+def bind_history_order_evidence(evidence: dict, history: dict) -> dict:
+    """Bind account-validated native history without any query or store write.
+
+    Caller adds the independently verified account fingerprint/query timestamp
+    to the existing pure GetOrderTradeReport DTO. Exact native identities are
+    required. Unknown history status stays unknown: yesterday ROD, AfterQty=0,
+    or CancelQty alone NEVER manufactures CANCELED/EXPIRED.
+    """
+    result, history = json.loads(_json(evidence)), json.loads(_json(history))
+    if (result.get("account_rows_validated") is not True
+            or history.get("account_verified") is not True
+            or history.get("source") != "GetOrderTradeReport"
+            or history.get("account_fingerprint") != result.get("account_fingerprint")):
+        _fail("NATIVE_HISTORY_ACCOUNT_UNPROVEN")
+    queried_at = _aware(history.get("queried_at"))
+    if queried_at > datetime.now(TAIPEI) and (queried_at - datetime.now(TAIPEI)).total_seconds() > 60:
+        _fail("QUERY_TIME_IN_FUTURE")
+    rows = history.get("orders")
+    if not isinstance(rows, list) or not rows:
+        _fail("NATIVE_HISTORY_ORDER_ROWS_MISSING")
+    for order in result["orders"]:
+        matches = [item for item in rows if isinstance(item, dict)
+                   and item.get("order_no") == order.get("order_no")
+                   and item.get("symbol") == order.get("symbol")
+                   and _side(item) == _side(order)
+                   and str(item.get("trade_date", "")).replace("-", "") == _native_time(order).strftime("%Y%m%d")]
+        if len(matches) != 1:
+            _fail("NATIVE_HISTORY_ORDER_IDENTITY_AMBIGUOUS")
+        native = matches[0]
+        for key in ("ap_code", "order_type", "price_type", "time_in_force"):
+            if order.get(key) in (None, ""):
+                order[key] = native.get(key)
+        _validate_history_binding(order, native)
+        order["native_history_proof"] = {"account_verified": True,
+            "account_fingerprint": history["account_fingerprint"],
+            "queried_at": history["queried_at"], "order": native}
+        for detail in result["details"]:
+            if (detail.get("order_no") == order["order_no"]
+                    and detail.get("symbol") == order["symbol"]
+                    and _side(detail) == _side(order)
+                    and _native_time(detail).date() == _native_time(order).date()):
+                for key in ("order_type",):
+                    if detail.get(key) in (None, ""):
+                        detail[key] = native.get(key)
+                if (_integer(detail.get("rpt_type")) == 51
+                        and _integer(detail.get("order_status")) == 8
+                        and _side(order) == "SELL" and _integer(order.get("ap_code")) == 7
+                        and _integer(detail.get("ap_code")) == 0):
+                    trades = history.get("trades", [])
+                    matches = [item for item in trades if isinstance(item, dict)
+                               and item.get("order_no") == detail.get("order_no")
+                               and item.get("symbol") == detail.get("symbol")
+                               and _side(item) == "SELL"
+                               and _history_native_time(item, "trade_date", "fill_time") == _native_time(detail)
+                               and _integer(item.get("ok_qty"), minimum=1) == _integer(detail.get("order_qty"), minimum=1)
+                               and _decimal(item.get("fill_price")) == _decimal(detail.get("price"))]
+                    if len(matches) != 1:
+                        _fail("MANUAL_HISTORY_TRADE_IDENTITY_AMBIGUOUS")
+                    # History has no SeqNo: identical detailed fills would make
+                    # this one-to-one corroboration ambiguous, not two proofs.
+                    same_details = [item for item in result["details"] if _integer(item.get("rpt_type")) == 51
+                                    and _integer(item.get("order_status")) == 8
+                                    and item.get("order_no") == detail.get("order_no")
+                                    and item.get("symbol") == detail.get("symbol")
+                                    and _side(item) == _side(detail)
+                                    and _native_time(item) == _native_time(detail)
+                                    and _integer(item.get("order_qty"), minimum=1) == _integer(detail.get("order_qty"), minimum=1)
+                                    and _decimal(item.get("price")) == _decimal(detail.get("price"))]
+                    if len(same_details) != 1:
+                        _fail("MANUAL_HISTORY_TRADE_IDENTITY_AMBIGUOUS")
+                    detail["manual_history_ap_discrepancy_proof"] = {
+                        "account_verified": True, "account_fingerprint": history["account_fingerprint"],
+                        "history_order": native, "trade": matches[0],
+                        "contract": history.get("ap_code_contract")}
+                    _validate_manual_ap_discrepancy(detail, order, history["account_fingerprint"])
+    # Both sources must be fresh at apply time; keep the older as-of time.
+    result["queried_at"] = min(_aware(result["queried_at"]), queried_at).isoformat()
+    return result
 
 
 def _mean(fills: list[dict]) -> tuple[int, str]:
@@ -239,6 +420,11 @@ def _prepare(snapshot: dict, evidence: dict, old_id: str, current_id: str, basel
         _side(row)
         if _native_time(row) > query_time:
             _fail("BROKER_ROW_AFTER_QUERY")
+        history_proof = row.get("native_history_proof")
+        if history_proof is not None:
+            if (history_proof.get("account_fingerprint") != account_hash
+                    or _aware(history_proof.get("queried_at")) < query_time):
+                _fail("NATIVE_HISTORY_ACCOUNT_OR_AS_OF_CONFLICT")
     local_orders = {row["client_order_id"]: row for row in snapshot["tables"]["live_orders"]}
     old, current = local_orders.get(old_id), local_orders.get(current_id)
     if old is None or current is None or old_id == current_id:
@@ -343,7 +529,7 @@ def _prepare(snapshot: dict, evidence: dict, old_id: str, current_id: str, basel
         if row.get("price_type") not in {"LIMIT", "MARKET", "LIMIT_UP", "LIMIT_DOWN", "FLAT"} or row.get("time_in_force") not in {"ROD", "IOC", "FOK"}:
             _fail("MANUAL_PRICE_TYPE_OR_TIF_UNPROVEN")
         group = fills_by_order.get(row["order_no"], [])
-        if any(item["symbol"] != current["symbol"] or _side(item) != "SELL" or _native_time(item).date() != _native_time(row).date() or _native_time(item) < _native_time(row) or str(item.get("basket_no", "")) not in {"", str(row.get("basket_no", ""))} or str(item.get("order_type")) != "0" or _integer(item.get("ap_code")) != _integer(row.get("ap_code")) for item in group):
+        if any(item["symbol"] != current["symbol"] or _side(item) != "SELL" or _native_time(item).date() != _native_time(row).date() or _native_time(item) < _native_time(row) or str(item.get("basket_no", "")) not in {"", str(row.get("basket_no", ""))} or str(item.get("order_type")) != "0" or (_integer(item.get("ap_code")) != _integer(row.get("ap_code")) and not _validate_manual_ap_discrepancy(item, row, account_hash)) for item in group):
             _fail("MANUAL_FILL_IDENTITY_CONFLICT")
         sold, mean = _mean(group)
         if sold != _integer(row.get("ok_qty")) or _decimal(row.get("avg_deal_price")) != _decimal(mean):
@@ -352,7 +538,9 @@ def _prepare(snapshot: dict, evidence: dict, old_id: str, current_id: str, basel
         identity = "manual-" + token[:32]
         if any(item["broker_order_no"] == row["order_no"] or item["client_order_id"] == identity for item in local_orders.values()):
             _fail("MANUAL_ORDER_ALREADY_PRESENT")
-        stamp = _native_time(row).isoformat()
+        history_proof = row.get("native_history_proof")
+        stamp = (_history_native_time(history_proof["order"], "accept_date", "accept_time").isoformat()
+                 if history_proof else _native_time(row).isoformat())
         new = {"client_order_id": identity, "intent_id": "INCIDENT-MANUAL-" + token, "basket_no": str(row.get("basket_no", "")) or "WS" + token[:30], "broker_order_no": row["order_no"], "symbol": current["symbol"], "side": "SELL", "quantity": _integer(row["order_qty"], minimum=1), "price": str(_decimal(row["price"])), "price_type": row["price_type"], "time_in_force": row["time_in_force"], "ap_code": _integer(row["ap_code"]), "order_type": "0", "purpose": "EXIT", "status": status, "filled_quantity": sold, "average_fill_price": mean, "last_error": "MANUAL_ACTUAL_FILL_IMPORTED_NO_BROKER_SUBMISSION", "created_at": stamp, "updated_at": stamp}
         new["fingerprint"] = _fingerprint(new)
         manual_orders.append(new)
@@ -516,3 +704,201 @@ def apply_plan(DB: str | Path, plan: dict, backup_dir: str | Path) -> dict:
         raise
     finally:
         db.close()
+
+
+def _require_fresh_evidence(stamp: str) -> None:
+    age = (datetime.now(TAIPEI) - _aware(stamp)).total_seconds()
+    if age < -60 or age > APPLY_EVIDENCE_MAX_AGE_SECONDS:
+        _fail("APPLY_BROKER_EVIDENCE_STALE")
+
+
+def _baseline_provenance(snapshot: dict, baseline_bytes: bytes, evidence: dict,
+                         review: dict, repair_marker: dict) -> dict:
+    """Restore provenance, never manufacture a capture or rebase inventory."""
+    evidence, review = json.loads(_json(evidence)), json.loads(_json(review))
+    baseline_hash = hashlib.sha256(baseline_bytes).hexdigest()
+    try:
+        baseline = _positions(json.loads(baseline_bytes.decode("utf-8")))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        _fail("BASELINE_CONTENT_INVALID")
+    account_hash = evidence.get("account_fingerprint")
+    if (evidence.get("schema_version") != SCHEMA_VERSION
+            or evidence.get("account_rows_validated") is not True
+            or not re.fullmatch(r"[0-9a-f]{12}", str(account_hash))):
+        _fail("ACCOUNT_VALIDATED_EVIDENCE_REQUIRED")
+    if (review.get("human_confirmed") is not True
+            or review.get("confirmation_source") != "USER_REVIEWED_ORIGINAL_CAPTURE"
+            or review.get("account_fingerprint") != account_hash
+            or review.get("baseline_sha256") != baseline_hash
+            or review.get("capture_evidence_verified") is not True
+            or not re.fullmatch(r"[0-9a-f]{64}", str(review.get("capture_evidence_sha256", "")))
+            or review.get("capture_evidence_source") not in {"ORIGINAL_CAPTURE_LOG", "ORIGINAL_CAPTURE_AUDIT_RECORD"}):
+        _fail("ORIGINAL_BASELINE_CAPTURE_PROOF_REQUIRED")
+    captured_at = _aware(review.get("captured_at"))
+    if review.get("trading_date") != captured_at.date().isoformat():
+        _fail("ORIGINAL_BASELINE_CAPTURE_DATE_CONFLICT")
+    query_time = _aware(evidence.get("queried_at"))
+    if captured_at > query_time:
+        _fail("BASELINE_CAPTURE_AFTER_BROKER_QUERY")
+    # Exactly the already-audited repair result, not arbitrary local rows.
+    snapshot_digest = _digest(snapshot)
+    if (repair_marker.get("after_digest") != snapshot_digest
+            or repair_marker.get("account_fingerprint") != account_hash
+            or review.get("repair_plan_id") != repair_marker.get("plan_id")
+            or review.get("repaired_database_digest") != snapshot_digest):
+        _fail("AUDITED_REPAIRED_LEDGER_PROOF_REQUIRED")
+    controls = snapshot["tables"]["live_control"]
+    if len(controls) != 1 or _integer(controls[0].get("halted")) != 1:
+        _fail("HALT_MUST_ALREADY_BE_ACTIVE")
+    strategy = _ledger_positions(snapshot)
+    if strategy != _positions(repair_marker.get("positions")):
+        _fail("AUDITED_STRATEGY_POSITION_CONFLICT")
+    # Capture must predate every owning entry still carrying exposure. We do
+    # not substitute a repaired order date, file mtime, or today's clock.
+    orders = snapshot["tables"]["live_orders"]
+    for bucket in strategy:
+        symbol, kind = bucket.split("|")
+        if kind != "0" or baseline.get(bucket, 0):
+            _fail("STRATEGY_EXPOSURE_ABSORBED_IN_BASELINE")
+        entries = [row for row in orders if row["symbol"] == symbol
+                   and row["purpose"] == "ENTRY" and _integer(row["filled_quantity"]) > 0]
+        if not entries or any(_aware(row["created_at"]) <= captured_at for row in entries):
+            _fail("ORIGINAL_CAPTURE_MUST_PRECEDE_STRATEGY_ENTRY")
+    expected = dict(baseline)
+    for key, quantity in strategy.items():
+        expected[key] = expected.get(key, 0) + quantity
+        if not expected[key]:
+            expected.pop(key)
+    if expected != _positions(evidence.get("positions")):
+        _fail("BROKER_BASELINE_LEDGER_QUANTITY_MISMATCH")
+    # Do not hide any active orders. This tool does not modify their state.
+    local_active = [row["client_order_id"] for row in orders if row["status"] not in TERMINAL]
+    if (evidence.get("open_orders_validated") is not True
+            or not isinstance(evidence.get("open_orders"), list)):
+        _fail("BROKER_OPEN_ORDER_RECONCILIATION_REQUIRED")
+    # A metadata fix may document unresolved orders, but never declares flat.
+    blockers = [{"code": "HALT_PRESERVED"}]
+    if strategy:
+        blockers.append({"code": "STRATEGY_POSITION_REMAINS", "positions": strategy})
+    if local_active or evidence["open_orders"]:
+        blockers.append({"code": "OPEN_ORDER_STATE_REMAINS_UNRESOLVED",
+                         "local_order_ids": local_active,
+                         "broker_open_order_count": len(evidence["open_orders"])})
+    payload = {"version": 1, "trading_date": review["trading_date"],
+               "captured_at": review["captured_at"], "account_fingerprint": account_hash,
+               "provenance_repair": {"baseline_sha256": baseline_hash,
+                    "capture_evidence_source": review["capture_evidence_source"],
+                    "capture_evidence_sha256": review["capture_evidence_sha256"],
+                    "repair_plan_id": repair_marker["plan_id"],
+                    "repaired_database_digest": snapshot_digest,
+                    "broker_verified_as_of": evidence["queried_at"],
+                    "original_capture_reviewed": True, "normal_start_ready": False}}
+    plan = {"schema_version": 1, "kind": "BASELINE_PROVENANCE_ONLY",
+            "normal_start_ready": False, "baseline_sha256": baseline_hash,
+            "database_digest": snapshot_digest, "evidence": evidence, "review": review,
+            "repair_marker": repair_marker, "metadata": payload, "blockers": blockers,
+            "positions": strategy, "broker_verified_as_of": evidence["queried_at"]}
+    plan["plan_id"] = _digest(plan)
+    plan["plan_hash"] = _digest(plan)
+    return plan
+
+
+def _repaired_snapshot(path: Path, db: sqlite3.Connection | None = None) -> tuple[dict, list[dict]]:
+    if db is None:
+        with closing(sqlite3.connect(path.as_uri() + "?mode=ro&immutable=1", uri=True)) as connection:
+            return _repaired_snapshot(path, connection)
+    snapshot = _snapshot(db)
+    markers = [json.loads(row[0]) for row in db.execute(
+        "SELECT payload FROM live_events WHERE event_type='INCIDENT_REPAIR_APPLIED'")]
+    return snapshot, markers
+
+
+def build_baseline_provenance_plan(DB: str | Path, baseline_path: str | Path,
+                                   evidence: dict, review: dict) -> dict:
+    """Read-only plan to CREATE metadata from original capture proof.
+
+    Review must attest an original capture audit/log SHA256, exact baseline
+    bytes, original captured_at/trading_date, account, applied repair plan ID
+    and logical DB digest. mtime/user-invented historical timestamps are not
+    capture evidence. The caller reviews that artifact independently.
+    """
+    path, baseline_file = Path(DB).absolute(), Path(baseline_path).absolute()
+    _safe_file(path)
+    _no_sidecars(path)
+    _safe_file(baseline_file)
+    snapshot, markers = _repaired_snapshot(path)
+    matching = [row for row in markers if row.get("plan_id") == review.get("repair_plan_id")]
+    if len(matching) != 1:
+        _fail("AUDITED_REPAIRED_LEDGER_PROOF_REQUIRED")
+    plan = _baseline_provenance(snapshot, baseline_file.read_bytes(), evidence, review, matching[0])
+    meta = baseline_file.with_name(baseline_file.stem + ".meta.json")
+    if meta.exists() or meta.is_symlink():
+        _fail("BASELINE_METADATA_ALREADY_EXISTS")
+    return plan
+
+
+def apply_baseline_provenance_plan(DB: str | Path, baseline_path: str | Path,
+                                   plan: dict) -> dict:
+    """CREATE one private metadata file; no DB/baseline/checkpoint/HALT writes.
+
+    Caller holds all runtime/account locks. Existing metadata is never replaced.
+    The original capture date remains original: this does NOT make a historical
+    baseline valid for normal new-entry LIVE startup on a later day.
+    """
+    plan = json.loads(_json(plan))
+    plan_hash = plan.pop("plan_hash", None)
+    if plan_hash != _digest(plan):
+        _fail("PLAN_HASH_MISMATCH")
+    plan["plan_hash"] = plan_hash
+    if plan.get("kind") != "BASELINE_PROVENANCE_ONLY" or plan.get("normal_start_ready") is not False:
+        _fail("UNSAFE_PLAN_FLAGS")
+    _require_fresh_evidence(plan["broker_verified_as_of"])
+    path, baseline_file = Path(DB).absolute(), Path(baseline_path).absolute()
+    _safe_file(path)
+    _no_sidecars(path)
+    _safe_file(baseline_file)
+    meta = baseline_file.with_name(baseline_file.stem + ".meta.json")
+    payload = (_json(plan["metadata"]) + "\n").encode("utf-8")
+    with closing(sqlite3.connect(path.as_uri() + "?mode=ro&immutable=1", uri=True)) as db:
+        snapshot, markers = _repaired_snapshot(path, db)
+        matching = [row for row in markers if row.get("plan_id") == plan["review"].get("repair_plan_id")]
+        if len(matching) != 1:
+            _fail("AUDITED_REPAIRED_LEDGER_PROOF_REQUIRED")
+        rebuilt = _baseline_provenance(snapshot, baseline_file.read_bytes(),
+                                      plan["evidence"], plan["review"], matching[0])
+        if rebuilt != plan:
+            _fail("BASELINE_PROVENANCE_PRECONDITION_CHANGED")
+        if meta.exists() or meta.is_symlink():
+            _safe_file(meta)
+            if meta.read_bytes() != payload or meta.stat().st_mode & 0o077:
+                _fail("BASELINE_METADATA_CONFLICT")
+            return {"status": "ALREADY_APPLIED_TRADING_BLOCKED", "normal_start_ready": False,
+                    "blockers": plan["blockers"], "broker_submission_calls": 0}
+        _require_fresh_evidence(plan["broker_verified_as_of"])
+        # Publish complete bytes atomically without ever replacing a file that
+        # appeared concurrently. A failed write leaves no truncated metadata.
+        fd, temporary_name = tempfile.mkstemp(prefix="." + meta.name + ".", dir=meta.parent)
+        temporary = Path(temporary_name)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
+            if (hashlib.sha256(baseline_file.read_bytes()).hexdigest() != plan["baseline_sha256"]
+                    or _digest(_snapshot(db)) != plan["database_digest"]):
+                _fail("BASELINE_PROVENANCE_PRECONDITION_CHANGED")
+            _require_fresh_evidence(plan["broker_verified_as_of"])
+            try:
+                os.link(temporary, meta)
+            except FileExistsError:
+                _fail("BASELINE_METADATA_CONFLICT")
+            directory_fd = os.open(meta.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        finally:
+            temporary.unlink(missing_ok=True)
+    return {"status": "PROVENANCE_REPAIRED_TRADING_BLOCKED", "normal_start_ready": False,
+            "trading_date": plan["metadata"]["trading_date"], "blockers": plan["blockers"],
+            "broker_submission_calls": 0}

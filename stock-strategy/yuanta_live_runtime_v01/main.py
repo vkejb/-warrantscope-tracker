@@ -91,6 +91,7 @@ ACTIVE_EXIT_STATUSES = {
 
 RUNTIME_LOCK_FILENAME = "runtime.lock"
 FORCE_FLAT_MARKET_TIME = datetime_time(13, 23)
+FORCE_FLAT_CLOSING_TIME = datetime_time(13, 25)
 FORCE_FLAT_MARKET_CUTOFF = datetime_time(13, 29, 50)
 
 
@@ -98,8 +99,10 @@ def _force_flat_market_phase(now: datetime) -> str:
     local_time = now.astimezone(TAIPEI).time().replace(tzinfo=None)
     if local_time < FORCE_FLAT_MARKET_TIME:
         return "LIMIT"
-    if local_time < FORCE_FLAT_MARKET_CUTOFF:
+    if local_time < FORCE_FLAT_CLOSING_TIME:
         return "MARKET"
+    if local_time < FORCE_FLAT_MARKET_CUTOFF:
+        return "CLOSING"
     return "CLOSED"
 
 
@@ -250,8 +253,20 @@ def _exit_pre_send_guard(
     phase = _force_flat_market_phase(now)
     if phase == "CLOSED":
         raise RuntimeError("EXIT_MARKET_CUTOFF_REACHED_BEFORE_SEND")
+    if position.side not in {"LONG", "SHORT"} or intent.purpose.value != "EXIT" or intent.side.value != (
+        "SELL" if position.side == "LONG" else "BUY"
+    ):
+        raise RuntimeError("EXIT_DIRECTION_INVALID_BEFORE_SEND")
+    if phase == "CLOSING":
+        expected = PriceType.LIMIT_DOWN if intent.side.value == "SELL" else PriceType.LIMIT_UP
+        if (intent.price_type != expected or intent.time_in_force != TimeInForce.ROD
+                or intent.ap_code != APCode.REGULAR or intent.quantity % 1000
+                or intent.price not in {None, Decimal("0")}):
+            raise RuntimeError("EXIT_CLOSING_LIMIT_ROD_REQUIRED")
+        return
     if intent.price_type == PriceType.MARKET:
-        if phase != "MARKET":
+        if (phase != "MARKET" or intent.time_in_force != TimeInForce.IOC
+                or intent.ap_code != APCode.REGULAR or intent.quantity % 1000):
             raise RuntimeError("EXIT_MARKET_FALLBACK_NOT_DUE")
         return
     if phase == "MARKET":
@@ -1122,6 +1137,33 @@ def _authoritative_cash_long_delta(
     return broker_delta
 
 
+def _authoritative_fallback_delta(adapter, store, *, baseline, position, timeout) -> int:
+    """Keep force-flat sizing broker-backed for both closing directions.
+
+    LONG retains the existing cash-only contract. SHORT requires the entry's
+    explicit supported bucket and negative broker/local ownership; it does not
+    enable short entry or infer a cover order type.
+    """
+    if position.side == "LONG":
+        return _authoritative_cash_long_delta(
+            adapter, store, baseline=baseline, symbol=position.stock_id, timeout=timeout,
+        )
+    if position.side != "SHORT":
+        raise RuntimeError("FORCE_FLAT_POSITION_SIDE_UNPROVEN")
+    entry = store.get(position.entry_order_id)
+    kinds = {"4": "4", "5": "6", "6": "6", "9": "0"}
+    kind = kinds.get(entry.order_type.value)
+    if kind is None or entry.symbol != position.stock_id or entry.side.value != "SELL":
+        raise RuntimeError("FORCE_FLAT_SHORT_BUCKET_UNPROVEN")
+    result = adapter.reconcile(timeout=timeout, strict_positions=True)
+    key = f"{position.stock_id}|{kind}"
+    actual = int(result.broker_positions.get(key, 0)) - int(baseline.get(key, 0))
+    local = int(store.position_buckets().get(key, 0))
+    if actual != local or actual > 0:
+        raise RuntimeError("FORCE_FLAT_SHORT_BASELINE_DELTA_MISMATCH")
+    return abs(actual)
+
+
 def _checkpoint_position(store, position, pending_exit_reason) -> None:
     store.save_position_checkpoint(position.entry_order_id, {
         "version": 2,
@@ -1377,21 +1419,73 @@ def _as_market_fallback(intent):
     broker reconciliation proves a valid remaining quantity.
     """
     quantity = int(intent.quantity)
-    if quantity % 1000:
-        if quantity >= 1000:
-            raise RuntimeError(
-                "13:23 market fallback cannot encode a mixed board/odd-lot quantity"
-            )
-        ap_code = APCode.INTRADAY_ODD_LOT
-    else:
-        ap_code = APCode.REGULAR
+    if intent.purpose.value != "EXIT":
+        raise RuntimeError("fallback is restricted to exposure-reducing EXIT intents")
+    if quantity % 1000 or intent.ap_code != APCode.REGULAR:
+        raise RuntimeError("FORCE_FLAT_ODD_LOT_UNSUPPORTED: no verified market/IOC odd-lot route")
     return replace(
         intent,
         price=None,
         price_type=PriceType.MARKET,
         time_in_force=TimeInForce.IOC,
-        ap_code=ap_code,
+        ap_code=APCode.REGULAR,
     )
+
+
+def _as_closing_fallback(intent):
+    """Use SPARK's documented L/H price flags, not a guessed daily price.
+
+    Yuanta SendStockOrder documents H=limit-up, L=limit-down, Price=0 for
+    non-numeric price flags and Time_in_force=0 for ROD. TWSE/TPEx accept
+    limit ROD during the 13:25 closing auction, not MARKET/IOC/FOK.
+    Only already approved, regular-board whole-lot EXIT intents are adapted.
+    """
+    if intent.purpose.value != "EXIT":
+        raise RuntimeError("closing fallback is restricted to EXIT intents")
+    if intent.quantity % 1000 or intent.ap_code != APCode.REGULAR:
+        raise RuntimeError("FORCE_FLAT_ODD_LOT_UNSUPPORTED: closing auction route is not verified")
+    return replace(
+        intent, price=None,
+        price_type=PriceType.LIMIT_DOWN if intent.side.value == "SELL" else PriceType.LIMIT_UP,
+        time_in_force=TimeInForce.ROD, ap_code=APCode.REGULAR,
+    )
+
+
+def _fallback_exit_replacement_required(order, phase: str) -> bool:
+    """Never re-cancel an already compatible closing ROD every loop.
+
+    The caller must cancel an incompatible ACTIVE order and wait for terminal
+    broker reconciliation before another NEW order is permitted.
+    """
+    if phase == "MARKET":
+        return (order.price_type != PriceType.MARKET or order.time_in_force != TimeInForce.IOC
+                or order.ap_code != APCode.REGULAR or order.quantity % 1000 != 0)
+    if phase == "CLOSING":
+        expected = PriceType.LIMIT_DOWN if order.side.value == "SELL" else PriceType.LIMIT_UP
+        return (order.price_type != expected or order.time_in_force != TimeInForce.ROD
+                or order.ap_code != APCode.REGULAR or order.quantity % 1000 != 0)
+    return False
+
+
+def _cancel_incompatible_fallback_exit(adapter, store, order, phase: str) -> bool:
+    """Cancel once and keep the old order authoritative until reconciliation.
+
+    A CANCEL_PENDING status itself is a barrier even if a request cache is
+    unavailable. Missing broker identity never permits a guessed cancel/new.
+    """
+    if (order.status not in ACTIVE_EXIT_STATUSES
+            or order.status == BrokerOrderStatus.CANCEL_PENDING
+            or not _fallback_exit_replacement_required(order, phase)
+            or store.pending_mutation(order.client_order_id) is not None):
+        return False
+    if not order.broker_order_no:
+        raise RuntimeError("FALLBACK_ACTIVE_ORDER_IDENTITY_UNPROVEN")
+    adapter.cancel(
+        order.client_order_id,
+        "13:25 closing auction fallback" if phase == "CLOSING" else "13:23 market fallback",
+        emergency=True,
+    )
+    return True
 
 
 def _decision_floor(now: datetime) -> datetime:
@@ -1865,6 +1959,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 exit_only = emergency or scheduled_force_flat or operational_exit_only or clock_force_flat
                 force_flat_phase = _force_flat_market_phase(now)
                 market_fallback_due = force_flat_phase == "MARKET"
+                closing_fallback_due = force_flat_phase == "CLOSING"
+                fallback_due = market_fallback_due or closing_fallback_due
                 market_cutoff_reached = force_flat_phase == "CLOSED"
 
                 # Emergency always takes precedence over a graceful stop request.
@@ -2302,12 +2398,12 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             )
                         time.sleep(0.10)
                         continue
-                    if market_fallback_due:
-                        remaining_delta = _authoritative_cash_long_delta(
+                    if fallback_due:
+                        remaining_delta = _authoritative_fallback_delta(
                             adapter,
                             store,
                             baseline=baseline,
-                            symbol=position.stock_id,
+                            position=position,
                             timeout=args.reconcile_timeout,
                         )
                         if remaining_delta <= 0:
@@ -2333,9 +2429,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         reversal=reversal,
                         max_quote_age_seconds=args.exit_quote_staleness,
                     )
-                    if market_fallback_due and exit_decision is None:
+                    if fallback_due and exit_decision is None:
                         exit_decision = ExitDecision(
-                            "HARD_EXIT_MARKET_FALLBACK",
+                            "HARD_EXIT_CLOSING_FALLBACK" if closing_fallback_due else "HARD_EXIT_MARKET_FALLBACK",
                             position.entry_price,
                             0.0,
                             0.0,
@@ -2359,7 +2455,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                                 projected,
                                 projected / (position.entry_price * position.quantity),
                             )
-                        elif not market_fallback_due and not exit_quote_alerted:
+                        elif not fallback_due and not exit_quote_alerted:
                             exit_quote_alerted = True
                             notifier.critical(
                                 "EXIT_QUOTE_UNAVAILABLE",
@@ -2395,6 +2491,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             )
                             if market_fallback_due:
                                 intent = _as_market_fallback(intent)
+                            elif closing_fallback_due:
+                                intent = _as_closing_fallback(intent)
                             exit_guard = lambda actual_intent: _exit_pre_send_guard(
                                 actual_intent, position=position, engine=engine,
                                 quote_time=None if safe_quote is None else safe_quote.received_at,
@@ -2433,11 +2531,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     safe_quote = engine.safe_exit_quote(
                         position, now, max_age_seconds=args.exit_quote_staleness
                     )
-                    if safe_quote is not None or market_fallback_due:
-                        if market_fallback_due:
-                            remaining = _authoritative_cash_long_delta(
+                    if safe_quote is not None or fallback_due:
+                        if fallback_due:
+                            remaining = _authoritative_fallback_delta(
                                 adapter, store, baseline=baseline,
-                                symbol=position.stock_id, timeout=args.reconcile_timeout,
+                                position=position, timeout=args.reconcile_timeout,
                             )
                             if remaining <= 0:
                                 _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
@@ -2456,6 +2554,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         intent = bridge_strategy_intent(raw, short_entry_order_type=short_entry, short_cover_order_type=short_cover)
                         if market_fallback_due:
                             intent = _as_market_fallback(intent)
+                        elif closing_fallback_due:
+                            intent = _as_closing_fallback(intent)
                         exit_guard = lambda actual_intent: _exit_pre_send_guard(
                             actual_intent, position=position, engine=engine,
                             quote_time=None if safe_quote is None else safe_quote.received_at,
@@ -2481,20 +2581,12 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             interval=getattr(args, "order_reconcile_seconds", 5.0),
                         )
                     exit_order = store.get(exit_order_id)
-                    if (
-                        market_fallback_due
-                        and exit_order.status in ACTIVE_EXIT_STATUSES
-                        and exit_order.price_type != PriceType.MARKET
-                        and store.pending_mutation(exit_order_id) is None
+                    if fallback_due and _cancel_incompatible_fallback_exit(
+                        adapter, store, exit_order, force_flat_phase,
                     ):
-                        adapter.cancel(
-                            exit_order_id,
-                            "13:23 market fallback",
-                            emergency=True,
-                        )
                         market_fallback_cancel_requested = True
                         log(
-                            "EXIT_CANCEL_FOR_MARKET_FALLBACK_SENT",
+                            "EXIT_CANCEL_FOR_CLOSING_FALLBACK_SENT" if closing_fallback_due else "EXIT_CANCEL_FOR_MARKET_FALLBACK_SENT",
                             client_order_id=exit_order_id,
                         )
                         continue
@@ -2828,6 +2920,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 except Exception:
                     pass
                 try:
+                    if str(exc).startswith("FORCE_FLAT_ODD_LOT_UNSUPPORTED"):
+                        notifier.critical(
+                            "FORCE_FLAT_ODD_LOT_UNSUPPORTED",
+                            "Owned odd/mixed-lot remainder cannot use the verified fallback route; no market/IOC or guessed-price order was sent",
+                        )
                     notifier.critical(
                         "RUNTIME_OPERATIONAL_RECOVERY",
                         "Runtime operation failed; new entries are disabled, broker-backed owned-exposure recovery continues",

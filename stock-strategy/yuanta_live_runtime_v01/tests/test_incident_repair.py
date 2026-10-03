@@ -333,6 +333,251 @@ class IncidentRepairTests(unittest.TestCase):
         self.assertEqual(self.path.read_bytes(), before)
         self.assertFalse(self.backups.exists())
 
+    def native_history(self, evidence=None):
+        evidence = self.evidence if evidence is None else evidence
+        day = self.entry_stamp.date().isoformat()
+        rows = []
+        for row in evidence["orders"]:
+            rows.append({"source": "GetOrderTradeReport.StkOrderList", "account_verified": True,
+                **{key: row[key] for key in ("symbol", "side", "order_no", "price", "ap_code",
+                    "order_type", "price_type", "time_in_force", "basket_no", "ok_qty")},
+                "trade_date": day, "trade_date_source": "TradeDate", "accept_date": day,
+                "accept_date_source": "AcceptDate", "accept_time": row["order_time"],
+                "accept_time_source": "AcceptTime", "original_qty": row["order_qty"],
+                "after_qty": row["order_qty"], "cancel_qty": 0,
+                "order_status": 20, "terminal_status": "UNKNOWN"})
+        return {"source": "GetOrderTradeReport", "account_verified": True,
+            "account_fingerprint": evidence["account_fingerprint"],
+            "queried_at": evidence["queried_at"], "orders": rows, "trades": []}
+
+    def test_native_history_terminal_proof_preserves_original_partial_fill_quantity(self):
+        for status, expected in ((30, "CANCELED"), (24, "EXPIRED"), (25, "EXPIRED")):
+            history = self.native_history()
+            history["orders"][1].update(order_status=status, terminal_status=expected,
+                                        after_qty=0, cancel_qty=1000)
+            evidence = repair.bind_history_order_evidence(self.evidence, history)
+            plan = self.plan(evidence)
+            manual = plan["manual_orders"][0]
+            self.assertEqual((manual["quantity"], manual["filled_quantity"], manual["status"]),
+                             (2000, 1000, expected))
+            self.assertEqual(plan["after_positions"], {"3094|0": 1000})
+            self.assertNotIn("UNCONFIRMED_MANUAL_REMAINDER", {x["code"] for x in plan["blockers"]})
+            self.assertFalse(plan["normal_start_ready"])
+
+    def test_native_history_quantities_and_yesterday_rod_never_invent_expiry(self):
+        history = self.native_history()
+        history["orders"][1].update(after_qty=0, cancel_qty=1000)
+        evidence = repair.bind_history_order_evidence(self.evidence, history)
+        plan = self.plan(evidence)
+        self.assertEqual(plan["manual_orders"][0]["status"], "PARTIALLY_FILLED")
+        self.assertIn("UNCONFIRMED_MANUAL_REMAINDER", {x["code"] for x in plan["blockers"]})
+
+    def test_native_history_exact_identity_account_and_type_conflicts_refuse(self):
+        changes = [{"trade_date": "2000-01-01"}, {"original_qty": 1000},
+                   {"accept_date": "2000-01-01"}, {"side": "B"}, {"symbol": "3605"},
+                   {"price": "1"}, {"ap_code": 0}, {"order_type": "3"},
+                   {"terminal_status": "EXPIRED"}, {"cancel_qty": 2000}]
+        for fields in changes:
+            history = self.native_history()
+            history["orders"][1].update(fields)
+            with self.subTest(fields=fields), self.assertRaises(repair.IncidentRepairError):
+                repair.bind_history_order_evidence(self.evidence, history)
+        history = self.native_history()
+        history["account_fingerprint"] = "111111111111"
+        with self.assertRaisesRegex(repair.IncidentRepairError, "NATIVE_HISTORY_ACCOUNT_UNPROVEN"):
+            repair.bind_history_order_evidence(self.evidence, history)
+
+    def test_native_history_supplies_only_proven_order_type_not_guessed_financing(self):
+        history = self.native_history()
+        evidence = copy.deepcopy(self.evidence)
+        for row in evidence["orders"] + evidence["details"]:
+            row.pop("order_type")
+        merged = repair.bind_history_order_evidence(evidence, history)
+        self.assertEqual(self.plan(merged)["after_positions"], {"3094|0": 1000})
+        history["orders"][0]["order_type"] = ""
+        with self.assertRaises(repair.IncidentRepairError):
+            repair.bind_history_order_evidence(evidence, history)
+
+    def test_distinct_native_accept_and_merge_times_preserve_semantics(self):
+        history = self.native_history()
+        history["orders"][1]["accept_time"] = "13:42:40.000"
+        merged = repair.bind_history_order_evidence(self.evidence, history)
+        plan = self.plan(merged)
+        self.assertEqual(plan["manual_orders"][0]["created_at"],
+                         self.entry_stamp.replace(hour=13, minute=42, second=40, microsecond=0).isoformat())
+        self.assertEqual(plan["evidence"]["orders"][1]["order_time"], "14:00:03.084")
+        self.assertEqual(plan["manual_fills"][0]["filled_at"],
+                         self.entry_stamp.replace(hour=14, minute=30, second=0, microsecond=0).isoformat())
+
+    def test_normalizer_native_basic_dates_work_on_python310_without_iso_assumptions(self):
+        evidence, history = self.manual_ap_history()
+        for order in history["orders"]:
+            order["trade_date"] = order["trade_date"].replace("-", "")
+            order["accept_date"] = order["accept_date"].replace("-", "")
+        history["trades"][0]["trade_date"] = history["trades"][0]["trade_date"].replace("-", "")
+        merged = repair.bind_history_order_evidence(evidence, history)
+        plan = self.plan(merged)
+        self.assertEqual(plan["manual_orders"][0]["status"], "PARTIALLY_FILLED")
+        self.assertEqual(plan["manual_orders"][0]["created_at"],
+                         self.entry_stamp.replace(hour=13, minute=42, second=40, microsecond=0).isoformat())
+
+    def manual_ap_history(self):
+        evidence, history = copy.deepcopy(self.evidence), self.native_history()
+        evidence["details"][-1]["ap_code"] = 0
+        history["orders"][1]["accept_time"] = "13:42:40.000"
+        history["ap_code_contract"] = {"source": "YUANTA_NATIVE_IO_FIELD_DESCRIPTION",
+                                      "verified": True, "exchange_code": 4, "ap_code": 7}
+        history["trades"] = [{"source": "GetOrderTradeReport.StkTradeList", "account_verified": True,
+            "order_no": "MOCK_MANUAL", "symbol": "3094", "side": "S", "order_type": "0",
+            "trade_date": self.entry_stamp.date().isoformat(), "trade_date_source": "DateTime",
+            "fill_time": "14:30:00.000", "fill_time_source": "DateTime", "exchange_code": 4,
+            "ok_qty": 1000, "fill_price": "70.9", "order_price": "70.9"}]
+        return evidence, history
+
+    def test_manual_ap_discrepancy_requires_native_trade_and_preserves_raw_ap(self):
+        evidence, history = self.manual_ap_history()
+        merged = repair.bind_history_order_evidence(evidence, history)
+        plan = self.plan(merged)
+        self.assertEqual(plan["evidence"]["details"][-1]["ap_code"], 0)
+        self.assertEqual(plan["manual_orders"][0]["ap_code"], 7)
+        self.assertEqual(plan["manual_orders"][0]["status"], "PARTIALLY_FILLED")
+        self.assertIn("manual_history_ap_discrepancy_proof", plan["evidence"]["details"][-1])
+
+    def test_manual_ap_discrepancy_conflicting_or_nonunique_history_refuses(self):
+        for fields in ({"symbol": "3605"}, {"side": "B"}, {"order_type": "3"},
+                       {"exchange_code": 0}, {"ok_qty": 2000}, {"fill_price": "1"},
+                       {"fill_time": "14:30:01.000"}, {"trade_date": "2000-01-01"}):
+            evidence, history = self.manual_ap_history()
+            history["trades"][0].update(fields)
+            with self.subTest(fields=fields), self.assertRaises(repair.IncidentRepairError):
+                repair.bind_history_order_evidence(evidence, history)
+        evidence, history = self.manual_ap_history()
+        history["trades"].append(copy.deepcopy(history["trades"][0]))
+        with self.assertRaisesRegex(repair.IncidentRepairError, "MANUAL_HISTORY_TRADE_IDENTITY_AMBIGUOUS"):
+            repair.bind_history_order_evidence(evidence, history)
+        evidence, history = self.manual_ap_history()
+        history.pop("ap_code_contract")
+        with self.assertRaisesRegex(repair.IncidentRepairError, "MANUAL_AP_NATIVE_CONTRACT_UNPROVEN"):
+            repair.bind_history_order_evidence(evidence, history)
+
+    def test_manual_ap0_ack_is_not_a_fill_or_a_history_trade_candidate(self):
+        evidence, history = self.manual_ap_history()
+        ack = {**evidence["details"][-1], "rpt_type": 50, "order_status": 20,
+               "order_qty": 2000, "order_time": "14:00:03.340", "seq_no": "MOCK_ACK"}
+        evidence["details"].insert(2, ack)
+        merged = repair.bind_history_order_evidence(evidence, history)
+        plan = self.plan(merged)
+        self.assertEqual(merged["details"][2]["ap_code"], 0)
+        self.assertNotIn("manual_history_ap_discrepancy_proof", merged["details"][2])
+        self.assertEqual(len(plan["manual_fills"]), 1)
+        self.assertEqual(plan["manual_fills"][0]["quantity"], 1000)
+        self.assertEqual(plan["after_positions"], {"3094|0": 1000})
+
+    def test_manual_history_fill_timestamp_representation_is_exact_not_tolerant(self):
+        evidence, history = self.manual_ap_history()
+        history["trades"][0]["fill_time"] = "14:30:00.000000"
+        merged = repair.bind_history_order_evidence(evidence, history)
+        self.assertEqual(self.plan(merged)["manual_orders"][0]["filled_quantity"], 1000)
+        self.assertEqual(merged["details"][-1]["order_time"], "14:30:00.000")
+        for changed in ("14:30:00.001", "14:30:00.000001"):
+            with self.subTest(changed=changed):
+                history["trades"][0]["fill_time"] = changed
+                with self.assertRaisesRegex(repair.IncidentRepairError, "MANUAL_HISTORY_TRADE_IDENTITY_AMBIGUOUS"):
+                    repair.bind_history_order_evidence(evidence, history)
+
+    def provenance(self):
+        plan = self.plan()
+        repair.apply_plan(self.path, plan, self.backups)
+        baseline = self.root / "position_baseline.json"
+        baseline.write_bytes(b"{}\n")
+        evidence = {"schema_version": 1, "account_rows_validated": True,
+                    "account_fingerprint": self.evidence["account_fingerprint"],
+                    "queried_at": datetime.now(repair.TAIPEI).isoformat(),
+                    "positions": {"3094|0": 1000}, "open_orders_validated": True,
+                    "open_orders": [{"order_no": "MOCK_MANUAL", "remaining_quantity": 1000}]}
+        review = {"human_confirmed": True, "confirmation_source": "USER_REVIEWED_ORIGINAL_CAPTURE",
+                  "account_fingerprint": evidence["account_fingerprint"],
+                  "baseline_sha256": hashlib.sha256(baseline.read_bytes()).hexdigest(),
+                  "capture_evidence_verified": True, "capture_evidence_sha256": "a" * 64,
+                  "capture_evidence_source": "ORIGINAL_CAPTURE_LOG",
+                  "captured_at": self.entry_stamp.replace(hour=8, minute=30).isoformat(),
+                  "trading_date": self.entry_stamp.date().isoformat(),
+                  "repair_plan_id": plan["plan_id"], "repaired_database_digest": plan["after_digest"]}
+        return baseline, evidence, review
+
+    def test_provenance_only_restores_missing_metadata_not_baseline_halt_or_checkpoint(self):
+        baseline, evidence, review = self.provenance()
+        before_db, before_baseline = self.path.read_bytes(), baseline.read_bytes()
+        plan = repair.build_baseline_provenance_plan(self.path, baseline, evidence, review)
+        self.assertFalse((self.root / "position_baseline.meta.json").exists())
+        result = repair.apply_baseline_provenance_plan(self.path, baseline, plan)
+        self.assertEqual(result["status"], "PROVENANCE_REPAIRED_TRADING_BLOCKED")
+        self.assertFalse(result["normal_start_ready"])
+        self.assertEqual(result["broker_submission_calls"], 0)
+        self.assertEqual(self.path.read_bytes(), before_db)
+        self.assertEqual(baseline.read_bytes(), before_baseline)
+        meta = self.root / "position_baseline.meta.json"
+        payload = json.loads(meta.read_text())
+        self.assertEqual(payload["captured_at"], review["captured_at"])
+        self.assertEqual(payload["trading_date"], self.entry_stamp.date().isoformat())
+        self.assertNotEqual(payload["trading_date"], datetime.now(repair.TAIPEI).date().isoformat())
+        self.assertEqual(meta.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(repair.apply_baseline_provenance_plan(self.path, baseline, plan)["status"],
+                         "ALREADY_APPLIED_TRADING_BLOCKED")
+
+    def test_provenance_rejects_unreviewed_original_capture_wrong_account_or_hash(self):
+        baseline, evidence, review = self.provenance()
+        for fields in ({"capture_evidence_verified": False}, {"capture_evidence_source": "FILE_MTIME"},
+                       {"baseline_sha256": "0" * 64}, {"account_fingerprint": "111111111111"},
+                       {"captured_at": self.entry_stamp.replace(hour=10).isoformat()},
+                       {"repaired_database_digest": "0" * 64}):
+            modified = {**review, **fields}
+            with self.subTest(fields=fields), self.assertRaises(repair.IncidentRepairError):
+                repair.build_baseline_provenance_plan(self.path, baseline, evidence, modified)
+
+    def test_provenance_never_absorbs_residual_or_hides_changed_broker_position(self):
+        baseline, evidence, review = self.provenance()
+        evidence["positions"] = {}
+        with self.assertRaisesRegex(repair.IncidentRepairError, "BROKER_BASELINE_LEDGER_QUANTITY_MISMATCH"):
+            repair.build_baseline_provenance_plan(self.path, baseline, evidence, review)
+        baseline.write_text('{"3094|0":1000}')
+        review["baseline_sha256"] = hashlib.sha256(baseline.read_bytes()).hexdigest()
+        evidence["positions"] = {"3094|0": 2000}
+        with self.assertRaisesRegex(repair.IncidentRepairError, "STRATEGY_EXPOSURE_ABSORBED_IN_BASELINE"):
+            repair.build_baseline_provenance_plan(self.path, baseline, evidence, review)
+
+    def test_provenance_stale_evidence_and_existing_metadata_cannot_overwrite(self):
+        baseline, evidence, review = self.provenance()
+        evidence["queried_at"] = (datetime.now(repair.TAIPEI) - timedelta(minutes=6)).isoformat()
+        plan = repair.build_baseline_provenance_plan(self.path, baseline, evidence, review)
+        with self.assertRaisesRegex(repair.IncidentRepairError, "APPLY_BROKER_EVIDENCE_STALE"):
+            repair.apply_baseline_provenance_plan(self.path, baseline, plan)
+        meta = self.root / "position_baseline.meta.json"
+        meta.write_bytes(b"MOCK unrelated original provenance")
+        evidence["queried_at"] = datetime.now(repair.TAIPEI).isoformat()
+        with self.assertRaisesRegex(repair.IncidentRepairError, "BASELINE_METADATA_ALREADY_EXISTS"):
+            repair.build_baseline_provenance_plan(self.path, baseline, evidence, review)
+        self.assertEqual(meta.read_bytes(), b"MOCK unrelated original provenance")
+
+    def test_provenance_failed_write_and_concurrent_publish_leave_no_partial_or_overwritten_meta(self):
+        baseline, evidence, review = self.provenance()
+        plan = repair.build_baseline_provenance_plan(self.path, baseline, evidence, review)
+        meta = self.root / "position_baseline.meta.json"
+        with patch.object(repair.os, "fsync", side_effect=OSError("MOCK disk failure")):
+            with self.assertRaises(OSError):
+                repair.apply_baseline_provenance_plan(self.path, baseline, plan)
+        self.assertFalse(meta.exists())
+        self.assertFalse(list(self.root.glob(".position_baseline.meta.json.*")))
+        real_link = repair.os.link
+        def create_conflict(source, target):
+            meta.write_bytes(b"MOCK concurrently established provenance")
+            return real_link(source, target)
+        with patch.object(repair.os, "link", side_effect=create_conflict):
+            with self.assertRaisesRegex(repair.IncidentRepairError, "BASELINE_METADATA_CONFLICT"):
+                repair.apply_baseline_provenance_plan(self.path, baseline, plan)
+        self.assertEqual(meta.read_bytes(), b"MOCK concurrently established provenance")
+        self.assertFalse(list(self.root.glob(".position_baseline.meta.json.*")))
+
 
 if __name__ == "__main__":
     unittest.main()

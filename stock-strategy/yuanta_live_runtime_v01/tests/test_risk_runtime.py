@@ -336,7 +336,7 @@ class RuntimeGateTests(unittest.TestCase):
             runtime_main._force_flat_market_phase(
                 datetime(2026, 10, 2, 13, 29, 49, tzinfo=TAIPEI)
             ),
-            "MARKET",
+            "CLOSING",
         )
         self.assertEqual(
             runtime_main._force_flat_market_phase(

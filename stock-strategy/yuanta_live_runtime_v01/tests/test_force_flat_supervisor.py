@@ -87,9 +87,9 @@ class MarketFallbackTests(unittest.TestCase):
         self.assertEqual(result.ap_code, APCode.REGULAR)
         self.assertIsNone(result.price)
 
-    def test_small_partial_fill_uses_intraday_odd_lot(self):
-        result = _as_market_fallback(self.intent(500))
-        self.assertEqual(result.ap_code, APCode.INTRADAY_ODD_LOT)
+    def test_small_partial_fill_never_uses_market_ioc_odd_lot(self):
+        with self.assertRaisesRegex(RuntimeError, "FORCE_FLAT_ODD_LOT_UNSUPPORTED"):
+            _as_market_fallback(self.intent(500))
 
     def test_mixed_board_and_odd_lot_fails_closed(self):
         with self.assertRaises(RuntimeError):

@@ -181,7 +181,8 @@ class ExitFailureEvidenceTests(TestCase):
         )
         state = dict(
             store=self.store, exit_order_id=exit_order.client_order_id,
-            market_fallback_due=False, adapter=adapter,
+            market_fallback_due=False, closing_fallback_due=False,
+            fallback_due=False, force_flat_phase="LIMIT", adapter=adapter,
             args=SimpleNamespace(reconcile_timeout=1, exit_retry_base_seconds=2),
             position=self.position(entry, 2000), now=self.now,
             pending_exit_reason=None, log=Mock(),

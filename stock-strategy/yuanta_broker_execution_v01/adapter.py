@@ -347,6 +347,198 @@ def _normalise_merge_report(value: Any) -> dict[str, Any]:
     }
 
 
+def _history_text(value: Any, name: str) -> str:
+    raw = _optional_temporal_attribute(value, name)
+    if raw is None:
+        return ""
+    try:
+        return str(raw).strip()
+    except Exception as exc:
+        raise BrokerAdapterError(f"unreadable broker history field {name}") from exc
+
+
+def _history_integer(value: Any, name: str) -> int | None:
+    raw = _optional_temporal_attribute(value, name)
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return None
+    return _strict_integer(raw, name)
+
+
+def _history_amount(value: Any, name: str, *, signed: bool = False) -> str:
+    raw = _optional_temporal_attribute(value, name)
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return ""
+    try:
+        number = Decimal(str(raw))
+        if isinstance(raw, bool) or not number.is_finite() or (not signed and number < 0):
+            raise ValueError(name)
+    except (ValueError, ArithmeticError, TypeError) as exc:
+        raise BrokerAdapterError(f"invalid broker history amount {name}") from exc
+    return str(number)
+
+
+def _history_date(value: Any, name: str) -> str:
+    raw = _optional_temporal_attribute(value, name)
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return ""
+    if isinstance(raw, str):
+        text = raw.strip()
+        if not re.fullmatch(r"(?:[0-9]{8}|[0-9]{4}/[0-9]{2}/[0-9]{2}|[0-9]{4}-[0-9]{2}-[0-9]{2})", text):
+            raise BrokerAdapterError(f"invalid broker history date {name}")
+        digits = text.replace("/", "").replace("-", "")
+        return _validated_report_day(int(digits[:4]), int(digits[4:6]), int(digits[6:]), name)
+    parts = [_strict_integer(_required_attribute(raw, key), f"{name}.{key}")
+             for key in ("ushtYear", "bytMon", "bytDay")]
+    return _validated_report_day(*parts, name)
+
+
+def _history_time(value: Any, name: str) -> str:
+    raw = _optional_temporal_attribute(value, name)
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return ""
+    hour, minute, second, millisecond = [
+        _strict_integer(_required_attribute(raw, key), f"{name}.{key}")
+        for key in ("bytHour", "bytMin", "bytSec", "ushtMSec")
+    ]
+    try:
+        if millisecond > 999:
+            raise ValueError(name)
+        datetime(2000, 1, 1, hour, minute, second, millisecond * 1000)
+    except (ValueError, OverflowError) as exc:
+        raise BrokerAdapterError(f"invalid broker history time {name}") from exc
+    return f"{hour:02d}:{minute:02d}:{second:02d}.{millisecond:03d}"
+
+
+def _history_identity(value: Any, *, account: str) -> dict[str, Any]:
+    # Verify ownership of the *account*, not ownership of an order by a bot.
+    # No account identifier is included in the returned audit DTO.
+    if str(_required_attribute(value, "Account")).strip() != account:
+        raise BrokerAdapterError("broker history account mismatch")
+    order_no = str(_required_attribute(value, "OrderNo")).strip()
+    symbol = str(_required_attribute(value, "CompanyNo")).strip()
+    side = str(_required_attribute(value, "BS")).strip()
+    if not order_no or not symbol or side not in {"B", "S"}:
+        raise BrokerAdapterError("invalid broker history order identity")
+    order_type = _history_integer(value, "OrderType")
+    if order_type is not None and order_type not in {0, 3, 4, 5, 6, 7, 8}:
+        raise BrokerAdapterError("unsupported broker history OrderType")
+    return {
+        "account_verified": True, "order_no": order_no, "symbol": symbol,
+        "side": side, "order_type": "" if order_type is None else str(order_type),
+        "market_no": _history_text(value, "MarketNo"),
+        "market_name": _history_text(value, "MarketName"),
+        "stock_name": _history_text(value, "StkName"),
+    }
+
+
+def _history_price_type(value: Any, name: str) -> tuple[str, str]:
+    flag = _history_text(value, name)
+    kinds = {"1": "MARKET", "2": "LIMIT", "H": "LIMIT_UP", "L": "LIMIT_DOWN", "-": "FLAT"}
+    if flag and flag not in kinds:
+        # History uses 1/2, NOT SendStockOrder's M/space encoding.
+        raise BrokerAdapterError(f"unsupported broker history {name}")
+    return flag, kinds.get(flag, "")
+
+
+def _normalise_history_order(value: Any, *, account: str) -> dict[str, Any]:
+    result = _history_identity(value, account=account)
+    status = _strict_integer(_required_attribute(value, "OrderStatus"), "OrderStatus")
+    price_flag, price_type = _history_price_type(value, "PriceFlag")
+    tif_code = _history_text(value, "Time_in_Force")
+    tifs = {"0": "ROD", "3": "IOC", "4": "FOK"}
+    if tif_code and tif_code not in tifs:
+        raise BrokerAdapterError("unsupported broker history Time_in_Force")
+    result.update({
+        "source": "GetOrderTradeReport.StkOrderList",
+        "price": _history_amount(value, "Price"),
+        "price_flag": price_flag, "price_type": price_type,
+        "time_in_force_code": tif_code, "time_in_force": tifs.get(tif_code, ""),
+        "ap_code": _history_integer(value, "APCode"),
+        "order_status": status,
+        # Status 20 is ACK, not proof of FILLED, even for IOC.
+        "terminal_status": {10: "REJECTED", 24: "EXPIRED", 25: "EXPIRED", 30: "CANCELED"}.get(status, "UNKNOWN"),
+        "before_qty": _history_integer(value, "BeforeQty"),
+        "after_qty": _strict_integer(_required_attribute(value, "AfterQty"), "AfterQty"),
+        "ok_qty": _strict_integer(_required_attribute(value, "OkQty"), "OkQty"),
+        "cancel_qty": _history_integer(value, "CancelQty"),
+        "original_qty": _history_integer(value, "OR_QTY"),
+        "basket_no": _history_text(value, "BasketNo"),
+        "channel": _history_text(value, "Channel"),
+        "error_no": _history_text(value, "ErrorNo"),
+        "tax": _history_amount(value, "OTax"),
+        "fees": _history_amount(value, "OCharge"),
+        "due_amount": _history_amount(value, "ODueAmt", signed=True),
+    })
+    for source, target in (("TradeDate", "trade_date"), ("AcceptDate", "accept_date"), ("UpdateDate", "update_date")):
+        result[target] = _history_date(value, source)
+        result[f"{target}_source"] = source if result[target] else ""
+    for source, target in (("AcceptTime", "accept_time"), ("UpdateTime", "update_time")):
+        result[target] = _history_time(value, source)
+        result[f"{target}_source"] = source if result[target] else ""
+    for source, target in (
+        ("CancelFlag", "cancel_flag"), ("ReduceFlag", "reduce_flag"),
+        ("TraditionFlag", "tradition_flag"), ("TradeCurrency", "trade_currency"),
+        ("Order_Success", "order_success_flag"), ("Reduce_Flag", "reduced_flag"),
+        ("Chg_Prz_Flag", "repriced_flag"), ("TSE_Cancel", "exchange_cancel_flag"),
+    ):
+        result[target] = _history_text(value, source)
+    return result
+
+
+def _normalise_history_trade(value: Any, *, account: str) -> dict[str, Any]:
+    result = _history_identity(value, account=account)
+    price_flag, price_type = _history_price_type(value, "Price_Flag")
+    result.update({
+        "source": "GetOrderTradeReport.StkTradeList",
+        "ok_qty": _strict_integer(_required_attribute(value, "OkQty"), "OkQty", minimum=1),
+        "order_price": _history_amount(value, "OPrice"),
+        "fill_price": _history_amount(value, "SPrice"),
+        "price_flag": price_flag, "price_type": price_type,
+        "exchange_code": _history_integer(value, "Exchange_Code"),
+        "trade_currency": _history_text(value, "TradeCurrency"),
+        # StkTrade has no SeqNo, BasketNo, TIF, or APCode. Never manufacture them
+        # or auto-join it to StkOrder using OrderNo alone across dates.
+        "trade_date": "", "trade_date_source": "", "fill_time": "",
+        "fill_time_source": "",
+    })
+    raw = _optional_temporal_attribute(value, "DateTime")
+    if raw is not None:
+        year, month, day, hour, minute, second, millisecond = [
+            _strict_integer(_required_attribute(raw, key), f"DateTime.{key}")
+            for key in ("Year", "Month", "Day", "Hour", "Minute", "Second", "Millisecond")
+        ]
+        result["trade_date"] = _validated_report_day(year, month, day, "DateTime")
+        try:
+            if millisecond > 999:
+                raise ValueError("DateTime")
+            datetime(year, month, day, hour, minute, second, millisecond * 1000)
+        except (ValueError, OverflowError) as exc:
+            raise BrokerAdapterError("invalid broker history DateTime") from exc
+        result["trade_date_source"] = result["fill_time_source"] = "DateTime"
+        result["fill_time"] = f"{hour:02d}:{minute:02d}:{second:02d}.{millisecond:03d}"
+    return result
+
+
+def _normalise_order_trade_report(value: Any, *, account: str) -> dict[str, Any]:
+    """Pure read-only DTO translation; never attaches callbacks or writes a store.
+
+    Caller must capture GetOrderTradeReport(False, account, language) on its
+    independently controlled session. This report is evidence for review, not
+    permission to adopt a fill, loosen BasketNo ownership, or authorize orders.
+    Missing fields remain unknown; AcceptDate never substitutes for TradeDate.
+    Channel is retained verbatim: the vendor specifies no channel-code meaning.
+    """
+    if not isinstance(account, str) or not re.fullmatch(r"S[0-9]{11}", account):
+        raise ValueError("expected Yuanta securities account is required")
+    return {
+        "source": "GetOrderTradeReport", "account_verified": True,
+        "orders": [_normalise_history_order(row, account=account)
+                   for row in _required_collection(value, "StkOrderList")],
+        "trades": [_normalise_history_trade(row, account=account)
+                   for row in _required_collection(value, "StkTradeList")],
+    }
+
+
 def _normalise_positions(value: Any) -> dict[str, int]:
     result: dict[str, int] = {}
     for item in _required_collection(value, "StkStoreList"):
