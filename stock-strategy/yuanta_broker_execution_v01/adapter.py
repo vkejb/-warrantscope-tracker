@@ -11,9 +11,11 @@ from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 import hashlib
+import inspect
 import json
 import math
 from queue import Empty, Queue
+import re
 import threading
 import time
 from typing import Any, Callable, Iterable, Mapping
@@ -206,6 +208,100 @@ def _normalise_order_result(value: Any) -> list[dict[str, Any]]:
     return result
 
 
+def _optional_temporal_attribute(value: Any, name: str) -> Any:
+    """Absent legacy fields are allowed; unreadable provided fields are not."""
+    try:
+        return getattr(value, name)
+    except AttributeError as exc:
+        missing = object()
+        if inspect.getattr_static(value, name, missing) is not missing:
+            raise BrokerAdapterError(f"unreadable broker field {name}") from exc
+        return None
+    except Exception as exc:
+        raise BrokerAdapterError(f"unreadable broker field {name}") from exc
+
+
+def _validated_report_day(year: int, month: int, day: int, field: str) -> str:
+    try:
+        # SPARK documents Gregorian dates. Do not guess ROC years or replace
+        # unknown report dates with today's/query/receipt date.
+        if year < 1900:
+            raise ValueError(field)
+        stamp = datetime(year, month, day)
+    except (ValueError, OverflowError) as exc:
+        raise BrokerAdapterError(f"invalid broker date {field}") from exc
+    return stamp.strftime("%Y%m%d")
+
+
+def _normalise_report_temporal_fields(value: Any) -> dict[str, str]:
+    """Read the documented report OrderDate/OrderTime without a clock fallback.
+
+    YSendOrder.py uses OrderDate.ushtYear/bytMon/bytDay and
+    OrderTime.bytHour/bytMin/bytSec/ushtMSec for both report families.
+    Existing explicit TradeDate strings remain unchanged after validation.
+    """
+    raw_trade_date = _optional_temporal_attribute(value, "TradeDate")
+    trade_date = ""
+    explicit_day = ""
+    if raw_trade_date is not None:
+        try:
+            trade_date = str(raw_trade_date).strip()
+        except Exception as exc:
+            raise BrokerAdapterError("unreadable broker date TradeDate") from exc
+        if trade_date:
+            if not re.fullmatch(
+                r"(?:[0-9]{8}|[0-9]{4}/[0-9]{2}/[0-9]{2}|[0-9]{4}-[0-9]{2}-[0-9]{2})",
+                trade_date,
+            ):
+                raise BrokerAdapterError("invalid broker date TradeDate")
+            digits = trade_date.replace("/", "").replace("-", "")
+            explicit_day = _validated_report_day(
+                int(digits[:4]), int(digits[4:6]), int(digits[6:]), "TradeDate"
+            )
+
+    native_date = _optional_temporal_attribute(value, "OrderDate")
+    native_day = ""
+    if native_date is not None and not (
+        isinstance(native_date, str) and not native_date.strip()
+    ):
+        components = [
+            _strict_integer(_required_attribute(native_date, component), f"OrderDate.{component}")
+            for component in ("ushtYear", "bytMon", "bytDay")
+        ]
+        native_day = _validated_report_day(*components, "OrderDate")
+    if explicit_day and native_day and explicit_day != native_day:
+        raise BrokerAdapterError("conflicting broker dates TradeDate/OrderDate")
+
+    native_time = _optional_temporal_attribute(value, "OrderTime")
+    order_time = ""
+    if native_time is not None and not (
+        isinstance(native_time, str) and not native_time.strip()
+    ):
+        hour, minute, second, milliseconds = [
+            _strict_integer(_required_attribute(native_time, component), f"OrderTime.{component}")
+            for component in ("bytHour", "bytMin", "bytSec", "ushtMSec")
+        ]
+        try:
+            if milliseconds > 999:
+                raise ValueError("milliseconds")
+            datetime(2000, 1, 1, hour, minute, second, milliseconds * 1000)
+        except (ValueError, OverflowError) as exc:
+            raise BrokerAdapterError("invalid broker time OrderTime") from exc
+        order_time = f"{hour:02d}:{minute:02d}:{second:02d}.{milliseconds:03d}"
+
+    source = (
+        "TradeDate+OrderDate" if explicit_day and native_day
+        else "TradeDate" if explicit_day
+        else "OrderDate" if native_day
+        else ""
+    )
+    return {
+        "trade_date": trade_date if explicit_day else native_day,
+        "trade_date_source": source,
+        "order_time": order_time,
+    }
+
+
 def _normalise_real_report(value: Any) -> dict[str, Any]:
     return {
         "account": _as_str(_safe(value, "Account", "")),
@@ -213,6 +309,7 @@ def _normalise_real_report(value: Any) -> dict[str, Any]:
         "order_no": _as_str(_safe(value, "OrderNo", "")),
         "symbol": _as_str(_safe(value, "CompanyNo", "")),
         "side": _as_str(_safe(value, "BS", "")),
+        "order_type": _as_str(_safe(value, "OrderType", "") or ""),
         "price": _as_str(_safe(value, "Price", "0")),
         "before_qty": _optional_integer(value, "BeforeQty"),
         "order_qty": _strict_integer(_required_attribute(value, "OrderQty"), "OrderQty"),
@@ -223,7 +320,7 @@ def _normalise_real_report(value: Any) -> dict[str, Any]:
         "seq_no": _as_str(_safe(value, "SeqNo", "")),
         "stk_error_no": _as_str(_safe(value, "StkErrorNo", "")),
         "order_error_no": _as_str(_safe(value, "OrderErrorNo", "")),
-        "trade_date": _as_str(_safe(value, "TradeDate", "")),
+        **_normalise_report_temporal_fields(value),
     }
 
 
@@ -234,6 +331,7 @@ def _normalise_merge_report(value: Any) -> dict[str, Any]:
         "order_no": _as_str(_safe(value, "OrderNo", "")),
         "symbol": _as_str(_safe(value, "CompanyNo", "")),
         "side": _as_str(_safe(value, "BS", "")),
+        "order_type": _as_str(_safe(value, "OrderType", "") or ""),
         "price": _as_str(_safe(value, "Price", "0")),
         "last_deal_price": _as_str(_safe(value, "LastDealPrice", "0")),
         "avg_deal_price": _as_str(_safe(value, "AvgDealPrice", "0")),
@@ -245,7 +343,7 @@ def _normalise_merge_report(value: Any) -> dict[str, Any]:
         "last_order_status": _strict_integer(_required_attribute(value, "LastOrderStatus"), "LastOrderStatus"),
         "basket_no": _as_str(_safe(value, "BasketNo", "")),
         "stk_error_no": _as_str(_safe(value, "StkErrorNo", "")),
-        "trade_date": _as_str(_safe(value, "TradeDate", "")),
+        **_normalise_report_temporal_fields(value),
     }
 
 

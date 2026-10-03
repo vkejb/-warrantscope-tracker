@@ -1,0 +1,35 @@
+{
+  "scope": "SOURCE_MOCK_AND_READ_ONLY_REVIEW_NOT_LIVE_CERTIFICATION",
+  "date": "2026-10-03",
+  "normal_start_ready": false,
+  "actual_runtime_repair_apply_calls": 0,
+  "live_runtime_starts": 0,
+  "broker_order_submission_calls": 0,
+  "broker_cancel_replace_calls": 0,
+  "launchagent_restarts": 0,
+  "private_real_evidence_plan_result": "EXPLICIT_INCIDENT_MAPPING_REQUIRED",
+  "private_snapshot_unchanged_by_plan": true,
+  "read_only_query_guard_tests": {"run": 11, "passed": 11},
+  "protected_runtime_files_unchanged_during_queries": 11,
+  "tests": {
+    "full_python_312": {"run": 1012, "passed": 1011, "skipped": 1, "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0},
+    "runtime_python_310": {"run": 253, "passed": 253, "skipped": 0, "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0},
+    "broker_each_python_310_312": {"run": 115, "passed": 114, "skipped": 1, "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0},
+    "report_fields_each_python_310_312": {"run": 20, "passed": 20},
+    "incident_repair_each_python_310_312": {"run": 25, "passed": 25},
+    "independent_reviewer_python_310": {"run": 45, "passed": 45},
+    "node": {"run": 75, "passed": 75, "skipped": 0, "failures": 0}
+  },
+  "remaining_blockers": [
+    "UNVERIFIED_WIRE_BASKET_OWNERSHIP",
+    "FORMAL_LEDGER_NOT_REPAIRED",
+    "STRATEGY_CARRYOVER_POSITION",
+    "UNCONFIRMED_MANUAL_REMAINDER_AND_ORDER_FIELDS",
+    "HALT_AND_BASELINE_ACCOUNT_PROVENANCE",
+    "UNHANDLED_1325_CLOSING_AUCTION_ORDER_RESTRICTION"
+  ],
+  "test_suites_overlap": true,
+  "private_broker_evidence_committed": false,
+  "live_gates_changed": false,
+  "execution_routing_changed": false
+}
