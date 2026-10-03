@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 import json
 import os
 from unittest import TestCase
+from unittest.mock import patch
 
 from yuanta_live_runtime_v01.account_lock import (
     acquire_account_lock, release_account_lock, account_lock_health,
@@ -92,3 +93,116 @@ class AccountLockTests(TestCase):
         for pid in (float("inf"), 10 ** 100):
             with self.subTest(pid=pid):
                 self.assertFalse(account_lock_health(handle.name, pid))
+
+    def released_provenance(self, *, runtime_dir=None):
+        handle = self.acquire(runtime_dir=runtime_dir)
+        path = Path(handle.name)
+        raw = path.read_text()
+        self.locks.remove(handle)
+        release_account_lock(handle)
+        return path, raw
+
+    def test_incomplete_record_cannot_erase_previous_runtime_binding(self):
+        path, raw = self.released_provenance(runtime_dir=Path(self.temp.name) / "A")
+        original = json.loads(raw)
+        incomplete = [{}, {"runtime_dir": ""}]
+        incomplete.extend(
+            {key: value for key, value in original.items() if key != missing}
+            for missing in original
+        )
+        for record in incomplete:
+            with self.subTest(fields=sorted(record)):
+                corrupt = json.dumps(record)
+                path.write_text(corrupt)
+                with self.assertRaisesRegex(RuntimeError, "provenance.*manual review"):
+                    self.acquire(runtime_dir=Path(self.temp.name) / "B")
+                self.assertEqual(path.read_text(), corrupt)
+        path.write_text(raw)
+        with self.assertRaisesRegex(RuntimeError, "canonical runtime"):
+            self.acquire(runtime_dir=Path(self.temp.name) / "B")
+        self.acquire(runtime_dir=Path(self.temp.name) / "A")
+
+    def test_malformed_or_conflicting_identity_is_never_overwritten(self):
+        path, raw = self.released_provenance(runtime_dir=Path(self.temp.name) / "A")
+        original = json.loads(raw)
+        invalid = {
+            "version": (True, "1", 0, 2),
+            "pid": (True, 0, -1, 1.5, "1"),
+            "instance_id": (None, "", "INVALID", "0" * 31),
+            "environment": (None, "prod", "OTHER", "UAT", []),
+            "account_fingerprint": (None, "", "X" * 12, "0" * 12),
+            "acquired_at": (None, "", "invalid", "2026-10-03T09:00:00"),
+            "runtime_dir": (None, 123, "relative", str(Path(self.temp.name) / "A" / ".." / "A")),
+        }
+        for field, values in invalid.items():
+            for value in values:
+                with self.subTest(field=field, value=value):
+                    corrupt = json.dumps({**original, field: value})
+                    path.write_text(corrupt)
+                    with self.assertRaisesRegex(RuntimeError, "provenance.*manual review"):
+                        self.acquire(runtime_dir=Path(self.temp.name) / "A")
+                    self.assertEqual(path.read_text(), corrupt)
+
+    def test_non_object_duplicate_or_oversized_provenance_is_rejected(self):
+        path, raw = self.released_provenance(runtime_dir=Path(self.temp.name) / "A")
+        duplicate = raw.rstrip()[:-1] + ', "runtime_dir": ""}'
+        deeply_nested = "[" * 1100 + "0" + "]" * 1100
+        for corrupt in ("[]", "null", "not-json", duplicate, deeply_nested, raw + " " * 8193):
+            with self.subTest(kind=corrupt[:12]):
+                path.write_text(corrupt)
+                with self.assertRaisesRegex(RuntimeError, "provenance.*manual review"):
+                    self.acquire(runtime_dir=Path(self.temp.name) / "A")
+                self.assertEqual(path.read_text(), corrupt)
+
+    def test_existing_empty_crash_inode_is_not_first_acquisition(self):
+        path, _raw = self.released_provenance()
+        inode = path.stat().st_ino
+        path.write_text("")
+        with self.assertRaisesRegex(RuntimeError, "provenance is empty.*manual review"):
+            self.acquire()
+        self.assertEqual(path.read_text(), "")
+        self.assertEqual(path.stat().st_ino, inode)
+
+    def test_omitted_runtime_argument_preserves_previous_binding(self):
+        runtime_a = Path(self.temp.name) / "A"
+        path, _raw = self.released_provenance(runtime_dir=runtime_a)
+        handle = self.acquire()
+        self.assertEqual(json.loads(path.read_text())["runtime_dir"], str(runtime_a.resolve()))
+        self.locks.remove(handle)
+        release_account_lock(handle)
+        with self.assertRaisesRegex(RuntimeError, "canonical runtime"):
+            self.acquire(runtime_dir=Path(self.temp.name) / "B")
+        self.acquire(runtime_dir=runtime_a)
+
+    def test_valid_no_runtime_api_can_be_reused_then_bound_once(self):
+        path, _raw = self.released_provenance()
+        handle = self.acquire()
+        self.assertEqual(json.loads(path.read_text())["runtime_dir"], "")
+        self.locks.remove(handle)
+        release_account_lock(handle)
+        self.acquire(runtime_dir=Path(self.temp.name) / "A")
+        self.assertEqual(json.loads(path.read_text())["runtime_dir"], str((Path(self.temp.name) / "A").resolve()))
+
+    def test_health_probe_never_certifies_corrupt_provenance(self):
+        handle = self.acquire(runtime_dir=Path(self.temp.name) / "A")
+        path = Path(handle.name)
+        original = json.loads(path.read_text())
+        for corrupt in ({}, {**original, "runtime_dir": None}, {**original, "version": True},
+                        {**original, "acquired_at": "2026-10-03T09:00:00"}):
+            with self.subTest(fields=sorted(corrupt)):
+                path.write_text(json.dumps(corrupt))
+                self.assertFalse(account_lock_health(handle.name, os.getpid(), expected_instance=handle.instance_id))
+        path.write_text(json.dumps(original))
+        self.assertTrue(account_lock_health(handle.name, os.getpid(), expected_instance=handle.instance_id))
+
+    def test_invalid_runtime_never_creates_or_opens_an_account_inode(self):
+        loop = Path(self.temp.name) / "runtime-loop"
+        loop.symlink_to(loop)
+        for runtime in (123, [], loop):
+            with self.subTest(kind=type(runtime).__name__), patch(
+                "yuanta_live_runtime_v01.account_lock._open_lock_file"
+            ) as opened:
+                with self.assertRaises((TypeError, ValueError, OSError, RuntimeError)):
+                    self.acquire(runtime_dir=runtime)
+                opened.assert_not_called()
+                self.assertFalse(self.root.exists())

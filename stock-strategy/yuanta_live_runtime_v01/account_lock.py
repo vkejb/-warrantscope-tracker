@@ -55,10 +55,12 @@ def _validate_directory(path: Path) -> None:
         raise RuntimeError("execution lock directory must be owner-only and not a symlink")
 
 
-def _open_lock_file(path: Path, *, create: bool) -> TextIO:
+def _open_lock_file(path: Path, *, create: bool, exclusive: bool = False) -> TextIO:
     flags = os.O_RDWR if create else os.O_RDONLY
     if create:
         flags |= os.O_CREAT
+        if exclusive:
+            flags |= os.O_EXCL
     flags |= getattr(os, "O_NOFOLLOW", 0)
     fd = os.open(str(path), flags, 0o600)
     try:
@@ -72,6 +74,60 @@ def _open_lock_file(path: Path, *, create: bool) -> TextIO:
         raise
 
 
+def _load_provenance(
+    text: str,
+    *,
+    environment: str | None = None,
+    account_fingerprint: str | None = None,
+) -> dict:
+    """Validate durable identity before replacing it or claiming health.
+
+    An unreadable record is not proof that this account has never owned a
+    runtime. In particular, a missing runtime_dir may not erase an old binding.
+    """
+    def unique_fields(pairs):
+        value = {}
+        for key, item in pairs:
+            if key in value:
+                raise ValueError("duplicate provenance field")
+            value[key] = item
+        return value
+
+    try:
+        if not text or len(text) > 8192:
+            raise ValueError("empty or oversized provenance")
+        row = json.loads(text, object_pairs_hook=unique_fields)
+        if not isinstance(row, dict) or type(row.get("version")) is not int or row["version"] != 1:
+            raise ValueError("unsupported provenance version")
+        if type(row.get("pid")) is not int or row["pid"] <= 0:
+            raise ValueError("invalid provenance process identity")
+        instance = row.get("instance_id")
+        if not isinstance(instance, str) or not re.fullmatch(r"[0-9a-f]{32}", instance):
+            raise ValueError("invalid provenance instance")
+        env = row.get("environment")
+        if env not in {"PROD", "UAT"} or (environment is not None and env != environment):
+            raise ValueError("invalid provenance environment")
+        fingerprint = row.get("account_fingerprint")
+        if (not isinstance(fingerprint, str)
+                or not re.fullmatch(r"[0-9a-f]{12}", fingerprint)
+                or (account_fingerprint is not None and fingerprint != account_fingerprint)):
+            raise ValueError("invalid provenance account identity")
+        stamp_text = row.get("acquired_at")
+        if not isinstance(stamp_text, str):
+            raise ValueError("invalid provenance acquisition time")
+        stamp = datetime.fromisoformat(stamp_text.replace("Z", "+00:00"))
+        if stamp.tzinfo is None or stamp.utcoffset() is None:
+            raise ValueError("provenance acquisition time must be aware")
+        runtime = row.get("runtime_dir")
+        if not isinstance(runtime, str):
+            raise ValueError("missing provenance runtime binding")
+        if runtime and (not Path(runtime).is_absolute() or str(Path(runtime).resolve()) != runtime):
+            raise ValueError("provenance runtime binding must be canonical")
+        return row
+    except (ValueError, TypeError, OSError, OverflowError, RuntimeError):
+        raise RuntimeError("execution account lock provenance is invalid; manual review required") from None
+
+
 def acquire_account_lock(
     account: str,
     environment: str,
@@ -83,12 +139,21 @@ def acquire_account_lock(
     env = str(environment).strip().upper()
     if env not in {"PROD", "UAT"}:
         raise ValueError("execution lock environment must be PROD or UAT")
+    fingerprint = hashlib.sha256(account_identity.encode()).hexdigest()[:12]
+    resolved_runtime = str(Path(runtime_dir).resolve()) if runtime_dir is not None else ""
     root = Path(lock_root) if lock_root is not None else Path("/tmp") / f"warrantscope-execution-{os.getuid()}"
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
     _validate_directory(root)
     digest = hashlib.sha256(f"{env}\0{account_identity}".encode()).hexdigest()
     path = root / f"account-{digest}.lock"
-    handle = _open_lock_file(path, create=True)
+    # Never infer "first use" merely from empty contents. O_EXCL identifies
+    # the newly created inode atomically, without unlinking an existing lock.
+    try:
+        handle = _open_lock_file(path, create=True, exclusive=True)
+        created = True
+    except FileExistsError:
+        handle = _open_lock_file(path, create=True)
+        created = False
     acquired = False
     try:
         try:
@@ -99,25 +164,25 @@ def acquire_account_lock(
             raise
         acquired = True
         old_text = handle.read(8193)
+        old_runtime = ""
         if old_text:
-            try:
-                old = json.loads(old_text)
-            except ValueError:
-                raise RuntimeError("execution account lock provenance is unreadable; manual review required") from None
-            if not isinstance(old, dict):
-                raise RuntimeError("execution account lock provenance is invalid")
-            old_runtime = str(old.get("runtime_dir", ""))
-            if runtime_dir is not None and old_runtime and old_runtime != str(Path(runtime_dir).resolve()):
+            old = _load_provenance(old_text, environment=env, account_fingerprint=fingerprint)
+            old_runtime = old["runtime_dir"]
+            if runtime_dir is not None and old_runtime and old_runtime != resolved_runtime:
                 raise RuntimeError("broker account is bound to another runtime directory; use the canonical runtime")
+        elif not created:
+            raise RuntimeError("execution account lock provenance is empty; manual review required")
+        if runtime_dir is None:
+            resolved_runtime = old_runtime
         instance = uuid.uuid4().hex
         row = {
             "version": 1,
             "pid": os.getpid(),
             "instance_id": instance,
             "environment": env,
-            "account_fingerprint": hashlib.sha256(account_identity.encode()).hexdigest()[:12],
+            "account_fingerprint": fingerprint,
             "acquired_at": datetime.now(timezone.utc).isoformat(),
-            "runtime_dir": str(Path(runtime_dir).resolve()) if runtime_dir is not None else "",
+            "runtime_dir": resolved_runtime,
         }
         handle.seek(0)
         handle.truncate()
@@ -158,8 +223,8 @@ def account_lock_health(
             return False
         os.kill(pid, 0)
         with _open_lock_file(lock_path, create=False) as handle:
-            row = json.loads(handle.read(8193))
-            if not isinstance(row, dict) or int(row.get("pid", 0)) != pid:
+            row = _load_provenance(handle.read(8193))
+            if row["pid"] != pid:
                 return False
             instance = row.get("instance_id")
             if not instance or (expected_instance is not None and expected_instance != instance):
@@ -170,10 +235,10 @@ def account_lock_health(
                 if exc.errno not in {errno.EACCES, errno.EAGAIN}:
                     return False
                 handle.seek(0)
-                fresh = json.loads(handle.read(8193))
-                return fresh.get("pid") == pid and fresh.get("instance_id") == instance
+                fresh = _load_provenance(handle.read(8193))
+                return fresh == row
             else:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
                 return False
-    except (OSError, ValueError, TypeError, AttributeError, OverflowError):
+    except (OSError, ValueError, TypeError, AttributeError, OverflowError, RuntimeError):
         return False

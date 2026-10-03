@@ -46,3 +46,36 @@ final test results, unchanged strategy boundary and remaining limitations.
 
 Real account inventories, broker payloads, tokens, passwords, databases and
 baseline contents are deliberately not copied into this package.
+
+## Offline preparation follow-up
+
+`offline_readiness` reads explicit local inputs without importing the trading
+runtime, loading credentials, contacting a broker or modifying original files.
+It is **not** a LIVE gate or an automatic state repair. Even a clean local report
+returns `NOT_LIVE_CERTIFIED` and exit code **3**; invalid CLI configuration returns
+2. Do not use exit code 3 as an instruction to clear HALT or retry a LIVE launch.
+
+From `stock-strategy`, inspect the current configured paths for a target date:
+
+```sh
+/Library/Frameworks/Python.framework/Versions/3.10/bin/python3 -B \
+  -m trading_safety_audit_v01.offline_readiness \
+  --repo-dir .. \
+  --runtime-dir /Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_live_runtime_v01/runtime \
+  --plist /Users/linyunyan/Library/LaunchAgents/com.linyunyan.warrantscope.trading-bot.plist \
+  --calendar shadow_daily_runner/runtime/trading_calendar.csv \
+  --seal-dir stage_a_prospective_watchlist_v01/runtime/seals \
+  --trading-date 2026-10-05
+```
+
+The date and paths must be supplied explicitly; update them for each inspection.
+Future-date inspection does not create that day's inventory baseline. Nonempty
+WAL/journal means store evidence is unverified. Otherwise SQLite is opened only
+on a stable, private temporary copy, never on the original runtime database.
+The tool suppresses accounts, holdings, quantities, credentials, private paths
+and raw exceptions. Aggregate local evidence is never actual broker proof.
+
+The package and tests now have side-effect-free `__init__.py` files, so the
+repository's full unittest discovery also includes the isolated audit tests.
+See [offline_preparation_20261003.md](offline_preparation_20261003.md) for the
+additional account-lock fix, final results and remaining authorization boundary.

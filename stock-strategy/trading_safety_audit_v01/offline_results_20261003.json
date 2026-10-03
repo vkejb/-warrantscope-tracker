@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-03",
+  "timezone": "Asia/Taipei",
+  "base_commit": "75d65f4638db1f5ac8e20bf6b26288e65871754c",
+  "scope": "OFFLINE_PREPARATION_AND_MOCK_ONLY",
+  "live_readiness_verified": false,
+  "broker_login_performed": false,
+  "live_activated": false,
+  "real_order_submitted": false,
+  "deployment_performed": false,
+  "persisted_live_gates_modified": false,
+  "real_runtime_state_modified": false,
+  "real_account_lock_modified": false,
+  "selection_entry_stop_mfe_sizing_and_exit_times_modified": false,
+  "baseline_full_suite": {
+    "python": "3.12.14", "tests_run": 899, "passed": 898,
+    "skipped": 1, "failures": 0, "errors": 0,
+    "forbidden_boundary_attempts": 0
+  },
+  "full_discovery_now_includes_audit_package": true,
+  "suite_counts_overlap": true,
+  "final_tests": [
+    {
+      "suite": "stock-strategy full", "python": "3.12.14", "cwd": "stock-strategy",
+      "command": "/Users/linyunyan/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir .",
+      "tests_run": 967, "passed": 966, "skipped": 1,
+      "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0
+    },
+    {
+      "suite": "runtime", "python": "3.10.0b4", "cwd": "stock-strategy",
+      "command": "/Library/Frameworks/Python.framework/Versions/3.10/bin/python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir yuanta_live_runtime_v01/tests",
+      "tests_run": 228, "passed": 228, "skipped": 0,
+      "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0
+    },
+    {
+      "suite": "safety audit", "python": "3.10.0b4", "cwd": "stock-strategy",
+      "command": "/Library/Frameworks/Python.framework/Versions/3.10/bin/python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir trading_safety_audit_v01/tests",
+      "tests_run": 60, "passed": 60, "skipped": 0,
+      "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0
+    },
+    {
+      "suite": "offline checker", "python": "3.10.0b4 and 3.12.14",
+      "tests_run_per_interpreter": 31, "passed_per_interpreter": 31,
+      "skipped": 0, "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0
+    },
+    {
+      "suite": "account singleton", "python": "3.10.0b4",
+      "tests_run": 17, "passed": 17, "skipped": 0,
+      "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0
+    },
+    {
+      "suite": "website Node", "cwd": "repository root",
+      "command": "node --test tests/*.test.js",
+      "tests_run": 75, "passed": 75, "skipped": 0, "failures": 0, "errors": 0
+    }
+  ],
+  "sdk_skip_reason": "Optional real SDK contract test intentionally excluded in mock-only runner.",
+  "actual_local_diagnostic": {
+    "scope": "READ_ONLY_LOCAL_METADATA_NOT_BROKER_PROOF",
+    "target_trading_date": "2026-10-05",
+    "overall": "NOT_LIVE_CERTIFIED",
+    "exit_code": 3,
+    "forbidden_boundary_attempts": 0,
+    "forbidden_boundary_categories": [],
+    "calendar_code": "CALENDAR_RELATION_VALID",
+    "seal_code": "SEAL_LOCAL_HASH_AND_DATE_VALID",
+    "expected_signal_date": "2026-10-02",
+    "baseline_code": "BASELINE_INPUT_MISSING",
+    "baseline_metadata_missing_confirmed": true,
+    "heartbeat_code": "HEARTBEAT_STALE",
+    "last_runtime_state": "STOPPED_UNSAFE",
+    "marker_code": "PERSISTENT_MARKERS_ABSENT",
+    "store_code": "STORE_LOCAL_BLOCKERS_PRESENT",
+    "store_evidence": "STABLE_MAIN_FILE_LOCAL_SNAPSHOT_ONLY",
+    "plist_code": "PLIST_CONFIGURATION_ONLY",
+    "source_matches_requested_repo": true,
+    "runtime_matches_requested_path": true,
+    "source_and_runtime_different_checkout": true,
+    "private_accounts_symbols_quantities_payloads_and_paths_omitted": true,
+    "broker_positions_orders_fills_and_funds": "UNVERIFIED",
+    "original_sqlite_connection_performed": false
+  },
+  "diff_check_passed": true,
+  "remaining_authority": [
+    "Formal read-only broker reconciliation and verified account/baseline/funds evidence",
+    "Separately reviewed old local-state remediation based on broker proof",
+    "Deployment and service restart authorization; running version and external delivery verification"
+  ]
+}
