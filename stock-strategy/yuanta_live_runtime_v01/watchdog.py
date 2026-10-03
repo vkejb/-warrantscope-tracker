@@ -12,6 +12,7 @@ import time
 from .notifications import RuntimeNotifier
 
 ACTIVE_STATES = {"STARTING", "RUNNING", "STOPPING", "EMERGENCY_EXIT", "FORCE_FLAT_EXIT", "EXIT_ONLY_RECOVERY"}
+STARTUP_PHASE_MAX_SECONDS = 90.0
 
 
 @dataclass(frozen=True)
@@ -53,8 +54,8 @@ def runtime_health(runtime_dir: Path, *, now: datetime | None = None,
         stamp = datetime.fromisoformat(str(payload["at"]).replace("Z", "+00:00"))
         if stamp.tzinfo is None:
             raise ValueError("naive heartbeat")
-        age = ((now or datetime.now(timezone.utc)).astimezone(timezone.utc)
-               - stamp.astimezone(timezone.utc)).total_seconds()
+        current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+        age = (current - stamp.astimezone(timezone.utc)).total_seconds()
         state = str(payload.get("state", "UNKNOWN"))
         pid = int(payload["pid"])
     except (OSError, KeyError, ValueError, TypeError, OverflowError):
@@ -84,7 +85,28 @@ def runtime_health(runtime_dir: Path, *, now: datetime | None = None,
             isinstance(account_instance, str) and account_instance.strip()):
         # A path/PID alone cannot correlate this particular LIVE controller.
         owned = False
-    if age < 0 or age > stale_seconds:
+    starting_with_deadline = state == "STARTING" and "startup_deadline_at" in payload
+    deadline_valid = False
+    if starting_with_deadline and age >= 0:
+        try:
+            deadline = datetime.fromisoformat(str(payload["startup_deadline_at"]).replace("Z", "+00:00"))
+            if deadline.tzinfo is None:
+                raise ValueError("naive startup deadline")
+            phase_seconds = (deadline - stamp).total_seconds()
+            if not 0 < phase_seconds <= STARTUP_PHASE_MAX_SECONDS:
+                raise ValueError("invalid startup phase duration")
+        except (ValueError, TypeError, OverflowError):
+            return RuntimeHealth(False, "STARTUP_DEADLINE_INVALID", pid_alive=True,
+                                 lock_owned=owned, age_seconds=age, state=state,
+                                 controller_present=local_owned)
+        if current >= deadline.astimezone(timezone.utc):
+            return RuntimeHealth(False, "STARTUP_DEADLINE_EXPIRED", pid_alive=True,
+                                 lock_owned=owned, age_seconds=age, state=state,
+                                 controller_present=local_owned)
+        # Only the current proven controller can use a bounded phase deadline.
+        # Legacy STARTING and every non-startup state retain the normal timeout.
+        deadline_valid = owned
+    if age < 0 or (age > stale_seconds and not deadline_valid):
         return RuntimeHealth(False, "HEARTBEAT_FUTURE" if age < 0 else "HEARTBEAT_STALE",
                              pid_alive=True, lock_owned=owned, age_seconds=age,
                              state=state, controller_present=local_owned)

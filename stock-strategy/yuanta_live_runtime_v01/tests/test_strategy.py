@@ -230,7 +230,7 @@ class StrategyTests(unittest.TestCase):
     def test_hard_exit_is_generated(self):
         engine, _ = self._engine_with_long_signal()
         now = datetime(2026, 9, 24, 13, 20, 1, tzinfo=TAIPEI)
-        engine.record_tick("2330", at=now, price=101, volume=10, bid=100.9, ask=101.0, flag="1", serial=999)
+        engine.record_tick("2330", at=now, price=101, volume=10, bid=101.0, ask=101.5, flag="1", serial=999)
         position = ManagedPosition("2330", "台積電", "LONG", 1000, 100.0, "abc", now - timedelta(hours=1))
         decision = engine.evaluate_exit(position, now)
         self.assertIsNotNone(decision)
@@ -313,9 +313,11 @@ class StrategyTests(unittest.TestCase):
             at=now + timedelta(seconds=1),
         )
         self.assertEqual(position.locked_profit_price, locked)
+        # The analytical MFE floor need not itself be a valid exchange quote.
+        executable_floor = (locked // 0.5) * 0.5
         engine.record_tick(
             "2330", at=now + timedelta(seconds=2), price=locked,
-            volume=10, bid=locked, ask=locked + 0.1, flag="0", serial=1000,
+            volume=10, bid=executable_floor, ask=executable_floor + 0.5, flag="0", serial=1000,
         )
         decision = engine.evaluate_exit(position, now + timedelta(seconds=2))
         self.assertIsNotNone(decision)

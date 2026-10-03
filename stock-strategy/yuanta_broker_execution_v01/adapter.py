@@ -649,6 +649,7 @@ class YuantaSparkExecutionAdapter:
         self._position_event = threading.Event()
         self._latest_merge: list[dict[str, Any]] | None = None
         self._latest_positions: dict[str, int] | None = None
+        self._snapshot_mutation_requests: dict[str, int] = {}
         self._query_worker: threading.Thread | None = None
         self._query_error: Exception | None = None
         self._query_uncertain = False
@@ -1087,6 +1088,14 @@ class YuantaSparkExecutionAdapter:
         self._latest_merge = None
         self._latest_positions = None
         self._query_error = None
+        # Fence target recovery to requests that already existed when this
+        # query began. A completed older snapshot cannot finalize a mutation
+        # created while the query was in flight.
+        self._snapshot_mutation_requests = {}
+        for order in self.store.orders(open_only=True):
+            mutation = self.store.pending_mutation(order.client_order_id)
+            if mutation is not None:
+                self._snapshot_mutation_requests[order.client_order_id] = int(mutation["identify"])
 
         def dispatch_queries() -> None:
             try:
@@ -1319,7 +1328,7 @@ class YuantaSparkExecutionAdapter:
 
             remote_status = _remote_status(remote)
             self.store.finalize_latest_request(local.client_order_id, "NEW", success=remote_status != BrokerOrderStatus.REJECTED)
-            self._resolve_mutation_from_remote(local, remote)
+            self._resolve_mutation_from_remote(local, remote, authoritative_snapshot=True)
             # A terminal broker snapshot is authoritative even when the
             # cancel/final callback was lost. No fill quantity is fabricated.
             if remote_filled == local.filled_quantity:
@@ -1377,6 +1386,13 @@ class YuantaSparkExecutionAdapter:
                         "remote": remote_status.value,
                     }
                 )
+
+            pending = self.store.pending_mutation(local.client_order_id)
+            if pending is not None and pending["payload"].get("result_identity_uncertain"):
+                mismatches.append({"client_order_id": local.client_order_id,
+                                   "reason": "unresolved_broker_mutation",
+                                   "operation": pending["operation"],
+                                   "identify": int(pending["identify"])})
 
         # Reverse reconciliation: an OPEN broker order that cannot be
         # matched to a locally-owned basket/order number is external/manual
@@ -1447,7 +1463,9 @@ class YuantaSparkExecutionAdapter:
                 return False
         return True
 
-    def _resolve_mutation_from_remote(self, local: StoredOrder, remote: Mapping[str, Any]) -> None:
+    def _resolve_mutation_from_remote(
+        self, local: StoredOrder, remote: Mapping[str, Any], *, authoritative_snapshot: bool = False
+    ) -> None:
         pending = self.store.pending_mutation(local.client_order_id)
         if pending is None:
             return
@@ -1461,13 +1479,28 @@ class YuantaSparkExecutionAdapter:
                 matches = Decimal(str(remote.get("price", "0"))) == Decimal(str(pending["payload"]["new_price"]))
             except (KeyError, ValueError, ArithmeticError):
                 matches = False
-            if matches:
+            # Prices can revisit an earlier target (A -> B -> A). A matching
+            # live/detail-history RR is therefore not current mutation proof.
+            # Only the fully drained current merge query, fenced to this
+            # request, may establish the actual broker price.
+            if (matches and authoritative_snapshot and self._snapshot_complete
+                    and self._snapshot_mutation_requests.get(local.client_order_id) == int(pending["identify"])):
                 self.store.finalize_latest_request(local.client_order_id, operation, success=True)
         elif operation == "REDUCE":
             expected = pending["payload"].get("expected_quantity")
             quantity = int(remote.get("order_qty", 0))
             if expected is not None and quantity > 0 and quantity == int(expected):
                 self.store.finalize_latest_request(local.client_order_id, operation, success=True)
+        # A failure status identifies an operation, not its request. It may be
+        # a delayed manual/earlier mutation. Neither an empty detail snapshot,
+        # FIRST local operation, OrderTime nor fill SeqNo proves attribution.
+        # Keep the durable barrier until an exact result or terminal/target
+        # state proves the current mutation's outcome.
+        remaining = self.store.pending_mutation(local.client_order_id)
+        failure_status = {"CANCEL": 3, "REDUCE": 5, "MODIFY_PRICE": 21}[operation]
+        if remaining is not None and int(remote.get("last_order_status", -1)) == failure_status:
+            self.store.mark_request_result_uncertain(int(remaining["identify"]), "UNATTRIBUTED_BROKER_MUTATION_FAILURE")
+            self.store.halt("BLOCKED_BROKER_MUTATION_AMBIGUOUS")
 
     def _on_response(
         self,
@@ -1598,6 +1631,14 @@ class YuantaSparkExecutionAdapter:
         exact = self.store.get_request(broker_identify)
         owned = self.store.get_by_broker_order_no(order_no) if order_no else None
         if owned is not None and self._is_current_order(owned):
+            mutation = self.store.pending_mutation(owned.client_order_id)
+            if mutation is not None and (exact is None or int(exact["identify"]) != int(mutation["identify"])):
+                # OrderNo proves the order, not which operation produced an API
+                # result. A reused NEW Identify can equally be a late NEW ACK
+                # or a new cancel/modify result; preserve both request histories.
+                self.store.mark_request_result_uncertain(int(mutation["identify"]), "REUSED_OR_UNPROVEN_RESULT_IDENTIFY")
+                self.store.halt("BLOCKED_BROKER_MUTATION_AMBIGUOUS")
+                return None
             if exact is not None and exact["client_order_id"] == owned.client_order_id:
                 return exact
             same_order = [item for item in current if item["client_order_id"] == owned.client_order_id]
@@ -1724,6 +1765,12 @@ class YuantaSparkExecutionAdapter:
             or report.get("order_error_no", "")
             or ""
         )
+        if status in {3, 5, 21}:
+            operation = {3: "CANCEL", 5: "REDUCE", 21: "MODIFY_PRICE"}[status]
+            pending = self.store.pending_mutation(local.client_order_id)
+            if pending is not None and pending["operation"] == operation:
+                self.store.mark_request_result_uncertain(int(pending["identify"]), "UNATTRIBUTED_BROKER_MUTATION_FAILURE")
+                self.store.halt("BLOCKED_BROKER_MUTATION_AMBIGUOUS")
         if status in {0, 18}:
             self.store.finalize_latest_request(local.client_order_id, "NEW", success=True)
             self.store.acknowledge(local.client_order_id)

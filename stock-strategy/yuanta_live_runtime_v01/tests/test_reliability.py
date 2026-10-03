@@ -157,8 +157,9 @@ class PositionRecoveryTests(StoreCase):
         self.assertAlmostEqual(restored.locked_profit_r, 2.25)
         self.assertEqual(recovered["pending_exit_reason"], "MFE_PROFIT_PROTECTION")
         floor = restored.locked_profit_price
+        executable_floor = (floor // 0.5) * 0.5
         self.engine.record_tick(
-            "TEST", at=self.now, price=floor, bid=floor, ask=floor + .1, volume=1,
+            "TEST", at=self.now, price=floor, bid=executable_floor, ask=executable_floor + .5, volume=1,
         )
         self.assertEqual(
             self.engine.evaluate_exit(restored, self.now).reason,

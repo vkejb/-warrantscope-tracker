@@ -48,8 +48,10 @@ def _market_stock(name: str, *, benchmark: bool = False) -> dict:
         for offset in (600, 900, 1200, 15600):
             at = start + timedelta(seconds=offset)
             ticks.append({
-                "time": at, "price": 103.1, "volume": 10.0,
-                "bid": 103.0, "ask": 103.1, "flag": "1",
+                # Above NT$100, stock quotes use NT$0.5 ticks. The exit
+                # validator now correctly rejects the former off-grid 103.1.
+                "time": at, "price": 103.5, "volume": 10.0,
+                "bid": 103.0, "ask": 103.5, "flag": "1",
                 "serial": len(ticks) + 1,
             })
     ticks.sort(key=lambda row: row["time"])

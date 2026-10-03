@@ -131,10 +131,19 @@ def _launch_exit_only(runtime_dir: Path) -> subprocess.Popen:
         )
 
 
-def _supervisor_beat(runtime_dir: Path, now: datetime, state: str) -> None:
+def _supervisor_beat(runtime_dir: Path, now: datetime, state: str,
+                     *, warnings: list[str] | None = None) -> None:
     path = runtime_dir / SUPERVISOR_HEARTBEAT
+    if warnings is None:
+        # A long recovery loop must retain an optional-guard warning published
+        # by this supervisor, rather than imply that sleep prevention resumed.
+        previous = _read_json(path) or {}
+        previous_warnings = previous.get("warnings")
+        warnings = (previous_warnings if previous.get("pid") == os.getpid()
+                    and isinstance(previous_warnings, list) else [])
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps({"at": now.isoformat(), "pid": os.getpid(), "state": state}) + "\n", encoding="utf-8")
+    tmp.write_text(json.dumps({"at": now.isoformat(), "pid": os.getpid(), "state": state,
+                               "warnings": warnings}) + "\n", encoding="utf-8")
     os.replace(tmp, path)
 
 
@@ -312,14 +321,41 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0,
     cutoff_alert_date = None
     history_alert_key = None
     last_warning_at = -float("inf")
+    last_inhibitor_warning_at = -float("inf")
     inhibitor = _SleepInhibitor()
     notifier = RuntimeNotifier(runtime_dir)
+
+    def inhibitor_warning(exc: Exception, now: datetime, *, cleanup: bool = False) -> None:
+        nonlocal last_inhibitor_warning_at
+        event = "TRADING_SLEEP_INHIBITOR_CLEANUP_FAILED" if cleanup else "TRADING_SLEEP_INHIBITOR_UNAVAILABLE"
+        try:
+            _supervisor_beat(runtime_dir, now, "SUPERVISING_WITH_WARNING", warnings=[event])
+        except Exception:
+            print("CRITICAL: sleep-inhibitor warning heartbeat unavailable", flush=True)
+        if time.monotonic() - last_inhibitor_warning_at >= 30:
+            last_inhibitor_warning_at = time.monotonic()
+            try:
+                _append(runtime_dir / LEDGER, event, error_type=type(exc).__name__)
+                notifier.critical(event,
+                                  "Optional sleep-prevention lifecycle failed; mandatory runtime supervision and cleanup continue",
+                                  error_type=type(exc).__name__)
+            except Exception:
+                print("CRITICAL: sleep-inhibitor failure logging/notification unavailable", flush=True)
+
+    def close_inhibitor(now: datetime) -> None:
+        try:
+            inhibitor.close()
+        except Exception as exc:
+            # A process disappearing between poll/terminate, or a failed wait,
+            # must not terminate supervision or skip notifier cleanup.
+            inhibitor_warning(exc, now, cleanup=True)
+
     try:
         while stop_event is None or not stop_event.is_set():
             now = wall_clock().astimezone(TAIPEI)
             today = now.date().isoformat()
             try:
-                _supervisor_beat(runtime_dir, now, "SUPERVISING")
+                _supervisor_beat(runtime_dir, now, "SUPERVISING", warnings=[])
                 live_evidence = _live_day_evidence(runtime_dir, now)
                 request_present = (runtime_dir / REQUEST).exists()
                 flat_proved = broker_flat_proof(runtime_dir, now=now)
@@ -341,10 +377,15 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0,
                         _append(runtime_dir / LEDGER, "SUPERVISOR_CUTOFF_EXPOSURE_UNCONFIRMED")
                         notifier.critical("SUPERVISOR_CUTOFF_EXPOSURE_UNCONFIRMED",
                                           "Market window was missed or ended without broker-flat proof; orders are not assumed filled")
-                    inhibitor.close()
+                    close_inhibitor(now)
                 elif now.time().replace(tzinfo=None) >= time_cls(8, 50) and (live_evidence or _is_trading_day(now)):
                     if live_evidence:
-                        inhibitor.ensure(runtime_dir, now)
+                        try:
+                            inhibitor.ensure(runtime_dir, now)
+                        except Exception as exc:
+                            # Sleep prevention is optional: failure must not
+                            # suppress mandatory liveness and force-flat work.
+                            inhibitor_warning(exc, now)
                     health = runtime_health(runtime_dir, now=now)
                     recovery_due = live_evidence and not flat_proved and not health.healthy
                     scheduled_due = (now.time().replace(tzinfo=None) >= TRIGGER_START and not flat_proved
@@ -379,7 +420,7 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0,
             sleep(max(0.25, interval_seconds))
         return 0
     finally:
-        inhibitor.close()
+        close_inhibitor(datetime.now(TAIPEI))
         notifier.close(timeout=0.25)
 
 

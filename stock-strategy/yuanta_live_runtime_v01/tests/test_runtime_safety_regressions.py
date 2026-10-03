@@ -203,6 +203,19 @@ class RuntimeHarness:
                     raise AssertionError("test must never submit a new entry")
                 return self.submit_rescue(intent, **kwargs)
 
+            def modify_price(self, identity, price, *, emergency=False, pre_send_guard=None):
+                order = self.store.get(identity)
+                if order.purpose != IntentPurpose.EXIT:
+                    raise AssertionError("mock price modification must reduce owned exposure")
+                if pre_send_guard is not None:
+                    pre_send_guard(order)
+                remaining = order.quantity - order.filled_quantity
+                if not 0 < remaining <= self.store.positions().get(order.symbol, 0):
+                    raise AssertionError("mock modified exit exceeds remaining owned exposure")
+                self.store.record_fill(identity, fill_id="modified-exit-fill",
+                                       quantity=remaining, price=str(price))
+                return self.store.get(identity)
+
             def submit_rescue(self, intent, **kwargs):
                 guard = kwargs.get("pre_send_guard")
                 if guard is not None:

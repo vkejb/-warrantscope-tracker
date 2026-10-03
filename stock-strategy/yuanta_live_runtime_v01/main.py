@@ -278,6 +278,10 @@ def _exit_pre_send_guard(
         raise RuntimeError("EXIT_CAPTURED_QUOTE_STALE_BEFORE_SEND")
     if engine.safe_exit_quote(position, now, max_age_seconds=max_age_seconds) is None:
         raise RuntimeError("EXIT_EXECUTABLE_QUOTE_UNAVAILABLE_BEFORE_SEND")
+    if hasattr(engine, "exit_price_is_valid") and not engine.exit_price_is_valid(
+        position.stock_id, intent.price, now,
+    ):
+        raise RuntimeError("EXIT_PRICE_OUTSIDE_BROKER_BOUNDS_OR_TICK_GRID")
 
 
 def _wait_for_quote_readiness(
@@ -798,7 +802,22 @@ class _Session:
                 with self._ingest_lock:
                     self.ingest_sequence += 1
                     sequence = self.ingest_sequence
-                    if stamp is None:
+                    if str(getattr(value, "SerialNo", "")).strip() == "-1":
+                        # Native SPARK clear records encode daily limits, not
+                        # executable bid/ask or a real trade. Never feed these
+                        # values to entry signals, PnL, or quote freshness.
+                        valid = False
+                        if hasattr(self.engine, "record_exit_price_limits"):
+                            valid = self.engine.record_exit_price_limits(
+                                symbol, at=stamp or now, received_at=now,
+                                lower_limit=getattr(value, "SellPrice", None),
+                                upper_limit=getattr(value, "BuyPrice", None),
+                            )
+                        outcome = SimpleNamespace(
+                            accepted=False,
+                            reason="BROKER_DAILY_PRICE_LIMITS" if valid else "BROKER_DAILY_PRICE_LIMITS_INVALID",
+                        )
+                    elif stamp is None:
                         outcome = SimpleNamespace(
                             accepted=False,
                             reason="ADAPTER_INVALID_EXCHANGE_TIME",
@@ -955,9 +974,14 @@ class _Session:
     def connect(self) -> None:
         last_reason = "login failed"
         attempts = len(LOGIN_RETRY_DELAYS) + 1
+        # Only initial startup installs this callback. Phase deadlines must not
+        # grant a stale RUNNING controller an unlimited reconnect grace period.
+        progress = getattr(self, "startup_progress", None)
         for attempt in range(1, attempts + 1):
             api = None
             try:
+                if progress is not None:
+                    progress(f"BROKER_OPEN_{attempt}", LOGIN_CONNECT_WAIT_SECONDS + 5)
                 self.login_event.clear()
                 self.login_ok = False
                 self.login_code = ""
@@ -969,6 +993,8 @@ class _Session:
                 api.OnResponse += self._on_response
                 api.Open(getattr(self.api_types["Environment"], self.environment))
                 time.sleep(LOGIN_CONNECT_WAIT_SECONDS)
+                if progress is not None:
+                    progress(f"BROKER_LOGIN_{attempt}", 25)
                 accepted = bool(
                     api.Login(
                         self.credentials["pfx"],
@@ -1001,6 +1027,8 @@ class _Session:
             if attempt < attempts:
                 delay = LOGIN_RETRY_DELAYS[attempt - 1]
                 self.logger("LOGIN_RETRY", attempt=attempt, delay_seconds=delay, reason=last_reason)
+                if progress is not None:
+                    progress(f"BROKER_RETRY_WAIT_{attempt}", delay + 5)
                 time.sleep(delay)
         raise RuntimeError(last_reason)
 
@@ -1751,6 +1779,23 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     startup_stage = "LOCAL_SETUP"
     archive_counter_baseline = _store_archive_counters(store)
 
+    def startup_progress(stage: str, budget_seconds: float = 30.0) -> None:
+        nonlocal startup_stage
+        startup_stage = stage
+        # Match the watchdog's bounded per-phase contract, not a blanket grace
+        # period that can conceal a hung controller or an expired startup.
+        deadline = datetime.now(TAIPEI) + timedelta(seconds=min(90.0, max(1.0, budget_seconds)))
+        beat(
+            "STARTING", environment=environment, submit_live=submit_live,
+            signal_date=seal["signal_date"], watchlist_count=len(items),
+            entry_start=SPEC["entry_start"], gate=gate.public_snapshot(),
+            startup_stage=stage, startup_deadline_at=deadline.isoformat(),
+            runtime_instance_id=runtime_instance_id,
+            trading_date=datetime.now(TAIPEI).date().isoformat(),
+            account_lock_path=str(session._execution_account_lock.name),
+            account_lock_instance=getattr(session._execution_account_lock, "instance_id", ""),
+        )
+
     # Acquire after local setup but before session.connect(), so a second
     # start/observe process is rejected before it can touch the broker.
     try:
@@ -1770,33 +1815,19 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
 
     try:
         _claim_account_lock(session, args, environment)
-        beat(
-            "STARTING",
-            environment=environment,
-            submit_live=submit_live,
-            signal_date=seal["signal_date"],
-            watchlist_count=len(items),
-            entry_start=SPEC["entry_start"],
-            gate=gate.public_snapshot(),
-            startup_stage="BROKER_CONNECT",
-            runtime_instance_id=runtime_instance_id,
-            trading_date=datetime.now(TAIPEI).date().isoformat(),
-            account_lock_path=str(session._execution_account_lock.name),
-            account_lock_instance=getattr(session._execution_account_lock, "instance_id", ""),
-        )
+        startup_progress("LOCAL_PREPARATION")
         archive_started_at = utc_now()
-        archive = None if recovery_only else AppendOnlyRun(
-            args.archive_runtime_dir.resolve(),
-            seal,
-            items,
-            provenance,
-            compress=True,
-            mode=(
-                "LIVE_TRADING_QUOTES"
-                if submit_live
-                else "OBSERVE_ONLY_QUOTES"
-            ),
-        )
+        if not recovery_only:
+            try:
+                archive = AppendOnlyRun(
+                    args.archive_runtime_dir.resolve(), seal, items, provenance,
+                    compress=True,
+                    mode="LIVE_TRADING_QUOTES" if submit_live else "OBSERVE_ONLY_QUOTES",
+                )
+            except Exception as exc:
+                # Quote archiving is an observer, not an ownership ledger.
+                # Preserve the broker/account gates and continue EXIT-only.
+                observer_failure("RUNTIME_ARCHIVE_INITIALIZATION_FAILED", exc)
         session.archive = archive
         session.archive_signal_date = str(
             seal["signal_date"]
@@ -1828,9 +1859,13 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 run_dir=str(archive.run_dir),
             )
 
-        startup_stage = "BROKER_CONNECT"
-        session.connect()
-        startup_stage = "BROKER_CONNECTED"
+        startup_progress("BROKER_CONNECT")
+        session.startup_progress = startup_progress
+        try:
+            session.connect()
+        finally:
+            session.startup_progress = None
+        startup_progress("BROKER_CONNECTED", 15)
         assert session.api is not None
         baseline_current = _baseline_is_current(
             baseline_path,
@@ -1855,9 +1890,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             live_gate=gate,
             position_baseline=baseline,
         )
-        startup_stage = "BROKER_RECONCILIATION"
+        startup_progress("BROKER_RECONCILIATION", args.reconcile_timeout + 5)
         reconciliation = adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
-        startup_stage = "BROKER_RECONCILED"
+        startup_progress("BROKER_RECONCILED", 15)
         log("RECONCILIATION_PASSED", result=asdict(reconciliation), gate=gate.public_snapshot())
         recovery_authorized = submit_live and (
             (args.recover_emergency and kill_path.exists())
@@ -1866,7 +1901,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         if store.control_state()["halted"] and not (recovery_authorized or operational_exit_only):
             failure_code = "BROKER_EXECUTION_HALTED"
             raise RuntimeError(f"broker execution store is halted: {store.control_state().get('reason')}")
-        startup_stage = "LOCAL_STATE_RECOVERY"
+        startup_progress("LOCAL_STATE_RECOVERY", 15)
         recovered = _recover_runtime_state(store, metadata, datetime.now(TAIPEI), exit_only=recovery_only or operational_exit_only)
         if store.control_state()["halted"]:
             operational_exit_only = True
@@ -1875,6 +1910,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         entry_submitted_at = recovered["entry_submitted_at"]
         position = recovered["position"]
         exit_order_id = recovered["exit_order_id"]
+        if exit_order_id is not None:
+            last_exit_reprice = datetime.now(TAIPEI) - timedelta(seconds=args.exit_reprice_seconds)
         trade_attempted = recovered["trade_attempted"]
         pending_exit_reason = recovered["pending_exit_reason"]
         quote_items = _recovery_quote_items(runtime_dir, store, quote_items)
@@ -1882,9 +1919,12 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             engine.add_monitor_symbol(str(item.stock_id), str(item.stock_name))
         if not recovery_only:
             metadata_path = runtime_dir / "quote_market_metadata.json"
-            metadata_path.write_text(json.dumps({str(item.stock_id): {
-                "stock_name": str(item.stock_name), "market": str(item.market),
-            } for item in quote_items}, sort_keys=True) + "\n", encoding="utf-8")
+            try:
+                metadata_path.write_text(json.dumps({str(item.stock_id): {
+                    "stock_name": str(item.stock_name), "market": str(item.market),
+                } for item in quote_items}, sort_keys=True) + "\n", encoding="utf-8")
+            except Exception as exc:
+                observer_failure("RUNTIME_QUOTE_METADATA_WRITE_FAILED", exc)
         if position is not None and not any(str(item.stock_id) == position.stock_id for item in quote_items):
             notifier.critical("RECOVERED_POSITION_MARKET_METADATA_MISSING",
                               "Owned exposure lacks quote market metadata; entry is disabled, quote-independent forced-flat recovery remains available",
@@ -1898,7 +1938,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 "trade_attempted": trade_attempted,
                 "pending_exit_reason": pending_exit_reason,
             })
-        startup_stage = "QUOTE_SUBSCRIPTION"
+        startup_progress("QUOTE_SUBSCRIPTION")
         try:
             session.subscribe(quote_items)
         except Exception:
@@ -1907,7 +1947,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             operational_exit_only = True
             notifier.critical("EXIT_ONLY_QUOTE_SUBSCRIPTION_FAILED",
                               "Quote subscription failed during owned-exposure recovery; broker reconciliation and scheduled market fallback remain active")
-        if not recovery_only and position is None and entry_order_id is None:
+        if not operational_exit_only and position is None and entry_order_id is None:
+            startup_progress("QUOTE_READINESS", getattr(args, "quote_readiness_timeout", 20.0) + 5)
             _wait_for_quote_readiness(
                 engine, quote_items,
                 timeout_seconds=getattr(args, "quote_readiness_timeout", 20.0),
@@ -1952,6 +1993,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         while True:
             try:
                 now = datetime.now(TAIPEI)
+                if store.control_state()["halted"] and not operational_exit_only:
+                    # A native callback can HALT between iterations (including
+                    # immediately after a full fill). Reuse the broker-backed
+                    # recovery path even when the entry is already terminal.
+                    raise RuntimeError("ASYNC_BROKER_HALTED:" + str(store.control_state().get("reason", "")))
                 emergency = kill_path.exists() or stop_event.is_set()
                 graceful_stop = stop_path.exists()
                 scheduled_force_flat = force_flat_path.exists()
@@ -2814,8 +2860,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         and exit_order.price_type == PriceType.LIMIT
                         and exit_order.status in {BrokerOrderStatus.ACKNOWLEDGED, BrokerOrderStatus.PARTIALLY_FILLED}
                         and exit_order.broker_order_no
-                        and last_exit_reprice is not None
-                        and (now - last_exit_reprice).total_seconds() >= args.exit_reprice_seconds
+                        and (last_exit_reprice is None or (now - last_exit_reprice).total_seconds() >= args.exit_reprice_seconds)
                         and store.pending_mutation(exit_order_id) is None
                     ):
                         safe_quote = (
@@ -2916,7 +2961,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 recovery_error_count += 1
                 pending_exit_reason = pending_exit_reason or "RUNTIME_OPERATIONAL_RECOVERY"
                 try:
-                    store.halt("RUNTIME_OPERATIONAL_RECOVERY:" + type(exc).__name__)
+                    if not store.control_state()["halted"]:
+                        store.halt("RUNTIME_OPERATIONAL_RECOVERY:" + type(exc).__name__)
                 except Exception:
                     pass
                 try:
@@ -2964,6 +3010,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     entry_submitted_at = recovered["entry_submitted_at"]
                     position = recovered["position"]
                     exit_order_id = recovered["exit_order_id"]
+                    if exit_order_id is not None and last_exit_reprice is None:
+                        last_exit_reprice = datetime.now(TAIPEI) - timedelta(seconds=args.exit_reprice_seconds)
                     trade_attempted = trade_attempted or recovered["trade_attempted"]
                     pending_exit_reason = recovered["pending_exit_reason"] or pending_exit_reason
                     entry_cancel_requested = (
@@ -2990,9 +3038,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     except Exception as exc:
         archive_error_type = type(exc).__name__
         if not failure_code:
-            if startup_stage == "QUOTE_SUBSCRIPTION":
+            if startup_stage in {"QUOTE_SUBSCRIPTION", "QUOTE_READINESS"}:
                 failure_code = "QUOTE_SUBSCRIPTION_FAILED"
-            elif startup_stage in {"BROKER_CONNECT", "BROKER_CONNECTED"}:
+            elif startup_stage in {"BROKER_CONNECT", "BROKER_CONNECTED"} or startup_stage.startswith(("BROKER_OPEN_", "BROKER_LOGIN_", "BROKER_RETRY_WAIT_")):
                 failure_code = "BROKER_CONNECTION_FAILED"
             elif startup_stage in {"BROKER_RECONCILIATION", "BROKER_RECONCILED"}:
                 failure_code = "BROKER_RECONCILIATION_FAILED"

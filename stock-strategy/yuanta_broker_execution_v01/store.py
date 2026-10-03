@@ -500,6 +500,27 @@ class LiveOrderStore:
             ).fetchone()
         return None if row is None else self.get_request(int(row["identify"]))
 
+    def mark_request_result_uncertain(self, identify: int, reason: str) -> None:
+        """Keep the mutation barrier when an API result cannot identify it.
+
+        The flag lives in the existing durable payload, so restarting cannot
+        turn unresolved result ownership into a successful reconciliation.
+        """
+        with self._lock, self.connection:
+            request = self.get_request(identify)
+            if request is None or request["request_status"] not in {"SEND_PENDING", "ACCEPTED"}:
+                return
+            payload = dict(request["payload"])
+            if payload.get("result_identity_uncertain"):
+                return
+            payload["result_identity_uncertain"] = True
+            self.connection.execute(
+                "UPDATE broker_requests SET payload=?,updated_at=? WHERE identify=?",
+                (json.dumps(payload, sort_keys=True, default=str), utc_now(), int(identify)),
+            )
+            self._event("BROKER_MUTATION_RESULT_UNCERTAIN", request["client_order_id"],
+                        {"identify": int(identify), "operation": request["operation"], "reason": reason})
+
     def pending_mutation(self, client_order_id: str) -> dict[str, Any] | None:
         """Return an unresolved cancel/modify request for this broker order."""
         with self._lock:

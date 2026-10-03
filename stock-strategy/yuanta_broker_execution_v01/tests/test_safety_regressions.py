@@ -394,6 +394,9 @@ class BrokerSafetyRegressions(unittest.TestCase):
         order = self.store.get(order.client_order_id)
         previous = self.normalized(order, order_status=20, price="101", order_qty=1000)
         self.adapter._apply_real_report(previous)
+        self.assertIsNotNone(self.store.pending_mutation(order.client_order_id))
+        self.api.merge_rows = [self.remote(order, Price="101", LastOrderStatus=20)]
+        self.adapter.reconcile(timeout=1)
         self.assertIsNone(self.store.pending_mutation(order.client_order_id))
         self.adapter.modify_price(order.client_order_id, "102")
         self.adapter._apply_real_report(previous)

@@ -323,6 +323,18 @@ class BrokerSafetyRegressionTests(unittest.TestCase):
                 price="101",
             )
         )
+        self.assertIsNotNone(self.store.pending_mutation(order.client_order_id))
+
+        def query_current_price(_account, _language):
+            self.api.OnResponse.emit(1, 0, "GetRealReportMerge", None, _Object(
+                RealReportMergeList=[_Object(Account=SYNTHETIC_ACCOUNT, RptType=1,
+                    OrderNo=order.broker_order_no, CompanyNo=order.symbol, BS="B",
+                    OrderQty=order.quantity, OkQty=0, Price="101", BasketNo=order.basket_no,
+                    OrderStatus=20, LastOrderStatus=20)]))
+            return True
+
+        with patch.object(self.api, "GetRealReportMerge", side_effect=query_current_price):
+            self.adapter.reconcile(timeout=1)
         self.assertIsNone(self.store.pending_mutation(order.client_order_id))
         current = self.adapter.cancel(order.client_order_id, "AUDIT force flat", emergency=True)
         self.assertEqual(current.status, BrokerOrderStatus.CANCEL_PENDING)

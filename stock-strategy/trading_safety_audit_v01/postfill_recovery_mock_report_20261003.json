@@ -1,0 +1,86 @@
+{
+  "report_date": "2026-10-03",
+  "scope": "MOCK_ONLY_NOT_LIVE_CERTIFICATION",
+  "base_commit": "8189010768c3a007ef3d99c9f8d6e4e4e76bcdac",
+  "summary_zh_tw": "修復成交後恢復、出場改價、非必要觀測故障、啟動健康判斷與報價價格驗證。無法唯一辨識的券商 mutation 回報保留阻擋及告警，不猜測成交或撤單成功。",
+  "changes": [
+    "Restored acknowledged/partial limit exits resume repricing without bypassing pending mutations.",
+    "Archive initialization and quote metadata write failures disable entries but preserve broker-backed owned-position recovery.",
+    "Asynchronous callback HALT enters operational EXIT-only recovery after reconciliation and preserves the original HALT reason.",
+    "Optional sleep-inhibitor startup/cleanup failures cannot skip mandatory safety supervision or notifier cleanup; warnings are visible in supervisor heartbeat.",
+    "STARTING uses bounded per-phase deadlines with proven PID/local/account locks; stale RUNNING behavior is unchanged.",
+    "An alive restarted supervisor has bounded grace to replace a previous PID heartbeat.",
+    "Native SerialNo=-1 records supply official price limits only; they do not feed trade signals, executable quotes or quote freshness.",
+    "Known daily limits and tick grids bound numeric EXIT prices. Missing official bounds use actual fresh executable bid/ask without an outward tick or guessed percentage band.",
+    "Final limit-price guards reject illegal daily-bound or tick-grid prices before submission.",
+    "Reused NEW Identify cannot misattribute a cancel/modify reply to completed NEW. Uncertainty is durable and strict reconciliation reports unresolved_broker_mutation.",
+    "Only exact current request results or authoritative terminal/target state resolve mutations; absence of old failures is not attribution proof.",
+    "Unversioned live/history price reports cannot resolve A-to-B-to-A modifications. A fully drained fresh aggregate query with the request watermark is required.",
+    "Synthetic quote fixtures use legal exchange price ticks; strategy thresholds and historical research results were not retuned."
+  ],
+  "unchanged": [
+    "stock selection, entry signals, entry timing, position sizing and strategy exit thresholds",
+    "initial stop-loss and MFE profit-protection policies",
+    "13:20 primary force-flat, 13:23 fallback and closing-auction routing times",
+    "LIVE safety gates and persisted environment switches",
+    "credentials, Keychain, runtime ledger, reviewed position baseline and LaunchAgent",
+    "existing unrelated prospective data changes and untracked user files"
+  ],
+  "validation": {
+    "baseline_python_3_12_full_guard": {
+      "tests_run": 1076, "passed": 1075, "skipped": 1,
+      "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0
+    },
+    "final_python_3_12_full_guard": {
+      "tests_run": 1132, "passed": 1131, "skipped": 1,
+      "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0
+    },
+    "installed_python_3_10_runtime_guard": {
+      "tests_run": 338, "passed": 338, "skipped": 0,
+      "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0
+    },
+    "installed_python_3_10_broker_guard": {
+      "tests_run": 150, "passed": 149, "skipped": 1,
+      "failures": 0, "errors": 0, "forbidden_boundary_attempts": 0
+    },
+    "node_full_suite": {"tests_run": 75, "passed": 75, "failed": 0},
+    "new_repository_regressions": 56,
+    "optional_skip_reason": "Real vendor SDK contract test is not executed by the mock-only guard.",
+    "independent_review": "Seven additional isolated broker race/ownership probes passed; no broker, credentials or real runtime was used."
+  },
+  "reproduction": {
+    "working_directory": "stock-strategy",
+    "python_full": "python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir .",
+    "python_runtime": "python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir yuanta_live_runtime_v01/tests",
+    "python_broker": "python3 -B -m trading_safety_audit_v01.run_mock_tests --start-dir yuanta_broker_execution_v01/tests",
+    "node_from_repo_root": "node --test"
+  },
+  "limitations": [
+    "No UAT/PROD broker session, vendor assembly contract run, order or fill was performed. Mock success is not real-order certification.",
+    "The legacy broker API may not uniquely identify reused/late mutation results. Unattributable failures remain blocked and require authoritative evidence or reviewed intervention; automatic flattening is not guaranteed in that condition.",
+    "Core order-ledger failure, broker uncertainty, unavailable executable liquidity and unsupported odd/mixed-lot fallback remain fail-closed.",
+    "No existing HALT was cleared, no baseline was rebuilt, and no incident inventory was assumed flat.",
+    "No installed service was restarted and LIVE was not activated. A future runtime start still requires all existing preflight and account reconciliation gates."
+  ],
+  "files_changed": [
+    "stock-strategy/paper_shadow_v01/tests/test_runner.py",
+    "stock-strategy/trading_safety_audit_v01/tests/test_broker_failure_evidence.py",
+    "stock-strategy/trading_safety_audit_v01/postfill_recovery_mock_report_20261003.json",
+    "stock-strategy/yuanta_broker_execution_v01/adapter.py",
+    "stock-strategy/yuanta_broker_execution_v01/store.py",
+    "stock-strategy/yuanta_broker_execution_v01/tests/test_adapter.py",
+    "stock-strategy/yuanta_broker_execution_v01/tests/test_safety_regressions.py",
+    "stock-strategy/yuanta_broker_execution_v01/tests/test_mutation_result_identity.py",
+    "stock-strategy/yuanta_live_runtime_v01/force_flat_supervisor.py",
+    "stock-strategy/yuanta_live_runtime_v01/main.py",
+    "stock-strategy/yuanta_live_runtime_v01/strategy.py",
+    "stock-strategy/yuanta_live_runtime_v01/trading_bot_service.py",
+    "stock-strategy/yuanta_live_runtime_v01/watchdog.py",
+    "stock-strategy/yuanta_live_runtime_v01/tests/test_reliability.py",
+    "stock-strategy/yuanta_live_runtime_v01/tests/test_runtime_safety_regressions.py",
+    "stock-strategy/yuanta_live_runtime_v01/tests/test_strategy.py",
+    "stock-strategy/yuanta_live_runtime_v01/tests/test_exit_price_bounds.py",
+    "stock-strategy/yuanta_live_runtime_v01/tests/test_postfill_recovery_regressions.py",
+    "stock-strategy/yuanta_live_runtime_v01/tests/test_supervisor_startup_recovery.py"
+  ]
+}

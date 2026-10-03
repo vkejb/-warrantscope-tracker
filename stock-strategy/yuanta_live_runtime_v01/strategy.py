@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
+from decimal import Decimal, InvalidOperation
 from functools import wraps
 import math
 import threading
@@ -152,6 +153,14 @@ class SafeExitQuote:
 
 
 @dataclass(frozen=True, slots=True)
+class _ExitPriceLimits:
+    at: datetime
+    lower: Decimal | None
+    upper: Decimal | None
+    tick_size: Decimal | None
+
+
+@dataclass(frozen=True, slots=True)
 class IngestOutcome:
     """The engine's actual result for one normalized market-data event."""
 
@@ -217,6 +226,7 @@ class LiveDirectionEngine:
         # side even when a trade callback is invalid for entry calculations.
         self._exit_quotes: dict[str, dict[str, tuple[float, datetime]]] = {}
         self._exit_callback_symbols: set[str] = set()
+        self._exit_price_limits: dict[str, _ExitPriceLimits] = {}
 
     @_locked
     def add_monitor_symbol(self, symbol: str, name: str) -> None:
@@ -226,6 +236,75 @@ class LiveDirectionEngine:
     @_locked
     def reset_exit_quotes(self) -> None:
         self._exit_quotes.clear()
+
+    @staticmethod
+    def _grid_price(value: object, tick_size: Decimal | None = None) -> Decimal | None:
+        """Validate a stock price without introducing binary-float tick errors."""
+        try:
+            price = Decimal(str(value))
+            if not price.is_finite() or not 0 < price < 99999:
+                return None
+            step = tick_size or Decimal(str(_tick_size(float(price))))
+            if not step.is_finite() or step <= 0:
+                return None
+            nearest = (price / step).to_integral_value() * step
+            if abs(nearest - price) > Decimal("0.00000001"):
+                return None
+            return nearest
+        except (InvalidOperation, ValueError, TypeError, OverflowError):
+            return None
+
+    @_locked
+    def record_exit_price_limits(
+        self, symbol: str, *, at: datetime, received_at: datetime,
+        lower_limit: object, upper_limit: object, tick_size: object = None,
+    ) -> bool:
+        """Retain only reported daily limits; never infer a percentage band.
+
+        SPARK's SerialNo=-1 clearing tick reports upper/lower prices, not an
+        executable bid/ask. GetWatchListAll reports UpStopPrice/DownStopPrice.
+        A caller can supply an explicit instrument-specific tick size; otherwise
+        this stock runtime uses its existing stock tick bands.
+        """
+        symbol = str(symbol)
+        if symbol not in self._states:
+            return False
+        stamp, received = at.astimezone(TAIPEI), received_at.astimezone(TAIPEI)
+        if stamp.date() != received.date() or (received - stamp).total_seconds() < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS:
+            return False
+        previous = self._exit_price_limits.get(symbol)
+        if previous is not None and stamp < previous.at:
+            return False
+        try:
+            step = None if tick_size is None else Decimal(str(tick_size))
+            if step is not None and (not step.is_finite() or step <= 0):
+                raise ValueError("invalid instrument tick size")
+        except (InvalidOperation, ValueError, TypeError):
+            self._exit_price_limits[symbol] = _ExitPriceLimits(stamp, None, None, None)
+            return False
+        lower, upper = self._grid_price(lower_limit, step), self._grid_price(upper_limit, step)
+        valid = lower is not None and upper is not None and lower <= upper
+        self._exit_price_limits[symbol] = _ExitPriceLimits(
+            stamp, lower if valid else None, upper if valid else None, step,
+        )
+        return valid
+
+    def _price_limits_for(self, symbol: str, now: datetime) -> _ExitPriceLimits | None:
+        limits = self._exit_price_limits.get(str(symbol))
+        return limits if limits is not None and limits.at.date() == now.astimezone(TAIPEI).date() else None
+
+    @_locked
+    def exit_price_is_valid(self, symbol: str, price: object, now: datetime) -> bool:
+        """Validate a final limit price against the available same-day context."""
+        if str(symbol) not in self._states:
+            return False
+        limits = self._price_limits_for(str(symbol), now)
+        value = self._grid_price(price, None if limits is None else limits.tick_size)
+        if value is None:
+            return False
+        if limits is None:
+            return True
+        return limits.lower is not None and limits.upper is not None and limits.lower <= value <= limits.upper
 
     @_locked
     def entry_data_ready(self, symbol: str, now: datetime, *, max_age_seconds: float) -> bool:
@@ -1029,7 +1108,7 @@ class LiveDirectionEngine:
     ) -> SafeExitQuote | None:
         """Return a fresh, bounded executable quote or fail closed."""
         state = self._states.get(position.stock_id)
-        if state is None:
+        if state is None or position.side not in {"LONG", "SHORT"}:
             return None
         quotes = dict(self._exit_quotes.get(position.stock_id, {}))
         if state.ticks:
@@ -1053,26 +1132,39 @@ class LiveDirectionEngine:
         age = (now.astimezone(TAIPEI) - stamp).total_seconds()
         if age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS or age > max_age_seconds or not math.isfinite(executable) or not 0 < executable < 99999:
             return None
+        limits = self._price_limits_for(position.stock_id, now)
+        step = None if limits is None else limits.tick_size
+        executable_price = self._grid_price(executable, step)
+        if executable_price is None or not self.exit_price_is_valid(position.stock_id, executable_price, now):
+            return None
         fresh = {
             side: value for side, (value, quote_time) in quotes.items()
             if 0 < value < 99999 and -MAXIMUM_FUTURE_TICK_SKEW_SECONDS
             <= (now.astimezone(TAIPEI) - quote_time).total_seconds() <= max_age_seconds
         }
         bid, ask = fresh.get("bid", 0.0), fresh.get("ask", 0.0)
+        if any(not self.exit_price_is_valid(position.stock_id, price, now) for price in (bid, ask) if price):
+            return None
         if bid and ask:
             midpoint = (bid + ask) / 2
             if ask < bid or (ask - bid) / midpoint * 10_000 > max_spread_bps:
                 return None
         age = max(0.0, age)
-        raw = (
-            max(_tick_size(bid), bid - _tick_size(bid))
-            if position.side == "LONG"
-            else ask + _tick_size(ask)
-        )
-        price = raw
-        if price <= 0:
+        # A reported executable side is already a usable limit price. Without
+        # official daily limits, shifting beyond it can cross a daily boundary.
+        price = executable_price
+        if limits is not None:
+            if limits.lower is None or limits.upper is None:
+                return None
+            adjacent_step = step or Decimal(str(_tick_size(
+                math.nextafter(float(executable_price), -math.inf)
+                if position.side == "LONG" else float(executable_price)
+            )))
+            shifted = executable_price - adjacent_step if position.side == "LONG" else executable_price + adjacent_step
+            price = max(limits.lower, min(limits.upper, shifted))
+        if not self.exit_price_is_valid(position.stock_id, price, now):
             return None
-        return SafeExitQuote(price, stamp, age, bid, ask)
+        return SafeExitQuote(float(price), stamp, age, bid, ask)
 
     def evaluate_exit(
         self,

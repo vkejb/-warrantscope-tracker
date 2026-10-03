@@ -649,8 +649,8 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(modified.OrderNo, "f0004")
         self.assertEqual(modified.Price, 172.0)
 
-        # A second mutation is blocked until the first one reaches a terminal
-        # broker report, preventing cancel/replace races.
+        # A second mutation stays blocked until a fresh aggregate query proves
+        # the price target; an unversioned live report can be a stale replay.
         with self.assertRaises(Exception):
             self.adapter.reduce_quantity(stored.client_order_id, 200)
         modify_report = Obj(
@@ -661,6 +661,12 @@ class AdapterTests(unittest.TestCase):
         )
         self.api.OnResponse.emit(2, 2, "RR_RealReport", None, modify_report)
         self.drain()
+        self.assertIsNotNone(self.store.pending_mutation(stored.client_order_id))
+        self.api.merge_rows = [{"Account": "S12341234567", "RptType": 1,
+            "OrderNo": "f0004", "CompanyNo": "3605", "BS": "B", "Price": 172.0,
+            "OrderQty": 1000, "OkQty": 0, "OrderStatus": 20, "LastOrderStatus": 20,
+            "BasketNo": stored.basket_no}]
+        self.adapter.reconcile(timeout=1)
 
         self.adapter.reduce_quantity(stored.client_order_id, 200)
         reduced = self.api.sent[-1][1][0]

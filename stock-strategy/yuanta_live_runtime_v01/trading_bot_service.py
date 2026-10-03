@@ -32,6 +32,8 @@ CONTROL_CONFIRM_TTL_SECONDS = 120
 CONTROL_CONFIRM_MAX_ATTEMPTS = 3
 CONTROL_AUDIT_FILENAME = "trading_bot_audit.jsonl"
 START_CONFIRM_TIMEOUT_SECONDS = 20.0
+SUPERVISOR_STARTUP_GRACE_SECONDS = 15.0
+SUPERVISOR_HEARTBEAT_STALE_SECONDS = 45.0
 
 
 def _read_json(path: Path) -> dict[str, Any] | None:
@@ -1262,12 +1264,18 @@ def _supervisor_thread(runtime_dir: Path, stop_event: threading.Event) -> thread
 def _supervisor_thread_healthy(thread: threading.Thread, runtime_dir: Path, started_at: float) -> bool:
     if not thread.is_alive():
         return False
+    elapsed = time.monotonic() - started_at
+    startup_grace = 0 <= elapsed <= SUPERVISOR_STARTUP_GRACE_SECONDS
     payload = _read_json(Path(runtime_dir) / "supervisor_heartbeat.json")
     if payload is None:
-        return time.monotonic() - started_at <= 15
-    age = _age_seconds(payload.get("at"))
+        return startup_grace
     try:
-        return age is not None and 0 <= age <= 45 and int(payload.get("pid", 0)) == os.getpid()
+        if int(payload.get("pid", 0)) != os.getpid():
+            # Ordinary service restarts retain the old heartbeat. Give the
+            # newly alive thread a bounded chance to publish its own identity.
+            return startup_grace
+        age = _age_seconds(payload.get("at"))
+        return age is not None and 0 <= age <= SUPERVISOR_HEARTBEAT_STALE_SECONDS
     except (ValueError, TypeError, OverflowError):
         return False
 
