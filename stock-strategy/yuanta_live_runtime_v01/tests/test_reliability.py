@@ -11,8 +11,10 @@ from yuanta_broker_execution_v01 import (
 )
 from yuanta_live_runtime_v01.accounting import AccountingError, execution_pnl
 from yuanta_live_runtime_v01.main import (
-    _checkpoint_position, _confirm_strategy_flat, _exchange_tick_time,
-    _realized_pnl_today, _recover_runtime_state, _Session,
+    _checkpoint_position, _confirm_owned_exposure_clear_for_stop,
+    _confirm_strategy_flat, _exchange_tick_time,
+    _inventory_is_baseline_reduction_only, _realized_pnl_today,
+    _recover_runtime_state, _recovery_notification_due, _Session,
 )
 from yuanta_live_runtime_v01.risk_manager import RiskLimits, RiskManager
 from yuanta_live_runtime_v01.strategy import LiveDirectionEngine, ManagedPosition, SPEC, TAIPEI
@@ -240,6 +242,105 @@ class FlatConfirmationTests(StoreCase):
         with self.assertRaises(TimeoutError):
             _confirm_strategy_flat(adapter, self.store, 1)
         adapter.inspect_broker_state.assert_not_called()
+
+
+class ShutdownOwnedExposureProofTests(StoreCase):
+    def adapter(self, *, baseline, positions, open_orders=None):
+        adapter = Mock()
+        adapter.position_baseline = dict(baseline)
+        adapter.inspect_broker_state.return_value = SimpleNamespace(
+            positions=dict(positions),
+            open_orders=[] if open_orders is None else list(open_orders),
+        )
+        return adapter
+
+    def test_manual_reduction_of_preexisting_inventory_can_confirm_stop(self):
+        baseline = {"0050|0": 1030, "078302|0": 16000}
+        adapter = self.adapter(baseline=baseline, positions={"0050|0": 1030})
+
+        mode = _confirm_owned_exposure_clear_for_stop(adapter, self.store, 1)
+
+        self.assertEqual(mode, "BASELINE_REDUCTION_ONLY")
+        adapter.inspect_broker_state.assert_called_once_with(timeout=1)
+        adapter.reconcile.assert_not_called()
+        self.assertFalse(self.store.control_state()["halted"])
+
+    def test_exact_baseline_can_confirm_stop(self):
+        baseline = {"0050|0": 1030}
+        adapter = self.adapter(baseline=baseline, positions=baseline)
+        self.assertEqual(
+            _confirm_owned_exposure_clear_for_stop(adapter, self.store, 1),
+            "BASELINE_MATCH",
+        )
+
+    def test_new_or_increased_broker_inventory_cannot_confirm_stop(self):
+        for positions in (
+            {"0050|0": 1031},
+            {"0050|0": 1030, "NEW|0": 1},
+            {"0050|0": -1},
+        ):
+            with self.subTest(positions=positions):
+                store = LiveOrderStore(Path(self.directory.name) / f"unsafe-{len(positions)}-{abs(sum(positions.values()))}.sqlite")
+                try:
+                    adapter = self.adapter(baseline={"0050|0": 1030}, positions=positions)
+                    with self.assertRaisesRegex(RuntimeError, "reduction-only"):
+                        _confirm_owned_exposure_clear_for_stop(adapter, store, 1)
+                    self.assertTrue(store.control_state()["halted"])
+                finally:
+                    store.close()
+
+    def test_broker_order_or_local_position_cannot_confirm_stop(self):
+        adapter = self.adapter(
+            baseline={"0050|0": 1030},
+            positions={"0050|0": 1030},
+            open_orders=[{"order_no": "external"}],
+        )
+        with self.assertRaisesRegex(RuntimeError, "exposure or unresolved order"):
+            _confirm_owned_exposure_clear_for_stop(adapter, self.store, 1)
+
+        other_store = LiveOrderStore(Path(self.directory.name) / "owned.sqlite")
+        try:
+            order, _ = other_store.reserve(ExecutionIntent(
+                "owned", "TEST", Side.BUY, 1000, Decimal("100"),
+            ))
+            other_store.bind_broker_order(order.client_order_id, "BROKER")
+            other_store.acknowledge(order.client_order_id)
+            other_store.record_fill(
+                order.client_order_id,
+                fill_id="owned-fill",
+                quantity=1000,
+                price="100",
+            )
+            adapter = self.adapter(baseline={}, positions={"TEST|0": 1000})
+            with self.assertRaisesRegex(RuntimeError, "exposure or unresolved order"):
+                _confirm_owned_exposure_clear_for_stop(adapter, other_store, 1)
+        finally:
+            other_store.close()
+
+    def test_reduction_only_inventory_predicate_supports_long_and_short(self):
+        self.assertTrue(_inventory_is_baseline_reduction_only(
+            {"LONG|0": 1000, "SHORT|4": -1000},
+            {"LONG|0": 500, "SHORT|4": -500},
+        ))
+        self.assertFalse(_inventory_is_baseline_reduction_only(
+            {"SHORT|4": -1000}, {"SHORT|4": -1500},
+        ))
+
+
+class RecoveryNotificationThrottleTests(TestCase):
+    def test_first_changed_and_elapsed_failures_notify(self):
+        self.assertTrue(_recovery_notification_due(
+            signature="A", previous_signature=None, previous_at=None, now=10,
+        ))
+        self.assertFalse(_recovery_notification_due(
+            signature="A", previous_signature="A", previous_at=10, now=309,
+        ))
+        self.assertTrue(_recovery_notification_due(
+            signature="A", previous_signature="A", previous_at=10, now=310,
+        ))
+        self.assertTrue(_recovery_notification_due(
+            signature="B", previous_signature="A", previous_at=10, now=11,
+        ))
 
 
 class QuoteIntegrityTests(TestCase):

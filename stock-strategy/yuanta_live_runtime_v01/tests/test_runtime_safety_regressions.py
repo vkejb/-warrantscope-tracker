@@ -30,7 +30,8 @@ class RuntimeHarness:
                  held_quote_outage=False, notification_init_failure=False,
                  subscription_failure=False, observer_failure=None,
                  notification_critical_failure=False, corrupt_checkpoint=False,
-                 broker_mismatch=False):
+                 broker_mismatch=False, no_owned_position=False,
+                 external_baseline_reduction=False, stop_after_subscribe=False):
         self.directory = Path(directory)
         self.current = RealDateTime.now(TAIPEI).replace(hour=13, minute=minute, second=0, microsecond=0)
         self.partial, self.late_fill = partial, late_fill
@@ -44,6 +45,10 @@ class RuntimeHarness:
         self.notification_critical_failure = notification_critical_failure
         self.corrupt_checkpoint = corrupt_checkpoint
         self.broker_mismatch = broker_mismatch
+        self.no_owned_position = no_owned_position
+        self.external_baseline_reduction = external_baseline_reduction
+        self.stop_after_subscribe = stop_after_subscribe
+        self.external_reduction_active = False
         self.initial_feed_completed = False
         self.events, self.criticals, self.adapters = [], [], []
         self.cancel_calls = 0
@@ -52,7 +57,10 @@ class RuntimeHarness:
         self.session = None
         self.runtime_closed_with_exposure = False
         self.baseline = self.directory / "position_baseline.json"
-        runtime_main._write_baseline(self.baseline, {})
+        runtime_main._write_baseline(
+            self.baseline,
+            {"078302|0": 16000} if external_baseline_reduction else {},
+        )
         runtime_main._write_baseline_metadata(self.baseline, account="MOCK_SAFETY_ACCOUNT",
                                               captured_at=self.current.isoformat())
         self.entry_quantity = 2000 if partial or late_fill else 1000
@@ -60,6 +68,8 @@ class RuntimeHarness:
     def prepare(self):
         store = LiveOrderStore(self.directory / "live-orders.sqlite")
         try:
+            if self.no_owned_position:
+                return
             # Recovery must use a past entry timestamp, not the wall clock of
             # the machine running this deterministic market-clock fixture.
             with patch("yuanta_broker_execution_v01.store.utc_now",
@@ -146,6 +156,13 @@ class RuntimeHarness:
                     raise ConnectionError("mock quote subscription unavailable")
                 if harness.quotes:
                     self.feed()
+                if harness.external_baseline_reduction:
+                    harness.external_reduction_active = True
+                if harness.stop_after_subscribe:
+                    (harness.directory / "STOP_REQUEST").write_text(
+                        "mock human stop\n",
+                        encoding="utf-8",
+                    )
 
             def archive_decision_evidence(self, *args, **kwargs):
                 if harness.observer_failure == "archive":
@@ -176,11 +193,36 @@ class RuntimeHarness:
                 if harness.lost_cancel and self.reconcile_calls >= 2:
                     self.store.finalize_latest_request(harness.old_exit_id, "CANCEL", success=True)
                     self.store.canceled(harness.old_exit_id)
-                positions = self.store.position_buckets()
+                positions = (
+                    {}
+                    if harness.external_baseline_reduction and harness.external_reduction_active
+                    else (
+                        dict(self.position_baseline)
+                        if harness.external_baseline_reduction
+                        else self.store.position_buckets()
+                    )
+                )
+                expected = dict(self.position_baseline)
+                for key, quantity in self.store.position_buckets().items():
+                    expected[key] = expected.get(key, 0) + quantity
+                    if expected[key] == 0:
+                        expected.pop(key)
+                if kwargs.get("strict_positions", True) and positions != expected:
+                    self.store.halt("RECONCILIATION_MISMATCH")
+                    raise RuntimeError("mock baseline reduction mismatch")
                 return ReconciliationResult("MATCH", positions, {}, positions, positions, [])
 
             def inspect_broker_state(self, **kwargs):
-                return SimpleNamespace(positions=self.store.position_buckets(),
+                positions = (
+                    {}
+                    if harness.external_baseline_reduction and harness.external_reduction_active
+                    else (
+                        dict(self.position_baseline)
+                        if harness.external_baseline_reduction
+                        else self.store.position_buckets()
+                    )
+                )
+                return SimpleNamespace(positions=positions,
                                        open_orders=self.store.orders(open_only=True))
 
             def cancel(self, identity, reason, *, emergency=False):
@@ -322,6 +364,21 @@ class FullRuntimeSafetyTests(TestCase):
         harness, _heartbeat, _halted = self.run_case()
         self.assertEqual(harness.exit_quantities, [1000])
         self.assertFalse(harness.runtime_closed_with_exposure)
+
+    def test_stop_completes_when_only_preexisting_inventory_was_manually_reduced(self):
+        harness, heartbeat, halted = self.run_case(
+            minute=10,
+            no_owned_position=True,
+            external_baseline_reduction=True,
+            stop_after_subscribe=True,
+        )
+        self.assertFalse(halted)
+        self.assertEqual(
+            heartbeat["broker_flat_confirmation_mode"],
+            "BASELINE_REDUCTION_ONLY",
+        )
+        self.assertFalse((harness.directory / "STOP_REQUEST").exists())
+        self.assertNotIn("RUNTIME_OPERATIONAL_RECOVERY", harness.criticals)
 
     def test_rejected_entry_cancel_retries_and_late_fill_remaining_is_rescued(self):
         harness, _heartbeat, _halted = self.run_case(partial=True, reject_cancel=True, late_fill=True)

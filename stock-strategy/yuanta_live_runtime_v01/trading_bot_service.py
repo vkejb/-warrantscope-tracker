@@ -32,6 +32,7 @@ CONTROL_CONFIRM_TTL_SECONDS = 120
 CONTROL_CONFIRM_MAX_ATTEMPTS = 3
 CONTROL_AUDIT_FILENAME = "trading_bot_audit.jsonl"
 START_CONFIRM_TIMEOUT_SECONDS = 20.0
+STOP_CONFIRM_TIMEOUT_SECONDS = 8.0
 SUPERVISOR_STARTUP_GRACE_SECONDS = 15.0
 SUPERVISOR_HEARTBEAT_STALE_SECONDS = 45.0
 
@@ -582,6 +583,28 @@ def _runtime_process_active(runtime_dir: Path) -> bool:
     return health.controller_present
 
 
+def _wait_for_runtime_stop(
+    runtime_dir: Path,
+    *,
+    previous_heartbeat_at: Any,
+    timeout_seconds: float = STOP_CONFIRM_TIMEOUT_SECONDS,
+) -> str:
+    """Distinguish an accepted STOP_REQUEST from an observed terminal state."""
+    deadline = time.monotonic() + max(0.0, float(timeout_seconds))
+    while time.monotonic() < deadline:
+        heartbeat = _read_json(Path(runtime_dir) / "heartbeat.json")
+        if heartbeat is not None and heartbeat.get("at") != previous_heartbeat_at:
+            state = str(heartbeat.get("state", ""))
+            if state == "STOPPED_CLEAN":
+                return "STOP_CONFIRMED_CLEAN"
+            if state == "STOPPED_UNSAFE":
+                return "STOP_CONFIRMED_UNSAFE"
+        if not _runtime_process_active(runtime_dir):
+            return "STOP_PROCESS_EXITED_UNCONFIRMED"
+        time.sleep(0.25)
+    return "STOP_PENDING"
+
+
 def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
     """Run sanitized PROD preflight before issuing a LIVE confirmation code.
 
@@ -897,6 +920,10 @@ def _invoke_runtime_control(action: str, runtime_dir: Path) -> tuple[bool, str]:
         ])
 
     control_timeout = 60 if action == "clear-halt" else 10
+    previous_heartbeat = _read_json(runtime_dir / "heartbeat.json")
+    previous_heartbeat_at = (
+        None if previous_heartbeat is None else previous_heartbeat.get("at")
+    )
 
     try:
         completed = subprocess.run(
@@ -925,6 +952,16 @@ def _invoke_runtime_control(action: str, runtime_dir: Path) -> tuple[bool, str]:
         if f'"status": "{candidate}"' in stdout or f'"status":"{candidate}"' in stdout:
             status = candidate
             break
+
+    if (
+        action == "stop"
+        and completed.returncode == 0
+        and status == "GRACEFUL_STOP_REQUESTED"
+    ):
+        status = _wait_for_runtime_stop(
+            runtime_dir,
+            previous_heartbeat_at=previous_heartbeat_at,
+        )
 
     return completed.returncode == 0, status
 
@@ -1080,7 +1117,7 @@ class _RemoteControl:
             update_id=update_id,
             outcome=(
                 status
-                if action in {"start", "sync-baseline"}
+                if action in {"start", "stop", "sync-baseline"}
                 else ("SUCCESS" if ok else "FAILED")
             ),
         )
@@ -1145,9 +1182,24 @@ class _RemoteControl:
         if action == "stop":
             if status == "RUNTIME_NOT_RUNNING":
                 return "ℹ️ Runtime 目前沒有執行，因此沒有建立 STOP_REQUEST。"
+            if status == "STOP_CONFIRMED_CLEAN":
+                return (
+                    "✅ Runtime 已確認安全停止。\n"
+                    "停止前已確認沒有機器人持倉或未完成委託。"
+                )
+            if status == "STOP_CONFIRMED_UNSAFE":
+                return (
+                    "⚠️ Runtime 已停止，但沒有取得安全停止證明。\n"
+                    "請使用 /status 檢查；不要解除 HALT 或重新啟動。"
+                )
+            if status == "STOP_PROCESS_EXITED_UNCONFIRMED":
+                return (
+                    "⚠️ Runtime 程序已退出，但沒有新的 broker-flat heartbeat。\n"
+                    "不會宣稱安全停止；請使用 /status 檢查。"
+                )
             return (
-                "✅ 已送出正常停止要求。\n"
-                "Runtime 將停止新進場；若有曝險，會先依既有 EXIT 流程處理。"
+                "⏳ 已送出正常停止要求，但尚未確認 Runtime 已停止。\n"
+                "Runtime 已禁止新進場；若有曝險，會先依既有 EXIT 流程處理。"
             )
 
         if action == "clear-halt":

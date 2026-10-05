@@ -413,14 +413,14 @@ class TradingBotRemoteControlTests(unittest.TestCase):
                 return_value=1234,
             ), patch(
                 "yuanta_live_runtime_v01.trading_bot_service._invoke_runtime_control",
-                return_value=(True, "GRACEFUL_STOP_REQUESTED"),
+                return_value=(True, "STOP_CONFIRMED_CLEAN"),
             ) as invoke:
                 request = controls.handle({"text": "/stop"}, 100)
                 self.assertIn("/confirm 1234", request)
                 invoke.assert_not_called()
 
                 confirmed = controls.handle({"text": "/confirm 1234"}, 101)
-                self.assertIn("正常停止", confirmed)
+                self.assertIn("安全停止", confirmed)
                 invoke.assert_called_once_with("stop", runtime)
 
                 # Replaying the same confirmation cannot execute again because
@@ -440,6 +440,27 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             self.assertNotIn("balance", audit.lower())
             self.assertNotIn("password", audit.lower())
             self.assertNotIn("certificate", audit.lower())
+
+    def test_stop_control_waits_for_terminal_heartbeat_before_claiming_success(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            completed = SimpleNamespace(
+                returncode=0,
+                stdout='{"status":"GRACEFUL_STOP_REQUESTED"}',
+                stderr="",
+            )
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
+                return_value=completed,
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service._wait_for_runtime_stop",
+                return_value="STOP_CONFIRMED_CLEAN",
+            ) as wait:
+                ok, status = _invoke_runtime_control("stop", runtime)
+
+            self.assertTrue(ok)
+            self.assertEqual(status, "STOP_CONFIRMED_CLEAN")
+            wait.assert_called_once_with(runtime.resolve(), previous_heartbeat_at=None)
 
     def test_remote_confirmation_expires_without_execution(self):
         with tempfile.TemporaryDirectory() as tmp:

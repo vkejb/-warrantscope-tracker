@@ -94,6 +94,7 @@ RUNTIME_LOCK_FILENAME = "runtime.lock"
 FORCE_FLAT_MARKET_TIME = datetime_time(13, 23)
 FORCE_FLAT_CLOSING_TIME = datetime_time(13, 25)
 FORCE_FLAT_MARKET_CUTOFF = datetime_time(13, 29, 50)
+RECOVERY_NOTIFICATION_INTERVAL_SECONDS = 300.0
 
 
 def _force_flat_market_phase(now: datetime) -> str:
@@ -1137,6 +1138,85 @@ def _confirm_strategy_flat(adapter, store, timeout: float) -> None:
         raise RuntimeError("broker has remaining exposure or unresolved orders; flat not confirmed")
 
 
+def _inventory_is_baseline_reduction_only(
+    baseline: dict[str, int],
+    broker_positions: dict[str, int],
+) -> bool:
+    """Accept only broker inventory moving from the frozen baseline toward zero.
+
+    This deliberately rejects new symbols, sign flips, and increased long or
+    short inventory.  It exists only for terminal shutdown proof after a user
+    manually reduces pre-existing inventory; it never authorizes an entry,
+    clears HALT, or changes the reviewed baseline.
+    """
+    try:
+        expected = {str(key): int(value) for key, value in baseline.items() if int(value)}
+        actual = {
+            str(key): int(value)
+            for key, value in broker_positions.items()
+            if int(value)
+        }
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+    for key in set(expected) | set(actual):
+        before = expected.get(key, 0)
+        now = actual.get(key, 0)
+        if before > 0 and not 0 <= now <= before:
+            return False
+        if before < 0 and not before <= now <= 0:
+            return False
+        if before == 0 and now != 0:
+            return False
+    return True
+
+
+def _confirm_owned_exposure_clear_for_stop(adapter, store, timeout: float) -> str:
+    """Broker-prove that this runtime owns no remaining order or position.
+
+    Strict baseline equality remains mandatory for entry and normal trading.
+    During shutdown only, a complete broker snapshot may also prove that the
+    sole discrepancy is a reduction of pre-existing baseline inventory.  Any
+    broker order, local active order, local fill delta, inventory increase,
+    new symbol, or query failure remains fail-closed.
+    """
+    snapshot = adapter.inspect_broker_state(timeout=timeout)
+    local_positions = store.position_buckets()
+    local_orders = store.orders(open_only=True)
+    if snapshot.open_orders or local_orders or local_positions:
+        store.halt("OWNED_FLAT_CONFIRMATION_FAILED")
+        raise RuntimeError(
+            "runtime-owned exposure or unresolved order remains; stop not confirmed"
+        )
+    if not _inventory_is_baseline_reduction_only(
+        adapter.position_baseline,
+        snapshot.positions,
+    ):
+        store.halt("STOP_BROKER_INVENTORY_UNSAFE")
+        raise RuntimeError(
+            "broker inventory is not a reduction-only change from baseline; stop not confirmed"
+        )
+    return (
+        "BASELINE_MATCH"
+        if snapshot.positions == adapter.position_baseline
+        else "BASELINE_REDUCTION_ONLY"
+    )
+
+
+def _recovery_notification_due(
+    *,
+    signature: str,
+    previous_signature: str | None,
+    previous_at: float | None,
+    now: float,
+    interval_seconds: float = RECOVERY_NOTIFICATION_INTERVAL_SECONDS,
+) -> bool:
+    """Emit immediately on a new failure, otherwise at a bounded cadence."""
+    if previous_at is None or signature != previous_signature:
+        return True
+    return now - previous_at >= max(1.0, float(interval_seconds))
+
+
 def _authoritative_cash_long_delta(
     adapter,
     store: LiveOrderStore,
@@ -1768,6 +1848,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     operational_exit_only = recovery_only or notification_initialization_failed
     runtime_instance_id = uuid.uuid4().hex
     recovery_error_count = 0
+    last_recovery_notification_at: float | None = None
+    last_recovery_notification_signature: str | None = None
     exit_quote_alerted = False
     market_fallback_cancel_requested = False
     market_cutoff_alerted = False
@@ -1776,6 +1858,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     archive_started_at = ""
     archive_error_type = ""
     broker_flat_confirmed_at: str | None = None
+    broker_flat_confirmation_mode: str | None = None
     failure_code = ""
     startup_stage = "LOCAL_SETUP"
     archive_counter_baseline = _store_archive_counters(store)
@@ -2036,7 +2119,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     # recovery path even when the entry is already terminal.
                     raise RuntimeError("ASYNC_BROKER_HALTED:" + str(store.control_state().get("reason", "")))
                 emergency = kill_path.exists() or stop_event.is_set()
-                graceful_stop = stop_path.exists()
+                graceful_stop_requested = stop_path.exists()
+                graceful_stop = graceful_stop_requested
                 scheduled_force_flat = force_flat_path.exists()
                 clock_force_flat = now.time().replace(tzinfo=None) >= time_from_text(SPEC["hard_exit_time"])
                 exit_only = emergency or scheduled_force_flat or operational_exit_only or clock_force_flat
@@ -2086,6 +2170,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     account_lock_instance=getattr(session._execution_account_lock, "instance_id", ""),
                     broker_flat_confirmed_at=broker_flat_confirmed_at,
                     broker_flat_confirmed=broker_flat_confirmed_at is not None,
+                    broker_flat_confirmation_mode=broker_flat_confirmation_mode,
                 )
                 decision = _decision_floor(now)
                 decision_changed = engine.last_decision is None or decision > engine.last_decision
@@ -2115,7 +2200,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     log("GRACEFUL_STOP_REQUESTED")
 
                 if emergency and entry_order_id is None and position is None and exit_order_id is None:
-                    _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
+                    broker_flat_confirmation_mode = _confirm_owned_exposure_clear_for_stop(
+                        adapter, store, args.reconcile_timeout,
+                    )
                     broker_flat_confirmed_at = utc_now()
                     if submit_live:
                         store.halt("MANUAL_EMERGENCY_STOP_NO_EXPOSURE")
@@ -2124,9 +2211,18 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     return 0
 
                 if operational_exit_only and not emergency and not scheduled_force_flat and entry_order_id is None and position is None and exit_order_id is None:
-                    _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
+                    broker_flat_confirmation_mode = _confirm_owned_exposure_clear_for_stop(
+                        adapter, store, args.reconcile_timeout,
+                    )
                     broker_flat_confirmed_at = utc_now()
-                    log("EXIT_ONLY_RECOVERY_COMPLETE", exposure="BASELINE_ONLY")
+                    if graceful_stop_requested:
+                        stop_path.unlink(missing_ok=True)
+                    log(
+                        "EXIT_ONLY_RECOVERY_COMPLETE",
+                        exposure="NONE",
+                        confirmation_mode=broker_flat_confirmation_mode,
+                        stop_requested=graceful_stop_requested,
+                    )
                     clean_shutdown = True
                     return 0
 
@@ -2136,7 +2232,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     and position is None
                     and exit_order_id is None
                 ):
-                    _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
+                    broker_flat_confirmation_mode = _confirm_owned_exposure_clear_for_stop(
+                        adapter, store, args.reconcile_timeout,
+                    )
                     broker_flat_confirmed_at = utc_now()
                     force_flat_path.unlink(missing_ok=True)
                     log("SCHEDULED_FORCE_FLAT_COMPLETE", exposure="BASELINE_ONLY")
@@ -2150,7 +2248,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     and position is None
                     and exit_order_id is None
                 ):
-                    _confirm_strategy_flat(adapter, store, args.reconcile_timeout)
+                    broker_flat_confirmation_mode = _confirm_owned_exposure_clear_for_stop(
+                        adapter, store, args.reconcile_timeout,
+                    )
                     broker_flat_confirmed_at = utc_now()
                     stop_path.unlink(missing_ok=True)
                     log("GRACEFUL_STOP_COMPLETE", exposure="NONE")
@@ -2997,26 +3097,37 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 operational_exit_only = True
                 recovery_error_count += 1
                 pending_exit_reason = pending_exit_reason or "RUNTIME_OPERATIONAL_RECOVERY"
+                recovery_signature = f"{type(exc).__name__}:{exc}"
+                recovery_notice_at = time.monotonic()
+                recovery_notice_due = _recovery_notification_due(
+                    signature=recovery_signature,
+                    previous_signature=last_recovery_notification_signature,
+                    previous_at=last_recovery_notification_at,
+                    now=recovery_notice_at,
+                )
                 try:
                     if not store.control_state()["halted"]:
                         store.halt("RUNTIME_OPERATIONAL_RECOVERY:" + type(exc).__name__)
                 except Exception:
                     pass
-                try:
-                    if str(exc).startswith("FORCE_FLAT_ODD_LOT_UNSUPPORTED"):
+                if recovery_notice_due:
+                    last_recovery_notification_signature = recovery_signature
+                    last_recovery_notification_at = recovery_notice_at
+                    try:
+                        if str(exc).startswith("FORCE_FLAT_ODD_LOT_UNSUPPORTED"):
+                            notifier.critical(
+                                "FORCE_FLAT_ODD_LOT_UNSUPPORTED",
+                                "Owned odd/mixed-lot remainder cannot use the verified fallback route; no market/IOC or guessed-price order was sent",
+                            )
                         notifier.critical(
-                            "FORCE_FLAT_ODD_LOT_UNSUPPORTED",
-                            "Owned odd/mixed-lot remainder cannot use the verified fallback route; no market/IOC or guessed-price order was sent",
+                            "RUNTIME_OPERATIONAL_RECOVERY",
+                            "Runtime operation failed; new entries are disabled, broker-backed owned-exposure recovery continues",
+                            error_type=type(exc).__name__,
+                            error=str(exc),
+                            attempt=recovery_error_count,
                         )
-                    notifier.critical(
-                        "RUNTIME_OPERATIONAL_RECOVERY",
-                        "Runtime operation failed; new entries are disabled, broker-backed owned-exposure recovery continues",
-                        error_type=type(exc).__name__,
-                        error=str(exc),
-                        attempt=recovery_error_count,
-                    )
-                except Exception:
-                    pass
+                    except Exception:
+                        pass
                 try:
                     log("RUNTIME_OPERATIONAL_RECOVERY", error_type=type(exc).__name__,
                         error=str(exc), attempt=recovery_error_count)
@@ -3060,15 +3171,25 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     next_entry_reconcile_at = None
                     next_exit_reconcile_at = None
                 except Exception as recovery_exc:
-                    try:
-                        notifier.critical(
-                            "RUNTIME_RECOVERY_BROKER_UNCERTAIN",
-                            "Broker reconciliation remains uncertain; no exposure or order state was guessed, new entries remain disabled",
-                            error_type=type(recovery_exc).__name__,
-                            error=str(recovery_exc),
-                        )
-                    except Exception:
-                        pass
+                    uncertain_signature = f"{type(recovery_exc).__name__}:{recovery_exc}"
+                    uncertain_notice_at = time.monotonic()
+                    if _recovery_notification_due(
+                        signature=uncertain_signature,
+                        previous_signature=last_recovery_notification_signature,
+                        previous_at=last_recovery_notification_at,
+                        now=uncertain_notice_at,
+                    ):
+                        last_recovery_notification_signature = uncertain_signature
+                        last_recovery_notification_at = uncertain_notice_at
+                        try:
+                            notifier.critical(
+                                "RUNTIME_RECOVERY_BROKER_UNCERTAIN",
+                                "Broker reconciliation remains uncertain; no exposure or order state was guessed, new entries remain disabled",
+                                error_type=type(recovery_exc).__name__,
+                                error=str(recovery_exc),
+                            )
+                        except Exception:
+                            pass
                 time.sleep(min(float(args.exit_retry_max_seconds),
                                float(args.exit_retry_base_seconds)
                                * (2 ** min(recovery_error_count - 1, 6))))
@@ -3107,6 +3228,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 failure_stage=("" if clean_shutdown else startup_stage),
                 broker_flat_confirmed_at=broker_flat_confirmed_at,
                 broker_flat_confirmed=broker_flat_confirmed_at is not None,
+                broker_flat_confirmation_mode=(
+                    broker_flat_confirmation_mode
+                    or ("BASELINE_MATCH" if broker_flat_confirmed_at is not None else None)
+                ),
                 runtime_instance_id=runtime_instance_id,
                 trading_date=datetime.now(TAIPEI).date().isoformat(),
                 account_lock_path=str(getattr(getattr(session, "_execution_account_lock", None), "name", "")),
