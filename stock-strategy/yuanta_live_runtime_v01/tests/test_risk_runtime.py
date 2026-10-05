@@ -789,6 +789,55 @@ class RuntimeGateTests(unittest.TestCase):
         self.assertEqual([len(values) for values in book_calls], [200, 200, 1])
         self.assertTrue(session.subscribed)
 
+    def test_later_batch_rejection_rolls_back_earlier_subscriptions(self):
+        class FakeList(list):
+            def Add(self, value):
+                self.append(value)
+
+        class FakeGenericList:
+            def __class_getitem__(cls, _item):
+                return FakeList
+
+        class Quote:
+            pass
+
+        tick_calls = []
+        unsubscribed = []
+
+        def subscribe_tick(_account, values, _language):
+            tick_calls.append(values)
+            return len(tick_calls) < 2
+
+        session = runtime_main._Session(
+            api_types={
+                "List": FakeGenericList,
+                "StockTick": Quote,
+                "FiveTickA": Quote,
+                "Market": SimpleNamespace(TWSE="TWSE", TWOTC="TPEX"),
+                "Language": SimpleNamespace(UTF8="UTF8"),
+            },
+            environment="UAT", credentials={"account": "test"}, engine=None,
+            logger=lambda *_args, **_kwargs: None,
+        )
+        session.api = SimpleNamespace(
+            SubscribeStockTick=subscribe_tick,
+            SubscribeFiveTickA=lambda *_args: True,
+            UnSubscribeStockTick=lambda _account, values, _language: unsubscribed.append(values),
+        )
+        items = [
+            SimpleNamespace(market="TWSE", stock_id=f"{index:04d}")
+            for index in range(201)
+        ]
+
+        with self.assertRaisesRegex(RuntimeError, "stock quote subscription"):
+            session.subscribe(items)
+
+        self.assertEqual([len(values) for values in tick_calls], [200, 1])
+        self.assertEqual([len(values) for values in unsubscribed], [200])
+        self.assertFalse(session.subscribed)
+        self.assertEqual(session.stock_lists, [])
+        self.assertEqual(session.book_lists, [])
+
     def test_expanded_live_quote_uses_separate_archive_stream(self):
         events = []
         archive = SimpleNamespace(

@@ -294,22 +294,38 @@ def _wait_for_quote_readiness(
     engine, items, *, timeout_seconds: float = 20.0,
     max_age_seconds: float = 5.0,
 ) -> dict[str, Any]:
-    """Require actual valid callbacks, not only subscription request acceptance."""
+    """Require real callbacks from every vendor batch, not request acceptance."""
     deadline = time.monotonic() + timeout_seconds
+    items = list(items)
     symbols = {str(item.stock_id) for item in items}
     benchmark = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
+    candidate_batches = [
+        {str(item.stock_id) for item in group} - {benchmark}
+        for group in batches(items)
+    ]
+    candidate_batches = [group for group in candidate_batches if group]
     while True:
         now = datetime.now(TAIPEI)
         ready = {symbol for symbol in symbols if engine.entry_data_ready(
             symbol, now, max_age_seconds=max_age_seconds,
         )}
         candidate_ready = ready - {benchmark}
-        if benchmark in ready and candidate_ready:
+        covered_batches = sum(bool(group & ready) for group in candidate_batches)
+        if (
+            benchmark in ready
+            and candidate_ready
+            and covered_batches == len(candidate_batches)
+        ):
             return {"actual_quote_data": "READY", "ready_symbols": sorted(ready),
                     "candidate_ready_count": len(candidate_ready),
-                    "subscribed_symbols": len(symbols)}
+                    "subscribed_symbols": len(symbols),
+                    "candidate_batches_ready": covered_batches,
+                    "candidate_batches_total": len(candidate_batches)}
         if time.monotonic() >= deadline:
-            raise RuntimeError("QUOTE_DATA_NOT_READY: benchmark and candidate ticks/books not received")
+            raise RuntimeError(
+                "QUOTE_DATA_NOT_READY: benchmark or a candidate subscription "
+                "batch has no valid ticks/books"
+            )
         time.sleep(0.05)
 
 

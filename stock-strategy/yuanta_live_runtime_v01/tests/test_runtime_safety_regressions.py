@@ -596,3 +596,38 @@ class AdmissionAndExitQuoteSafetyTests(TestCase):
             ready = runtime_main._wait_for_quote_readiness(engine, items, timeout_seconds=.001)
         self.assertEqual(ready["candidate_ready_count"], 1)
         self.assertEqual(set(ready["ready_symbols"]), {"TEST", "0050"})
+
+    def test_readiness_requires_callbacks_from_every_subscription_batch(self):
+        candidates = [f"C{index:03d}" for index in range(201)]
+        metadata = {symbol: symbol for symbol in (*candidates, "0050")}
+        engine = LiveDirectionEngine(
+            metadata, candidate_symbols=set(candidates), benchmark_symbol="0050",
+        )
+
+        def make_ready(symbol):
+            engine.record_tick(
+                symbol, at=self.now, price=100, volume=1, bid=99.9, ask=100,
+            )
+            engine.record_book_combined(
+                symbol, at=self.now, buy_prices=[99.9], buy_volumes=[100],
+                sell_prices=[100], sell_volumes=[100],
+            )
+
+        make_ready(candidates[0])
+        make_ready("0050")
+        items = [SimpleNamespace(stock_id=symbol) for symbol in (*candidates, "0050")]
+        with patch.object(runtime_main, "datetime") as clock:
+            clock.now.return_value = self.now
+            with self.assertRaisesRegex(RuntimeError, "subscription batch"):
+                runtime_main._wait_for_quote_readiness(
+                    engine, items, timeout_seconds=.001,
+                )
+
+        make_ready(candidates[-1])
+        with patch.object(runtime_main, "datetime") as clock:
+            clock.now.return_value = self.now
+            ready = runtime_main._wait_for_quote_readiness(
+                engine, items, timeout_seconds=.001,
+            )
+        self.assertEqual(ready["candidate_batches_ready"], 2)
+        self.assertEqual(ready["candidate_batches_total"], 2)
