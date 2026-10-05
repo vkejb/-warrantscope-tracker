@@ -2,7 +2,12 @@
 
 這個模組把目前 repo 已存在的三層串起來：
 
-`Stage A Top30 → 即時逐筆/五檔 → direction rule → 0050 market gate → ANTI_CHASE_BALANCED_V1 → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
+`每日擴大當沖池 → 即時逐筆/五檔 → direction rule → 0050 market gate → ANTI_CHASE_BALANCED_V1 → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
+
+Stage A 每日 30 檔仍保留為波段／短線觀察清單與獨立通知，不再作為 LIVE
+當沖候選池的上限。LIVE 使用同一資料日的 sealed expanded universe；若當日擴大池
+封存不存在、日期或雜湊不符，啟動會 fail closed。元大逐筆與五檔均依每批最多
+200 檔分批訂閱，0050 只作市場基準，不會成為交易候選。
 
 它**沒有移除** broker adapter 的安全鎖。正式送單仍必須同時滿足：
 
@@ -22,7 +27,7 @@
 - 60 秒方向量、5 分鐘大單參考、3 分鐘突破
 - volume delta / large-trade delta / VWAP / order-book imbalance / spread
 - 09:05 起進場，13:10 後不再新開倉
-- 做多進場另套用 `LONG_0050_RELATIVE_STRENGTH_V1`：同步訂閱 0050，寫入獨立 `market_context_*` 歸檔，不混入 sealed Top30 原始檔，也不讓 0050 成為交易候選
+- 做多進場另套用 `LONG_0050_RELATIVE_STRENGTH_V1`：同步訂閱 0050，寫入獨立 `market_context_*` 歸檔，不混入 expanded universe 原始檔，也不讓 0050 成為交易候選
 - 0050 同時在 VWAP 上且 5 分鐘報酬非負時視為 BULLISH，個股 5 分鐘相對強度不得為負
 - 0050 同時在 VWAP 下且 5 分鐘報酬為負時視為 BEARISH，個股必須至少領先 0050 0.5%，且原訊號連續確認 2 次
 - 其餘為 NEUTRAL，個股必須至少領先 0050 0.25%，且原訊號連續確認 2 次

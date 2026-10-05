@@ -98,6 +98,28 @@ class CollectorContractTests(unittest.TestCase):
             watchlist = json.loads((run.run_dir / "watchlist.json").read_text())
             self.assertEqual(watchlist["expanded_shadow_universe"]["stocks"][0]["stock_id"], "2330")
 
+    def test_live_expanded_archive_does_not_claim_stage_a_subscription(self):
+        seal, stocks = self._fixture()
+        expanded = [
+            ExpandedWatchItem(
+                "2330", "台積電", "TWSE", 1, 100.0, 1_000_000,
+                100_000_000.0, "", "24",
+            )
+        ]
+        expanded_seal = {
+            "signal_date": "20260921", "seal_hash": "c" * 64,
+            "policy": {"policy_id": "EXPANDED_TEST"},
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            run = AppendOnlyRun(
+                Path(temp), seal, stocks, {"audit_sha256": "b" * 64},
+                expanded_seal=expanded_seal, expanded_items=expanded,
+                stage_a_quotes_enabled=False,
+            )
+            self.assertEqual(run.subscription_count, 2)  # 2330 + 0050
+            self.assertFalse(run.snapshot["stage_a_quotes_enabled"])
+            run.finalize(status="COMPLETE", started_at="a", ended_at="b")
+
     def test_vendor_lists_are_batched_at_two_hundred(self):
         class _Value:
             pass

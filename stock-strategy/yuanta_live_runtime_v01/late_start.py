@@ -133,6 +133,7 @@ def _candidate_metadata(
     signal_date: str,
     seal_hash: str,
     required_symbols: set[str],
+    universe_kind: str,
 ) -> list[tuple[datetime, Path, dict]]:
     root = Path(runtime_dir) / "runs"
     if not root.is_dir():
@@ -145,15 +146,25 @@ def _candidate_metadata(
         try:
             watch = json.loads(watchlist_path.read_text(encoding="utf-8"))
             created = _parse_stamp(watch["created_at"])
-            stocks = {str(row["stock_id"]) for row in watch["stocks"]}
+            if universe_kind == "expanded":
+                expanded = watch["expanded_shadow_universe"]
+                stocks = {str(row["stock_id"]) for row in expanded["stocks"]}
+                candidate_signal_date = str(expanded["signal_date"])
+                candidate_seal_hash = str(expanded["seal_hash"])
+            elif universe_kind == "stage_a":
+                stocks = {str(row["stock_id"]) for row in watch["stocks"]}
+                candidate_signal_date = str(watch.get("signal_date"))
+                candidate_seal_hash = str(watch.get("stage_a_seal_hash"))
+            else:
+                raise ValueError(f"unsupported universe kind: {universe_kind}")
             context = {str(row["stock_id"]) for row in watch.get("market_context", [])}
         except (KeyError, TypeError, ValueError, OSError):
             continue
         if created.date() != now.astimezone(TAIPEI).date():
             continue
-        if str(watch.get("signal_date")) != str(signal_date):
+        if candidate_signal_date != str(signal_date):
             continue
-        if str(watch.get("stage_a_seal_hash")) != str(seal_hash):
+        if candidate_seal_hash != str(seal_hash):
             continue
         if str(watch.get("mode")) not in ALLOWED_SOURCE_MODES:
             continue
@@ -165,7 +176,10 @@ def _candidate_metadata(
                 continue
         except OSError:
             continue
-        tick_path = run_dir / "ticks.jsonl.gz"
+        tick_path = run_dir / (
+            "expanded_ticks.jsonl.gz" if universe_kind == "expanded"
+            else "ticks.jsonl.gz"
+        )
         market_path = run_dir / "market_context_ticks.jsonl.gz"
         if not tick_path.is_file() or not market_path.is_file():
             continue
@@ -255,6 +269,7 @@ def warm_start_from_collector(
     seal_hash: str,
     required_symbols: set[str],
     max_source_age_seconds: float = 30.0,
+    universe_kind: str = "stage_a",
 ) -> LateStartWarmupResult:
     """Load the earliest valid pre-open collector run into a fresh engine."""
 
@@ -285,6 +300,7 @@ def warm_start_from_collector(
         signal_date=str(signal_date),
         seal_hash=str(seal_hash),
         required_symbols=set(required_symbols),
+        universe_kind=universe_kind,
     )
     opening_deadline = datetime.strptime(
         str(ANTI_CHASE_ENTRY_POLICY["opening_reference_must_arrive_by"]), "%H:%M"
@@ -295,7 +311,11 @@ def warm_start_from_collector(
         totals = [0, 0]
         first_exchange = latest_exchange = latest_received = None
         incomplete = False
-        for name in ("ticks.jsonl.gz", "market_context_ticks.jsonl.gz"):
+        candidate_ticks = (
+            "expanded_ticks.jsonl.gz" if universe_kind == "expanded"
+            else "ticks.jsonl.gz"
+        )
+        for name in (candidate_ticks, "market_context_ticks.jsonl.gz"):
             rows, incomplete_flag = _iter_jsonl(run_dir / name)
             result = _consume(
                 rows,

@@ -998,7 +998,7 @@ class _RemoteControl:
                 "PROD preflight 已通過。確認後 Bot 只會替這一次 runtime 子程序"
                 "注入 EXECUTION_MODE=LIVE、ENABLE_LIVE_TRADING=YES，並呼叫 "
                 "start-prod --live；不會永久修改系統環境。"
-                "Runtime 仍會再次驗證交易日、Stage A、singleton lock、"
+                "Runtime 仍會再次驗證交易日、擴大當沖池、singleton lock、"
                 "reconciliation、STOP/HALT 與 LIVE gate。"
             )
         elif action == "stop":
@@ -1272,7 +1272,7 @@ class _RemoteControl:
 
                 return (
                     "⚠️ LIVE 啟動前置檢查未通過。\n"
-                    "可能是非交易日、Stage A 日期不符、PROD 登入/行情/對帳失敗，"
+                    "可能是非交易日、擴大當沖池日期不符、PROD 登入/行情/對帳失敗，"
                     "或其他 fail-closed 條件。未產生確認碼，也沒有啟動 runtime。"
                 )
 

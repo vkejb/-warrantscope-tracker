@@ -312,6 +312,34 @@ class ArchiveRuntimeTests(unittest.TestCase):
 
 
 class RuntimeGateTests(unittest.TestCase):
+    def test_live_candidate_pool_is_expanded_and_stage_a_stays_reference_only(self):
+        stage_item = SimpleNamespace(stock_id="1111")
+        expanded_item = SimpleNamespace(stock_id="2330")
+        with patch.object(
+            runtime_main, "load_stage_a_watchlist",
+            return_value=(
+                {"signal_date": "20261002", "seal_hash": "stage"},
+                [stage_item], {"source": "official"},
+            ),
+        ), patch.object(
+            runtime_main, "_validate_watchlist_day",
+        ), patch.object(
+            runtime_main, "load_universe",
+            return_value=(
+                {"signal_date": "20261002", "seal_hash": "expanded"},
+                [expanded_item],
+            ),
+        ):
+            seal, items, provenance, stage_seal, stage_items = (
+                runtime_main._load_live_intraday_universe()
+            )
+
+        self.assertEqual(seal["seal_hash"], "expanded")
+        self.assertEqual([item.stock_id for item in items], ["2330"])
+        self.assertEqual(stage_seal["seal_hash"], "stage")
+        self.assertEqual([item.stock_id for item in stage_items], ["1111"])
+        self.assertEqual(provenance, {"source": "official"})
+
     def setUp(self):
         # No constructor/worker may reach a real notification transport.
         for name in ("RuntimeNotifier", "AsyncTradingNotifier"):
@@ -716,6 +744,80 @@ class RuntimeGateTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             session.subscribe([SimpleNamespace(market="TWSE", stock_id="3605")])
 
+    def test_expanded_quote_subscription_is_batched_at_vendor_limit(self):
+        class FakeList(list):
+            def Add(self, value):
+                self.append(value)
+
+        class FakeGenericList:
+            def __class_getitem__(cls, _item):
+                return FakeList
+
+            def __getitem__(self, _item):
+                return FakeList
+
+        class Quote:
+            pass
+
+        tick_calls = []
+        book_calls = []
+        session = runtime_main._Session(
+            api_types={
+                "List": FakeGenericList,
+                "StockTick": Quote,
+                "FiveTickA": Quote,
+                "Market": SimpleNamespace(TWSE="TWSE", TWOTC="TPEX"),
+                "Language": SimpleNamespace(UTF8="UTF8"),
+            },
+            environment="UAT",
+            credentials={"account": "test"},
+            engine=None,
+            logger=lambda *_args, **_kwargs: None,
+        )
+        session.api = SimpleNamespace(
+            SubscribeStockTick=lambda _account, values, _language: tick_calls.append(values),
+            SubscribeFiveTickA=lambda _account, values, _language: book_calls.append(values),
+        )
+        items = [
+            SimpleNamespace(market="TWSE", stock_id=f"{index:04d}")
+            for index in range(401)
+        ]
+
+        session.subscribe(items)
+
+        self.assertEqual([len(values) for values in tick_calls], [200, 200, 1])
+        self.assertEqual([len(values) for values in book_calls], [200, 200, 1])
+        self.assertTrue(session.subscribed)
+
+    def test_expanded_live_quote_uses_separate_archive_stream(self):
+        events = []
+        archive = SimpleNamespace(
+            run_id="test",
+            append=lambda kind, payload: events.append((kind, payload)),
+        )
+        item = SimpleNamespace(
+            stock_id="2330", stock_name="台積電", market="TWSE", rank=1,
+            industry="半導體業", industry_code="24",
+        )
+        session = runtime_main._Session(
+            api_types={}, environment="PROD", credentials={"account": "test"},
+            engine=None, logger=lambda *_args, **_kwargs: None,
+            archive=archive, archive_signal_date="20261002",
+            archive_expanded_items={"2330": item},
+        )
+        quote_time = SimpleNamespace(bytHour=9, bytMin=1, bytSec=2, ushtMSec=3)
+        tick = SimpleNamespace(
+            Time=quote_time, SerialNo=1, BuyPrice="100", SellPrice="100.5",
+            DealPrice="100", DealVol="2", InOutFlag="1", Type="0",
+        )
+
+        session._archive_quote(kind="ticks", symbol="2330", value=tick)
+
+        self.assertEqual(events[0][0], "expanded_ticks")
+        self.assertEqual(events[0][1]["role"], "EXPANDED_LIVE_CANDIDATE")
+        self.assertEqual(events[0][1]["expanded_rank"], 1)
+        self.assertIsNone(events[0][1]["stage_a_rank"])
+
     def test_second_runtime_is_blocked_before_broker_connect(self):
         class FakeSession:
             def __init__(self):
@@ -755,8 +857,13 @@ class RuntimeGateTests(unittest.TestCase):
             try:
                 with patch.object(
                     runtime_main,
-                    "load_stage_a_watchlist",
-                    return_value=({"signal_date": "20260925"}, [], None),
+                    "_load_live_intraday_universe",
+                    return_value=(
+                        {"signal_date": "20260925", "seal_hash": "expanded"},
+                        [], None,
+                        {"signal_date": "20260925", "seal_hash": "stage"},
+                        [],
+                    ),
                 ), patch.object(
                     runtime_main,
                     "_validate_watchlist_day",
@@ -898,11 +1005,13 @@ class RuntimeGateTests(unittest.TestCase):
 
             with patch.object(
                 runtime_main,
-                "load_stage_a_watchlist",
+                "_load_live_intraday_universe",
                 return_value=(
-                    {"signal_date": "20260930"},
+                    {"signal_date": "20260930", "seal_hash": "expanded"},
                     [item],
                     {},
+                    {"signal_date": "20260930", "seal_hash": "stage"},
+                    [item],
                 ),
             ), patch.object(
                 runtime_main,

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Guarded realtime runner for the Yuanta SPARK broker adapter.
 
-This is the missing runtime layer between the sealed Stage A Top30 realtime quotes,
-the frozen direction-following rule, and ``yuanta_broker_execution_v01``.
+This is the runtime layer between the sealed expanded intraday universe, the
+frozen direction-following rule, and ``yuanta_broker_execution_v01``.  Stage A
+Top30 remains an independent swing/short-term observation product.
 Production sends are impossible unless the broker adapter's existing three-way LIVE
 gate is authorized and startup reconciliation has passed.
 """
@@ -70,6 +71,8 @@ from .strategy import (
 from .watchdog import Heartbeat, monitor as watchdog_monitor
 from .account_lock import acquire_account_lock, release_account_lock
 from .late_start import warm_start_from_collector
+from expanded_shadow_universe_v01.subscriptions import batches
+from expanded_shadow_universe_v01.universe import load_universe
 
 TAIPEI = ZoneInfo("Asia/Taipei")
 MODULE_DIR = Path(__file__).resolve().parent
@@ -110,7 +113,7 @@ def _force_flat_market_phase(now: datetime) -> str:
 
 
 def _quote_universe(items):
-    """Add the quote-only benchmark without changing the sealed Top30 archive."""
+    """Add the quote-only benchmark without changing the sealed candidate pool."""
     result = list(items)
     benchmark = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
     if not any(str(item.stock_id) == benchmark for item in result):
@@ -507,7 +510,26 @@ def _validate_watchlist_day(signal_date: str) -> None:
         raise RuntimeError("trading calendar has no prior session")
     expected = dates[index - 1]
     if signal_date != expected:
-        raise RuntimeError(f"stale Stage A seal: expected {expected}, got {signal_date}")
+        raise RuntimeError(f"stale candidate-universe seal: expected {expected}, got {signal_date}")
+
+
+def _load_live_intraday_universe() -> tuple[dict, list, dict, dict, list]:
+    """Load the expanded LIVE candidate pool and separate Stage A reference.
+
+    Stage A supplies the already-established prior-session date and remains in
+    the archive as a swing-observation reference.  It is never passed to the
+    LIVE entry engine.  The daily read-only collector prepares the expanded
+    seal; LIVE fails closed rather than downloading or rebuilding it.
+    """
+    stage_a_seal, stage_a_items, provenance = load_stage_a_watchlist()
+    signal_date = str(stage_a_seal["signal_date"])
+    _validate_watchlist_day(signal_date)
+    expanded_seal, expanded_items = load_universe(signal_date)
+    if str(expanded_seal.get("signal_date", "")) != signal_date:
+        raise RuntimeError("expanded universe and Stage A dates do not match")
+    if not expanded_items:
+        raise RuntimeError("expanded LIVE candidate universe is empty")
+    return expanded_seal, expanded_items, provenance, stage_a_seal, stage_a_items
 
 
 def _extend_quote_types(api_types: dict[str, Any]) -> dict[str, Any]:
@@ -546,6 +568,7 @@ class _Session:
         archive: AppendOnlyRun | None = None,
         archive_signal_date: str = "",
         archive_items: dict[str, Any] | None = None,
+        archive_expanded_items: dict[str, Any] | None = None,
         non_archive_symbols: set[str] | None = None,
         strategy_symbols: set[str] | None = None,
     ):
@@ -557,6 +580,7 @@ class _Session:
         self.archive = archive
         self.archive_signal_date = str(archive_signal_date)
         self.archive_items = dict(archive_items or {})
+        self.archive_expanded_items = dict(archive_expanded_items or {})
         self.non_archive_symbols = {str(symbol) for symbol in (non_archive_symbols or set())}
         self.market_context_items = {
             item.stock_id: item for item in market_context_items()
@@ -570,8 +594,8 @@ class _Session:
         self.login_code = ""
         self.api = None
         self.account = credentials["account"]
-        self.stock_list = None
-        self.book_list = None
+        self.stock_lists: list[Any] = []
+        self.book_lists: list[Any] = []
         self.subscribed = False
         self.last_quote_at: datetime | None = None
         self.quote_started_at: datetime | None = None
@@ -604,10 +628,12 @@ class _Session:
             return
 
         is_market_context = symbol in self.non_archive_symbols
-        item = (
-            self.market_context_items.get(symbol)
-            if is_market_context
-            else self.archive_items.get(symbol)
+        is_expanded = (
+            not is_market_context and symbol in self.archive_expanded_items
+        )
+        item = self.market_context_items.get(symbol) if is_market_context else (
+            self.archive_expanded_items.get(symbol)
+            if is_expanded else self.archive_items.get(symbol)
         )
         if item is None:
             try:
@@ -640,15 +666,28 @@ class _Session:
             "stock_id": symbol,
             "stock_name": item.stock_name,
             "market": item.market,
-            "stage_a_rank": None if is_market_context else item.rank,
-            "stage_a_score": None if is_market_context else item.score,
-            "role": "MARKET_BENCHMARK" if is_market_context else "STAGE_A_CANDIDATE",
+            "stage_a_rank": (
+                item.rank if not is_market_context and not is_expanded else None
+            ),
+            "stage_a_score": (
+                item.score if not is_market_context and not is_expanded else None
+            ),
+            "expanded_rank": item.rank if is_expanded else None,
+            "industry": item.industry if is_expanded else None,
+            "industry_code": item.industry_code if is_expanded else None,
+            "role": (
+                "MARKET_BENCHMARK" if is_market_context else
+                "EXPANDED_LIVE_CANDIDATE" if is_expanded else
+                "STAGE_A_CANDIDATE"
+            ),
         }
 
         try:
             if kind == "ticks":
                 self.archive.append(
-                    "market_context_ticks" if is_market_context else "ticks",
+                    "market_context_ticks" if is_market_context else (
+                        "expanded_ticks" if is_expanded else "ticks"
+                    ),
                     {
                         **base,
                         "event_type": "STOCK_TICK",
@@ -682,7 +721,9 @@ class _Session:
 
             if kind == "books":
                 self.archive.append(
-                    "market_context_books" if is_market_context else "books",
+                    "market_context_books" if is_market_context else (
+                        "expanded_books" if is_expanded else "books"
+                    ),
                     {
                         **base,
                         "event_type": "FIVE_LEVEL",
@@ -761,6 +802,15 @@ class _Session:
                 "stage_a_identity": {
                     "signal_date": self.archive.snapshot["signal_date"],
                     "stage_a_seal_hash": self.archive.snapshot["stage_a_seal_hash"],
+                },
+                "candidate_universe_identity": {
+                    "kind": "EXPANDED_INTRADAY",
+                    "signal_date": self.archive.snapshot.get(
+                        "expanded_shadow_universe", {}
+                    ).get("signal_date", self.archive_signal_date),
+                    "seal_hash": self.archive.snapshot.get(
+                        "expanded_shadow_universe", {}
+                    ).get("seal_hash", ""),
                 },
                 "raw_quote_status": raw_status,
                 "engine_state_summary": engine_summary,
@@ -1038,46 +1088,80 @@ class _Session:
     def subscribe(self, items) -> None:
         if self.api is None:
             raise RuntimeError("session is not connected")
+        items = list(items)
         self.subscription_generation += 1
         generation = self.subscription_generation
         self._archive_subscription(
             "SUBSCRIBE_BEGIN", symbol_count=len(items),
         )
-        self.stock_list = self.api_types["List"][self.api_types["StockTick"]]()
-        self.book_list = self.api_types["List"][self.api_types["FiveTickA"]]()
+        self.stock_lists = []
+        self.book_lists = []
         self.last_quote_at = None
         self.quote_started_at = datetime.now(TAIPEI)
         if self.engine is not None and hasattr(self.engine, "reset_exit_quotes"):
             self.engine.reset_exit_quotes()
         markets = {"TWSE": self.api_types["Market"].TWSE, "TPEX": self.api_types["Market"].TWOTC}
-        for item in items:
-            stock = self.api_types["StockTick"]()
-            stock.MarketType = markets[item.market]
-            stock.StockCode = item.stock_id
-            self.stock_list.Add(stock)
-            book = self.api_types["FiveTickA"]()
-            book.MarketType = markets[item.market]
-            book.StockCode = item.stock_id
-            self.book_list.Add(book)
-        stock_ok = self.api.SubscribeStockTick(
-            self.account, self.stock_list, self.api_types["Language"].UTF8
-        )
-        book_ok = self.api.SubscribeFiveTickA(
-            self.account, self.book_list, self.api_types["Language"].UTF8
-        )
-        if stock_ok is False or book_ok is False:
+
+        def vendor_lists(model_name: str) -> list[Any]:
+            result = []
+            for group in batches(items):
+                vendor_list = self.api_types["List"][self.api_types[model_name]]()
+                for item in group:
+                    value = self.api_types[model_name]()
+                    value.MarketType = markets[item.market]
+                    value.StockCode = item.stock_id
+                    vendor_list.Add(value)
+                result.append(vendor_list)
+            return result
+
+        proposed_stock_lists = vendor_lists("StockTick")
+        proposed_book_lists = vendor_lists("FiveTickA")
+        try:
+            for stock_list in proposed_stock_lists:
+                accepted = self.api.SubscribeStockTick(
+                    self.account, stock_list, self.api_types["Language"].UTF8
+                )
+                if accepted is False:
+                    raise RuntimeError("stock quote subscription was rejected by broker API")
+                self.stock_lists.append(stock_list)
+            for book_list in proposed_book_lists:
+                accepted = self.api.SubscribeFiveTickA(
+                    self.account, book_list, self.api_types["Language"].UTF8
+                )
+                if accepted is False:
+                    raise RuntimeError("book quote subscription was rejected by broker API")
+                self.book_lists.append(book_list)
+        except Exception as exc:
+            for stock_list in self.stock_lists:
+                try:
+                    self.api.UnSubscribeStockTick(
+                        self.account, stock_list, self.api_types["Language"].UTF8
+                    )
+                except Exception:
+                    pass
+            for book_list in self.book_lists:
+                try:
+                    self.api.UnSubscribeFiveTickA(
+                        self.account, book_list, self.api_types["Language"].UTF8
+                    )
+                except Exception:
+                    pass
+            self.stock_lists = []
+            self.book_lists = []
             self._archive_subscription(
                 "SUBSCRIBE_REJECTED", symbol_count=len(items),
-                stock_api_result=str(stock_ok), book_api_result=str(book_ok),
+                error_type=type(exc).__name__,
             )
-            raise RuntimeError("quote subscription was rejected by broker API")
+            raise
         self.subscribed = True
         self._archive_subscription(
             "SUBSCRIBE_ACCEPTED", symbol_count=len(items),
-            stock_api_result=str(stock_ok), book_api_result=str(book_ok),
+            tick_batches=len(self.stock_lists), book_batches=len(self.book_lists),
         )
         self.logger(
             "QUOTES_SUBSCRIBED", count=len(items),
+            tick_batches=len(self.stock_lists),
+            book_batches=len(self.book_lists),
             subscription_generation=generation,
         )
 
@@ -1086,15 +1170,17 @@ class _Session:
         if api is None:
             return
         if self.subscribed:
-            try:
-                api.UnSubscribeStockTick(self.account, self.stock_list, self.api_types["Language"].UTF8)
-            except Exception:
-                pass
+            for stock_list in self.stock_lists:
+                try:
+                    api.UnSubscribeStockTick(self.account, stock_list, self.api_types["Language"].UTF8)
+                except Exception:
+                    pass
             self._archive_subscription("UNSUBSCRIBE_REQUESTED")
-            try:
-                api.UnSubscribeFiveTickA(self.account, self.book_list, self.api_types["Language"].UTF8)
-            except Exception:
-                pass
+            for book_list in self.book_lists:
+                try:
+                    api.UnSubscribeFiveTickA(self.account, book_list, self.api_types["Language"].UTF8)
+                except Exception:
+                    pass
         try:
             api.OnResponse -= self._on_response
         except Exception:
@@ -1114,8 +1200,8 @@ class _Session:
             pass
         self.api = None
         self.subscribed = False
-        self.stock_list = None
-        self.book_list = None
+        self.stock_lists = []
+        self.book_lists = []
         self.last_quote_at = None
         self.quote_started_at = None
 
@@ -1794,9 +1880,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             {"signal_date": datetime.now(TAIPEI).strftime("%Y%m%d")}, [],
             {"mode": "EXIT_ONLY_RECOVERY_NO_RESEARCH_PREREQUISITE"},
         )
+        stage_a_seal, stage_a_items = seal, []
     else:
-        seal, items, provenance = load_stage_a_watchlist()
-        _validate_watchlist_day(str(seal["signal_date"]))
+        seal, items, provenance, stage_a_seal, stage_a_items = (
+            _load_live_intraday_universe()
+        )
     metadata = {item.stock_id: item.stock_name for item in items}
     quote_items = _quote_universe(items)
     benchmark_symbol = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
@@ -1923,9 +2011,13 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         if not recovery_only:
             try:
                 archive = AppendOnlyRun(
-                    args.archive_runtime_dir.resolve(), seal, items, provenance,
+                    args.archive_runtime_dir.resolve(), stage_a_seal,
+                    stage_a_items, provenance,
                     compress=True,
                     mode="LIVE_TRADING_QUOTES" if submit_live else "OBSERVE_ONLY_QUOTES",
+                    expanded_seal=seal,
+                    expanded_items=items,
+                    stage_a_quotes_enabled=False,
                 )
             except Exception as exc:
                 # Quote archiving is an observer, not an ownership ledger.
@@ -1935,7 +2027,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         session.archive_signal_date = str(
             seal["signal_date"]
         )
-        session.archive_items = {
+        session.archive_items = {}
+        session.archive_expanded_items = {
             item.stock_id: item
             for item in items
         }
@@ -2063,6 +2156,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 signal_date=str(seal["signal_date"]),
                 seal_hash=str(seal.get("seal_hash", "")),
                 required_symbols={str(item.stock_id) for item in quote_items},
+                universe_kind="expanded",
             )
             log(
                 "LATE_START_WARMUP",
@@ -2095,6 +2189,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             environment=environment,
             submit_live=submit_live,
             signal_date=seal["signal_date"],
+            watchlist_count=len(items),
+            candidate_universe="EXPANDED_INTRADAY",
             capital=args.capital,
             short_enabled=allow_short,
             entry_policy=LONG_MARKET_REGIME_POLICY,
@@ -3455,8 +3551,9 @@ def _preflight(args, environment: str) -> int:
 
     try:
         baseline = _load_baseline(args.baseline.resolve())
-        seal, items, _provenance = load_stage_a_watchlist()
-        _validate_watchlist_day(str(seal["signal_date"]))
+        seal, items, _provenance, _stage_a_seal, _stage_a_items = (
+            _load_live_intraday_universe()
+        )
 
         quote_items = _quote_universe(items)
         benchmark_symbol = str(
@@ -3555,6 +3652,7 @@ def _preflight(args, environment: str) -> int:
                 signal_date=str(seal["signal_date"]),
                 seal_hash=str(seal.get("seal_hash", "")),
                 required_symbols={str(item.stock_id) for item in quote_items},
+                universe_kind="expanded",
             )
             if late_start_warmup.required and late_start_warmup.status != "READY":
                 raise RuntimeError(
@@ -3573,6 +3671,8 @@ def _preflight(args, environment: str) -> int:
                     "status": "READY",
                     "environment": environment,
                     "signal_date": seal["signal_date"],
+                    "candidate_universe": "EXPANDED_INTRADAY",
+                    "candidate_symbols": len(items),
                     "quote_subscription": "ACCEPTED",
                     "quote_symbols": len(quote_items),
                     "quote_readiness": readiness,

@@ -33,6 +33,7 @@ class LateStartWarmupTests(unittest.TestCase):
         latest: datetime,
         callback_error: bool = False,
         truncate_gzip_footer: bool = False,
+        expanded: bool = False,
     ) -> Path:
         run = root / "runs" / "20261005T005000.000000Z_test"
         run.mkdir(parents=True)
@@ -46,6 +47,12 @@ class LateStartWarmupTests(unittest.TestCase):
             "stocks": [{"stock_id": "2330"}],
             "market_context": [{"stock_id": "0050"}],
         }
+        if expanded:
+            watch["expanded_shadow_universe"] = {
+                "signal_date": "20261002",
+                "seal_hash": "expanded-seal",
+                "stocks": [{"stock_id": "2330"}],
+            }
         (run / "watchlist.json").write_text(json.dumps(watch), encoding="utf-8")
         (run / "callback_errors.jsonl").write_text(
             '{"error":"TEST"}\n' if callback_error else "",
@@ -76,7 +83,7 @@ class LateStartWarmupTests(unittest.TestCase):
             return result
 
         for filename, symbol in (
-            ("ticks.jsonl.gz", "2330"),
+            ("expanded_ticks.jsonl.gz" if expanded else "ticks.jsonl.gz", "2330"),
             ("market_context_ticks.jsonl.gz", "0050"),
         ):
             path = run / filename
@@ -133,6 +140,22 @@ class LateStartWarmupTests(unittest.TestCase):
             )
             self.assertEqual(result.status, "READY")
             self.assertTrue(result.incomplete_gzip_tail_ignored)
+
+    def test_expanded_universe_history_is_verified_and_warmed(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            now = datetime(2026, 10, 5, 9, 10, tzinfo=TAIPEI)
+            self.write_run(
+                root, latest=now - timedelta(seconds=5), expanded=True,
+            )
+            result = warm_start_from_collector(
+                self.engine(), runtime_dir=root, now=now,
+                signal_date="20261002", seal_hash="expanded-seal",
+                required_symbols={"2330", "0050"},
+                universe_kind="expanded",
+            )
+            self.assertEqual(result.status, "READY")
+            self.assertEqual(result.symbols_warmed, 2)
 
     def test_stale_collector_fails_closed(self):
         with TemporaryDirectory() as tmp:

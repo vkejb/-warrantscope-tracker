@@ -308,6 +308,16 @@ class RuntimeHarness:
                 ("datetime", Clock), ("_validate_watchlist_day", Mock(side_effect=AssertionError("must not validate research") if self.recovery else None)),
                 ("load_stage_a_watchlist", Mock(side_effect=AssertionError("must not load research") if self.recovery else None,
                                                return_value=({"signal_date": "20261002"}, items, {}))),
+                ("_load_live_intraday_universe", Mock(
+                    side_effect=AssertionError("must not load research") if self.recovery else None,
+                    return_value=(
+                        {"signal_date": "20261002", "seal_hash": "expanded-seal"},
+                        items,
+                        {},
+                        {"signal_date": "20261002", "seal_hash": "stage-a-seal"},
+                        items,
+                    ),
+                )),
                 ("load_credentials", Mock(return_value={"account": "MOCK_SAFETY_ACCOUNT"})),
                 ("load_api_types", Mock(return_value={})), ("_extend_quote_types", Mock(return_value={})),
                 ("warm_start_from_collector", Mock(return_value=SimpleNamespace(

@@ -1,4 +1,4 @@
-"""Realtime form of the Top30 direction-following entry rule.
+"""Realtime form of the direction-following rule over the LIVE candidate pool.
 
 The thresholds come from ``yuanta_intraday_shadow_v01.direction_follow_backtest.SPEC``.
 The approved anti-chase overlay is applied after the base and market-regime gates.

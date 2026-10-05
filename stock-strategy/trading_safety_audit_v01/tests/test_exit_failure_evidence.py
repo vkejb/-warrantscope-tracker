@@ -254,8 +254,13 @@ class ExitFailureEvidenceTests(TestCase):
         items = [SimpleNamespace(stock_id="TEST", stock_name="Test", market="TWSE")]
         output = io.StringIO()
         with patch.object(runtime_main, "_validate_watchlist_day"), \
-             patch.object(runtime_main, "load_stage_a_watchlist",
-                          return_value=({"signal_date": "20261002"}, items, {})), \
+             patch.object(runtime_main, "_load_live_intraday_universe",
+                          return_value=(
+                              {"signal_date": "20261002", "seal_hash": "expanded"},
+                              items, {},
+                              {"signal_date": "20261002", "seal_hash": "stage"},
+                              items,
+                          )), \
              patch.object(runtime_main, "load_credentials", return_value={}), \
              patch.object(runtime_main, "load_api_types", return_value={}), \
              patch.object(runtime_main, "_extend_quote_types", return_value={}), \

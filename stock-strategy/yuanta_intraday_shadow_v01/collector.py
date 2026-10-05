@@ -159,6 +159,7 @@ class AppendOnlyRun:
         mode: str = "SHADOW_ONLY_READ_ONLY_QUOTES",
         expanded_seal: dict | None = None,
         expanded_items: list | None = None,
+        stage_a_quotes_enabled: bool = True,
     ):
         if mode not in self.ALLOWED_MODES:
             raise ValueError(f"unsupported archive mode: {mode}")
@@ -168,7 +169,10 @@ class AppendOnlyRun:
             raise ValueError("expanded_seal and expanded_items must be supplied together")
         self.expanded_enabled = bool(expanded_items)
         subscribed_symbols = {
-            item.stock_id for item in (*subscription_items(items), *expanded_items)
+            item.stock_id for item in (
+                *(subscription_items(items) if stage_a_quotes_enabled else market_context_items()),
+                *expanded_items,
+            )
         }
         self.subscription_count = len(subscribed_symbols)
         self.run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ") + "_" + uuid.uuid4().hex[:8]
@@ -270,6 +274,7 @@ class AppendOnlyRun:
                 for x in market_context_items()
             ],
             "mode": self.mode, "compression": "gzip" if compress else "none",
+            "stage_a_quotes_enabled": bool(stage_a_quotes_enabled),
             "compressed_flush_interval_events": 100 if compress else 1,
         }
         if self.expanded_enabled:
