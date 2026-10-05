@@ -25,6 +25,8 @@ from .main import DEFAULT_VENDOR_DIR, _load_api
 from .postprocess import process_run
 from .yuanta_keychain import load_credentials
 from stage_a_prospective_watchlist_v01.seal_store import latest_seal
+from expanded_shadow_universe_v01.paper import publish_expanded_paper
+from expanded_shadow_universe_v01.universe import load_or_build_universe
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -136,6 +138,21 @@ def main() -> int:
             if readiness == "NON_TRADING_DAY":
                 _append({"at": utc_now(), "date": day, "status": readiness})
                 return 0
+            expanded_universe = None
+            expanded_prepare_error = ""
+            try:
+                expanded_universe = load_or_build_universe(signal_date)
+            except Exception as exc:
+                # The expanded research stream must never take the proven Top30
+                # collector down with it.  Failure is explicit and fail-closed
+                # for expanded paper signals only.
+                expanded_prepare_error = f"{type(exc).__name__}: {exc}"
+                _append({
+                    "at": utc_now(), "date": day, "signal_date": signal_date,
+                    "status": "EXPANDED_UNIVERSE_DISABLED",
+                    "reason": expanded_prepare_error,
+                    "actual_orders": 0, "actual_fills": 0, "broker_order_calls": 0,
+                })
             credentials = load_credentials()
             target = datetime.combine(now.date(), time(13, 35), tzinfo=TAIPEI)
             seconds = int((target - now).total_seconds())
@@ -146,7 +163,12 @@ def main() -> int:
             def progress(event: dict):
                 if event.get("type") == "FINAL": holder["run_dir"] = event["run_dir"]
             try:
-                code = run(_load_api(DEFAULT_VENDOR_DIR), seconds=seconds, runtime_dir=DEFAULT_RUNTIME_DIR, credentials=credentials, progress_callback=progress, compress=True)
+                code = run(
+                    _load_api(DEFAULT_VENDOR_DIR), seconds=seconds,
+                    runtime_dir=DEFAULT_RUNTIME_DIR, credentials=credentials,
+                    progress_callback=progress, compress=True,
+                    expanded_universe=expanded_universe,
+                )
             finally:
                 credentials.clear()
                 caffeinate.terminate()
@@ -164,6 +186,21 @@ def main() -> int:
             if session["coverage_status"] != "FULL_SESSION":
                 raise RuntimeError(f"coverage failed: max_gap={session.get('max_market_event_gap_seconds')}")
             paper = publish_paper_day(run_dir, session)
+            expanded_paper = None
+            expanded_paper_error = ""
+            if expanded_universe is not None:
+                try:
+                    expanded_paper = publish_expanded_paper(run_dir, session)
+                except Exception as exc:
+                    expanded_paper_error = f"{type(exc).__name__}: {exc}"
+                    _append({
+                        "at": utc_now(), "date": day,
+                        "signal_date": signal_date,
+                        "status": "EXPANDED_PAPER_FAILED",
+                        "reason": expanded_paper_error,
+                        "actual_orders": 0, "actual_fills": 0,
+                        "broker_order_calls": 0,
+                    })
             comparison = write_comparison()
             dual_track = publish_dual_track()
             _append({
@@ -171,6 +208,28 @@ def main() -> int:
                 "run_id": session["source_run_id"], "analysis_hash": result["quality"]["analysis_hash"],
                 "coverage": session["coverage_status"], "actual_orders": 0, "actual_fills": 0, "broker_order_calls": 0,
                 "market_context_0050": context_counts,
+                "expanded_universe_status": (
+                    "ENABLED" if expanded_universe is not None else "DISABLED"
+                ),
+                "expanded_universe_count": (
+                    len(expanded_universe[1]) if expanded_universe is not None else 0
+                ),
+                "expanded_universe_seal_hash": (
+                    expanded_universe[0]["seal_hash"] if expanded_universe is not None else None
+                ),
+                "expanded_universe_error": expanded_prepare_error or None,
+                "expanded_paper_error": expanded_paper_error or None,
+                "expanded_paper_run_id": (
+                    expanded_paper["paper_run_id"] if expanded_paper is not None else None
+                ),
+                "expanded_paper_trade_count": (
+                    expanded_paper["production_strategy_trade_count"]
+                    if expanded_paper is not None else 0
+                ),
+                "expanded_paper_net_pnl": (
+                    expanded_paper["production_strategy_net_pnl"]
+                    if expanded_paper is not None else 0
+                ),
                 "paper_run_id": paper["paper_run_id"],
                 "paper_publish_status": paper["publish_status"],
                 "paper_status": paper["status"],

@@ -14,7 +14,9 @@ from yuanta_intraday_shadow_v01.collector import (
 from yuanta_intraday_shadow_v01.collector_main import (
     _connect_and_login,
     _is_quote_callback,
+    _vendor_subscription_lists,
 )
+from expanded_shadow_universe_v01.universe import ExpandedWatchItem
 
 
 class _EventHook:
@@ -71,6 +73,55 @@ class CollectorContractTests(unittest.TestCase):
             self.assertEqual(manifest["artifacts"]["ticks.jsonl"], hashlib.sha256(run.tick_path.read_bytes()).hexdigest())
             self.assertEqual(manifest["actual_orders"], 0)
             self.assertEqual(manifest["broker_order_calls"], 0)
+
+    def test_expanded_shadow_streams_are_separate_and_hashed(self):
+        seal, stocks = self._fixture()
+        expanded = [
+            ExpandedWatchItem("2330", "台積電", "TWSE", 1, 100.0, 1_000_000, 100_000_000.0, "", "24")
+        ]
+        expanded_seal = {
+            "signal_date": "20260921", "seal_hash": "c" * 64,
+            "policy": {"policy_id": "EXPANDED_TEST"},
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            run = AppendOnlyRun(
+                Path(temp), seal, stocks, {"audit_sha256": "b" * 64},
+                expanded_seal=expanded_seal, expanded_items=expanded,
+            )
+            run.append("expanded_ticks", {"stock_id": "2330", "deal_price": "100"})
+            run.append("expanded_books", {"stock_id": "2330", "buy_prices": ["99"]})
+            manifest = run.finalize(status="COMPLETE", started_at="a", ended_at="b")
+            self.assertEqual(manifest["expanded_universe_count"], 1)
+            self.assertEqual(manifest["expanded_universe_seal_hash"], "c" * 64)
+            self.assertIn("expanded_ticks.jsonl", manifest["artifacts"])
+            self.assertIn("expanded_books.jsonl", manifest["artifacts"])
+            watchlist = json.loads((run.run_dir / "watchlist.json").read_text())
+            self.assertEqual(watchlist["expanded_shadow_universe"]["stocks"][0]["stock_id"], "2330")
+
+    def test_vendor_lists_are_batched_at_two_hundred(self):
+        class _Value:
+            pass
+
+        class _VendorList(list):
+            def Add(self, value):
+                self.append(value)
+
+        class _ListFactory:
+            def __class_getitem__(cls, _model):
+                return _VendorList
+
+        api_types = {
+            "Market": type("Market", (), {"TWSE": 1, "TWOTC": 2}),
+            "List": _ListFactory,
+            "StockTick": _Value,
+            "FiveTickA": _Value,
+        }
+        items = [
+            ExpandedWatchItem(str(1000 + index), str(index), "TWSE", index + 1, 1, 1, 1, "", "24")
+            for index in range(401)
+        ]
+        result = _vendor_subscription_lists(api_types, items, "tick")
+        self.assertEqual([len(group) for group in result], [200, 200, 1])
 
     def test_callback_error_types_are_preserved_in_manifest(self):
         seal, stocks = self._fixture()

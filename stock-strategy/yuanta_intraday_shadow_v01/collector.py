@@ -157,11 +157,20 @@ class AppendOnlyRun:
         *,
         compress: bool = False,
         mode: str = "SHADOW_ONLY_READ_ONLY_QUOTES",
+        expanded_seal: dict | None = None,
+        expanded_items: list | None = None,
     ):
         if mode not in self.ALLOWED_MODES:
             raise ValueError(f"unsupported archive mode: {mode}")
         self.mode = mode
-        self.subscription_count = len(subscription_items(items))
+        expanded_items = list(expanded_items or [])
+        if (expanded_seal is None) != (not expanded_items):
+            raise ValueError("expanded_seal and expanded_items must be supplied together")
+        self.expanded_enabled = bool(expanded_items)
+        subscribed_symbols = {
+            item.stock_id for item in (*subscription_items(items), *expanded_items)
+        }
+        self.subscription_count = len(subscribed_symbols)
         self.run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ") + "_" + uuid.uuid4().hex[:8]
         self.run_dir = runtime_dir / "runs" / self.run_id
         self.run_dir.mkdir(parents=True, exist_ok=False)
@@ -173,6 +182,12 @@ class AppendOnlyRun:
         )
         self.market_book_path = self.run_dir / (
             "market_context_books.jsonl.gz" if compress else "market_context_books.jsonl"
+        )
+        self.expanded_tick_path = self.run_dir / (
+            "expanded_ticks.jsonl.gz" if compress else "expanded_ticks.jsonl"
+        )
+        self.expanded_book_path = self.run_dir / (
+            "expanded_books.jsonl.gz" if compress else "expanded_books.jsonl"
         )
         # Callback diagnostics intentionally live in a separate, uncompressed
         # append-only artifact.  Only a small allow-list of non-secret routing
@@ -192,11 +207,26 @@ class AppendOnlyRun:
             self._book = io.TextIOWrapper(gzip.GzipFile(fileobj=book_raw, mode="wb", mtime=0), encoding="utf-8", write_through=True)
             self._market_tick = io.TextIOWrapper(gzip.GzipFile(fileobj=market_tick_raw, mode="wb", mtime=0), encoding="utf-8", write_through=True)
             self._market_book = io.TextIOWrapper(gzip.GzipFile(fileobj=market_book_raw, mode="wb", mtime=0), encoding="utf-8", write_through=True)
+            if self.expanded_enabled:
+                expanded_tick_raw = self.expanded_tick_path.open("xb")
+                expanded_book_raw = self.expanded_book_path.open("xb")
+                self._raw_files.extend([expanded_tick_raw, expanded_book_raw])
+                self._expanded_tick = io.TextIOWrapper(
+                    gzip.GzipFile(fileobj=expanded_tick_raw, mode="wb", mtime=0),
+                    encoding="utf-8", write_through=True,
+                )
+                self._expanded_book = io.TextIOWrapper(
+                    gzip.GzipFile(fileobj=expanded_book_raw, mode="wb", mtime=0),
+                    encoding="utf-8", write_through=True,
+                )
         else:
             self._tick = self.tick_path.open("x", encoding="utf-8", buffering=1)
             self._book = self.book_path.open("x", encoding="utf-8", buffering=1)
             self._market_tick = self.market_tick_path.open("x", encoding="utf-8", buffering=1)
             self._market_book = self.market_book_path.open("x", encoding="utf-8", buffering=1)
+            if self.expanded_enabled:
+                self._expanded_tick = self.expanded_tick_path.open("x", encoding="utf-8", buffering=1)
+                self._expanded_book = self.expanded_book_path.open("x", encoding="utf-8", buffering=1)
         self._callback_errors = self.callback_error_path.open(
             "x", encoding="utf-8", buffering=1,
         )
@@ -212,6 +242,8 @@ class AppendOnlyRun:
             "books": 0,
             "market_context_ticks": 0,
             "market_context_books": 0,
+            "expanded_ticks": 0,
+            "expanded_books": 0,
             "callback_errors": 0,
             "evidenced_quote_events": 0,
             "decision_evidence": 0,
@@ -240,10 +272,30 @@ class AppendOnlyRun:
             "mode": self.mode, "compression": "gzip" if compress else "none",
             "compressed_flush_interval_events": 100 if compress else 1,
         }
+        if self.expanded_enabled:
+            self.snapshot["expanded_shadow_universe"] = {
+                "signal_date": expanded_seal["signal_date"],
+                "seal_hash": expanded_seal["seal_hash"],
+                "policy_id": expanded_seal["policy"]["policy_id"],
+                "count": len(expanded_items),
+                "stocks": [
+                    {
+                        "stock_id": x.stock_id, "stock_name": x.stock_name,
+                        "market": x.market, "rank": x.rank, "close": x.close,
+                        "volume": x.volume, "turnover_twd": x.turnover_twd,
+                        "industry": x.industry, "industry_code": x.industry_code,
+                    }
+                    for x in expanded_items
+                ],
+                "mode": "SHADOW_ONLY_READ_ONLY_QUOTES_AND_POST_SESSION_PAPER",
+            }
         (self.run_dir / "watchlist.json").write_bytes(canonical_bytes(self.snapshot) + b"\n")
 
     def append(self, kind: str, event: dict) -> None:
-        if kind not in {"ticks", "books", "market_context_ticks", "market_context_books"}:
+        if kind not in {
+            "ticks", "books", "market_context_ticks", "market_context_books",
+            "expanded_ticks", "expanded_books",
+        }:
             raise ValueError(kind)
         payload = canonical_bytes(event).decode("utf-8") + "\n"
         with self._lock:
@@ -252,6 +304,10 @@ class AppendOnlyRun:
                 "books": self._book,
                 "market_context_ticks": self._market_tick,
                 "market_context_books": self._market_book,
+                **({
+                    "expanded_ticks": self._expanded_tick,
+                    "expanded_books": self._expanded_book,
+                } if self.expanded_enabled else {}),
             }
             handle = handles[kind]
             handle.write(payload)
@@ -359,6 +415,7 @@ class AppendOnlyRun:
                 self._book,
                 self._market_tick,
                 self._market_book,
+                *(tuple((self._expanded_tick, self._expanded_book)) if self.expanded_enabled else ()),
                 self._callback_errors,
                 self._decision_evidence,
                 self._subscription_evidence,
@@ -386,7 +443,8 @@ class AppendOnlyRun:
                 "quote_event_count": sum(
                     int(self.counts[name]) for name in (
                         "ticks", "books", "market_context_ticks",
-                        "market_context_books",
+                        "market_context_books", "expanded_ticks",
+                        "expanded_books",
                     )
                 ),
                 "evidenced_quote_event_count": int(
@@ -419,6 +477,15 @@ class AppendOnlyRun:
             "broker_order_calls": int(broker_order_calls),
             "terminal_flat_confirmed_at": terminal_flat_confirmed_at,
         }
+        if self.expanded_enabled:
+            manifest.update({
+                "expanded_universe_count": self.snapshot["expanded_shadow_universe"]["count"],
+                "expanded_universe_seal_hash": self.snapshot["expanded_shadow_universe"]["seal_hash"],
+            })
+            manifest["artifacts"].update({
+                self.expanded_tick_path.name: sha256_file(self.expanded_tick_path),
+                self.expanded_book_path.name: sha256_file(self.expanded_book_path),
+            })
         manifest["manifest_hash"] = hashlib.sha256(canonical_bytes(manifest)).hexdigest()
         (self.run_dir / "run_manifest.json").write_bytes(canonical_bytes(manifest) + b"\n")
         return manifest

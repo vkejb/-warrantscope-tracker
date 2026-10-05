@@ -20,6 +20,7 @@ from .collector import (
     utc_now,
 )
 from .main import DEFAULT_VENDOR_DIR, _dragged_path, _load_api, _normalise_account, _safe_text
+from expanded_shadow_universe_v01.subscriptions import batches, deduplicate_items
 
 
 LOGIN_CONNECT_WAIT_SECONDS = 5
@@ -130,6 +131,24 @@ def _book_payload(value) -> dict:
     return payload
 
 
+def _vendor_subscription_lists(api_types, items, kind: str):
+    """Create vendor lists that never exceed the documented 200-item limit."""
+    if kind not in {"tick", "book"}:
+        raise ValueError(kind)
+    result = []
+    enums = {"TWSE": api_types["Market"].TWSE, "TPEX": api_types["Market"].TWOTC}
+    model_name = "StockTick" if kind == "tick" else "FiveTickA"
+    for group in batches(list(items)):
+        vendor_list = api_types["List"][api_types[model_name]]()
+        for item in group:
+            value = api_types[model_name]()
+            value.MarketType = enums[item.market]
+            value.StockCode = item.stock_id
+            vendor_list.Add(value)
+        result.append(vendor_list)
+    return result
+
+
 def run(
     api_types,
     *,
@@ -139,6 +158,7 @@ def run(
     stop_event: threading.Event | None = None,
     progress_callback=None,
     compress: bool = False,
+    expanded_universe: tuple[dict, list] | None = None,
 ) -> int:
     seal, items, provenance = load_stage_a_watchlist()
     print(f"Stage A seal：{seal['signal_date']}｜{seal['seal_hash'][:12]}｜30檔")
@@ -169,15 +189,24 @@ def run(
         print("密碼不可空白。")
         return 2
 
-    artifact = AppendOnlyRun(runtime_dir, seal, items, provenance, compress=compress)
+    expanded_seal, expanded_items = expanded_universe or (None, [])
+    artifact = AppendOnlyRun(
+        runtime_dir, seal, items, provenance, compress=compress,
+        expanded_seal=expanded_seal, expanded_items=expanded_items,
+    )
     meta = {x.stock_id: x for x in items}
+    expanded_meta = {x.stock_id: x for x in expanded_items}
     context_meta = {x.stock_id: x for x in market_context_items()}
-    subscribed_items = subscription_items(items)
+    subscribed_items = deduplicate_items(
+        subscription_items(items), expanded_items,
+    )
     login_event = threading.Event()
     login_state: dict[str, object] = {"ok": False, "code": ""}
     api = None
-    opened = logged_in = subscribed_tick = subscribed_book = False
-    stock_list = book_list = None
+    opened = logged_in = False
+    subscribed_tick_lists = []
+    subscribed_book_lists = []
+    stock_lists = book_lists = []
     started_at = utc_now()
     final_status = "FAILED"
     error_type = ""
@@ -206,8 +235,9 @@ def run(
             callback_phase = "SYMBOL_ROUTING"
             stock_id = _safe_text(getattr(value, "StkCode", ""))
             item = meta.get(stock_id)
+            expanded_item = expanded_meta.get(stock_id)
             context_item = context_meta.get(stock_id)
-            if item is None and context_item is None:
+            if item is None and expanded_item is None and context_item is None:
                 artifact.callback_error(
                     "UNKNOWN_WATCHLIST_SYMBOL",
                     callback_name=name,
@@ -243,6 +273,15 @@ def run(
                     artifact.append("ticks", {
                         **base_for(item, role="STAGE_A_CANDIDATE"), **payload,
                     })
+                if expanded_item is not None:
+                    callback_phase = "STOCK_TICK_EXPANDED_SHADOW_APPEND"
+                    artifact.append("expanded_ticks", {
+                        **base_for(expanded_item, role="EXPANDED_SHADOW_CANDIDATE"),
+                        "expanded_rank": expanded_item.rank,
+                        "industry": expanded_item.industry,
+                        "industry_code": expanded_item.industry_code,
+                        **payload,
+                    })
                 if context_item is not None:
                     callback_phase = "STOCK_TICK_MARKET_CONTEXT_APPEND"
                     artifact.append("market_context_ticks", {
@@ -255,6 +294,15 @@ def run(
                     callback_phase = "FIVE_LEVEL_STAGE_A_APPEND"
                     artifact.append("books", {
                         **base_for(item, role="STAGE_A_CANDIDATE"), **payload,
+                    })
+                if expanded_item is not None:
+                    callback_phase = "FIVE_LEVEL_EXPANDED_SHADOW_APPEND"
+                    artifact.append("expanded_books", {
+                        **base_for(expanded_item, role="EXPANDED_SHADOW_CANDIDATE"),
+                        "expanded_rank": expanded_item.rank,
+                        "industry": expanded_item.industry,
+                        "industry_code": expanded_item.industry_code,
+                        **payload,
                     })
                 if context_item is not None:
                     callback_phase = "FIVE_LEVEL_MARKET_CONTEXT_APPEND"
@@ -285,18 +333,17 @@ def run(
         pfx_password = trading_password = ""
         logged_in = True
 
-        stock_list = api_types["List"][api_types["StockTick"]]()
-        book_list = api_types["List"][api_types["FiveTickA"]]()
-        enums = {"TWSE": api_types["Market"].TWSE, "TPEX": api_types["Market"].TWOTC}
-        for item in subscribed_items:
-            stock = api_types["StockTick"](); stock.MarketType = enums[item.market]; stock.StockCode = item.stock_id; stock_list.Add(stock)
-            book = api_types["FiveTickA"](); book.MarketType = enums[item.market]; book.StockCode = item.stock_id; book_list.Add(book)
-        api.SubscribeStockTick(account, stock_list, api_types["Language"].UTF8)
-        subscribed_tick = True
-        api.SubscribeFiveTickA(account, book_list, api_types["Language"].UTF8)
-        subscribed_book = True
+        stock_lists = _vendor_subscription_lists(api_types, subscribed_items, "tick")
+        book_lists = _vendor_subscription_lists(api_types, subscribed_items, "book")
+        for stock_list in stock_lists:
+            api.SubscribeStockTick(account, stock_list, api_types["Language"].UTF8)
+            subscribed_tick_lists.append(stock_list)
+        for book_list in book_lists:
+            api.SubscribeFiveTickA(account, book_list, api_types["Language"].UTF8)
+            subscribed_book_lists.append(book_list)
         print(
-            f"Top30 + 0050 市場基準，共 {len(subscribed_items)} 檔逐筆與五檔訂閱已送出，"
+            f"Top30 + 0050 + 擴大紙上池，共 {len(subscribed_items)} 檔逐筆與五檔訂閱已送出，"
+            f"逐筆 {len(stock_lists)} 批、五檔 {len(book_lists)} 批；"
             f"收集 {seconds} 秒。按 Control-C 可安全停止。"
         )
         if progress_callback:
@@ -305,6 +352,9 @@ def run(
                 "watchlist_count": len(items),
                 "market_context_count": len(context_meta),
                 "subscription_count": len(subscribed_items),
+                "expanded_shadow_count": len(expanded_items),
+                "tick_subscription_batches": len(stock_lists),
+                "book_subscription_batches": len(book_lists),
                 "seconds": seconds,
             })
         deadline = time.monotonic() + seconds
@@ -319,7 +369,9 @@ def run(
                 print(
                     f"目前事件：Top30逐筆 {artifact.counts['ticks']}｜Top30五檔 {artifact.counts['books']}｜"
                     f"0050逐筆 {artifact.counts['market_context_ticks']}｜"
-                    f"0050五檔 {artifact.counts['market_context_books']}"
+                    f"0050五檔 {artifact.counts['market_context_books']}｜"
+                    f"擴大池逐筆 {artifact.counts['expanded_ticks']}｜"
+                    f"擴大池五檔 {artifact.counts['expanded_books']}"
                 )
                 if progress_callback:
                     progress_callback({"type": "PROGRESS", **artifact.counts, "remaining_seconds": max(0, int(deadline - time.monotonic()))})
@@ -337,10 +389,10 @@ def run(
     finally:
         pfx_password = trading_password = ""
         if api is not None:
-            if subscribed_tick and stock_list is not None:
+            for stock_list in subscribed_tick_lists:
                 try: api.UnSubscribeStockTick(account, stock_list, api_types["Language"].UTF8)
                 except Exception: pass
-            if subscribed_book and book_list is not None:
+            for book_list in subscribed_book_lists:
                 try: api.UnSubscribeFiveTickA(account, book_list, api_types["Language"].UTF8)
                 except Exception: pass
             if logged_in:
