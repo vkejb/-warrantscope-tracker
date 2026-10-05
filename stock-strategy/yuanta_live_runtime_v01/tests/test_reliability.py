@@ -206,6 +206,11 @@ class FlatConfirmationTests(StoreCase):
     def adapter(self, positions=None, open_orders=None):
         adapter = Mock()
         adapter.position_baseline = {"UNMANAGED|0": 1000}
+        adapter.reconcile.return_value = SimpleNamespace(
+            broker_positions=(
+                adapter.position_baseline if positions is None else positions
+            ),
+        )
         adapter.inspect_broker_state.return_value = SimpleNamespace(
             positions=adapter.position_baseline if positions is None else positions,
             open_orders=[] if open_orders is None else open_orders,
@@ -216,7 +221,7 @@ class FlatConfirmationTests(StoreCase):
         adapter = self.adapter()
         _confirm_strategy_flat(adapter, self.store, 1)
         adapter.reconcile.assert_called_once_with(timeout=1, strict_positions=True)
-        adapter.inspect_broker_state.assert_called_once_with(timeout=1)
+        adapter.inspect_broker_state.assert_not_called()
         adapter.submit.assert_not_called()
 
     def test_filled_exit_does_not_override_broker_remaining_inventory(self):
@@ -225,10 +230,10 @@ class FlatConfirmationTests(StoreCase):
             _confirm_strategy_flat(adapter, self.store, 1)
         self.assertTrue(self.store.control_state()["halted"])
 
-    def test_broker_open_order_blocks_close_success(self):
+    def test_reconciled_unrelated_manual_open_order_does_not_block_close_success(self):
         adapter = self.adapter(open_orders=[{"order_no": "external"}])
-        with self.assertRaises(RuntimeError):
-            _confirm_strategy_flat(adapter, self.store, 1)
+        _confirm_strategy_flat(adapter, self.store, 1)
+        adapter.reconcile.assert_called_once_with(timeout=1, strict_positions=True)
 
     def test_late_local_fill_blocks_close_success(self):
         entry = self.order("late", 1000, 90)

@@ -32,6 +32,7 @@ from zoneinfo import ZoneInfo
 from yuanta_broker_execution_v01 import (
     APCode,
     BrokerOrderStatus,
+    ExternalManualOrderConflict,
     LiveOrderStore,
     LiveTradingGate,
     PriceType,
@@ -1130,10 +1131,17 @@ def _realized_pnl_today(store: LiveOrderStore, engine: LiveDirectionEngine, now:
 
 def _confirm_strategy_flat(adapter, store, timeout: float) -> None:
     """No close-success event until the broker confirms baseline-only inventory."""
-    adapter.reconcile(timeout=timeout, strict_positions=True)
-    snapshot = adapter.inspect_broker_state(timeout=timeout)
-    if (snapshot.positions != adapter.position_baseline or snapshot.open_orders
-            or store.position_buckets() or store.orders(open_only=True)):
+    result = adapter.reconcile(timeout=timeout, strict_positions=True)
+    # Reconciliation already validates every remote order in the same complete
+    # broker snapshot: strategy-owned orders must match the durable local
+    # ledger, unknown baskets fail closed, and verified unrelated manual orders
+    # may coexist. Do not let an unrelated manual order prevent confirmation
+    # that this strategy itself is flat.
+    if (
+        result.broker_positions != adapter.position_baseline
+        or store.position_buckets()
+        or store.orders(open_only=True)
+    ):
         store.halt("FLAT_CONFIRMATION_FAILED")
         raise RuntimeError("broker has remaining exposure or unresolved orders; flat not confirmed")
 
@@ -1233,7 +1241,10 @@ def _authoritative_cash_long_delta(
     """
     result = adapter.reconcile(timeout=timeout, strict_positions=True)
     key = f"{symbol}|0"
-    broker_delta = int(result.broker_positions.get(key, 0)) - int(baseline.get(key, 0))
+    effective_baseline = getattr(adapter, "position_baseline", None)
+    if not isinstance(effective_baseline, dict):
+        effective_baseline = baseline
+    broker_delta = int(result.broker_positions.get(key, 0)) - int(effective_baseline.get(key, 0))
     local_delta = int(store.position_buckets().get(key, 0))
     if broker_delta != local_delta:
         raise RuntimeError(
@@ -1266,7 +1277,10 @@ def _authoritative_fallback_delta(adapter, store, *, baseline, position, timeout
         raise RuntimeError("FORCE_FLAT_SHORT_BUCKET_UNPROVEN")
     result = adapter.reconcile(timeout=timeout, strict_positions=True)
     key = f"{position.stock_id}|{kind}"
-    actual = int(result.broker_positions.get(key, 0)) - int(baseline.get(key, 0))
+    effective_baseline = getattr(adapter, "position_baseline", None)
+    if not isinstance(effective_baseline, dict):
+        effective_baseline = baseline
+    actual = int(result.broker_positions.get(key, 0)) - int(effective_baseline.get(key, 0))
     local = int(store.position_buckets().get(key, 0))
     if actual != local or actual > 0:
         raise RuntimeError("FORCE_FLAT_SHORT_BASELINE_DELTA_MISMATCH")
@@ -1814,6 +1828,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     short_cover = _order_type(args.short_cover_order_type)
     allow_short = short_entry is not None and short_cover is not None
     baseline = _load_baseline(baseline_path)
+    baseline_meta = _load_baseline_metadata(baseline_path)
+    baseline_captured_at = (
+        None if baseline_meta is None else str(baseline_meta["captured_at"])
+    )
     stop_event = threading.Event()
 
     def stop_handler(_signum, _frame):
@@ -1974,6 +1992,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             store=store,
             live_gate=gate,
             position_baseline=baseline,
+            position_baseline_captured_at=baseline_captured_at,
+            external_inventory_listener=lambda payload: log(
+                "EXTERNAL_MANUAL_INVENTORY_ADOPTED",
+                **payload,
+            ),
         )
         startup_progress("BROKER_RECONCILIATION", args.reconcile_timeout + 5)
         reconciliation = adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
@@ -2485,14 +2508,39 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                                     short_cover,
                             )
 
-                            order = adapter.submit(
-                                intent,
-                                pre_send_guard=lambda _intent: _entry_pre_send_guard(
-                                    candidate=candidate, engine=engine, store=store,
-                                    runtime_dir=runtime_dir,
-                                    max_age_seconds=args.entry_quote_staleness,
-                                ),
-                            )
+                            try:
+                                order = adapter.submit(
+                                    intent,
+                                    pre_send_guard=lambda _intent: _entry_pre_send_guard(
+                                        candidate=candidate, engine=engine, store=store,
+                                        runtime_dir=runtime_dir,
+                                        max_age_seconds=args.entry_quote_staleness,
+                                    ),
+                                )
+                            except ExternalManualOrderConflict as exc:
+                                rejected = store.get_by_intent(intent.intent_id)
+                                log(
+                                    "ENTRY_PRE_SEND_REJECTED",
+                                    signal_id=signal_id,
+                                    client_order_id=(
+                                        None if rejected is None
+                                        else rejected.client_order_id
+                                    ),
+                                    intent_id=intent.intent_id,
+                                    stock_id=intent.symbol,
+                                    side=intent.side.value,
+                                    quantity=intent.quantity,
+                                    price=str(intent.price),
+                                    reason="EXTERNAL_MANUAL_ORDER_CONFLICT",
+                                    error=str(exc),
+                                )
+                                log(
+                                    "SIGNAL_SKIPPED",
+                                    signal_id=signal_id,
+                                    candidate=asdict(candidate),
+                                    reason="EXTERNAL_MANUAL_ORDER_CONFLICT",
+                                )
+                                continue
 
                             entry_order_id = (
                                 order.client_order_id
@@ -3074,6 +3122,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                                     store=store,
                                     live_gate=gate,
                                     position_baseline=baseline,
+                                    position_baseline_captured_at=baseline_captured_at,
+                                    external_inventory_listener=lambda payload: log(
+                                        "EXTERNAL_MANUAL_INVENTORY_ADOPTED",
+                                        **payload,
+                                    ),
                                 )
                                 reconnection = adapter.reconcile(timeout=args.reconcile_timeout, strict_positions=True)
                                 if store.control_state()["halted"]:
@@ -3145,6 +3198,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             api=session.api, api_types=api_types,
                             account=session.account, store=store,
                             live_gate=gate, position_baseline=baseline,
+                            position_baseline_captured_at=baseline_captured_at,
+                            external_inventory_listener=lambda payload: log(
+                                "EXTERNAL_MANUAL_INVENTORY_ADOPTED",
+                                **payload,
+                            ),
                         )
                         try:
                             session.subscribe(quote_items)
@@ -3360,6 +3418,7 @@ def _connect_for_control(args, environment: str, *, baseline: dict[str, int], cl
         _claim_account_lock(session, args, environment)
         session.connect()
         assert session.api is not None
+        baseline_meta = _load_baseline_metadata(args.baseline.resolve())
         adapter = YuantaSparkExecutionAdapter(
             api=session.api,
             api_types=api_types,
@@ -3367,6 +3426,9 @@ def _connect_for_control(args, environment: str, *, baseline: dict[str, int], cl
             store=store,
             live_gate=LiveTradingGate.from_environment(cli_live=cli_live),
             position_baseline=baseline,
+            position_baseline_captured_at=(
+                None if baseline_meta is None else str(baseline_meta["captured_at"])
+            ),
         )
         return credentials, session, store, adapter
     except Exception:
@@ -3463,6 +3525,7 @@ def _preflight(args, environment: str) -> int:
                 "preflight requires today's account-scoped position baseline"
             )
 
+        baseline_meta = _load_baseline_metadata(args.baseline.resolve())
         adapter = YuantaSparkExecutionAdapter(
             api=session.api,
             api_types=api_types,
@@ -3472,6 +3535,10 @@ def _preflight(args, environment: str) -> int:
                 cli_live=False
             ),
             position_baseline=baseline,
+            position_baseline_captured_at=(
+                None if baseline_meta is None
+                else str(baseline_meta["captured_at"])
+            ),
         )
 
         result = adapter.reconcile(
@@ -3625,6 +3692,17 @@ def _capture_baseline(args, environment: str) -> int:
             account=session.account,
             captured_at=captured_at,
         )
+        # The fresh broker snapshot is now durable as the whole frozen
+        # baseline. Only after both baseline files exist do we remove same-day
+        # external deltas. If either file write or this reset fails, the next
+        # reconciliation sees a mismatch and remains safely fail-closed rather
+        # than silently omitting or double-counting inventory.
+        reset_external = getattr(store, "reset_external_inventory_adjustments", None)
+        if callable(reset_external):
+            reset_external(
+                now.strftime("%Y%m%d"),
+                reason="FOLDED_INTO_FRESH_BROKER_BASELINE",
+            )
         print(json.dumps({
             "status": "BASELINE_CAPTURED",
             "path": str(baseline_path),
@@ -3740,10 +3818,14 @@ def _clear_halt(args) -> int:
             args, args.environment, baseline=baseline, cli_live=False
         )
 
+        reconciliation = adapter.reconcile(
+            timeout=args.reconcile_timeout,
+            strict_positions=True,
+        )
         snapshot = adapter.inspect_broker_state(timeout=args.reconcile_timeout)
         if snapshot.open_orders:
             raise RuntimeError("cannot clear halt while actual broker orders are open")
-        if snapshot.positions != baseline:
+        if snapshot.positions != adapter.position_baseline:
             raise RuntimeError("cannot clear halt while actual broker positions differ from reviewed baseline")
         if store.orders(open_only=True):
             raise RuntimeError("cannot clear halt while local broker orders are open")
@@ -3758,6 +3840,7 @@ def _clear_halt(args) -> int:
         print(json.dumps({
             "status": "HALT_CLEARED",
             "reason": args.reason,
+            "external_position_adjustments": reconciliation.external_position_adjustments,
         }, ensure_ascii=False, indent=2))
         return 0
     finally:

@@ -35,6 +35,7 @@ NORMAL_EVENTS = {
     "NO_TRADE_SESSION_COMPLETE",
     "EMERGENCY_STOP_REQUESTED",
     "EMERGENCY_STOP_COMPLETE",
+    "EXTERNAL_MANUAL_INVENTORY_ADOPTED",
 }
 
 
@@ -217,6 +218,7 @@ def format_runtime_event(event: str, row: dict[str, Any]) -> str | None:
             "STOCK_5M_HISTORY_MISSING": "個股五分鐘歷史行情不足",
             "BASE_SIGNAL_CONFIRMED": "基礎訊號成立",
             "MARKET_GATE_PASSED": "市場條件通過",
+            "EXTERNAL_MANUAL_ORDER_CONFLICT": "人工委託與策略候選為同一股票",
         }.get(raw, f"其他原因（原始代碼：{raw}）")
 
     def status_text(value: Any) -> str:
@@ -261,6 +263,17 @@ def format_runtime_event(event: str, row: dict[str, Any]) -> str | None:
         return (
             "【WarrantScope｜行情重新連線失敗】\n"
             f"原因：{row.get('error', '-')}"
+        )
+
+    if event == "EXTERNAL_MANUAL_INVENTORY_ADOPTED":
+        side = "買進" if str(row.get("side")) == "B" else "賣出"
+        delta = int(row.get("delta_quantity", 0) or 0)
+        return (
+            "【WarrantScope｜人工成交已自動納入庫存基準】\n"
+            f"股票：{row.get('symbol', '-')}\n"
+            f"方向：{side}\n"
+            f"本次庫存變動：{abs(delta)} 股\n"
+            "策略持倉與強制平倉範圍未改變。"
         )
 
     if event == "SIGNAL_DETECTED":

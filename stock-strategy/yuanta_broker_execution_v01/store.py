@@ -149,6 +149,22 @@ class LiveOrderStore:
                     payload TEXT NOT NULL,
                     created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS external_inventory_adjustments (
+                    trading_date TEXT NOT NULL,
+                    order_no TEXT NOT NULL,
+                    symbol TEXT NOT NULL,
+                    trade_kind INTEGER NOT NULL,
+                    side TEXT NOT NULL,
+                    cumulative_filled_quantity INTEGER NOT NULL
+                        CHECK(cumulative_filled_quantity > 0),
+                    signed_quantity INTEGER NOT NULL
+                        CHECK(signed_quantity != 0),
+                    remote_status TEXT NOT NULL,
+                    row_fingerprint TEXT NOT NULL,
+                    first_observed_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY(trading_date, order_no)
+                );
                 INSERT OR IGNORE INTO live_control(singleton,halted,reason,next_identify,updated_at)
                 VALUES(1,0,NULL,1,'INITIAL');
                 """
@@ -656,6 +672,158 @@ class LiveOrderStore:
         with self._lock, self.connection:
             self._event(event_type, None, payload)
 
+    def external_inventory_records(self, trading_date: str) -> dict[str, dict[str, Any]]:
+        """Return broker-proven manual/external fills adopted for one session."""
+        clean_day = str(trading_date).strip()
+        if len(clean_day) != 8 or not clean_day.isdigit():
+            raise ValueError("trading_date must be YYYYMMDD")
+        with self._lock:
+            rows = self.connection.execute(
+                """SELECT * FROM external_inventory_adjustments
+                   WHERE trading_date=? ORDER BY order_no""",
+                (clean_day,),
+            ).fetchall()
+            return {str(row["order_no"]): dict(row) for row in rows}
+
+    def external_position_adjustments(self, trading_date: str) -> dict[str, int]:
+        """Aggregate the current-day manual inventory delta by broker bucket."""
+        records = self.external_inventory_records(trading_date)
+        result: dict[str, int] = {}
+        for row in records.values():
+            key = f"{row['symbol']}|{int(row['trade_kind'])}"
+            result[key] = result.get(key, 0) + int(row["signed_quantity"])
+        return {key: value for key, value in result.items() if value}
+
+    def adopt_external_inventory_rows(
+        self,
+        trading_date: str,
+        rows: list[Mapping[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Durably adopt cumulative fills from broker-owned manual orders.
+
+        Rows are cumulative snapshots keyed by the broker's current-session
+        order number.  Quantities may only increase; identity, direction and
+        financing bucket may never change.  This makes repeated callbacks,
+        reconnects and restarts idempotent without manufacturing fill rows in
+        the strategy-owned ledger.
+        """
+        clean_day = str(trading_date).strip()
+        if len(clean_day) != 8 or not clean_day.isdigit():
+            raise ValueError("trading_date must be YYYYMMDD")
+        adopted: list[dict[str, Any]] = []
+        with self._lock, self.connection:
+            for raw in rows:
+                order_no = str(raw["order_no"]).strip()
+                symbol = str(raw["symbol"]).strip().upper()
+                side = str(raw["side"]).strip().upper()
+                trade_kind = int(raw["trade_kind"])
+                cumulative = int(raw["cumulative_filled_quantity"])
+                signed = int(raw["signed_quantity"])
+                remote_status = str(raw["remote_status"]).strip().upper()
+                fingerprint = str(raw["row_fingerprint"]).strip().lower()
+                if not order_no or not symbol:
+                    raise ValueError("external order identity is required")
+                if side not in {"B", "S"} or trade_kind not in {0, 3, 4, 6}:
+                    raise ValueError("unsupported external inventory category")
+                if cumulative <= 0 or signed == 0 or abs(signed) != cumulative:
+                    raise ValueError("invalid external cumulative quantity")
+                if len(fingerprint) != 64:
+                    raise ValueError("external row fingerprint must be SHA-256")
+
+                existing = self.connection.execute(
+                    """SELECT * FROM external_inventory_adjustments
+                       WHERE trading_date=? AND order_no=?""",
+                    (clean_day, order_no),
+                ).fetchone()
+                previous_signed = 0
+                first_observed_at = utc_now()
+                if existing is not None:
+                    for field, value in (
+                        ("symbol", symbol),
+                        ("side", side),
+                        ("trade_kind", trade_kind),
+                    ):
+                        if str(existing[field]) != str(value):
+                            raise StoreError(
+                                f"external broker order identity changed: {order_no}"
+                            )
+                    previous_cumulative = int(existing["cumulative_filled_quantity"])
+                    previous_signed = int(existing["signed_quantity"])
+                    if cumulative < previous_cumulative:
+                        raise StoreError(
+                            f"external broker cumulative fill decreased: {order_no}"
+                        )
+                    if signed * previous_signed < 0:
+                        raise StoreError(
+                            f"external broker order direction changed: {order_no}"
+                        )
+                    first_observed_at = str(existing["first_observed_at"])
+
+                stamp = utc_now()
+                self.connection.execute(
+                    """INSERT INTO external_inventory_adjustments(
+                           trading_date,order_no,symbol,trade_kind,side,
+                           cumulative_filled_quantity,signed_quantity,
+                           remote_status,row_fingerprint,first_observed_at,updated_at
+                       ) VALUES(?,?,?,?,?,?,?,?,?,?,?)
+                       ON CONFLICT(trading_date,order_no) DO UPDATE SET
+                           cumulative_filled_quantity=excluded.cumulative_filled_quantity,
+                           signed_quantity=excluded.signed_quantity,
+                           remote_status=excluded.remote_status,
+                           row_fingerprint=excluded.row_fingerprint,
+                           updated_at=excluded.updated_at""",
+                    (
+                        clean_day, order_no, symbol, trade_kind, side,
+                        cumulative, signed, remote_status, fingerprint,
+                        first_observed_at, stamp,
+                    ),
+                )
+                delta = signed - previous_signed
+                if delta:
+                    event = {
+                        "trading_date": clean_day,
+                        "order_no": order_no,
+                        "symbol": symbol,
+                        "trade_kind": trade_kind,
+                        "side": side,
+                        "cumulative_filled_quantity": cumulative,
+                        "signed_quantity": signed,
+                        "delta_quantity": delta,
+                        "remote_status": remote_status,
+                    }
+                    self._event("EXTERNAL_INVENTORY_ADOPTED", None, event)
+                    adopted.append(event)
+        return adopted
+
+    def reset_external_inventory_adjustments(
+        self,
+        trading_date: str,
+        *,
+        reason: str,
+    ) -> int:
+        """Fold current-day external deltas into a newly captured baseline."""
+        clean_day = str(trading_date).strip()
+        clean_reason = str(reason).strip()
+        if len(clean_day) != 8 or not clean_day.isdigit():
+            raise ValueError("trading_date must be YYYYMMDD")
+        if not clean_reason:
+            raise ValueError("reset reason is required")
+        with self._lock, self.connection:
+            count = int(self.connection.execute(
+                "SELECT COUNT(*) FROM external_inventory_adjustments WHERE trading_date=?",
+                (clean_day,),
+            ).fetchone()[0])
+            self.connection.execute(
+                "DELETE FROM external_inventory_adjustments WHERE trading_date=?",
+                (clean_day,),
+            )
+            self._event(
+                "EXTERNAL_INVENTORY_BASELINE_FOLDED",
+                None,
+                {"trading_date": clean_day, "records": count, "reason": clean_reason},
+            )
+            return count
+
     def mark_send_pending(self, client_order_id: str) -> StoredOrder:
         return self._set_status(
             client_order_id,
@@ -1040,6 +1208,7 @@ class LiveOrderStore:
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
+            today = datetime.now(TAIPEI).strftime("%Y%m%d")
             return {
                 "control": self.control_state(),
                 "orders": [
@@ -1060,4 +1229,5 @@ class LiveOrderStore:
                     for order in self.orders()
                 ],
                 "positions": self.positions(),
+                "external_position_adjustments": self.external_position_adjustments(today),
             }

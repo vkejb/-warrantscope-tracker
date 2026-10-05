@@ -3,6 +3,7 @@
 from .adapter import (
     BrokerStateSnapshot,
     BrokerAdapterError,
+    ExternalManualOrderConflict,
     LiveExecutionDisabled,
     ReconciliationMismatch,
     ReconciliationRequired,
@@ -38,6 +39,7 @@ __all__ = [
     "BrokerStateHalted",
     "DuplicateIntentConflict",
     "ExecutionIntent",
+    "ExternalManualOrderConflict",
     "IntentPurpose",
     "IntentBridgeError",
     "LiveTradingGate",

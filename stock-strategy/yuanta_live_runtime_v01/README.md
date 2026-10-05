@@ -119,6 +119,33 @@ reconciliation 與 baseline 差額檢查，不能建立新倉。
 委託時執行。子程序固定使用 `DRY_RUN`／`ENABLE_LIVE_TRADING=NO`，只讀取元大正式帳戶
 庫存並原子更新 baseline；不會啟動 LIVE 或送單。同步失敗時保留原基準。
 
+## 同帳戶人工交易共存
+
+LIVE runtime 會把每日啟動時的券商庫存視為 frozen baseline，並把程式本身的 fills
+獨立保存為策略部位。每日 baseline 建立後，如果元大完整委託彙總證明另一筆人工委託
+發生在 baseline 之後、帳號正確、券商委託號與時間完整、沒有未知 BasketNo，而且該股票
+沒有程式持倉，reconciliation 會把其累計成交量寫入持久的
+`external_inventory_adjustments` 台帳。有效 baseline 為：
+
+```text
+daily frozen baseline + verified external/manual fills
+```
+
+因此人工買賣其他股票不會被誤認為策略部位，也不會納入 13:20／13:23 強制平倉。
+部分成交會依券商累計成交量單調更新，重複 callback、重連與重啟不會重複計算；人工成交
+被採納時會留下 audit event 並推送通知。
+
+安全邊界仍然 fail closed：
+
+- 人工委託與程式既有持倉為同一股票時，停止並要求人工核對。
+- 人工未成交委託與新的策略候選為同一股票時，只跳過該候選，不送單；其他股票仍可在
+  下一次完整對帳後交易。
+- 未知非空 BasketNo、缺少券商委託號／日期時間、不支援的交易類別、成交量倒退、或券商
+  庫存無法由 baseline、外部成交與策略 fills 精確解釋時，一律 HALT。
+- 轉帳、股票撥轉或其他沒有當日委託成交證據的庫存變化不會自動吸收。
+- `/sync-baseline` 建立新 baseline 時會把當日外部調整折入新基準並清空該日調整台帳，避免
+  重複計算。
+
 Telegram `/start` 會先檢查 persistent broker execution HALT；若仍為 HALT，
 不會產生確認碼，必須先用 `/status` 查明原因，確認元大實際庫存與未成交委託後，
 再用 `/clear-halt` 解除。輸入確認碼後，Trading Bot 會等待 runtime 完成登入、對帳與

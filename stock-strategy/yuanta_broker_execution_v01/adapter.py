@@ -6,7 +6,7 @@ position sizing, risk rules, or market-data logic.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
@@ -53,6 +53,10 @@ class ReconciliationRequired(BrokerAdapterError):
     pass
 
 
+class ExternalManualOrderConflict(BrokerAdapterError):
+    """A manual order overlaps a not-yet-filled strategy entry candidate."""
+
+
 @dataclass(frozen=True, slots=True)
 class ReconciliationResult:
     status: str
@@ -61,6 +65,8 @@ class ReconciliationResult:
     expected_broker_positions: dict[str, int]
     broker_positions: dict[str, int]
     order_mismatches: list[dict[str, Any]]
+    external_position_adjustments: dict[str, int] = field(default_factory=dict)
+    external_orders_adopted: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +96,13 @@ def _as_str(value: Any, default: str = "") -> str:
     except Exception:
         return default
     return text.strip()
+
+
+def _optional_code_text(value: Any) -> str:
+    """Preserve numeric zero while keeping absent optional codes unknown."""
+    if value is None or value == "":
+        return ""
+    return _as_str(value)
 
 
 def _collection(value: Any) -> list[Any]:
@@ -309,7 +322,7 @@ def _normalise_real_report(value: Any) -> dict[str, Any]:
         "order_no": _as_str(_safe(value, "OrderNo", "")),
         "symbol": _as_str(_safe(value, "CompanyNo", "")),
         "side": _as_str(_safe(value, "BS", "")),
-        "order_type": _as_str(_safe(value, "OrderType", "") or ""),
+        "order_type": _optional_code_text(_safe(value, "OrderType", "")),
         "price": _as_str(_safe(value, "Price", "0")),
         "before_qty": _optional_integer(value, "BeforeQty"),
         "order_qty": _strict_integer(_required_attribute(value, "OrderQty"), "OrderQty"),
@@ -331,7 +344,7 @@ def _normalise_merge_report(value: Any) -> dict[str, Any]:
         "order_no": _as_str(_safe(value, "OrderNo", "")),
         "symbol": _as_str(_safe(value, "CompanyNo", "")),
         "side": _as_str(_safe(value, "BS", "")),
-        "order_type": _as_str(_safe(value, "OrderType", "") or ""),
+        "order_type": _optional_code_text(_safe(value, "OrderType", "")),
         "price": _as_str(_safe(value, "Price", "0")),
         "last_deal_price": _as_str(_safe(value, "LastDealPrice", "0")),
         "avg_deal_price": _as_str(_safe(value, "AvgDealPrice", "0")),
@@ -600,6 +613,8 @@ class YuantaSparkExecutionAdapter:
         live_gate: LiveTradingGate | None = None,
         language: Any | None = None,
         position_baseline: Mapping[str, int] | None = None,
+        position_baseline_captured_at: str | datetime | None = None,
+        external_inventory_listener: Callable[[dict[str, Any]], Any] | None = None,
         pre_order_reconcile_timeout: float = 20.0,
     ):
         clean_account = account.strip().upper()
@@ -614,7 +629,7 @@ class YuantaSparkExecutionAdapter:
         self.pre_order_reconcile_timeout = float(pre_order_reconcile_timeout)
         if not math.isfinite(self.pre_order_reconcile_timeout) or self.pre_order_reconcile_timeout <= 0:
             raise ValueError("pre_order_reconcile_timeout must be positive")
-        self.position_baseline = {}
+        self._frozen_position_baseline: dict[str, int] = {}
         for raw_key, raw_quantity in dict(position_baseline or {}).items():
             key = str(raw_key).strip().upper()
             if "|" not in key:
@@ -628,7 +643,13 @@ class YuantaSparkExecutionAdapter:
             if quantity and trade_kind in {"4", "6"} and quantity > 0:
                 raise ValueError("short/borrow baseline quantities must be negative")
             if quantity:
-                self.position_baseline[key] = quantity
+                self._frozen_position_baseline[key] = quantity
+        self.position_baseline_captured_at = self._parse_baseline_captured_at(
+            position_baseline_captured_at
+        )
+        self.external_inventory_listener = external_inventory_listener
+        self.position_baseline: dict[str, int] = dict(self._frozen_position_baseline)
+        self._refresh_effective_position_baseline()
         self.language = (
             language
             if language is not None
@@ -656,6 +677,57 @@ class YuantaSparkExecutionAdapter:
         self._snapshot_complete = True
         self.api.OnResponse += self._on_response
         self._worker.start()
+
+    @staticmethod
+    def _parse_baseline_captured_at(
+        value: str | datetime | None,
+    ) -> datetime | None:
+        if value is None:
+            return None
+        try:
+            stamp = (
+                value
+                if isinstance(value, datetime)
+                else datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError("position baseline captured_at is invalid") from exc
+        if stamp.tzinfo is None:
+            raise ValueError("position baseline captured_at must be timezone-aware")
+        return stamp.astimezone(TAIPEI)
+
+    def _external_adjustment_day(self) -> str | None:
+        captured = self.position_baseline_captured_at
+        today = datetime.now(TAIPEI).date()
+        if captured is None or captured.date() != today:
+            return None
+        return today.strftime("%Y%m%d")
+
+    @staticmethod
+    def _combine_positions(*parts: Mapping[str, int]) -> dict[str, int]:
+        result: dict[str, int] = {}
+        for part in parts:
+            for key, raw_quantity in part.items():
+                quantity = int(raw_quantity)
+                if quantity:
+                    result[str(key)] = result.get(str(key), 0) + quantity
+                    if result[str(key)] == 0:
+                        result.pop(str(key))
+        return result
+
+    def _refresh_effective_position_baseline(self) -> dict[str, int]:
+        day = self._external_adjustment_day()
+        if day is None:
+            # Preserve the original public attribute behavior for UAT/tests and
+            # callers without reviewed baseline provenance. External adoption
+            # is disabled in this compatibility mode.
+            return {}
+        adjustments = self.store.external_position_adjustments(day)
+        self.position_baseline = self._combine_positions(
+            self._frozen_position_baseline,
+            adjustments,
+        )
+        return adjustments
 
     def close(self) -> None:
         with self._callback_lock:
@@ -1129,6 +1201,11 @@ class YuantaSparkExecutionAdapter:
         self._snapshot_complete = False
         try:
             yield deadline
+        except ExternalManualOrderConflict:
+            # The snapshot itself completed and proved a candidate-specific
+            # manual-order collision.  The current candidate is rejected, but
+            # a later symbol may run its own mandatory fresh reconciliation.
+            raise
         except Exception:
             if not self._snapshot_complete:
                 self._query_uncertain = True
@@ -1178,6 +1255,215 @@ class YuantaSparkExecutionAdapter:
             raise BrokerAdapterError("reconciliation total deadline exceeded")
         self._snapshot_complete = True
 
+    def _remote_is_locally_owned(
+        self,
+        remote: Mapping[str, Any],
+        local_orders: Iterable[StoredOrder],
+    ) -> bool:
+        basket_no = str(remote.get("basket_no", "") or "")
+        order_no = str(remote.get("order_no", "") or "")
+        return any(
+            self._is_current_order(order)
+            and self._identity_matches(order, remote)
+            and (
+                (basket_no and basket_no == order.basket_no)
+                or (
+                    not basket_no
+                    and order_no
+                    and order_no == order.broker_order_no
+                )
+            )
+            for order in local_orders
+        )
+
+    @staticmethod
+    def _remote_order_stamp(remote: Mapping[str, Any]) -> datetime | None:
+        raw_day = str(remote.get("trade_date", "") or "").strip()
+        raw_time = str(remote.get("order_time", "") or "").strip()
+        day = raw_day.replace("/", "").replace("-", "")
+        if not re.fullmatch(r"[0-9]{8}", day):
+            return None
+        if not re.fullmatch(r"[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?", raw_time):
+            return None
+        try:
+            return datetime.fromisoformat(
+                f"{day[:4]}-{day[4:6]}-{day[6:]}T{raw_time}"
+            ).replace(tzinfo=TAIPEI)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _external_trade_kind(remote: Mapping[str, Any]) -> int | None:
+        raw = str(remote.get("order_type", "") or "").strip()
+        return {"0": 0, "9": 0, "3": 3, "4": 4, "5": 6, "6": 6}.get(raw)
+
+    def _external_inventory_candidates(
+        self,
+        merge: list[dict[str, Any]],
+        local_positions: Mapping[str, int],
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Translate only broker-proven manual fills after the daily baseline.
+
+        Unknown non-empty basket numbers are never treated as manual orders:
+        they may be lost strategy ownership.  A manual order may coexist with
+        the bot only while its symbol has no strategy-owned position.  A newly
+        RESERVED strategy candidate on that symbol is a soft conflict which
+        the caller may skip without halting the whole account.
+        """
+        captured_at = self.position_baseline_captured_at
+        day = self._external_adjustment_day()
+        if captured_at is None or day is None:
+            return [], []
+
+        local_orders = self.store.orders()
+        local_open_symbols = {
+            order.symbol
+            for order in local_orders
+            if order.status not in TERMINAL_STATUSES
+        }
+        local_position_symbols = {
+            str(key).partition("|")[0]
+            for key, quantity in local_positions.items()
+            if int(quantity)
+        }
+        existing_records = self.store.external_inventory_records(day)
+        candidates: list[dict[str, Any]] = []
+        conflicts: list[dict[str, Any]] = []
+
+        for remote in merge:
+            if self._remote_is_locally_owned(remote, local_orders):
+                continue
+            filled = int(remote.get("ok_qty", 0) or 0)
+            if filled <= 0:
+                continue
+            stamp = self._remote_order_stamp(remote)
+            if stamp is None:
+                conflicts.append({
+                    "reason": "external_fill_missing_timestamp",
+                    "symbol": str(remote.get("symbol", "") or ""),
+                    "order_no": str(remote.get("order_no", "") or ""),
+                })
+                continue
+            if stamp <= captured_at:
+                # This order was already represented by the frozen baseline.
+                continue
+
+            symbol = str(remote.get("symbol", "") or "").strip().upper()
+            order_no = str(remote.get("order_no", "") or "").strip()
+            basket_no = str(remote.get("basket_no", "") or "").strip()
+            raw_side = str(remote.get("side", "") or "").strip().upper()
+            side = {"BUY": "B", "SELL": "S", "B": "B", "S": "S"}.get(raw_side)
+            trade_kind = self._external_trade_kind(remote)
+            remote_status = _remote_status(remote)
+
+            if basket_no:
+                conflicts.append({
+                    "reason": "unknown_remote_basket_with_fill",
+                    "symbol": symbol,
+                    "order_no": order_no,
+                    "basket_no": basket_no,
+                })
+                continue
+            if not order_no or not symbol or side is None or trade_kind is None:
+                conflicts.append({
+                    "reason": "unsupported_external_fill_identity",
+                    "symbol": symbol,
+                    "order_no": order_no,
+                })
+                continue
+            signed = filled if side == "B" else -filled
+            existing = existing_records.get(order_no)
+            previous_filled = 0
+            if existing is not None:
+                if (
+                    str(existing["symbol"]).upper() != symbol
+                    or str(existing["side"]).upper() != side
+                    or int(existing["trade_kind"]) != trade_kind
+                ):
+                    conflicts.append({
+                        "reason": "external_fill_identity_changed",
+                        "symbol": symbol,
+                        "order_no": order_no,
+                    })
+                    continue
+                previous_filled = int(existing["cumulative_filled_quantity"])
+                if filled < previous_filled:
+                    conflicts.append({
+                        "reason": "external_fill_quantity_decreased",
+                        "symbol": symbol,
+                        "order_no": order_no,
+                    })
+                    continue
+
+            # A previously adopted fill is already part of the effective
+            # baseline. Seeing the same cumulative quantity again after the
+            # strategy later owns this symbol is harmless; any new manual fill
+            # quantity while a strategy position exists is a hard conflict.
+            if symbol in local_position_symbols and filled > previous_filled:
+                conflicts.append({
+                    "reason": "external_fill_conflicts_with_strategy_position",
+                    "symbol": symbol,
+                    "order_no": order_no,
+                })
+                continue
+            # A completed manual fill can safely become part of the rolling
+            # external baseline before a later strategy entry on the same
+            # symbol.  Only an in-flight manual order overlaps the strategy's
+            # newly RESERVED entry and must make that candidate stand down.
+            if (
+                symbol in local_open_symbols
+                and remote_status not in TERMINAL_STATUSES
+            ):
+                conflicts.append({
+                    "reason": "external_manual_order_conflict",
+                    "symbol": symbol,
+                    "order_no": order_no,
+                })
+
+            fingerprint_payload = {
+                "trading_date": day,
+                "order_no": order_no,
+                "symbol": symbol,
+                "trade_kind": trade_kind,
+                "side": side,
+                "filled": filled,
+                "remote_status": remote_status.value,
+                "order_time": str(remote.get("order_time", "") or ""),
+            }
+            candidates.append({
+                "trading_date": day,
+                "order_no": order_no,
+                "symbol": symbol,
+                "trade_kind": trade_kind,
+                "side": side,
+                "cumulative_filled_quantity": filled,
+                "signed_quantity": signed,
+                "remote_status": remote_status.value,
+                "row_fingerprint": hashlib.sha256(
+                    json.dumps(
+                        fingerprint_payload,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest(),
+            })
+        return candidates, conflicts
+
+    def _candidate_external_baseline(
+        self,
+        day: str,
+        candidates: Iterable[Mapping[str, Any]],
+    ) -> tuple[dict[str, int], dict[str, int]]:
+        records = self.store.external_inventory_records(day)
+        for row in candidates:
+            records[str(row["order_no"])] = dict(row)
+        adjustments: dict[str, int] = {}
+        for row in records.values():
+            key = f"{str(row['symbol']).upper()}|{int(row['trade_kind'])}"
+            adjustments[key] = adjustments.get(key, 0) + int(row["signed_quantity"])
+        adjustments = {key: value for key, value in adjustments.items() if value}
+        return self._combine_positions(self._frozen_position_baseline, adjustments), adjustments
+
     def reconcile(
         self,
         *,
@@ -1186,10 +1472,12 @@ class YuantaSparkExecutionAdapter:
     ) -> ReconciliationResult:
         """Recover missed detailed reports, then compare aggregate orders and inventory.
 
-        The default is deliberately strict: any manual/external stock position in
-        the same account creates a mismatch. Set strict_positions=False only if
-        the caller has an independently reviewed ownership model for unmanaged
-        positions.
+        The default remains strict for unexplained inventory.  When an
+        account-scoped baseline timestamp is supplied, complete current-session
+        broker reports may explain unrelated manual fills after that timestamp.
+        Those fills are durably separated from strategy-owned fills and become a
+        rolling external baseline; unexplained transfers and same-symbol overlap
+        with a strategy position still halt fail-closed.
         """
         with self._snapshot_deadline(timeout) as deadline:
             self.request_reconciliation()
@@ -1199,19 +1487,79 @@ class YuantaSparkExecutionAdapter:
             broker_positions = dict(self._latest_positions or {})
             local_positions = self.store.position_buckets()
             order_mismatches = self._compare_orders(merge)
-            expected_positions = dict(self.position_baseline)
-            for symbol, quantity in local_positions.items():
-                expected_positions[symbol] = expected_positions.get(symbol, 0) + quantity
-                if expected_positions[symbol] == 0:
-                    expected_positions.pop(symbol)
+            external_adjustments = self._refresh_effective_position_baseline()
+            adopted: list[dict[str, Any]] = []
+
+            candidates, external_conflicts = self._external_inventory_candidates(
+                merge,
+                local_positions,
+            )
+            order_mismatches.extend(external_conflicts)
+
+            manual_conflicts = [
+                row for row in order_mismatches
+                if row.get("reason") == "external_manual_order_conflict"
+            ]
+            hard_order_mismatches = [
+                row for row in order_mismatches
+                if row.get("reason") != "external_manual_order_conflict"
+            ]
+
+            day = self._external_adjustment_day()
+            candidate_baseline = dict(self.position_baseline)
+            if day is not None and candidates:
+                candidate_baseline, _ = self._candidate_external_baseline(
+                    day,
+                    candidates,
+                )
+
+            expected_positions = self._combine_positions(
+                candidate_baseline,
+                local_positions,
+            )
             position_mismatch = strict_positions and expected_positions != broker_positions
 
-            if order_mismatches or position_mismatch:
+            if hard_order_mismatches or position_mismatch:
                 self.store.halt("RECONCILIATION_MISMATCH")
                 raise ReconciliationMismatch(
                     f"orders={order_mismatches!r}; "
-                    f"local_positions={local_positions!r}; baseline={self.position_baseline!r}; "
+                    f"local_positions={local_positions!r}; baseline={candidate_baseline!r}; "
                     f"expected={expected_positions!r}; broker_positions={broker_positions!r}"
+                )
+
+            if day is not None and candidates:
+                adopted = self.store.adopt_external_inventory_rows(day, candidates)
+                external_adjustments = self._refresh_effective_position_baseline()
+                expected_positions = self._combine_positions(
+                    self.position_baseline,
+                    local_positions,
+                )
+                if expected_positions != broker_positions:
+                    self.store.halt("EXTERNAL_INVENTORY_COMMIT_MISMATCH")
+                    raise ReconciliationMismatch(
+                        "external inventory changed during durable adoption"
+                    )
+                if adopted and self.external_inventory_listener is not None:
+                    for event in adopted:
+                        try:
+                            self.external_inventory_listener(dict(event))
+                        except Exception as exc:
+                            self.store.audit_event(
+                                "EXTERNAL_INVENTORY_LISTENER_FAILED",
+                                {
+                                    "error_type": type(exc).__name__,
+                                    "symbol": event.get("symbol"),
+                                },
+                            )
+            if manual_conflicts:
+                # Broker-proven partial fills were first adopted into the
+                # rolling external baseline, but no broker send can occur from
+                # the overlapping strategy candidate. A later different symbol
+                # still runs its own fresh reconciliation before submission.
+                self._reconciled = True
+                raise ExternalManualOrderConflict(
+                    "manual broker order overlaps the strategy entry candidate; "
+                    "candidate was skipped without changing strategy inventory"
                 )
             self._reconciled = True
             return ReconciliationResult(
@@ -1221,6 +1569,8 @@ class YuantaSparkExecutionAdapter:
                 expected_broker_positions=expected_positions,
                 broker_positions=broker_positions,
                 order_mismatches=[],
+                external_position_adjustments=dict(external_adjustments),
+                external_orders_adopted=adopted,
             )
 
     def inspect_broker_state(self, *, timeout: float = 20.0) -> BrokerStateSnapshot:
@@ -1394,39 +1744,68 @@ class YuantaSparkExecutionAdapter:
                                    "operation": pending["operation"],
                                    "identify": int(pending["identify"])})
 
-        # Reverse reconciliation: an OPEN broker order that cannot be
-        # matched to a locally-owned basket/order number is external/manual
-        # intervention. Terminal broker history is intentionally ignored.
+        # Reverse reconciliation: unrelated manual orders may coexist with
+        # the bot.  An external order on a strategy-owned position remains a
+        # hard conflict; an order on a newly RESERVED candidate is a soft
+        # conflict so that candidate can be skipped without halting all other
+        # symbols. Terminal fills are validated separately against inventory.
         local_orders = self.store.orders()
+        local_position_symbols = {
+            key.partition("|")[0]
+            for key, quantity in self.store.position_buckets().items()
+            if int(quantity)
+        }
+        local_open_symbols = {
+            order.symbol
+            for order in local_orders
+            if order.status not in TERMINAL_STATUSES
+        }
         for remote in merge:
             remote_status = _remote_status(remote)
             if remote_status in TERMINAL_STATUSES:
                 continue
-
-            basket_no = str(remote.get("basket_no", "") or "")
-            order_no = str(remote.get("order_no", "") or "")
-
-            owned = next((
-                order for order in local_orders
-                if self._is_current_order(order) and self._identity_matches(order, remote)
-                and (
-                    (basket_no and basket_no == order.basket_no)
-                    or (not basket_no and order_no and order_no == order.broker_order_no)
-                )
-            ), None)
-            if owned is not None:
+            if self._remote_is_locally_owned(remote, local_orders):
                 continue
 
-            mismatches.append(
-                {
-                    "reason": "unexpected_remote_open_order",
-                    "symbol": str(remote.get("symbol", "") or ""),
-                    "side": str(remote.get("side", "") or ""),
-                    "order_no": order_no,
-                    "basket_no": basket_no,
-                    "remote_status": remote_status.value,
-                }
-            )
+            symbol = str(remote.get("symbol", "") or "").strip().upper()
+            order_no = str(remote.get("order_no", "") or "").strip()
+            basket_no = str(remote.get("basket_no", "") or "").strip()
+            raw_side = str(remote.get("side", "") or "").strip().upper()
+            side = {"BUY": "B", "SELL": "S", "B": "B", "S": "S"}.get(raw_side)
+            stamp = self._remote_order_stamp(remote)
+            conflict_reason = None
+            if basket_no:
+                # Preserve the established audit/alert reason while still
+                # refusing to classify an unknown basket as a manual order.
+                conflict_reason = "unexpected_remote_open_order"
+            elif (
+                not order_no
+                or not symbol
+                or side is None
+                or self._external_trade_kind(remote) is None
+            ):
+                conflict_reason = "unsupported_external_open_order_identity"
+            elif stamp is None:
+                conflict_reason = "external_open_order_missing_timestamp"
+            elif self._external_adjustment_day() is None:
+                conflict_reason = "unexpected_remote_open_order"
+            elif stamp <= self.position_baseline_captured_at:
+                conflict_reason = "external_open_order_predates_baseline"
+            elif symbol in local_position_symbols:
+                conflict_reason = "unexpected_remote_open_order"
+            elif symbol in local_open_symbols:
+                conflict_reason = "external_manual_order_conflict"
+            if conflict_reason is not None:
+                mismatches.append(
+                    {
+                        "reason": conflict_reason,
+                        "symbol": symbol,
+                        "side": str(remote.get("side", "") or ""),
+                        "order_no": order_no,
+                        "basket_no": basket_no,
+                        "remote_status": remote_status.value,
+                    }
+                )
 
         return mismatches
 

@@ -93,6 +93,21 @@ class TradingBotNotifierTests(unittest.TestCase):
             message,
         )
 
+    def test_external_manual_inventory_adoption_is_rendered_without_order_identity(self):
+        message = format_runtime_event(
+            "EXTERNAL_MANUAL_INVENTORY_ADOPTED",
+            {
+                "symbol": "2330",
+                "side": "B",
+                "delta_quantity": 1000,
+                "order_no": "MUST_NOT_RENDER",
+            },
+        )
+        self.assertIn("人工成交已自動納入庫存基準", message)
+        self.assertIn("2330", message)
+        self.assertIn("1000 股", message)
+        self.assertNotIn("MUST_NOT_RENDER", message)
+
     def test_critical_omits_details(self):
         message = format_critical(
             "MAX_DAILY_LOSS",

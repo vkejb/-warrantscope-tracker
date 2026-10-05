@@ -112,6 +112,25 @@ class MarketFallbackTests(unittest.TestCase):
         self.assertEqual(result, 2000)
         adapter.reconcile.assert_called_once_with(timeout=2, strict_positions=True)
 
+    def test_force_flat_excludes_verified_manual_inventory_adjustment(self):
+        adapter = Mock()
+        adapter.position_baseline = {"3094|0": 2000}
+        adapter.reconcile.return_value = Mock(
+            broker_positions={"3094|0": 3000},
+        )
+        store = Mock()
+        store.position_buckets.return_value = {"3094|0": 1000}
+
+        result = _authoritative_cash_long_delta(
+            adapter,
+            store,
+            baseline={"3094|0": 1000},
+            symbol="3094",
+            timeout=2,
+        )
+
+        self.assertEqual(result, 1000)
+
     def test_manual_sale_below_baseline_never_buys_back(self):
         adapter = Mock()
         adapter.reconcile.return_value = Mock(

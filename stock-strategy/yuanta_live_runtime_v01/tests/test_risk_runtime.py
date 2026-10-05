@@ -397,9 +397,13 @@ class RuntimeGateTests(unittest.TestCase):
                 account="S12345678901",
                 close=lambda: None,
             )
+            resets = []
             store = SimpleNamespace(
                 position_buckets=lambda: {},
                 orders=lambda: [],
+                reset_external_inventory_adjustments=lambda day, reason: resets.append(
+                    (day, reason)
+                ),
                 close=lambda: None,
             )
             adapter = SimpleNamespace(
@@ -420,6 +424,8 @@ class RuntimeGateTests(unittest.TestCase):
             self.assertEqual(0, result)
             self.assertEqual({"0050|0": 1000}, runtime_main._load_baseline(baseline))
             self.assertTrue(runtime_main._baseline_meta_path(baseline).is_file())
+            self.assertEqual(len(resets), 1)
+            self.assertEqual(resets[0][1], "FOLDED_INTO_FRESH_BROKER_BASELINE")
 
     def test_automatic_baseline_never_rebases_after_today_entry(self):
         with tempfile.TemporaryDirectory() as temporary:
