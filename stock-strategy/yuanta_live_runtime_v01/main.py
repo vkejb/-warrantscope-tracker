@@ -68,6 +68,7 @@ from .strategy import (
 )
 from .watchdog import Heartbeat, monitor as watchdog_monitor
 from .account_lock import acquire_account_lock, release_account_lock
+from .late_start import warm_start_from_collector
 
 TAIPEI = ZoneInfo("Asia/Taipei")
 MODULE_DIR = Path(__file__).resolve().parent
@@ -1778,6 +1779,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     failure_code = ""
     startup_stage = "LOCAL_SETUP"
     archive_counter_baseline = _store_archive_counters(store)
+    late_start_warmup = None
 
     def startup_progress(stage: str, budget_seconds: float = 30.0) -> None:
         nonlocal startup_stage
@@ -1938,6 +1940,33 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 "trade_attempted": trade_attempted,
                 "pending_exit_reason": pending_exit_reason,
             })
+        if (
+            not recovery_only
+            and position is None
+            and entry_order_id is None
+            and exit_order_id is None
+            and not trade_attempted
+        ):
+            startup_progress("LATE_START_WARMUP", 30)
+            late_start_warmup = warm_start_from_collector(
+                engine,
+                runtime_dir=getattr(
+                    args, "warmup_runtime_dir", DEFAULT_ARCHIVE_RUNTIME_DIR
+                ).resolve(),
+                now=datetime.now(TAIPEI),
+                signal_date=str(seal["signal_date"]),
+                seal_hash=str(seal.get("seal_hash", "")),
+                required_symbols={str(item.stock_id) for item in quote_items},
+            )
+            log(
+                "LATE_START_WARMUP",
+                result=late_start_warmup.public_snapshot(),
+            )
+            if late_start_warmup.required and late_start_warmup.status != "READY":
+                failure_code = "LATE_START_WARMUP_FAILED"
+                raise RuntimeError(
+                    f"late-start market history is unavailable: {late_start_warmup.status}"
+                )
         startup_progress("QUOTE_SUBSCRIPTION")
         try:
             session.subscribe(quote_items)
@@ -1965,6 +1994,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             entry_policy=LONG_MARKET_REGIME_POLICY,
             entry_location_policy=ANTI_CHASE_ENTRY_POLICY,
             exit_policy=LIVE_EXIT_POLICY,
+            late_start_warmup=(
+                None if late_start_warmup is None
+                else late_start_warmup.public_snapshot()
+            ),
             gate=gate.public_snapshot(),
             runtime_instance_id=runtime_instance_id,
             trading_date=datetime.now(TAIPEI).date().isoformat(),
@@ -1981,6 +2014,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             entry_policy=LONG_MARKET_REGIME_POLICY,
             entry_location_policy=ANTI_CHASE_ENTRY_POLICY,
             exit_policy=LIVE_EXIT_POLICY,
+            late_start_warmup=(
+                None if late_start_warmup is None
+                else late_start_warmup.public_snapshot()
+            ),
             trade_attempted=trade_attempted,
             last_quote_at=session.last_quote_at,
             gate=gate.public_snapshot(),
@@ -3317,6 +3354,21 @@ def _preflight(args, environment: str) -> int:
             strict_positions=True,
         )
 
+        late_start_warmup = None
+        if hasattr(args, "warmup_runtime_dir"):
+            late_start_warmup = warm_start_from_collector(
+                engine,
+                runtime_dir=args.warmup_runtime_dir.resolve(),
+                now=datetime.now(TAIPEI),
+                signal_date=str(seal["signal_date"]),
+                seal_hash=str(seal.get("seal_hash", "")),
+                required_symbols={str(item.stock_id) for item in quote_items},
+            )
+            if late_start_warmup.required and late_start_warmup.status != "READY":
+                raise RuntimeError(
+                    f"late-start market history is unavailable: {late_start_warmup.status}"
+                )
+
         session.subscribe(quote_items)
         readiness = _wait_for_quote_readiness(
             engine, quote_items,
@@ -3333,6 +3385,10 @@ def _preflight(args, environment: str) -> int:
                     "quote_symbols": len(quote_items),
                     "quote_readiness": readiness,
                     "entry_policy": LONG_MARKET_REGIME_POLICY,
+                    "late_start_warmup": (
+                        None if late_start_warmup is None
+                        else late_start_warmup.public_snapshot()
+                    ),
                     "reconciliation": asdict(result),
                     "gate": adapter.live_gate.public_snapshot(),
                 },
@@ -3622,6 +3678,12 @@ def _common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--baseline", type=Path, default=DEFAULT_RUNTIME_DIR / "position_baseline.json")
     parser.add_argument("--reconcile-timeout", type=float, default=20.0)
     parser.add_argument("--quote-readiness-timeout", type=float, default=20.0)
+    parser.add_argument(
+        "--warmup-runtime-dir",
+        type=Path,
+        default=DEFAULT_ARCHIVE_RUNTIME_DIR,
+        help="read-only shadow collector runtime used for validated late-start tick warm-up",
+    )
 
 
 def _start_options(parser: argparse.ArgumentParser) -> None:

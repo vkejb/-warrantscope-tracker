@@ -183,6 +183,7 @@ class _StockState:
     session_date: object | None = None
     session_open_price: float | None = None
     session_open_time: datetime | None = None
+    session_open_source: str | None = None
 
 
 class LiveDirectionEngine:
@@ -415,6 +416,7 @@ class LiveDirectionEngine:
             state.session_date = stamp.date()
             state.session_open_price = px
             state.session_open_time = stamp
+            state.session_open_source = "LIVE_FIRST_TICK"
         if state.ticks:
             previous = state.ticks[-1]
             if stamp.date() == previous["time"].date():
@@ -443,6 +445,120 @@ class LiveDirectionEngine:
         while state.ticks and state.ticks[0]["time"] < cutoff:
             state.ticks.popleft()
         return IngestOutcome("STOCK_TICK", str(symbol), True, "ACCEPTED")
+
+    @_locked
+    def seed_session_history(
+        self,
+        symbol: str,
+        *,
+        session_date: object,
+        opening_price: object,
+        opening_time: datetime,
+        cumulative_volume: object,
+        cumulative_pv: object,
+        retained_ticks: list[dict],
+        last_serial: object,
+        source: str = "VERIFIED_COLLECTOR_WARM_START",
+    ) -> IngestOutcome:
+        """Atomically seed a fresh engine from a validated same-day archive.
+
+        This is intentionally narrower than normal tick ingestion.  It may only
+        initialize an empty symbol state, and the archived opening observation
+        must have arrived during the strategy's original opening window.  A
+        late runtime therefore cannot silently relabel its first live callback
+        as the market open.
+        """
+
+        def reject(reason: str) -> IngestOutcome:
+            return IngestOutcome("SESSION_WARM_START", str(symbol), False, reason)
+
+        state = self._states.get(str(symbol))
+        if state is None:
+            return reject("UNKNOWN_SYMBOL")
+        if state.session_date is not None or state.ticks:
+            return reject("STATE_NOT_EMPTY")
+        try:
+            open_px = float(opening_price)
+            total_volume = float(cumulative_volume)
+            total_pv = float(cumulative_pv)
+            serial = int(last_serial)
+        except (TypeError, ValueError, OverflowError):
+            return reject("NON_NUMERIC_SUMMARY")
+        if (
+            not all(math.isfinite(value) for value in (open_px, total_volume, total_pv))
+            or open_px <= 0
+            or total_volume <= 0
+            or total_pv <= 0
+            or serial < 0
+        ):
+            return reject("INVALID_SUMMARY")
+        opened = opening_time.astimezone(TAIPEI)
+        if opened.date() != session_date:
+            return reject("OPENING_DATE_MISMATCH")
+        if opened.time() > self._clock(
+            str(ANTI_CHASE_ENTRY_POLICY["opening_reference_must_arrive_by"])
+        ):
+            return reject("OPENING_REFERENCE_TOO_LATE")
+        if not retained_ticks:
+            return reject("NO_RETAINED_TICKS")
+
+        normalized: list[dict] = []
+        previous_time: datetime | None = None
+        previous_serial = 0
+        for raw in retained_ticks:
+            try:
+                stamp = raw["time"].astimezone(TAIPEI)
+                received = raw["received_at"].astimezone(TAIPEI)
+                price = float(raw["price"])
+                volume = float(raw["volume"])
+                bid = float(raw["bid"])
+                ask = float(raw["ask"])
+                row_serial = int(raw["serial"])
+            except (AttributeError, KeyError, TypeError, ValueError, OverflowError):
+                return reject("INVALID_RETAINED_TICK")
+            if stamp.date() != session_date or received.date() != session_date:
+                return reject("RETAINED_TICK_DATE_MISMATCH")
+            age = (received - stamp).total_seconds()
+            if age < -MAXIMUM_FUTURE_TICK_SKEW_SECONDS or age > float(
+                SPEC["maximum_tick_staleness_seconds"]
+            ):
+                return reject("RETAINED_TICK_CLOCK_INVALID")
+            if (
+                not all(math.isfinite(value) for value in (price, volume, bid, ask))
+                or min(price, bid, ask) <= 0
+                or volume < 0
+                or ask < bid
+            ):
+                return reject("RETAINED_TICK_VALUE_INVALID")
+            if previous_time is not None and stamp < previous_time:
+                return reject("RETAINED_TICK_TIME_OUT_OF_ORDER")
+            if row_serial > 0 and previous_serial > 0 and row_serial <= previous_serial:
+                return reject("RETAINED_TICK_SERIAL_OUT_OF_ORDER")
+            previous_time = stamp
+            if row_serial > 0:
+                previous_serial = row_serial
+            normalized.append({
+                "time": stamp,
+                "received_at": received,
+                "price": price,
+                "volume": volume,
+                "bid": bid,
+                "ask": ask,
+                "flag": str(raw.get("flag", "")),
+                "serial": row_serial,
+            })
+        if serial < max((int(row["serial"]) for row in normalized), default=0):
+            return reject("LAST_SERIAL_BEHIND_RETAINED_HISTORY")
+
+        state.session_date = session_date
+        state.session_open_price = open_px
+        state.session_open_time = opened
+        state.session_open_source = str(source)
+        state.cumulative_volume = total_volume
+        state.cumulative_pv = total_pv
+        state.last_serial = serial
+        state.ticks.extend(normalized)
+        return IngestOutcome("SESSION_WARM_START", str(symbol), True, "ACCEPTED")
 
     def record_book_combined(
         self, symbol: str, **kwargs,
@@ -581,6 +697,7 @@ class LiveDirectionEngine:
                     if state.session_open_time else None
                 ),
                 "session_open_price": state.session_open_price,
+                "session_open_source": state.session_open_source,
                 "causal_cumulative_volume": known_volume,
                 "causal_cumulative_pv": known_pv,
             }

@@ -268,6 +268,10 @@ class RuntimeHarness:
                                                return_value=({"signal_date": "20261002"}, items, {}))),
                 ("load_credentials", Mock(return_value={"account": "MOCK_SAFETY_ACCOUNT"})),
                 ("load_api_types", Mock(return_value={})), ("_extend_quote_types", Mock(return_value={})),
+                ("warm_start_from_collector", Mock(return_value=SimpleNamespace(
+                    required=False, status="NOT_REQUIRED",
+                    public_snapshot=lambda: {"required": False, "status": "NOT_REQUIRED"},
+                ))),
                 ("_Session", Session), ("YuantaSparkExecutionAdapter", Adapter),
                 ("RuntimeNotifier", Notifier), ("AsyncTradingNotifier", Mock(side_effect=OSError("mock outbox unavailable")) if self.notification_init_failure else Notifier),
                 ("AppendOnlyRun", Mock(return_value=SimpleNamespace(
