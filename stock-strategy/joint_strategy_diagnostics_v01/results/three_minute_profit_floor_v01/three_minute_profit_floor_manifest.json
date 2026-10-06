@@ -1,0 +1,14 @@
+{
+  "analysis_id": "THREE_MINUTE_CONTINUATION_NET_MFE_STUDY_V0_1",
+  "artifact_hashes": {
+    "three_minute_profit_floor_summary.json": "9c89b54e8d6c4113fc61a7236b6d9ea31c18fe0cff698d5929bc86fa99200382",
+    "three_minute_profit_floor_per_trade.csv": "1e809f65ad33c38abd2f46cf767aa28f3de25cfb77ecf3f8fd77ea3bc3a72e62",
+    "report_three_minute_profit_floor.md": "2e0b15cd98575bdcd86230406a612f7483eee919682c3a2e52454e85c2527b1d"
+  },
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "production_behavior_changed": false,
+  "live_behavior_changed": false,
+  "manifest_hash": "e9ace3bb33f71da46b374bcc908e52ee4b791495b44c885fa94d6c9f43909e1d"
+}
