@@ -246,6 +246,28 @@ class SupervisorRegressions(unittest.TestCase):
             trigger.assert_not_called()
             self.assertIn("SUPERVISOR_PRIOR_SESSION_UNRESOLVED", [call.args[0] for call in notifier.return_value.critical.call_args_list])
 
+    def test_real_clock_health_probe_does_not_reuse_stale_cycle_timestamp(self):
+        with TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            now = datetime(2026, 10, 6, 9, 0, tzinfo=TAIPEI)
+            stop = threading.Event()
+            fake_datetime = Mock()
+            fake_datetime.now.return_value = now
+            fake_datetime.fromisoformat.side_effect = datetime.fromisoformat
+            fake_datetime.combine.side_effect = datetime.combine
+            healthy = Mock(healthy=True, controller_present=True)
+            with patch.dict(os.environ, {SCHEDULE_GATE: "YES"}), \
+                 patch("yuanta_live_runtime_v01.force_flat_supervisor.datetime", fake_datetime), \
+                 patch("yuanta_live_runtime_v01.force_flat_supervisor._is_trading_day", return_value=True), \
+                 patch("yuanta_live_runtime_v01.force_flat_supervisor._live_day_evidence", return_value=True), \
+                 patch("yuanta_live_runtime_v01.force_flat_supervisor.broker_flat_proof", return_value=False) as flat, \
+                 patch("yuanta_live_runtime_v01.force_flat_supervisor.runtime_health", return_value=healthy) as health, \
+                 patch("yuanta_live_runtime_v01.force_flat_supervisor._SleepInhibitor"), \
+                 patch("yuanta_live_runtime_v01.force_flat_supervisor.RuntimeNotifier"):
+                scheduler_loop(runtime, stop_event=stop, sleeper=lambda _s: stop.set())
+            flat.assert_called_with(runtime.resolve(), now=None)
+            health.assert_called_with(runtime.resolve(), now=None)
+
     def test_newer_baseline_and_halt_clear_suppress_stale_prior_session_warning(self):
         with TemporaryDirectory() as tmp:
             runtime = Path(tmp)

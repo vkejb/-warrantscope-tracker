@@ -371,6 +371,7 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0,
         raise RuntimeError("scheduled force-flat gate is not enabled")
     runtime_dir = Path(runtime_dir).resolve()
     runtime_dir.mkdir(parents=True, exist_ok=True)
+    clock_is_injected = clock is not None
     wall_clock = clock or (lambda: datetime.now(TAIPEI))
     sleep = sleeper or time.sleep
     _append(
@@ -420,7 +421,13 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0,
                 _supervisor_beat(runtime_dir, now, "SUPERVISING", warnings=[])
                 live_evidence = _live_day_evidence(runtime_dir, now)
                 request_present = (runtime_dir / REQUEST).exists()
-                flat_proved = broker_flat_proof(runtime_dir, now=now)
+                # With the real wall clock, let each health probe sample time
+                # after reading its file. Reusing this cycle's earlier `now`
+                # can race a concurrent heartbeat write and falsely classify a
+                # valid timestamp as HEARTBEAT_FUTURE. Deterministic tests keep
+                # their injected clock snapshot.
+                probe_now = now if clock_is_injected else None
+                flat_proved = broker_flat_proof(runtime_dir, now=probe_now)
                 prior = _read_json(runtime_dir / "heartbeat.json") or {}
                 try:
                     prior_stamp = datetime.fromisoformat(str(prior["at"]).replace("Z", "+00:00"))
@@ -459,7 +466,7 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0,
                             # Sleep prevention is optional: failure must not
                             # suppress mandatory liveness and force-flat work.
                             inhibitor_warning(exc, now)
-                    health = runtime_health(runtime_dir, now=now)
+                    health = runtime_health(runtime_dir, now=probe_now)
                     recovery_due = live_evidence and not flat_proved and not health.healthy
                     scheduled_due = (now.time().replace(tzinfo=None) >= TRIGGER_START and not flat_proved
                                      and (live_evidence or _baseline_ready(runtime_dir, now)))
@@ -475,7 +482,8 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0,
                             notifier.critical("RUNTIME_CHILD_RECOVERY_REQUIRED",
                                               "Authorized LIVE runtime is unavailable; starting broker-backed exit-only recovery")
                         trigger_once(
-                            runtime_dir, now=now, clock=wall_clock,
+                            runtime_dir, now=now,
+                            clock=wall_clock if clock_is_injected else None,
                             reason="RUNTIME_CHILD_EXIT_ONLY_RECOVERY" if recovery_due else "SCHEDULED_FORCE_FLAT_1320",
                             wait_seconds=_seconds_until_market_cutoff(now),
                         )
