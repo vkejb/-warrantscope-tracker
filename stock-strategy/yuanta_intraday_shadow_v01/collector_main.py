@@ -30,6 +30,7 @@ QUOTE_CALLBACK_NAMES = frozenset({
     "SubscribeStocktick",
     "SubscribeFiveTickA",
 })
+BROKER_CLEANUP_TIMEOUT_SECONDS = 10.0
 
 
 def _is_quote_callback(name: str) -> bool:
@@ -46,6 +47,64 @@ def _close_failed_connection(api) -> None:
         api.Dispose()
     except Exception:
         pass
+
+
+def _bounded_broker_cleanup(
+    api,
+    *,
+    account: str,
+    language,
+    tick_lists: list,
+    book_lists: list,
+    logged_in: bool,
+    opened: bool,
+    timeout_seconds: float = BROKER_CLEANUP_TIMEOUT_SECONDS,
+) -> bool:
+    """Best-effort vendor cleanup that cannot block archive finalization.
+
+    SPARK unsubscribe/logout calls are outside our control and have been seen
+    to block after the market closes.  Run them on a daemon worker only after
+    all callbacks have been fenced and the append-only archive is finalized.
+    A timeout returns False; it never changes the already truthful manifest.
+    """
+    finished = threading.Event()
+
+    def cleanup() -> None:
+        try:
+            for stock_list in tick_lists:
+                try:
+                    api.UnSubscribeStockTick(account, stock_list, language)
+                except Exception:
+                    pass
+            for book_list in book_lists:
+                try:
+                    api.UnSubscribeFiveTickA(account, book_list, language)
+                except Exception:
+                    pass
+            if logged_in:
+                try:
+                    api.LogOut()
+                except Exception:
+                    pass
+            if opened:
+                try:
+                    api.Close()
+                except Exception:
+                    pass
+            try:
+                api.Dispose()
+            except Exception:
+                pass
+        finally:
+            finished.set()
+
+    worker = threading.Thread(
+        target=cleanup,
+        name="yuanta-shadow-broker-cleanup",
+        daemon=True,
+    )
+    worker.start()
+    return finished.wait(max(0.01, float(timeout_seconds)))
 
 
 def _connect_and_login(
@@ -210,8 +269,11 @@ def run(
     started_at = utc_now()
     final_status = "FAILED"
     error_type = ""
+    accepting_callbacks = True
 
     def on_response(int_mark, _index, response_name, _handle, value):
+        if not accepting_callbacks:
+            return
         name = _safe_text(response_name)
         stock_id = ""
         callback_phase = "DISPATCH"
@@ -387,26 +449,33 @@ def run(
         print(f"收集失敗：{error_type}: {exc}")
         return 1
     finally:
+        # Fence new callbacks first.  finalize() takes the same artifact lock,
+        # so any callback already writing completes before file handles close.
+        # The manifest must be durable before calling vendor cleanup methods:
+        # those methods may block indefinitely after the close.
+        accepting_callbacks = False
         pfx_password = trading_password = ""
-        if api is not None:
-            for stock_list in subscribed_tick_lists:
-                try: api.UnSubscribeStockTick(account, stock_list, api_types["Language"].UTF8)
-                except Exception: pass
-            for book_list in subscribed_book_lists:
-                try: api.UnSubscribeFiveTickA(account, book_list, api_types["Language"].UTF8)
-                except Exception: pass
-            if logged_in:
-                try: api.LogOut(); time.sleep(1)
-                except Exception: pass
-            if opened:
-                try: api.Close()
-                except Exception: pass
-            try: api.Dispose()
-            except Exception: pass
-        manifest = artifact.finalize(status=final_status, started_at=started_at, ended_at=utc_now(), error_type=error_type)
-        print(json.dumps(manifest, ensure_ascii=False, indent=2))
-        if progress_callback:
-            progress_callback({"type": "FINAL", "manifest": manifest, "run_dir": str(artifact.run_dir)})
+        try:
+            manifest = artifact.finalize(status=final_status, started_at=started_at, ended_at=utc_now(), error_type=error_type)
+            print(json.dumps(manifest, ensure_ascii=False, indent=2))
+            if progress_callback:
+                progress_callback({"type": "FINAL", "manifest": manifest, "run_dir": str(artifact.run_dir)})
+        finally:
+            if api is not None:
+                cleanup_ok = _bounded_broker_cleanup(
+                    api,
+                    account=account,
+                    language=api_types["Language"].UTF8,
+                    tick_lists=subscribed_tick_lists,
+                    book_lists=subscribed_book_lists,
+                    logged_in=logged_in,
+                    opened=opened,
+                )
+                if not cleanup_ok:
+                    print(
+                        "警告：元大解除訂閱／登出清理逾時；行情封存已先完成，程序將結束。",
+                        flush=True,
+                    )
 
 
 def parse_args(argv=None):

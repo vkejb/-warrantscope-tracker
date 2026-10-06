@@ -40,6 +40,12 @@ class API:
 
 
 class ReadonlyBrokerProbeTests(unittest.TestCase):
+    def test_private_evidence_strips_validated_account_identity(self):
+        rows = [{"account": "S00000000000", "symbol": "4919"}]
+        self.assertEqual(probe._private_rows(rows), [{"symbol": "4919"}])
+        with self.assertRaisesRegex(RuntimeError, "not a list"):
+            probe._private_rows({"account": "S00000000000"})
+
     def test_only_allowlisted_queries_are_dispatched(self):
         api = API()
         session = SimpleNamespace(api=api, account="S00000000000")

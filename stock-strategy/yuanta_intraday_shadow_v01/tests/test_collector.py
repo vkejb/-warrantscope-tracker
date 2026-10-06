@@ -2,6 +2,7 @@ from pathlib import Path
 import hashlib
 import json
 import tempfile
+import threading
 import unittest
 from unittest.mock import Mock
 
@@ -12,6 +13,7 @@ from yuanta_intraday_shadow_v01.collector import (
     subscription_items,
 )
 from yuanta_intraday_shadow_v01.collector_main import (
+    _bounded_broker_cleanup,
     _connect_and_login,
     _is_quote_callback,
     _vendor_subscription_lists,
@@ -73,6 +75,49 @@ class CollectorContractTests(unittest.TestCase):
             self.assertEqual(manifest["artifacts"]["ticks.jsonl"], hashlib.sha256(run.tick_path.read_bytes()).hexdigest())
             self.assertEqual(manifest["actual_orders"], 0)
             self.assertEqual(manifest["broker_order_calls"], 0)
+
+    def test_vendor_cleanup_is_bounded_after_archive_finalization(self):
+        blocked = threading.Event()
+
+        class BlockingAPI:
+            def UnSubscribeStockTick(self, *_args):
+                blocked.wait(1)
+
+            def UnSubscribeFiveTickA(self, *_args):
+                pass
+
+            def LogOut(self):
+                pass
+
+            def Close(self):
+                pass
+
+            def Dispose(self):
+                pass
+
+        self.assertFalse(_bounded_broker_cleanup(
+            BlockingAPI(), account="S00000000000", language="UTF8",
+            tick_lists=[object()], book_lists=[object()], logged_in=True,
+            opened=True, timeout_seconds=0.01,
+        ))
+        blocked.set()
+
+    def test_vendor_cleanup_completes_normally(self):
+        calls = []
+
+        class API:
+            def UnSubscribeStockTick(self, *_args): calls.append("tick")
+            def UnSubscribeFiveTickA(self, *_args): calls.append("book")
+            def LogOut(self): calls.append("logout")
+            def Close(self): calls.append("close")
+            def Dispose(self): calls.append("dispose")
+
+        self.assertTrue(_bounded_broker_cleanup(
+            API(), account="S00000000000", language="UTF8",
+            tick_lists=[object()], book_lists=[object()], logged_in=True,
+            opened=True, timeout_seconds=0.1,
+        ))
+        self.assertEqual(calls, ["tick", "book", "logout", "close", "dispose"])
 
     def test_expanded_shadow_streams_are_separate_and_hashed(self):
         seal, stocks = self._fixture()

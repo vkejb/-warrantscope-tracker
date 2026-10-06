@@ -1341,6 +1341,23 @@ def _confirm_owned_exposure_clear_for_stop(adapter, store, timeout: float) -> st
     )
 
 
+def _broker_proves_baseline_only_for_unsafe_stop(adapter, timeout: float) -> bool:
+    """Permit process termination, never a clean-state or trading claim.
+
+    A damaged local ledger can make strict reconciliation fail forever even
+    after the broker has no open order and actual inventory is exactly the
+    frozen opening baseline.  At a terminal request (or after market close), a
+    fresh broker-only snapshot may therefore stop the controller *unsafe* so an
+    offline evidence-backed repair can proceed.  HALT and every request marker
+    remain untouched; this helper does not authorize entry or clear anything.
+    """
+    baseline = getattr(adapter, "position_baseline", None)
+    if not isinstance(baseline, dict):
+        return False
+    snapshot = adapter.inspect_broker_state(timeout=timeout)
+    return not snapshot.open_orders and snapshot.positions == baseline
+
+
 def _recovery_notification_due(
     *,
     signature: str,
@@ -3470,6 +3487,45 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             )
                         except Exception:
                             pass
+                    terminal_requested = (
+                        kill_path.exists()
+                        or stop_path.exists()
+                        or force_flat_path.exists()
+                        or _force_flat_market_phase(datetime.now(TAIPEI)) == "CLOSED"
+                    )
+                    if terminal_requested:
+                        try:
+                            baseline_only = _broker_proves_baseline_only_for_unsafe_stop(
+                                adapter, args.reconcile_timeout,
+                            )
+                        except Exception as proof_exc:
+                            try:
+                                log(
+                                    "TERMINAL_UNSAFE_STOP_PROOF_FAILED",
+                                    error_type=type(proof_exc).__name__,
+                                    error=str(proof_exc),
+                                )
+                            except Exception:
+                                pass
+                        else:
+                            if baseline_only:
+                                # This is intentionally not a clean shutdown.
+                                # The broker is flat relative to the frozen
+                                # baseline, but local order/fill history still
+                                # needs an offline evidence-backed repair.
+                                failure_code = "LOCAL_LEDGER_REPAIR_REQUIRED"
+                                startup_stage = "TERMINAL_BROKER_BASELINE_PROOF"
+                                try:
+                                    log(
+                                        "RUNTIME_STOPPED_FOR_OFFLINE_LEDGER_REPAIR",
+                                        broker_open_orders=0,
+                                        broker_inventory="FROZEN_BASELINE_ONLY",
+                                        halt_preserved=True,
+                                        request_markers_preserved=True,
+                                    )
+                                except Exception:
+                                    pass
+                                return 2
                 time.sleep(min(float(args.exit_retry_max_seconds),
                                float(args.exit_retry_base_seconds)
                                * (2 ** min(recovery_error_count - 1, 6))))

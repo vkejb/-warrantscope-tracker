@@ -37,6 +37,16 @@ from yuanta_live_runtime_v01.main import (
 QUERIES = ("GetRealReport", "GetRealReportMerge", "GetStoreSummary", "GetOrderTradeReport")
 
 
+def _private_rows(rows: object) -> list[dict]:
+    """Remove raw account identity after callback-level validation."""
+    if not isinstance(rows, list):
+        raise RuntimeError("broker evidence rows are not a list")
+    return [
+        {key: value for key, value in dict(row).items() if key != "account"}
+        for row in rows
+    ]
+
+
 def _normalise(name: str, value: object, account: str) -> object:
     if name == "GetRealReport":
         rows = _required_collection(value, "RealReportList")
@@ -98,7 +108,8 @@ def _query(session: _Session, language: object, *, timeout: float) -> dict:
 
 
 def _save_private(payload: dict) -> Path:
-    fd, name = tempfile.mkstemp(prefix="yuanta-readonly-20261005-", suffix=".json")
+    date_token = datetime.now(timezone.utc).strftime("%Y%m%d")
+    fd, name = tempfile.mkstemp(prefix=f"yuanta-readonly-{date_token}-", suffix=".json")
     try:
         os.fchmod(fd, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
@@ -129,19 +140,17 @@ def capture(*, runtime_dir: Path, vendor_dir: Path, timeout: float = 20.0) -> di
             "source": "YUANTA_PROD_READONLY",
             "account_fingerprint": hashlib.sha256(session.account.encode()).hexdigest()[:12],
             "account_rows_validated": True,
-            "details": data["GetRealReport"],
-            "orders": data["GetRealReportMerge"],
+            "details": _private_rows(data["GetRealReport"]),
+            "orders": _private_rows(data["GetRealReportMerge"]),
             "positions": data["GetStoreSummary"],
             "history": data["GetOrderTradeReport"],
         }
         path = _save_private(payload)
-        target = [row for row in payload["history"]["trades"]
-                  if row["symbol"] == "3094" and row["trade_date"] == "20261005"]
         return {"evidence_path": str(path), "captured_at": payload["captured_at"],
-                "positions_3094": payload["positions"].get("3094|0", 0),
                 "current_order_count": len(payload["orders"]),
-                "today_3094_trade_rows": len(target),
-                "today_3094_sell_quantity": sum(row["ok_qty"] for row in target if row["side"] == "S")}
+                "position_bucket_count": len(payload["positions"]),
+                "history_order_count": len(payload["history"]["orders"]),
+                "history_trade_count": len(payload["history"]["trades"])}
     finally:
         if session is not None:
             session.close()

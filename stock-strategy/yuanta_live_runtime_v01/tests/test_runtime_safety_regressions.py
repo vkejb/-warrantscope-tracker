@@ -723,3 +723,31 @@ class AdmissionAndExitQuoteSafetyTests(TestCase):
             )
         self.assertEqual(ready["candidate_batches_ready"], 2)
         self.assertEqual(ready["candidate_batches_total"], 2)
+
+
+class UnsafeTerminalStopProofTests(TestCase):
+    def test_requires_exact_frozen_baseline_and_no_open_broker_order(self):
+        baseline = {"0050|0": 1000}
+        adapter = SimpleNamespace(
+            position_baseline=baseline,
+            inspect_broker_state=Mock(return_value=SimpleNamespace(
+                open_orders=[], positions=dict(baseline),
+            )),
+        )
+        self.assertTrue(runtime_main._broker_proves_baseline_only_for_unsafe_stop(adapter, 1))
+        adapter.inspect_broker_state.return_value = SimpleNamespace(
+            open_orders=[{"order_no": "OPEN"}], positions=dict(baseline),
+        )
+        self.assertFalse(runtime_main._broker_proves_baseline_only_for_unsafe_stop(adapter, 1))
+        adapter.inspect_broker_state.return_value = SimpleNamespace(
+            open_orders=[], positions={"0050|0": 1000, "4919|0": 1000},
+        )
+        self.assertFalse(runtime_main._broker_proves_baseline_only_for_unsafe_stop(adapter, 1))
+
+    def test_missing_frozen_baseline_fails_closed_without_query(self):
+        adapter = SimpleNamespace(
+            position_baseline=None,
+            inspect_broker_state=Mock(side_effect=AssertionError("must not query")),
+        )
+        self.assertFalse(runtime_main._broker_proves_baseline_only_for_unsafe_stop(adapter, 1))
+        adapter.inspect_broker_state.assert_not_called()
