@@ -5,10 +5,26 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from yuanta_intraday_shadow_v01.collector import canonical_bytes
-from yuanta_intraday_shadow_v01.recover_interrupted_run import recover
+from yuanta_intraday_shadow_v01.recover_interrupted_run import _subscription_symbols, recover
 
 
 class InterruptedRunRecoveryTests(unittest.TestCase):
+    def test_subscription_count_respects_disabled_stage_a_stream(self):
+        snapshot = {
+            "stage_a_quotes_enabled": False,
+            "stocks": [{"stock_id": "TOP_ONLY"}, {"stock_id": "OVERLAP"}],
+            "market_context": [{"stock_id": "0050"}],
+            "expanded_shadow_universe": {
+                "stocks": [{"stock_id": "OVERLAP"}, {"stock_id": "EXPANDED"}],
+            },
+        }
+        self.assertEqual(_subscription_symbols(snapshot), {"0050", "OVERLAP", "EXPANDED"})
+        snapshot["stage_a_quotes_enabled"] = True
+        self.assertEqual(
+            _subscription_symbols(snapshot),
+            {"0050", "TOP_ONLY", "OVERLAP", "EXPANDED"},
+        )
+
     def test_recovers_complete_rows_rebuilds_top30_and_marks_partial(self):
         with TemporaryDirectory(prefix="collector-recovery-") as temporary:
             root = Path(temporary)
@@ -18,6 +34,7 @@ class InterruptedRunRecoveryTests(unittest.TestCase):
                 "run_id": "MOCK_RUN", "created_at": "2026-10-06T01:00:00Z",
                 "signal_date": "2026-10-05", "stage_a_seal_hash": "a" * 64,
                 "mode": "SHADOW_ONLY_READ_ONLY_QUOTES",
+                "stage_a_quotes_enabled": True,
                 "stocks": [{"stock_id": "4919", "stock_name": "新唐", "rank": 1,
                             "score": 9.5, "market": "TWSE"}],
                 "market_context": [{"stock_id": "0050", "stock_name": "元大台灣50",

@@ -68,6 +68,17 @@ def _stage_a_row(row: dict, metadata: dict) -> dict:
     return result
 
 
+def _subscription_symbols(snapshot: dict) -> set[str]:
+    symbols = {
+        str(row["stock_id"])
+        for row in snapshot.get("expanded_shadow_universe", {}).get("stocks", [])
+    }
+    symbols |= {str(row["stock_id"]) for row in snapshot.get("market_context", [])}
+    if bool(snapshot.get("stage_a_quotes_enabled", True)):
+        symbols |= {str(row["stock_id"]) for row in snapshot.get("stocks", [])}
+    return symbols
+
+
 def recover(source_dir: Path, output_root: Path) -> dict:
     source_dir = source_dir.resolve()
     watchlist_path = source_dir / "watchlist.json"
@@ -77,6 +88,7 @@ def recover(source_dir: Path, output_root: Path) -> dict:
     target.mkdir(parents=True, exist_ok=False)
     shutil.copyfile(watchlist_path, target / "watchlist.json")
     stage_a = {str(row["stock_id"]): row for row in snapshot["stocks"]}
+    reconstruct_top30 = bool(snapshot.get("stage_a_quotes_enabled", True))
     counts = {name.removesuffix(".jsonl.gz"): 0 for name in STREAMS}
     counts.update({"ticks": 0, "books": 0, "callback_errors": 0,
                    "decision_evidence": 0, "subscription_evidence": 0,
@@ -111,7 +123,7 @@ def recover(source_dir: Path, output_root: Path) -> dict:
                     symbol = str(row.get("stock_id", ""))
                     if name.startswith("market_context_") and symbol in market_context_counts:
                         market_context_counts[symbol]["ticks" if "ticks" in name else "books"] += 1
-                    if name in top_handles and symbol in stage_a:
+                    if reconstruct_top30 and name in top_handles and symbol in stage_a:
                         top_handles[name].write(canonical_bytes(_stage_a_row(row, stage_a[symbol])) + b"\n")
                         counts["ticks" if "ticks" in name else "books"] += 1
                         if REQUIRED_EVIDENCE_FIELDS <= row.keys() and all(row.get(field) is not None for field in REQUIRED_EVIDENCE_FIELDS):
@@ -135,8 +147,7 @@ def recover(source_dir: Path, output_root: Path) -> dict:
         "expanded_ticks", "expanded_books",
     ))
     expanded = snapshot.get("expanded_shadow_universe", {})
-    symbols = set(stage_a) | {str(row["stock_id"]) for row in expanded.get("stocks", [])}
-    symbols |= {str(row["stock_id"]) for row in snapshot.get("market_context", [])}
+    symbols = _subscription_symbols(snapshot)
     artifact_names = ("watchlist.json", "ticks.jsonl.gz", "books.jsonl.gz", *STREAMS, *PLAIN)
     manifest = {
         "schema_version": 2,
@@ -175,7 +186,7 @@ def recover(source_dir: Path, output_root: Path) -> dict:
             "source_preserved": True,
             "gzip_trailer_was_missing": True,
             "incomplete_final_json_records_discarded": True,
-            "top30_reconstructed_from_overlapping_expanded_stream": True,
+            "top30_reconstructed_from_overlapping_expanded_stream": reconstruct_top30,
             "normal_complete_session_claimed": False,
         },
     }
