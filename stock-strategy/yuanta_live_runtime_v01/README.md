@@ -2,13 +2,14 @@
 
 這個模組把目前 repo 已存在的三層串起來：
 
-`每日擴大當沖池 → 即時逐筆/五檔 → direction rule → 0050 market gate → ANTI_CHASE_BALANCED_V1 → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
+`每日 Stage A Top30 → 即時逐筆/五檔 → direction rule → 0050 market gate → ANTI_CHASE_BALANCED_V1 → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
 
-Stage A 每日 30 檔仍保留為波段／短線觀察清單與獨立通知，不再作為 LIVE
-當沖候選池的上限。LIVE 使用同一資料日的 sealed expanded universe；若當日擴大池
-封存不存在、日期或雜湊不符，啟動會 fail closed。元大逐筆與五檔均依每批最多
-200 檔分批訂閱；每個候選批次都必須實際收到至少一檔有效逐筆與五檔，否則
-preflight／runtime 會拒絕宣告行情就緒。0050 只作市場基準，不會成為交易候選。
+LIVE 當沖候選池固定為前一交易日封存的 Stage A Top30。擴大池不會傳入 LIVE
+進場引擎，只保留正式逐筆／五檔行情收集與盤後紙上回放。兩個池子使用同一資料日；
+若擴大池封存不存在、日期或雜湊不符，啟動會 fail closed，避免背景研究資料無聲缺漏。
+元大逐筆與五檔依每批最多 200 檔分批訂閱；LIVE 行情就緒只以 Top30 加 0050
+判斷。0050 只作市場基準，不會成為交易候選。Top30 與擴大池重疊的股票會同時寫入
+各自獨立封存串流。
 
 它**沒有移除** broker adapter 的安全鎖。正式送單仍必須同時滿足：
 
@@ -103,9 +104,9 @@ baseline」。同一交易日只會建立一次；當日本機已有任何 ENTRY
 ### 盤前武裝
 
 Trading Bot 的 `/start` 可在交易日 08:00–09:00 進入 `PREOPEN_WAITING`。盤前仍會先完成
-正式帳戶登入、當日 baseline、券商委託／庫存對帳及 361 檔行情訂閱要求，但「訂閱要求
+正式帳戶登入、當日 baseline、券商委託／庫存對帳，以及 Top30、0050 與擴大紙上池的行情訂閱要求，但「訂閱要求
 已接受」不等於行情可用。Runtime 在此狀態持續持有 singleton 與帳戶鎖、更新 heartbeat，
-並且禁止策略送單。只有 0050 與每個候選批次都實際收到新鮮逐筆及五檔資料後，才轉為
+並且禁止策略送單。只有 0050 與 Top30 都實際收到新鮮逐筆及五檔資料後，才轉為
 `RUNNING`；09:05 前仍未完整就 fail closed。盤前 `/stop`、`/kill` 與獨立 force-flat marker
 仍會中止等待並重新以券商證據確認機器人曝險為零。
 

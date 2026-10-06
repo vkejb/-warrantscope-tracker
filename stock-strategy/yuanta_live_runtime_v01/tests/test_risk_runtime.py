@@ -312,7 +312,7 @@ class ArchiveRuntimeTests(unittest.TestCase):
 
 
 class RuntimeGateTests(unittest.TestCase):
-    def test_live_candidate_pool_is_expanded_and_stage_a_stays_reference_only(self):
+    def test_live_candidate_pool_is_stage_a_and_expanded_stays_paper_only(self):
         stage_item = SimpleNamespace(stock_id="1111")
         expanded_item = SimpleNamespace(stock_id="2330")
         with patch.object(
@@ -330,15 +330,50 @@ class RuntimeGateTests(unittest.TestCase):
                 [expanded_item],
             ),
         ):
-            seal, items, provenance, stage_seal, stage_items = (
+            seal, items, provenance, expanded_seal, expanded_items = (
                 runtime_main._load_live_intraday_universe()
             )
 
-        self.assertEqual(seal["seal_hash"], "expanded")
-        self.assertEqual([item.stock_id for item in items], ["2330"])
-        self.assertEqual(stage_seal["seal_hash"], "stage")
-        self.assertEqual([item.stock_id for item in stage_items], ["1111"])
+        self.assertEqual(seal["seal_hash"], "stage")
+        self.assertEqual([item.stock_id for item in items], ["1111"])
+        self.assertEqual(expanded_seal["seal_hash"], "expanded")
+        self.assertEqual([item.stock_id for item in expanded_items], ["2330"])
         self.assertEqual(provenance, {"source": "official"})
+
+    def test_strategy_engine_monitors_expanded_but_only_selects_stage_a(self):
+        stage_item = SimpleNamespace(stock_id="1111", stock_name="Top30")
+        expanded_item = SimpleNamespace(stock_id="2330", stock_name="Paper")
+        benchmark = SimpleNamespace(stock_id="0050", stock_name="元大台灣50")
+
+        engine = runtime_main._strategy_engine(
+            [stage_item],
+            monitored_items=[stage_item, expanded_item, benchmark],
+        )
+
+        self.assertEqual(engine._candidate_symbols, {"1111"})
+        self.assertIn("2330", engine._states)
+        self.assertNotIn("2330", engine._candidate_symbols)
+
+    def test_quote_subscription_keeps_stage_a_first_and_deduplicates_overlap(self):
+        stage_item = SimpleNamespace(
+            stock_id="1111", stock_name="Top30", market="TWSE",
+        )
+        expanded_overlap = SimpleNamespace(
+            stock_id="1111", stock_name="Paper duplicate", market="TWSE",
+        )
+        expanded_only = SimpleNamespace(
+            stock_id="2330", stock_name="Paper", market="TWSE",
+        )
+
+        items = runtime_main._quote_subscription_universe(
+            [stage_item], [expanded_overlap, expanded_only],
+        )
+
+        self.assertEqual(
+            [item.stock_id for item in items],
+            ["1111", "0050", "2330"],
+        )
+        self.assertIs(items[0], stage_item)
 
     def setUp(self):
         # No constructor/worker may reach a real notification transport.
@@ -838,7 +873,7 @@ class RuntimeGateTests(unittest.TestCase):
         self.assertEqual(session.stock_lists, [])
         self.assertEqual(session.book_lists, [])
 
-    def test_expanded_live_quote_uses_separate_archive_stream(self):
+    def test_expanded_shadow_quote_uses_separate_archive_stream(self):
         events = []
         archive = SimpleNamespace(
             run_id="test",
@@ -863,9 +898,43 @@ class RuntimeGateTests(unittest.TestCase):
         session._archive_quote(kind="ticks", symbol="2330", value=tick)
 
         self.assertEqual(events[0][0], "expanded_ticks")
-        self.assertEqual(events[0][1]["role"], "EXPANDED_LIVE_CANDIDATE")
+        self.assertEqual(events[0][1]["role"], "EXPANDED_SHADOW_CANDIDATE")
         self.assertEqual(events[0][1]["expanded_rank"], 1)
         self.assertIsNone(events[0][1]["stage_a_rank"])
+
+    def test_top30_overlap_is_archived_to_stage_a_and_expanded_streams(self):
+        events = []
+        archive = SimpleNamespace(
+            run_id="test",
+            append=lambda kind, payload: events.append((kind, payload)),
+        )
+        stage_item = SimpleNamespace(
+            stock_id="2340", stock_name="台亞", market="TWSE", rank=22,
+            score=0.08,
+        )
+        expanded_item = SimpleNamespace(
+            stock_id="2340", stock_name="台亞", market="TWSE", rank=100,
+            industry="半導體業", industry_code="24",
+        )
+        session = runtime_main._Session(
+            api_types={}, environment="PROD", credentials={"account": "test"},
+            engine=None, logger=lambda *_args, **_kwargs: None,
+            archive=archive, archive_signal_date="20261002",
+            archive_items={"2340": stage_item},
+            archive_expanded_items={"2340": expanded_item},
+        )
+        tick = SimpleNamespace(
+            Time=None, SerialNo=1, BuyPrice="47", SellPrice="47.1",
+            DealPrice="47", DealVol="2", InOutFlag="1", Type="0",
+        )
+
+        session._archive_quote(kind="ticks", symbol="2340", value=tick)
+
+        self.assertEqual([event[0] for event in events], ["ticks", "expanded_ticks"])
+        self.assertEqual(events[0][1]["role"], "STAGE_A_CANDIDATE")
+        self.assertEqual(events[0][1]["stage_a_rank"], 22)
+        self.assertEqual(events[1][1]["role"], "EXPANDED_SHADOW_CANDIDATE")
+        self.assertEqual(events[1][1]["expanded_rank"], 100)
 
     def test_second_runtime_is_blocked_before_broker_connect(self):
         class FakeSession:
@@ -908,9 +977,9 @@ class RuntimeGateTests(unittest.TestCase):
                     runtime_main,
                     "_load_live_intraday_universe",
                     return_value=(
-                        {"signal_date": "20260925", "seal_hash": "expanded"},
-                        [], None,
                         {"signal_date": "20260925", "seal_hash": "stage"},
+                        [], None,
+                        {"signal_date": "20260925", "seal_hash": "expanded"},
                         [],
                     ),
                 ), patch.object(
@@ -1056,10 +1125,10 @@ class RuntimeGateTests(unittest.TestCase):
                 runtime_main,
                 "_load_live_intraday_universe",
                 return_value=(
-                    {"signal_date": "20260930", "seal_hash": "expanded"},
+                    {"signal_date": "20260930", "seal_hash": "stage"},
                     [item],
                     {},
-                    {"signal_date": "20260930", "seal_hash": "stage"},
+                    {"signal_date": "20260930", "seal_hash": "expanded"},
                     [item],
                 ),
             ), patch.object(

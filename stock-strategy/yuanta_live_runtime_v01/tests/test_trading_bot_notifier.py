@@ -9,6 +9,22 @@ from yuanta_live_runtime_v01.trading_bot_notifier import (
 
 
 class TradingBotNotifierTests(unittest.TestCase):
+    def test_runtime_started_distinguishes_live_top30_from_shadow_pool(self):
+        message = format_runtime_event(
+            "RUNTIME_STARTED",
+            {
+                "submit_live": True,
+                "environment": "PROD",
+                "signal_date": "20261006",
+                "watchlist_count": 30,
+                "expanded_shadow_count": 360,
+            },
+        )
+
+        self.assertIn("正式交易池：Stage A Top30 30 檔", message)
+        self.assertIn("背景紙上池：360 檔（僅行情收集）", message)
+        self.assertNotIn("擴大當沖池", message)
+
     def test_entry_rejection_contains_reason(self):
         message = format_runtime_event(
             "ENTRY_NOT_FILLED",

@@ -328,10 +328,10 @@ class RuntimeHarness:
                 ("_load_live_intraday_universe", Mock(
                     side_effect=AssertionError("must not load research") if self.recovery else None,
                     return_value=(
-                        {"signal_date": "20261002", "seal_hash": "expanded-seal"},
+                        {"signal_date": "20261002", "seal_hash": "stage-a-seal"},
                         items,
                         {},
-                        {"signal_date": "20261002", "seal_hash": "stage-a-seal"},
+                        {"signal_date": "20261002", "seal_hash": "expanded-seal"},
                         items,
                     ),
                 )),

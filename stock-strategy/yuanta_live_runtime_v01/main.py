@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Guarded realtime runner for the Yuanta SPARK broker adapter.
 
-This is the runtime layer between the sealed expanded intraday universe, the
-frozen direction-following rule, and ``yuanta_broker_execution_v01``.  Stage A
-Top30 remains an independent swing/short-term observation product.
+This is the runtime layer between the sealed Stage A Top30, the frozen
+direction-following rule, and ``yuanta_broker_execution_v01``.  The expanded
+universe remains quote collection and post-session paper replay only.
 Production sends are impossible unless the broker adapter's existing three-way LIVE
 gate is authorized and startup reconciliation has passed.
 """
@@ -71,7 +71,7 @@ from .strategy import (
 from .watchdog import Heartbeat, monitor as watchdog_monitor
 from .account_lock import acquire_account_lock, release_account_lock
 from .late_start import warm_start_from_collector
-from expanded_shadow_universe_v01.subscriptions import batches
+from expanded_shadow_universe_v01.subscriptions import batches, deduplicate_items
 from expanded_shadow_universe_v01.universe import load_universe
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -145,16 +145,33 @@ def _quote_universe(items):
     return result
 
 
-def _strategy_engine(items, *, capital_twd: int = 190_000) -> LiveDirectionEngine:
+def _strategy_engine(
+    items,
+    *,
+    monitored_items=None,
+    capital_twd: int = 190_000,
+) -> LiveDirectionEngine:
     benchmark = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
     candidates = {str(item.stock_id) for item in items if str(item.stock_id) != benchmark}
-    metadata = {str(item.stock_id): str(item.stock_name) for item in items}
+    metadata = {
+        str(item.stock_id): str(item.stock_name)
+        for item in (items if monitored_items is None else monitored_items)
+    }
+    metadata.update({str(item.stock_id): str(item.stock_name) for item in items})
     metadata[benchmark] = str(LONG_MARKET_REGIME_POLICY["benchmark_name"])
     return LiveDirectionEngine(
         metadata,
         capital_twd=capital_twd,
         candidate_symbols=candidates,
         benchmark_symbol=benchmark,
+    )
+
+
+def _quote_subscription_universe(stage_a_items, expanded_items):
+    """Subscribe Stage A, benchmark, and expanded paper-only quotes once."""
+    return deduplicate_items(
+        _quote_universe(stage_a_items),
+        expanded_items,
     )
 
 
@@ -558,12 +575,11 @@ def _validate_watchlist_day(signal_date: str) -> None:
 
 
 def _load_live_intraday_universe() -> tuple[dict, list, dict, dict, list]:
-    """Load the expanded LIVE candidate pool and separate Stage A reference.
+    """Load Stage A as LIVE candidates and expanded as paper-only quotes.
 
-    Stage A supplies the already-established prior-session date and remains in
-    the archive as a swing-observation reference.  It is never passed to the
-    LIVE entry engine.  The daily read-only collector prepares the expanded
-    seal; LIVE fails closed rather than downloading or rebuilding it.
+    Both universes must share the prior-session date.  The expanded seal is
+    prepared by the read-only collector and is never passed to the LIVE entry
+    engine; its symbols remain subscribed and archived for paper replay.
     """
     stage_a_seal, stage_a_items, provenance = load_stage_a_watchlist()
     signal_date = str(stage_a_seal["signal_date"])
@@ -572,8 +588,8 @@ def _load_live_intraday_universe() -> tuple[dict, list, dict, dict, list]:
     if str(expanded_seal.get("signal_date", "")) != signal_date:
         raise RuntimeError("expanded universe and Stage A dates do not match")
     if not expanded_items:
-        raise RuntimeError("expanded LIVE candidate universe is empty")
-    return expanded_seal, expanded_items, provenance, stage_a_seal, stage_a_items
+        raise RuntimeError("expanded paper-only universe is empty")
+    return stage_a_seal, stage_a_items, provenance, expanded_seal, expanded_items
 
 
 def _extend_quote_types(api_types: dict[str, Any]) -> dict[str, Any]:
@@ -672,14 +688,19 @@ class _Session:
             return
 
         is_market_context = symbol in self.non_archive_symbols
-        is_expanded = (
-            not is_market_context and symbol in self.archive_expanded_items
-        )
-        item = self.market_context_items.get(symbol) if is_market_context else (
-            self.archive_expanded_items.get(symbol)
-            if is_expanded else self.archive_items.get(symbol)
-        )
-        if item is None:
+        routes: list[tuple[str, Any]] = []
+        if is_market_context:
+            item = self.market_context_items.get(symbol)
+            if item is not None:
+                routes.append(("MARKET_CONTEXT", item))
+        else:
+            stage_a_item = self.archive_items.get(symbol)
+            expanded_item = self.archive_expanded_items.get(symbol)
+            if stage_a_item is not None:
+                routes.append(("STAGE_A", stage_a_item))
+            if expanded_item is not None:
+                routes.append(("EXPANDED_SHADOW", expanded_item))
+        if not routes:
             try:
                 self.archive.callback_error(
                     "UNKNOWN_WATCHLIST_SYMBOL", callback_name=kind,
@@ -695,90 +716,108 @@ class _Session:
             return
 
         received = callback_received_at or datetime.now(TAIPEI)
-        base = {
-            "run_id": getattr(self.archive, "run_id", "TEST_OR_LEGACY_ARCHIVE"),
-            "received_at": received.isoformat(),
-            "callback_received_at": received.isoformat(),
-            "subscription_generation": self.subscription_generation,
-            "event_kind": "STOCK_TICK" if kind == "ticks" else "FIVE_LEVEL",
-            "ingest_sequence": ingest_sequence,
-            "ingest_accepted": ingest_accepted,
-            "ingest_reason": ingest_reason,
-            "exchange_time": exchange_time.isoformat() if exchange_time else None,
-            "raw_serial_no": int(getattr(value, "SerialNo", 0) or 0),
-            "signal_date": self.archive_signal_date,
-            "stock_id": symbol,
-            "stock_name": item.stock_name,
-            "market": item.market,
-            "stage_a_rank": (
-                item.rank if not is_market_context and not is_expanded else None
-            ),
-            "stage_a_score": (
-                item.score if not is_market_context and not is_expanded else None
-            ),
-            "expanded_rank": item.rank if is_expanded else None,
-            "industry": item.industry if is_expanded else None,
-            "industry_code": item.industry_code if is_expanded else None,
-            "role": (
-                "MARKET_BENCHMARK" if is_market_context else
-                "EXPANDED_LIVE_CANDIDATE" if is_expanded else
-                "STAGE_A_CANDIDATE"
-            ),
-        }
-
         try:
-            if kind == "ticks":
-                self.archive.append(
-                    "market_context_ticks" if is_market_context else (
-                        "expanded_ticks" if is_expanded else "ticks"
+            for route, item in routes:
+                is_stage_a = route == "STAGE_A"
+                is_expanded = route == "EXPANDED_SHADOW"
+                base = {
+                    "run_id": getattr(
+                        self.archive, "run_id", "TEST_OR_LEGACY_ARCHIVE",
                     ),
-                    {
-                        **base,
-                        "event_type": "STOCK_TICK",
-                        "quote_time": _quote_time(
-                            getattr(value, "Time", None)
-                        ),
-                        "serial_no": int(
-                            getattr(value, "SerialNo", 0)
-                        ),
-                        "buy_price": _safe_text(
-                            getattr(value, "BuyPrice", "")
-                        ),
-                        "sell_price": _safe_text(
-                            getattr(value, "SellPrice", "")
-                        ),
-                        "deal_price": _safe_text(
-                            getattr(value, "DealPrice", "")
-                        ),
-                        "deal_volume": _safe_text(
-                            getattr(value, "DealVol", "")
-                        ),
-                        "in_out_flag": _safe_text(
-                            getattr(value, "InOutFlag", "")
-                        ),
-                        "tick_type": _safe_text(
-                            getattr(value, "Type", "")
-                        ),
-                    },
-                )
-                return
-
-            if kind == "books":
-                self.archive.append(
-                    "market_context_books" if is_market_context else (
-                        "expanded_books" if is_expanded else "books"
+                    "received_at": received.isoformat(),
+                    "callback_received_at": received.isoformat(),
+                    "subscription_generation": self.subscription_generation,
+                    "event_kind": (
+                        "STOCK_TICK" if kind == "ticks" else "FIVE_LEVEL"
                     ),
-                    {
-                        **base,
-                        "event_type": "FIVE_LEVEL",
-                        **dict(payload or {}),
-                    },
-                )
-                return
+                    "ingest_sequence": ingest_sequence,
+                    "ingest_accepted": ingest_accepted,
+                    "ingest_reason": ingest_reason,
+                    "exchange_time": (
+                        exchange_time.isoformat() if exchange_time else None
+                    ),
+                    "raw_serial_no": int(
+                        getattr(value, "SerialNo", 0) or 0
+                    ),
+                    "signal_date": self.archive_signal_date,
+                    "stock_id": symbol,
+                    "stock_name": item.stock_name,
+                    "market": item.market,
+                    "stage_a_rank": item.rank if is_stage_a else None,
+                    "stage_a_score": item.score if is_stage_a else None,
+                    "expanded_rank": item.rank if is_expanded else None,
+                    "industry": (
+                        getattr(item, "industry", None) if is_expanded else None
+                    ),
+                    "industry_code": (
+                        getattr(item, "industry_code", None)
+                        if is_expanded else None
+                    ),
+                    "role": {
+                        "MARKET_CONTEXT": "MARKET_BENCHMARK",
+                        "STAGE_A": "STAGE_A_CANDIDATE",
+                        "EXPANDED_SHADOW": "EXPANDED_SHADOW_CANDIDATE",
+                    }[route],
+                }
 
-            raise ValueError(
-                f"unsupported archive quote kind: {kind}"
-            )
+                if kind == "ticks":
+                    stream = {
+                        "MARKET_CONTEXT": "market_context_ticks",
+                        "STAGE_A": "ticks",
+                        "EXPANDED_SHADOW": "expanded_ticks",
+                    }[route]
+                    self.archive.append(
+                        stream,
+                        {
+                            **base,
+                            "event_type": "STOCK_TICK",
+                            "quote_time": _quote_time(
+                                getattr(value, "Time", None)
+                            ),
+                            "serial_no": int(
+                                getattr(value, "SerialNo", 0)
+                            ),
+                            "buy_price": _safe_text(
+                                getattr(value, "BuyPrice", "")
+                            ),
+                            "sell_price": _safe_text(
+                                getattr(value, "SellPrice", "")
+                            ),
+                            "deal_price": _safe_text(
+                                getattr(value, "DealPrice", "")
+                            ),
+                            "deal_volume": _safe_text(
+                                getattr(value, "DealVol", "")
+                            ),
+                            "in_out_flag": _safe_text(
+                                getattr(value, "InOutFlag", "")
+                            ),
+                            "tick_type": _safe_text(
+                                getattr(value, "Type", "")
+                            ),
+                        },
+                    )
+                    continue
+
+                if kind == "books":
+                    stream = {
+                        "MARKET_CONTEXT": "market_context_books",
+                        "STAGE_A": "books",
+                        "EXPANDED_SHADOW": "expanded_books",
+                    }[route]
+                    self.archive.append(
+                        stream,
+                        {
+                            **base,
+                            "event_type": "FIVE_LEVEL",
+                            **dict(payload or {}),
+                        },
+                    )
+                    continue
+
+                raise ValueError(
+                    f"unsupported archive quote kind: {kind}"
+                )
 
         except Exception as exc:
             try:
@@ -848,13 +887,18 @@ class _Session:
                     "stage_a_seal_hash": self.archive.snapshot["stage_a_seal_hash"],
                 },
                 "candidate_universe_identity": {
-                    "kind": "EXPANDED_INTRADAY",
+                    "kind": "STAGE_A_TOP30",
+                    "signal_date": self.archive.snapshot["signal_date"],
+                    "seal_hash": self.archive.snapshot["stage_a_seal_hash"],
+                },
+                "expanded_shadow_universe_identity": {
+                    "kind": "PAPER_ONLY",
                     "signal_date": self.archive.snapshot.get(
                         "expanded_shadow_universe", {}
-                    ).get("signal_date", self.archive_signal_date),
+                    ).get("signal_date"),
                     "seal_hash": self.archive.snapshot.get(
                         "expanded_shadow_universe", {}
-                    ).get("seal_hash", ""),
+                    ).get("seal_hash"),
                 },
                 "raw_quote_status": raw_status,
                 "engine_state_summary": engine_summary,
@@ -1941,16 +1985,21 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             {"signal_date": datetime.now(TAIPEI).strftime("%Y%m%d")}, [],
             {"mode": "EXIT_ONLY_RECOVERY_NO_RESEARCH_PREREQUISITE"},
         )
-        stage_a_seal, stage_a_items = seal, []
+        expanded_seal, expanded_items = None, []
     else:
-        seal, items, provenance, stage_a_seal, stage_a_items = (
+        seal, items, provenance, expanded_seal, expanded_items = (
             _load_live_intraday_universe()
         )
-    metadata = {item.stock_id: item.stock_name for item in items}
-    quote_items = _quote_universe(items)
+    strategy_quote_items = _quote_universe(items)
+    quote_items = _quote_subscription_universe(items, expanded_items)
+    metadata = {item.stock_id: item.stock_name for item in quote_items}
     benchmark_symbol = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
     strategy_symbols = {str(item.stock_id) for item in items if str(item.stock_id) != benchmark_symbol}
-    engine = _strategy_engine(items, capital_twd=args.capital)
+    engine = _strategy_engine(
+        items,
+        monitored_items=quote_items,
+        capital_twd=args.capital,
+    )
     risk = RiskManager(RiskLimits(
         max_daily_loss=Decimal(str(args.max_daily_loss)),
         max_order_value=Decimal(str(args.max_order_value)),
@@ -2077,13 +2126,13 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         if not recovery_only:
             try:
                 archive = AppendOnlyRun(
-                    args.archive_runtime_dir.resolve(), stage_a_seal,
-                    stage_a_items, provenance,
+                    args.archive_runtime_dir.resolve(), seal,
+                    items, provenance,
                     compress=True,
                     mode="LIVE_TRADING_QUOTES" if submit_live else "OBSERVE_ONLY_QUOTES",
-                    expanded_seal=seal,
-                    expanded_items=items,
-                    stage_a_quotes_enabled=False,
+                    expanded_seal=expanded_seal,
+                    expanded_items=expanded_items,
+                    stage_a_quotes_enabled=True,
                 )
             except Exception as exc:
                 # Quote archiving is an observer, not an ownership ledger.
@@ -2093,10 +2142,13 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         session.archive_signal_date = str(
             seal["signal_date"]
         )
-        session.archive_items = {}
-        session.archive_expanded_items = {
+        session.archive_items = {
             item.stock_id: item
             for item in items
+        }
+        session.archive_expanded_items = {
+            item.stock_id: item
+            for item in expanded_items
         }
         strategy_identity_payload = {
             "entry_spec": SPEC,
@@ -2119,6 +2171,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 run_id=archive.run_id,
                 mode=archive.mode,
                 run_dir=str(archive.run_dir),
+                live_candidate_count=len(items),
+                expanded_shadow_count=len(expanded_items),
             )
 
         startup_progress("BROKER_CONNECT")
@@ -2221,8 +2275,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 now=datetime.now(TAIPEI),
                 signal_date=str(seal["signal_date"]),
                 seal_hash=str(seal.get("seal_hash", "")),
-                required_symbols={str(item.stock_id) for item in quote_items},
-                universe_kind="expanded",
+                required_symbols={
+                    str(item.stock_id) for item in strategy_quote_items
+                },
+                universe_kind="stage_a",
             )
             log(
                 "LATE_START_WARMUP",
@@ -2286,7 +2342,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 try:
                     readiness = _wait_for_quote_readiness(
                         engine,
-                        quote_items,
+                        strategy_quote_items,
                         timeout_seconds=_preopen_readiness_timeout(
                             datetime.now(TAIPEI)
                         ),
@@ -2322,7 +2378,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     getattr(args, "quote_readiness_timeout", 20.0) + 5,
                 )
                 _wait_for_quote_readiness(
-                    engine, quote_items,
+                    engine, strategy_quote_items,
                     timeout_seconds=getattr(args, "quote_readiness_timeout", 20.0),
                     max_age_seconds=args.entry_quote_staleness,
                 )
@@ -2333,7 +2389,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             submit_live=submit_live,
             signal_date=seal["signal_date"],
             watchlist_count=len(items),
-            candidate_universe="EXPANDED_INTRADAY",
+            candidate_universe="STAGE_A_TOP30",
+            expanded_shadow_count=len(expanded_items),
+            quote_subscription_count=len(quote_items),
             capital=args.capital,
             short_enabled=allow_short,
             entry_policy=LONG_MARKET_REGIME_POLICY,
@@ -3736,11 +3794,12 @@ def _preflight(args, environment: str) -> int:
 
     try:
         baseline = _load_baseline(args.baseline.resolve())
-        seal, items, _provenance, _stage_a_seal, _stage_a_items = (
+        seal, items, _provenance, _expanded_seal, expanded_items = (
             _load_live_intraday_universe()
         )
 
-        quote_items = _quote_universe(items)
+        strategy_quote_items = _quote_universe(items)
+        quote_items = _quote_subscription_universe(items, expanded_items)
         benchmark_symbol = str(
             LONG_MARKET_REGIME_POLICY["benchmark_symbol"]
         )
@@ -3749,7 +3808,7 @@ def _preflight(args, environment: str) -> int:
             for item in items
             if str(item.stock_id) != benchmark_symbol
         }
-        engine = _strategy_engine(items)
+        engine = _strategy_engine(items, monitored_items=quote_items)
 
         credentials = load_credentials()
         api_types = _extend_quote_types(
@@ -3836,8 +3895,10 @@ def _preflight(args, environment: str) -> int:
                 now=datetime.now(TAIPEI),
                 signal_date=str(seal["signal_date"]),
                 seal_hash=str(seal.get("seal_hash", "")),
-                required_symbols={str(item.stock_id) for item in quote_items},
-                universe_kind="expanded",
+                required_symbols={
+                    str(item.stock_id) for item in strategy_quote_items
+                },
+                universe_kind="stage_a",
             )
             if late_start_warmup.required and late_start_warmup.status != "READY":
                 raise RuntimeError(
@@ -3856,11 +3917,13 @@ def _preflight(args, environment: str) -> int:
                 "candidate_ready_count": 0,
                 "subscribed_symbols": len(quote_items),
                 "candidate_batches_ready": 0,
-                "candidate_batches_total": len(list(batches(quote_items))),
+                "candidate_batches_total": len(
+                    list(batches(strategy_quote_items))
+                ),
             }
         else:
             readiness = _wait_for_quote_readiness(
-                engine, quote_items,
+                engine, strategy_quote_items,
                 timeout_seconds=getattr(args, "quote_readiness_timeout", 20.0),
             )
 
@@ -3872,8 +3935,9 @@ def _preflight(args, environment: str) -> int:
                     ),
                     "environment": environment,
                     "signal_date": seal["signal_date"],
-                    "candidate_universe": "EXPANDED_INTRADAY",
+                    "candidate_universe": "STAGE_A_TOP30",
                     "candidate_symbols": len(items),
+                    "expanded_shadow_symbols": len(expanded_items),
                     "quote_subscription": "ACCEPTED",
                     "quote_symbols": len(quote_items),
                     "quote_readiness": readiness,

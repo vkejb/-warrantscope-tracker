@@ -247,7 +247,8 @@ def format_runtime_event(event: str, row: dict[str, Any]) -> str | None:
             f"【WarrantScope｜{mode}監控已啟動】\n"
             f"環境：{environment}\n"
             f"訊號資料日：{row.get('signal_date', '-')}\n"
-            f"監控範圍：擴大當沖池 {row.get('watchlist_count', '-')} 檔"
+            f"正式交易池：Stage A Top30 {row.get('watchlist_count', '-')} 檔\n"
+            f"背景紙上池：{row.get('expanded_shadow_count', '-')} 檔（僅行情收集）"
         )
 
     if event == "QUOTE_RECONNECT_BEGIN":
