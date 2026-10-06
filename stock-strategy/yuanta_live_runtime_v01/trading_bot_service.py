@@ -117,7 +117,8 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
         heartbeat_age = _age_seconds(heartbeat.get("at"))
         state = str(heartbeat.get("state", "UNKNOWN"))
         if state in {
-            "STARTING", "RUNNING", "EMERGENCY_EXIT", "FORCE_FLAT_EXIT", "EXIT_ONLY_RECOVERY", "STOPPING",
+            "STARTING", "PREOPEN_WAITING", "RUNNING", "EMERGENCY_EXIT",
+            "FORCE_FLAT_EXIT", "EXIT_ONLY_RECOVERY", "STOPPING",
         }:
             health = runtime_health(runtime_dir)
             if health.healthy:
@@ -126,6 +127,12 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
                         "LIVE_STARTING"
                         if bool(heartbeat.get("submit_live"))
                         else "OBSERVE_STARTING"
+                    )
+                elif state == "PREOPEN_WAITING":
+                    runtime_state = (
+                        "LIVE_PREOPEN_WAITING"
+                        if bool(heartbeat.get("submit_live"))
+                        else "OBSERVE_PREOPEN_WAITING"
                     )
                 elif state == "STOPPING":
                     runtime_state = (
@@ -151,6 +158,8 @@ def build_status(runtime_dir: Path) -> dict[str, Any]:
     if runtime_state in {
         "LIVE_STARTING",
         "OBSERVE_STARTING",
+        "LIVE_PREOPEN_WAITING",
+        "OBSERVE_PREOPEN_WAITING",
         "LIVE_RUNNING",
         "OBSERVE_RUNNING",
         "LIVE_STOPPING",
@@ -254,6 +263,8 @@ def render_status(status: dict[str, Any]) -> str:
         "OBSERVE_RUNNING": "觀察模式執行中",
         "LIVE_STARTING": "實盤啟動中",
         "OBSERVE_STARTING": "觀察模式啟動中",
+        "LIVE_PREOPEN_WAITING": "實盤已武裝，等待開盤行情",
+        "OBSERVE_PREOPEN_WAITING": "觀察模式等待開盤行情",
         "LIVE_STOPPING": "實盤停止中",
         "OBSERVE_STOPPING": "觀察模式停止中",
         "STOPPED_CLEAN": "已正常停止",
@@ -365,6 +376,12 @@ def render_status(status: dict[str, Any]) -> str:
             else "否"
         )
     )
+    if runtime_raw in {
+        "LIVE_PREOPEN_WAITING", "OBSERVE_PREOPEN_WAITING",
+    }:
+        lines.append(
+            "盤前保護：已登入及對帳，行情完整前禁止送單"
+        )
     if status.get("exit_only_recovery"):
         lines.append("退出恢復：進行中（禁止新倉；行情狀態另列）")
 
@@ -641,6 +658,7 @@ def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
         str(runtime_dir),
         "--baseline",
         str(baseline),
+        "--allow-preopen",
     ]
 
     child_env = os.environ.copy()
@@ -666,6 +684,13 @@ def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
         or '"reason":"BROKER_EXECUTION_HALTED"' in stdout
     ):
         return False, "BROKER_EXECUTION_HALTED"
+    preopen_ready = (
+        completed.returncode == 0
+        and (
+            '"status": "PREOPEN_READY"' in stdout
+            or '"status":"PREOPEN_READY"' in stdout
+        )
+    )
     ready = (
         completed.returncode == 0
         and (
@@ -676,6 +701,8 @@ def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
 
     if ready:
         return True, "START_PREFLIGHT_READY"
+    if preopen_ready:
+        return True, "START_PREFLIGHT_PREOPEN_READY"
 
     return False, "START_PREFLIGHT_FAILED"
 
@@ -748,6 +775,7 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
         str(runtime_dir),
         "--baseline",
         str(runtime_dir / "position_baseline.json"),
+        "--allow-preopen",
     ]
 
     child_env = os.environ.copy()
@@ -804,6 +832,12 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
 
             if state == "RUNNING" and runtime_health(runtime_dir).healthy:
                 return True, "START_CONFIRMED_RUNNING"
+
+            if (
+                state == "PREOPEN_WAITING"
+                and runtime_health(runtime_dir).healthy
+            ):
+                return True, "START_CONFIRMED_PREOPEN"
 
             if state == "STOPPED_UNSAFE":
                 failure = str(
@@ -977,7 +1011,13 @@ class _RemoteControl:
         self.confirm_ttl_seconds = max(1, int(confirm_ttl_seconds))
         self.pending: _PendingControl | None = None
 
-    def _request(self, action: str, update_id: int) -> str:
+    def _request(
+        self,
+        action: str,
+        update_id: int,
+        *,
+        preflight_status: str | None = None,
+    ) -> str:
         code = f"{secrets.randbelow(10_000):04d}"
         self.pending = _PendingControl(
             action=action,
@@ -993,14 +1033,23 @@ class _RemoteControl:
         )
 
         if action == "start":
-            title = "啟動 LIVE Runtime"
-            detail = (
-                "PROD preflight 已通過。確認後 Bot 只會替這一次 runtime 子程序"
-                "注入 EXECUTION_MODE=LIVE、ENABLE_LIVE_TRADING=YES，並呼叫 "
-                "start-prod --live；不會永久修改系統環境。"
-                "Runtime 仍會再次驗證交易日、擴大當沖池、singleton lock、"
-                "reconciliation、STOP/HALT 與 LIVE gate。"
-            )
+            if preflight_status == "START_PREFLIGHT_PREOPEN_READY":
+                title = "盤前武裝 LIVE Runtime"
+                detail = (
+                    "PROD 登入、今日庫存 baseline、券商對帳與行情訂閱要求已通過。"
+                    "目前尚未有開盤行情；確認後 Runtime 會保持禁止下單並等待，"
+                    "只有 0050 與每一批候選都收到有效逐筆及五檔資料後，"
+                    "才會自動轉為正常 LIVE。"
+                )
+            else:
+                title = "啟動 LIVE Runtime"
+                detail = (
+                    "PROD preflight 已通過。確認後 Bot 只會替這一次 runtime 子程序"
+                    "注入 EXECUTION_MODE=LIVE、ENABLE_LIVE_TRADING=YES，並呼叫 "
+                    "start-prod --live；不會永久修改系統環境。"
+                    "Runtime 仍會再次驗證交易日、擴大當沖池、singleton lock、"
+                    "reconciliation、STOP/HALT 與 LIVE gate。"
+                )
         elif action == "stop":
             title = "正常停止"
             detail = (
@@ -1157,6 +1206,13 @@ class _RemoteControl:
                     "✅ LIVE runtime 已確認啟動，正在監控市場。\n"
                     "券商登入、庫存對帳及行情訂閱均已通過；可用 /status 再次確認。"
                 )
+            if status == "START_CONFIRMED_PREOPEN":
+                return (
+                    "✅ LIVE runtime 已完成盤前武裝。\n"
+                    "券商登入、今日庫存與對帳均已通過；目前禁止送單並等待開盤行情。"
+                    "0050 與每個訂閱批次都收到有效逐筆及五檔後，"
+                    "會自動轉為正常 LIVE。可用 /status 查看狀態。"
+                )
             return (
                 "⏳ LIVE runtime 仍在啟動，尚未確認已開始監控市場。\n"
                 "請稍後用 /status 確認；只有顯示「目前監控市場：是」才代表完成啟動。"
@@ -1276,7 +1332,9 @@ class _RemoteControl:
                     "或其他 fail-closed 條件。未產生確認碼，也沒有啟動 runtime。"
                 )
 
-            return self._request("start", update_id)
+            return self._request(
+                "start", update_id, preflight_status=status,
+            )
 
         if command == "/stop":
             return self._request("stop", update_id)

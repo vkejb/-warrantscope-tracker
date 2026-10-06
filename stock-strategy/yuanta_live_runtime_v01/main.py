@@ -99,6 +99,26 @@ FORCE_FLAT_MARKET_TIME = datetime_time(13, 23)
 FORCE_FLAT_CLOSING_TIME = datetime_time(13, 25)
 FORCE_FLAT_MARKET_CUTOFF = datetime_time(13, 29, 50)
 RECOVERY_NOTIFICATION_INTERVAL_SECONDS = 300.0
+PREOPEN_ARM_START = datetime_time(8, 0)
+REGULAR_MARKET_OPEN = datetime_time(9, 0)
+PREOPEN_QUOTE_DEADLINE = datetime_time(9, 5)
+
+
+class _PreopenStopRequested(RuntimeError):
+    """Internal control flow for a broker-flat stop while waiting for quotes."""
+
+
+def _preopen_arm_window(now: datetime) -> bool:
+    local_time = now.astimezone(TAIPEI).time().replace(tzinfo=None)
+    return PREOPEN_ARM_START <= local_time < REGULAR_MARKET_OPEN
+
+
+def _preopen_readiness_timeout(now: datetime) -> float:
+    local = now.astimezone(TAIPEI)
+    deadline = datetime.combine(
+        local.date(), PREOPEN_QUOTE_DEADLINE, tzinfo=TAIPEI,
+    )
+    return max(1.0, (deadline - local).total_seconds())
 
 
 def _force_flat_market_phase(now: datetime) -> str:
@@ -293,6 +313,7 @@ def _exit_pre_send_guard(
 def _wait_for_quote_readiness(
     engine, items, *, timeout_seconds: float = 20.0,
     max_age_seconds: float = 5.0,
+    poll_callback=None,
 ) -> dict[str, Any]:
     """Require real callbacks from every vendor batch, not request acceptance."""
     deadline = time.monotonic() + timeout_seconds
@@ -311,16 +332,23 @@ def _wait_for_quote_readiness(
         )}
         candidate_ready = ready - {benchmark}
         covered_batches = sum(bool(group & ready) for group in candidate_batches)
+        snapshot = {
+            "actual_quote_data": "WAITING",
+            "ready_symbols": sorted(ready),
+            "candidate_ready_count": len(candidate_ready),
+            "subscribed_symbols": len(symbols),
+            "candidate_batches_ready": covered_batches,
+            "candidate_batches_total": len(candidate_batches),
+        }
+        if poll_callback is not None:
+            poll_callback(dict(snapshot))
         if (
             benchmark in ready
             and candidate_ready
             and covered_batches == len(candidate_batches)
         ):
-            return {"actual_quote_data": "READY", "ready_symbols": sorted(ready),
-                    "candidate_ready_count": len(candidate_ready),
-                    "subscribed_symbols": len(symbols),
-                    "candidate_batches_ready": covered_batches,
-                    "candidate_batches_total": len(candidate_batches)}
+            snapshot["actual_quote_data"] = "READY"
+            return snapshot
         if time.monotonic() >= deadline:
             raise RuntimeError(
                 "QUOTE_DATA_NOT_READY: benchmark or a candidate subscription "
@@ -2193,12 +2221,89 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             notifier.critical("EXIT_ONLY_QUOTE_SUBSCRIPTION_FAILED",
                               "Quote subscription failed during owned-exposure recovery; broker reconciliation and scheduled market fallback remain active")
         if not operational_exit_only and position is None and entry_order_id is None:
-            startup_progress("QUOTE_READINESS", getattr(args, "quote_readiness_timeout", 20.0) + 5)
-            _wait_for_quote_readiness(
-                engine, quote_items,
-                timeout_seconds=getattr(args, "quote_readiness_timeout", 20.0),
-                max_age_seconds=args.entry_quote_staleness,
+            preopen_wait = bool(
+                submit_live
+                and getattr(args, "allow_preopen", False)
+                and _preopen_arm_window(datetime.now(TAIPEI))
             )
+            if preopen_wait:
+                startup_stage = "PREOPEN_WAITING"
+                last_preopen_beat = -float("inf")
+
+                def preopen_progress(readiness: dict[str, Any]) -> None:
+                    nonlocal last_preopen_beat
+                    if kill_path.exists() or stop_event.is_set():
+                        raise _PreopenStopRequested("EMERGENCY_STOP")
+                    if stop_path.exists():
+                        raise _PreopenStopRequested("GRACEFUL_STOP")
+                    if force_flat_path.exists():
+                        raise _PreopenStopRequested("SCHEDULED_FORCE_FLAT")
+                    monotonic_now = time.monotonic()
+                    if monotonic_now - last_preopen_beat < 1.0:
+                        return
+                    last_preopen_beat = monotonic_now
+                    beat(
+                        "PREOPEN_WAITING",
+                        environment=environment,
+                        submit_live=submit_live,
+                        signal_date=seal["signal_date"],
+                        watchlist_count=len(items),
+                        entry_start=SPEC["entry_start"],
+                        trade_attempted=trade_attempted,
+                        last_quote_at=session.last_quote_at,
+                        quote_readiness=readiness,
+                        gate=gate.public_snapshot(),
+                        runtime_instance_id=runtime_instance_id,
+                        trading_date=datetime.now(TAIPEI).date().isoformat(),
+                        account_lock_path=str(session._execution_account_lock.name),
+                        account_lock_instance=getattr(
+                            session._execution_account_lock, "instance_id", "",
+                        ),
+                    )
+
+                try:
+                    readiness = _wait_for_quote_readiness(
+                        engine,
+                        quote_items,
+                        timeout_seconds=_preopen_readiness_timeout(
+                            datetime.now(TAIPEI)
+                        ),
+                        max_age_seconds=args.entry_quote_staleness,
+                        poll_callback=preopen_progress,
+                    )
+                    log("PREOPEN_QUOTES_READY", readiness=readiness)
+                except _PreopenStopRequested as exc:
+                    reason = str(exc)
+                    broker_flat_confirmation_mode = (
+                        _confirm_owned_exposure_clear_for_stop(
+                            adapter, store, args.reconcile_timeout,
+                        )
+                    )
+                    broker_flat_confirmed_at = utc_now()
+                    if reason == "EMERGENCY_STOP":
+                        if submit_live:
+                            store.halt("MANUAL_EMERGENCY_STOP_NO_EXPOSURE")
+                    elif reason == "GRACEFUL_STOP":
+                        stop_path.unlink(missing_ok=True)
+                    elif reason == "SCHEDULED_FORCE_FLAT":
+                        force_flat_path.unlink(missing_ok=True)
+                    log(
+                        "PREOPEN_WAIT_STOPPED",
+                        reason=reason,
+                        confirmation_mode=broker_flat_confirmation_mode,
+                    )
+                    clean_shutdown = True
+                    return 0
+            else:
+                startup_progress(
+                    "QUOTE_READINESS",
+                    getattr(args, "quote_readiness_timeout", 20.0) + 5,
+                )
+                _wait_for_quote_readiness(
+                    engine, quote_items,
+                    timeout_seconds=getattr(args, "quote_readiness_timeout", 20.0),
+                    max_age_seconds=args.entry_quote_staleness,
+                )
         startup_stage = "RUNNING"
         log(
             "RUNTIME_STARTED",
@@ -3366,7 +3471,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     except Exception as exc:
         archive_error_type = type(exc).__name__
         if not failure_code:
-            if startup_stage in {"QUOTE_SUBSCRIPTION", "QUOTE_READINESS"}:
+            if startup_stage in {
+                "QUOTE_SUBSCRIPTION", "QUOTE_READINESS", "PREOPEN_WAITING",
+            }:
                 failure_code = "QUOTE_SUBSCRIPTION_FAILED"
             elif startup_stage in {"BROKER_CONNECT", "BROKER_CONNECTED"} or startup_stage.startswith(("BROKER_OPEN_", "BROKER_LOGIN_", "BROKER_RETRY_WAIT_")):
                 failure_code = "BROKER_CONNECTION_FAILED"
@@ -3676,15 +3783,31 @@ def _preflight(args, environment: str) -> int:
                 )
 
         session.subscribe(quote_items)
-        readiness = _wait_for_quote_readiness(
-            engine, quote_items,
-            timeout_seconds=getattr(args, "quote_readiness_timeout", 20.0),
+        preopen_deferred = bool(
+            getattr(args, "allow_preopen", False)
+            and _preopen_arm_window(datetime.now(TAIPEI))
         )
+        if preopen_deferred:
+            readiness = {
+                "actual_quote_data": "DEFERRED_UNTIL_MARKET_OPEN",
+                "ready_symbols": [],
+                "candidate_ready_count": 0,
+                "subscribed_symbols": len(quote_items),
+                "candidate_batches_ready": 0,
+                "candidate_batches_total": len(list(batches(quote_items))),
+            }
+        else:
+            readiness = _wait_for_quote_readiness(
+                engine, quote_items,
+                timeout_seconds=getattr(args, "quote_readiness_timeout", 20.0),
+            )
 
         print(
             json.dumps(
                 {
-                    "status": "READY",
+                    "status": (
+                        "PREOPEN_READY" if preopen_deferred else "READY"
+                    ),
                     "environment": environment,
                     "signal_date": seal["signal_date"],
                     "candidate_universe": "EXPANDED_INTRADAY",
@@ -4023,6 +4146,14 @@ def _start_options(parser: argparse.ArgumentParser) -> None:
         ),
     )
     parser.add_argument("--live", action="store_true", help="required together with EXECUTION_MODE=LIVE and ENABLE_LIVE_TRADING=YES")
+    parser.add_argument(
+        "--allow-preopen",
+        action="store_true",
+        help=(
+            "allow an explicitly armed LIVE runtime to wait broker-flat for "
+            "real quote callbacks between 08:00 and 09:05"
+        ),
+    )
     parser.add_argument("--capital", type=int, default=190_000)
     parser.add_argument("--entry-timeout", type=float, default=15.0)
     parser.add_argument("--exit-reprice-seconds", type=float, default=5.0)
@@ -4063,6 +4194,11 @@ def parse_args(argv=None):
     for name in ("preflight-uat", "preflight-prod"):
         cmd = sub.add_parser(name)
         _common(cmd)
+        cmd.add_argument(
+            "--allow-preopen",
+            action="store_true",
+            help="accept broker/account/subscription preflight before market data begins",
+        )
 
     for name in ("baseline-uat", "baseline-prod"):
         cmd = sub.add_parser(name)

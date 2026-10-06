@@ -40,6 +40,15 @@ class HealthRegressions(unittest.TestCase):
                 self.assertTrue(runtime_health(runtime, now=now).healthy)
                 # A living, lock-owning controller alone is not market monitoring.
                 self.assertFalse(build_status(runtime)["monitoring_market"])
+                row["state"] = "PREOPEN_WAITING"
+                path.write_text(json.dumps(row))
+                self.assertTrue(runtime_health(runtime, now=now).healthy)
+                self.assertEqual(
+                    build_status(runtime)["runtime_state"],
+                    "LIVE_PREOPEN_WAITING",
+                )
+                self.assertFalse(build_status(runtime)["monitoring_market"])
+                row["state"] = "RUNNING"
                 row["last_quote_at"] = now.isoformat()
                 path.write_text(json.dumps(row))
                 self.assertTrue(build_status(runtime)["monitoring_market"])

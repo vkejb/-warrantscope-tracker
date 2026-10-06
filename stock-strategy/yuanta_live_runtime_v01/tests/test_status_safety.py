@@ -41,3 +41,12 @@ class StatusSafetyTests(TestCase):
         status = self.status(state="RUNNING", quote_age=0)
         self.assertTrue(status["monitoring_market"])
         self.assertFalse(status["exit_only_recovery"])
+
+    def test_preopen_wait_is_healthy_but_never_claims_market_monitoring(self):
+        status = self.status(state="PREOPEN_WAITING")
+        self.assertEqual(status["runtime_state"], "LIVE_PREOPEN_WAITING")
+        self.assertFalse(status["monitoring_market"])
+        self.assertEqual(status["quote_health"], "NO_QUOTE_YET")
+        text = render_status(status)
+        self.assertIn("實盤已武裝，等待開盤行情", text)
+        self.assertIn("行情完整前禁止送單", text)

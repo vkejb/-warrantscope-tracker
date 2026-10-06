@@ -100,6 +100,18 @@ baseline」。同一交易日只會建立一次；當日本機已有任何 ENTRY
 進行中委託，或券商仍有未成交單時，禁止重新建立，避免盤中重啟把新增部位誤認成原始
 庫存。baseline 另有日期及帳戶雜湊 metadata；不保存完整帳號或密碼。
 
+### 盤前武裝
+
+Trading Bot 的 `/start` 可在交易日 08:00–09:00 進入 `PREOPEN_WAITING`。盤前仍會先完成
+正式帳戶登入、當日 baseline、券商委託／庫存對帳及 361 檔行情訂閱要求，但「訂閱要求
+已接受」不等於行情可用。Runtime 在此狀態持續持有 singleton 與帳戶鎖、更新 heartbeat，
+並且禁止策略送單。只有 0050 與每個候選批次都實際收到新鮮逐筆及五檔資料後，才轉為
+`RUNNING`；09:05 前仍未完整就 fail closed。盤前 `/stop`、`/kill` 與獨立 force-flat marker
+仍會中止等待並重新以券商證據確認機器人曝險為零。
+
+CLI 必須明確加入 `--allow-preopen` 才能使用這條路徑；未加旗標的既有 preflight/start
+仍維持嚴格的即時行情檢查。Telegram Bot 只在自己的已確認 `/start` 流程加入此旗標。
+
 ## 獨立 13:20 force-flat supervisor
 
 Trading Bot service 可在明確設定 `ENABLE_SCHEDULED_FORCE_FLAT=YES` 時，同時啟動獨立

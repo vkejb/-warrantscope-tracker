@@ -24,16 +24,19 @@ from yuanta_live_runtime_v01.strategy import LiveDirectionEngine, ManagedPositio
 
 class RuntimeHarness:
     """Run the actual controller against a deterministic in-memory broker."""
-    def __init__(self, directory, *, minute=20, partial=False, late_fill=False,
+    def __init__(self, directory, *, hour=13, minute=20, partial=False, late_fill=False,
                  reject_cancel=False, lost_cancel=False, transient_query=False,
                  poison_query=False, recovery=False, quotes=True,
                  held_quote_outage=False, notification_init_failure=False,
                  subscription_failure=False, observer_failure=None,
                  notification_critical_failure=False, corrupt_checkpoint=False,
                  broker_mismatch=False, no_owned_position=False,
-                 external_baseline_reduction=False, stop_after_subscribe=False):
+                 external_baseline_reduction=False, stop_after_subscribe=False,
+                 allow_preopen=False, stop_after_preopen_ready=False):
         self.directory = Path(directory)
-        self.current = RealDateTime.now(TAIPEI).replace(hour=13, minute=minute, second=0, microsecond=0)
+        self.current = RealDateTime.now(TAIPEI).replace(
+            hour=hour, minute=minute, second=0, microsecond=0,
+        )
         self.partial, self.late_fill = partial, late_fill
         self.reject_cancel, self.lost_cancel = reject_cancel, lost_cancel
         self.transient_query, self.poison_query = transient_query, poison_query
@@ -48,6 +51,8 @@ class RuntimeHarness:
         self.no_owned_position = no_owned_position
         self.external_baseline_reduction = external_baseline_reduction
         self.stop_after_subscribe = stop_after_subscribe
+        self.allow_preopen = allow_preopen
+        self.stop_after_preopen_ready = stop_after_preopen_ready
         self.external_reduction_active = False
         self.initial_feed_completed = False
         self.events, self.criticals, self.adapters = [], [], []
@@ -115,7 +120,12 @@ class RuntimeHarness:
             self.session.feed()
 
     def run(self):
-        self.prepare()
+        with patch(
+            "yuanta_broker_execution_v01.store.utc_now",
+            side_effect=lambda: self.current.astimezone(timezone.utc)
+            .isoformat().replace("+00:00", "Z"),
+        ):
+            self.prepare()
         harness = self
         class Clock(RealDateTime):
             @classmethod
@@ -290,13 +300,20 @@ class RuntimeHarness:
                 harness.events.append((event, row))
                 if harness.observer_failure == "notifier":
                     raise OSError("mock isolated notification write failure")
+                if event == "PREOPEN_QUOTES_READY" and harness.stop_after_preopen_ready:
+                    (harness.directory / "STOP_REQUEST").write_text(
+                        "mock post-readiness stop\n", encoding="utf-8",
+                    )
                 if event == "LIVE_TRADE_COMPLETE_CONTINUE_ARCHIVE":
                     harness.current = harness.current.replace(minute=25)
             def close(self, **kwargs):
                 pass
 
-        args = runtime_main.parse_args(["start-uat", "--live", "--runtime-dir", str(self.directory),
-                                       "--baseline", str(self.baseline), "--vendor-dir", str(self.directory)])
+        argv = ["start-uat", "--live", "--runtime-dir", str(self.directory),
+                "--baseline", str(self.baseline), "--vendor-dir", str(self.directory)]
+        if self.allow_preopen:
+            argv.append("--allow-preopen")
+        args = runtime_main.parse_args(argv)
         args.account_lock_root = self.directory / "account-locks"
         args.recover_force_flat = self.recovery
         gate = SimpleNamespace(authorized=True, public_snapshot=lambda: {"test_mock_gate": True})
@@ -332,6 +349,11 @@ class RuntimeHarness:
                                               "actual_fills": 0, "broker_order_calls": 0}))),
             ):
                 stack.enter_context(patch.object(runtime_main, name, value))
+            stack.enter_context(patch(
+                "yuanta_broker_execution_v01.store.utc_now",
+                side_effect=lambda: harness.current.astimezone(timezone.utc)
+                .isoformat().replace("+00:00", "Z"),
+            ))
             stack.enter_context(patch.object(runtime_main.LiveTradingGate, "from_environment", return_value=gate))
             stack.enter_context(patch.object(runtime_main.time, "sleep", side_effect=self.sleep))
             stack.enter_context(patch.object(runtime_main.signal, "signal"))
@@ -374,6 +396,36 @@ class FullRuntimeSafetyTests(TestCase):
         harness, _heartbeat, _halted = self.run_case()
         self.assertEqual(harness.exit_quantities, [1000])
         self.assertFalse(harness.runtime_closed_with_exposure)
+
+    def test_preopen_stop_remains_broker_flat_and_never_enters_main_loop(self):
+        harness, heartbeat, halted = self.run_case(
+            hour=8,
+            minute=30,
+            no_owned_position=True,
+            stop_after_subscribe=True,
+            allow_preopen=True,
+        )
+        self.assertFalse(halted)
+        self.assertTrue(heartbeat["broker_flat_confirmed"])
+        self.assertIn(
+            "PREOPEN_WAIT_STOPPED",
+            [event for event, _row in harness.events],
+        )
+
+    def test_preopen_quotes_transition_to_runtime_before_any_entry(self):
+        harness, heartbeat, halted = self.run_case(
+            hour=8,
+            minute=30,
+            no_owned_position=True,
+            allow_preopen=True,
+            stop_after_preopen_ready=True,
+        )
+        events = [event for event, _row in harness.events]
+        self.assertFalse(halted)
+        self.assertTrue(heartbeat["broker_flat_confirmed"])
+        self.assertIn("PREOPEN_QUOTES_READY", events)
+        self.assertIn("RUNTIME_STARTED", events)
+        self.assertNotIn("ENTRY_SUBMITTED", events)
 
     def test_stop_completes_when_only_preexisting_inventory_was_manually_reduced(self):
         harness, heartbeat, halted = self.run_case(
@@ -596,6 +648,46 @@ class AdmissionAndExitQuoteSafetyTests(TestCase):
             ready = runtime_main._wait_for_quote_readiness(engine, items, timeout_seconds=.001)
         self.assertEqual(ready["candidate_ready_count"], 1)
         self.assertEqual(set(ready["ready_symbols"]), {"TEST", "0050"})
+
+    def test_preopen_window_and_deadline_are_bounded(self):
+        day = RealDateTime.now(TAIPEI).replace(
+            hour=8, minute=0, second=0, microsecond=0,
+        )
+        self.assertTrue(runtime_main._preopen_arm_window(day))
+        self.assertTrue(runtime_main._preopen_arm_window(
+            day.replace(hour=8, minute=59, second=59)
+        ))
+        self.assertFalse(runtime_main._preopen_arm_window(
+            day.replace(hour=7, minute=59, second=59)
+        ))
+        self.assertFalse(runtime_main._preopen_arm_window(
+            day.replace(hour=9, minute=0)
+        ))
+        self.assertEqual(runtime_main._preopen_readiness_timeout(day), 3900.0)
+
+    def test_quote_wait_callback_can_stop_preopen_without_readiness(self):
+        engine = LiveDirectionEngine(
+            {"TEST": "Test", "0050": "ETF"},
+            candidate_symbols={"TEST"}, benchmark_symbol="0050",
+        )
+        items = [
+            SimpleNamespace(stock_id="TEST"),
+            SimpleNamespace(stock_id="0050"),
+        ]
+        snapshots = []
+
+        def stop(snapshot):
+            snapshots.append(snapshot)
+            raise runtime_main._PreopenStopRequested("GRACEFUL_STOP")
+
+        with self.assertRaisesRegex(
+            runtime_main._PreopenStopRequested, "GRACEFUL_STOP",
+        ):
+            runtime_main._wait_for_quote_readiness(
+                engine, items, timeout_seconds=60, poll_callback=stop,
+            )
+        self.assertEqual(snapshots[0]["actual_quote_data"], "WAITING")
+        self.assertEqual(snapshots[0]["candidate_batches_ready"], 0)
 
     def test_readiness_requires_callbacks_from_every_subscription_batch(self):
         candidates = [f"C{index:03d}" for index in range(201)]

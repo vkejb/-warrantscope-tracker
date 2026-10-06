@@ -714,12 +714,69 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             self.assertIn("preflight-prod", command)
             self.assertIn("--runtime-dir", command)
             self.assertIn("--baseline", command)
+            self.assertIn("--allow-preopen", command)
             self.assertNotIn("--live", command)
 
             self.assertEqual(kwargs["env"]["EXECUTION_MODE"], "DRY_RUN")
             self.assertEqual(kwargs["env"]["ENABLE_LIVE_TRADING"], "NO")
             self.assertTrue(kwargs["capture_output"])
             self.assertEqual(kwargs["timeout"], 90)
+
+    def test_start_preflight_accepts_explicit_preopen_ready(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            (runtime / "position_baseline.json").write_text(
+                "{}\n", encoding="utf-8",
+            )
+            completed = SimpleNamespace(
+                returncode=0,
+                stdout='{"status":"PREOPEN_READY"}',
+                stderr="",
+            )
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service._ensure_daily_position_baseline",
+                return_value=(True, "AUTO_BASELINE_READY"),
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
+                return_value=completed,
+            ):
+                ok, status = _run_start_preflight(runtime)
+
+            self.assertTrue(ok)
+            self.assertEqual(status, "START_PREFLIGHT_PREOPEN_READY")
+
+    def test_start_launcher_confirms_healthy_preopen_wait(self):
+        class FakeProcess:
+            def __init__(self, runtime):
+                self.runtime = runtime
+                self.pid = 123456
+
+            def wait(self, timeout):
+                (self.runtime / "heartbeat.json").write_text(
+                    json.dumps({
+                        "at": datetime.now(timezone.utc).isoformat(),
+                        "state": "PREOPEN_WAITING",
+                        "pid": self.pid,
+                        "submit_live": True,
+                    }),
+                    encoding="utf-8",
+                )
+                raise subprocess.TimeoutExpired(cmd="start-prod", timeout=timeout)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.Popen",
+                return_value=FakeProcess(runtime),
+            ) as popen, patch(
+                "yuanta_live_runtime_v01.trading_bot_service.runtime_health",
+                return_value=SimpleNamespace(healthy=True, controller_present=False),
+            ):
+                ok, status = _launch_runtime_start(runtime)
+
+            self.assertTrue(ok)
+            self.assertEqual(status, "START_CONFIRMED_PREOPEN")
+            self.assertIn("--allow-preopen", popen.call_args.args[0])
 
 
     def test_start_launcher_sets_live_gates_only_in_child_environment(self):
