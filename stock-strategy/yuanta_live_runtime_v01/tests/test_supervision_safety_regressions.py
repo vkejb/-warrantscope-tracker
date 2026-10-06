@@ -17,11 +17,31 @@ from yuanta_live_runtime_v01.force_flat_supervisor import (
 from yuanta_live_runtime_v01.notifications import RuntimeNotifier
 from yuanta_live_runtime_v01.trading_bot_notifier import DeliveryResult, NotificationOutbox, _telegram_send
 from yuanta_live_runtime_v01.trading_bot_service import build_status, serve, _supervisor_thread_healthy
-from yuanta_live_runtime_v01.watchdog import broker_flat_proof, runtime_health, runtime_lock_owned
+from yuanta_live_runtime_v01.watchdog import Heartbeat, broker_flat_proof, runtime_health, runtime_lock_owned
 from yuanta_broker_execution_v01 import LiveOrderStore
 
 
 class HealthRegressions(unittest.TestCase):
+    def test_keepalive_refreshes_blocked_runtime_and_stops_before_terminal_beat(self):
+        with TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            heartbeat = Heartbeat(runtime)
+            heartbeat.beat("EXIT_ONLY_RECOVERY", recovery_attempt=3)
+            first = json.loads((runtime / "heartbeat.json").read_text())
+            heartbeat.start_keepalive(interval_seconds=0.01)
+            threading.Event().wait(0.03)
+            second = json.loads((runtime / "heartbeat.json").read_text())
+            self.assertGreater(second["at"], first["at"])
+            self.assertEqual(second["state"], "EXIT_ONLY_RECOVERY")
+            self.assertEqual(second["recovery_attempt"], 3)
+
+            heartbeat.stop_keepalive()
+            heartbeat.stopped(True, broker_flat_confirmed=True)
+            terminal = (runtime / "heartbeat.json").read_text()
+            threading.Event().wait(0.03)
+            self.assertEqual((runtime / "heartbeat.json").read_text(), terminal)
+            self.assertEqual(json.loads(terminal)["state"], "STOPPED_CLEAN")
+
     def test_live_health_requires_pid_kernel_lock_and_account_instance(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

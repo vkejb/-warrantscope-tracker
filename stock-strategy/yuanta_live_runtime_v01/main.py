@@ -2051,6 +2051,11 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     try:
         _claim_account_lock(session, args, environment)
         startup_progress("LOCAL_PREPARATION")
+        # Broker reconciliation and exponential recovery backoff can each run
+        # longer than the 15-second supervisor freshness window. A dedicated
+        # publisher repeats only the last truthful state; it does not advance
+        # startup stages or relax lock/deadline checks.
+        heartbeat.start_keepalive(interval_seconds=5.0)
         archive_started_at = utc_now()
         if not recovery_only:
             try:
@@ -3497,6 +3502,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         raise
     finally:
         try:
+            heartbeat.stop_keepalive()
             heartbeat.stopped(
                 clean_shutdown,
                 environment=environment,

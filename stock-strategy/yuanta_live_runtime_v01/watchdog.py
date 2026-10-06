@@ -7,6 +7,7 @@ import fcntl
 import json
 import os
 from pathlib import Path
+import threading
 import time
 
 from .notifications import RuntimeNotifier
@@ -157,13 +158,67 @@ def utc_now() -> str:
 class Heartbeat:
     def __init__(self, runtime_dir: Path):
         self.path = Path(runtime_dir) / "heartbeat.json"
+        self._lock = threading.RLock()
+        self._last_state: str | None = None
+        self._last_details: dict[str, object] = {}
+        self._keepalive_stop = threading.Event()
+        self._keepalive_thread: threading.Thread | None = None
 
     def beat(self, state: str, **details) -> None:
-        payload = {"at": utc_now(), "pid": os.getpid(), "state": state, **details}
-        tmp = self.path.with_suffix(".tmp")
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp.write_text(json.dumps(payload, sort_keys=True, default=str) + "\n", encoding="utf-8")
-        os.replace(tmp, self.path)
+        with self._lock:
+            self._last_state = str(state)
+            self._last_details = dict(details)
+            payload = {
+                "at": utc_now(), "pid": os.getpid(),
+                "state": self._last_state, **self._last_details,
+            }
+            tmp = self.path.with_suffix(".tmp")
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            tmp.write_text(json.dumps(payload, sort_keys=True, default=str) + "\n", encoding="utf-8")
+            os.replace(tmp, self.path)
+
+    def start_keepalive(self, *, interval_seconds: float = 5.0) -> None:
+        """Refresh the last truthful state while broker calls/backoff block.
+
+        The publisher never invents progress or changes state. Runtime health
+        still requires the process plus both kernel-backed ownership locks.
+        """
+        interval = float(interval_seconds)
+        if not 0 < interval < 15:
+            raise ValueError("heartbeat keepalive interval must be between 0 and 15 seconds")
+        with self._lock:
+            if self._last_state is None:
+                raise RuntimeError("heartbeat keepalive requires an initial state")
+            if self._keepalive_thread is not None and self._keepalive_thread.is_alive():
+                return
+            self._keepalive_stop.clear()
+
+            def publish() -> None:
+                while not self._keepalive_stop.wait(interval):
+                    with self._lock:
+                        state = self._last_state
+                        details = dict(self._last_details)
+                    if state is None:
+                        continue
+                    try:
+                        self.beat(state, **details)
+                    except OSError:
+                        # Do not conceal a broken heartbeat with an immortal
+                        # worker. The supervisor will fail closed on staleness.
+                        return
+
+            self._keepalive_thread = threading.Thread(
+                target=publish,
+                name="runtime-heartbeat-keepalive",
+                daemon=True,
+            )
+            self._keepalive_thread.start()
+
+    def stop_keepalive(self, *, timeout: float = 2.0) -> None:
+        self._keepalive_stop.set()
+        thread = self._keepalive_thread
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(max(0.0, float(timeout)))
 
     def stopped(self, clean: bool, **details) -> None:
         self.beat("STOPPED_CLEAN" if clean else "STOPPED_UNSAFE", **details)

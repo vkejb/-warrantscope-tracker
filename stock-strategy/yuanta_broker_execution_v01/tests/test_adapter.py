@@ -463,6 +463,53 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(completed.broker_order_no, "new-no")
         self.assertEqual(self.store.get(first.client_order_id).filled_quantity, 0)
 
+    def test_prod_prefixed_truncated_basket_still_identifies_current_fill(self):
+        current = self.adapter.submit(
+            self.intent(intent_id="prod-prefixed-basket", quantity=1000)
+        )
+        broker_basket = "Ewodr" + current.basket_no[:27]
+        self.assertEqual(len(broker_basket), 32)
+
+        fill = Obj(
+            Account="S12341234567",
+            RptType=51,
+            OrderNo="i00C4",
+            CompanyNo="3605",
+            BS="B",
+            Price=100,
+            BeforeQty=0,
+            OrderQty=1000,
+            TradeKind=0,
+            APCode=0,
+            BasketNo=broker_basket,
+            OrderStatus=8,
+            SeqNo="prod-fill-1",
+            StkErrorNo="",
+            OrderErrorNo="",
+        )
+        self.api.OnResponse.emit(2, 2, "RR_RealReport", None, fill)
+        self.drain()
+
+        completed = self.store.get(current.client_order_id)
+        self.assertEqual(completed.status, BrokerOrderStatus.FILLED)
+        self.assertEqual(completed.filled_quantity, 1000)
+        self.assertEqual(completed.average_fill_price, Decimal("100"))
+        self.assertEqual(completed.broker_order_no, "i00C4")
+
+        self.api.merge_rows = [{
+            "Account": "S12341234567", "RptType": 1,
+            "OrderNo": "i00C4", "CompanyNo": "3605", "BS": "B",
+            "OrderType": 0, "Price": 100, "LastDealPrice": 100,
+            "AvgDealPrice": 100, "BeforeQty": 0, "OrderQty": 1000,
+            "OkQty": 1000, "APCode": 0, "OrderStatus": 20,
+            "LastOrderStatus": 8, "BasketNo": broker_basket,
+            "StkErrorNo": "",
+        }]
+        self.api.positions = {"3605": 1000}
+        result = self.adapter.reconcile(timeout=1)
+        self.assertEqual(result.status, "MATCH")
+        self.assertEqual(result.broker_positions, {"3605|0": 1000})
+
     def test_ambiguous_reused_identifier_halts_without_guessing(self):
         first, _ = self.store.reserve(self.intent(intent_id="pending-one"))
         second_intent = ExecutionIntent(

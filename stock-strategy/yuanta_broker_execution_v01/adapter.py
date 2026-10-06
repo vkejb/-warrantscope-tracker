@@ -36,6 +36,30 @@ from .store import LiveOrderStore
 
 TAIPEI = ZoneInfo("Asia/Taipei")
 
+# Actual SPARK PROD evidence on 2026-10-06 showed a 32-character broker
+# BasketNo made from a five-character broker prefix plus the first 27
+# characters of the submitted 32-character BasketNo. Keep exact matching for
+# SDK variants that echo the value, and accept only this narrowly evidenced
+# transformation together with the existing account/symbol/side/day checks.
+_BROKER_BASKET_LENGTH = 32
+_BROKER_BASKET_PREFIX_LENGTH = 5
+
+
+def _basket_identity_matches(local_basket: Any, broker_basket: Any) -> bool:
+    local = str(local_basket or "").strip()
+    broker = str(broker_basket or "").strip()
+    if not local or not broker:
+        return False
+    if broker == local:
+        return True
+    retained = _BROKER_BASKET_LENGTH - _BROKER_BASKET_PREFIX_LENGTH
+    return bool(
+        local.startswith("WS")
+        and len(local) == _BROKER_BASKET_LENGTH
+        and len(broker) == _BROKER_BASKET_LENGTH
+        and broker[_BROKER_BASKET_PREFIX_LENGTH:] == local[:retained]
+    )
+
 
 class BrokerAdapterError(RuntimeError):
     pass
@@ -1266,7 +1290,7 @@ class YuantaSparkExecutionAdapter:
             self._is_current_order(order)
             and self._identity_matches(order, remote)
             and (
-                (basket_no and basket_no == order.basket_no)
+                (basket_no and _basket_identity_matches(order.basket_no, basket_no))
                 or (
                     not basket_no
                     and order_no
@@ -1611,6 +1635,19 @@ class YuantaSparkExecutionAdapter:
             if created_day < today and local.status in TERMINAL_STATUSES:
                 continue
             remote = by_basket.get(local.basket_no)
+            if remote is None:
+                transformed = [
+                    row for row in merge
+                    if _basket_identity_matches(local.basket_no, row.get("basket_no"))
+                ]
+                if len(transformed) == 1:
+                    remote = transformed[0]
+                elif len(transformed) > 1:
+                    mismatches.append({
+                        "client_order_id": local.client_order_id,
+                        "reason": "ambiguous_transformed_basket",
+                    })
+                    continue
             if remote is None and local.broker_order_no:
                 candidate = by_order.get(local.broker_order_no)
                 if candidate is not None and not candidate.get("basket_no") and self._is_current_order(local):
@@ -1827,7 +1864,7 @@ class YuantaSparkExecutionAdapter:
         if str(report.get("side", "")).strip().upper() not in {local.side.value, "B" if local.side.value == "BUY" else "S"}:
             return False
         basket = str(report.get("basket_no", "") or "")
-        if basket and basket != local.basket_no:
+        if basket and not _basket_identity_matches(local.basket_no, basket):
             return False
         order_no = str(report.get("order_no", "") or "")
         if local.broker_order_no and order_no and order_no != local.broker_order_no:
@@ -1971,6 +2008,16 @@ class YuantaSparkExecutionAdapter:
             local = self.store.get_by_basket_no(basket)
             if local is not None and self._identity_matches(local, report):
                 return local
+            transformed = [
+                order for order in self.store.orders()
+                if self._is_current_order(order)
+                and _basket_identity_matches(order.basket_no, basket)
+                and self._identity_matches(order, report)
+            ]
+            if len(transformed) == 1:
+                return transformed[0]
+            if len(transformed) > 1:
+                self.store.halt("AMBIGUOUS_TRANSFORMED_BASKET")
             # A nonempty unknown/conflicting basket is not permission to
             # attach this report to some other (possibly historical) order.
             return None
