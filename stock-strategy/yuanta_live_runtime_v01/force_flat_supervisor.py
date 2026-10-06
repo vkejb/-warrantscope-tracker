@@ -14,6 +14,7 @@ from datetime import datetime, time as time_cls, timedelta
 import json
 import os
 from pathlib import Path
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -69,6 +70,67 @@ def _baseline_ready(runtime_dir: Path, now: datetime) -> bool:
         baseline.is_file()
         and meta is not None
         and str(meta.get("trading_date", "")) == now.astimezone(TAIPEI).date().isoformat()
+    )
+
+
+def _parse_aware_timestamp(value: Any) -> datetime | None:
+    try:
+        stamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return stamp if stamp.tzinfo is not None else None
+
+
+def _prior_session_remediated(runtime_dir: Path, prior: dict[str, Any], now: datetime) -> bool:
+    """Recognize a newer, durable baseline + halt-clear remediation.
+
+    This only suppresses replay of a historical notification. It does not
+    certify runtime health, broker flatness, or authorize LIVE trading. Both
+    artifacts are written by the broker-backed baseline/clear-halt flows, and
+    must be newer than the unsafe heartbeat. Any active safety request keeps
+    the warning fail-closed.
+    """
+    prior_stamp = _parse_aware_timestamp(prior.get("at"))
+    if prior_stamp is None:
+        return False
+    for marker in ("EMERGENCY_STOP", "STOP_REQUEST", REQUEST):
+        if (runtime_dir / marker).exists():
+            return False
+
+    baseline = runtime_dir / "position_baseline.json"
+    meta = _read_json(runtime_dir / META)
+    if not baseline.is_file() or meta is None:
+        return False
+    if str(meta.get("trading_date", "")) != now.astimezone(TAIPEI).date().isoformat():
+        return False
+    baseline_stamp = _parse_aware_timestamp(meta.get("captured_at"))
+    if baseline_stamp is None or baseline_stamp <= prior_stamp or baseline_stamp > now:
+        return False
+
+    database = runtime_dir / "live-orders.sqlite"
+    if not database.is_file():
+        return False
+    try:
+        connection = sqlite3.connect(
+            database.resolve().as_uri() + "?mode=ro",
+            uri=True,
+            timeout=1,
+        )
+        try:
+            row = connection.execute(
+                "SELECT halted, updated_at FROM live_control WHERE singleton=1"
+            ).fetchone()
+        finally:
+            connection.close()
+    except (OSError, sqlite3.Error):
+        return False
+    if row is None or bool(row[0]):
+        return False
+    halt_clear_stamp = _parse_aware_timestamp(row[1])
+    return bool(
+        halt_clear_stamp is not None
+        and halt_clear_stamp > prior_stamp
+        and halt_clear_stamp <= now
     )
 
 
@@ -367,7 +429,18 @@ def scheduler_loop(runtime_dir: Path, *, interval_seconds: float = 1.0,
                         and prior.get("environment") == "PROD")
                 except (KeyError, TypeError, ValueError):
                     unresolved_history = False
-                if unresolved_history and history_alert_key != prior.get("at"):
+                prior_remediated = bool(
+                    unresolved_history
+                    and _prior_session_remediated(runtime_dir, prior, now)
+                )
+                if unresolved_history and prior_remediated and history_alert_key != prior.get("at"):
+                    history_alert_key = prior.get("at")
+                    _append(
+                        runtime_dir / LEDGER,
+                        "SUPERVISOR_PRIOR_SESSION_REMEDIATION_RECOGNIZED",
+                        prior_heartbeat_at=prior.get("at"),
+                    )
+                elif unresolved_history and history_alert_key != prior.get("at"):
                     history_alert_key = prior.get("at")
                     notifier.critical("SUPERVISOR_PRIOR_SESSION_UNRESOLVED",
                                       "A prior LIVE session ended unsafe; current broker positions are unknown and no baseline/halts were reset")

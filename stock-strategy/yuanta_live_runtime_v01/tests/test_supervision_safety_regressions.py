@@ -12,12 +12,13 @@ from unittest.mock import Mock, patch
 from yuanta_live_runtime_v01.account_lock import acquire_account_lock, release_account_lock
 from yuanta_live_runtime_v01.force_flat_supervisor import (
     SCHEDULE_GATE, TAIPEI, _launch_exit_only, _SleepInhibitor,
-    scheduler_loop, trigger_once,
+    _prior_session_remediated, scheduler_loop, trigger_once,
 )
 from yuanta_live_runtime_v01.notifications import RuntimeNotifier
 from yuanta_live_runtime_v01.trading_bot_notifier import DeliveryResult, NotificationOutbox, _telegram_send
 from yuanta_live_runtime_v01.trading_bot_service import build_status, serve, _supervisor_thread_healthy
 from yuanta_live_runtime_v01.watchdog import broker_flat_proof, runtime_health, runtime_lock_owned
+from yuanta_broker_execution_v01 import LiveOrderStore
 
 
 class HealthRegressions(unittest.TestCase):
@@ -244,6 +245,52 @@ class SupervisorRegressions(unittest.TestCase):
                 scheduler_loop(runtime, stop_event=stop, clock=lambda: now, sleeper=lambda _s: stop.set())
             trigger.assert_not_called()
             self.assertIn("SUPERVISOR_PRIOR_SESSION_UNRESOLVED", [call.args[0] for call in notifier.return_value.critical.call_args_list])
+
+    def test_newer_baseline_and_halt_clear_suppress_stale_prior_session_warning(self):
+        with TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            prior = datetime.now(TAIPEI) - timedelta(days=1)
+            now = datetime.now(TAIPEI) + timedelta(minutes=1)
+            (runtime / "heartbeat.json").write_text(json.dumps({"at": prior.isoformat(), "environment": "PROD",
+                                                               "submit_live": True, "state": "STOPPED_UNSAFE"}))
+            (runtime / "position_baseline.json").write_text("{}\n")
+            (runtime / "position_baseline.meta.json").write_text(json.dumps({
+                "trading_date": now.date().isoformat(),
+                "captured_at": (now - timedelta(minutes=2)).isoformat(),
+            }))
+            with LiveOrderStore(runtime / "live-orders.sqlite") as store:
+                store.halt("test prior unsafe session")
+                store.clear_halt("broker reconciliation succeeded")
+            prior_row = json.loads((runtime / "heartbeat.json").read_text())
+            self.assertTrue(_prior_session_remediated(runtime, prior_row, now))
+
+            stop = threading.Event()
+            with patch.dict(os.environ, {SCHEDULE_GATE: "YES"}), \
+                 patch("yuanta_live_runtime_v01.force_flat_supervisor.trigger_once") as trigger, \
+                 patch("yuanta_live_runtime_v01.force_flat_supervisor.RuntimeNotifier") as notifier:
+                scheduler_loop(runtime, stop_event=stop, clock=lambda: now, sleeper=lambda _s: stop.set())
+            trigger.assert_not_called()
+            self.assertNotIn("SUPERVISOR_PRIOR_SESSION_UNRESOLVED",
+                             [call.args[0] for call in notifier.return_value.critical.call_args_list])
+            ledger = (runtime / "force_flat_supervisor.jsonl").read_text()
+            self.assertIn("SUPERVISOR_PRIOR_SESSION_REMEDIATION_RECOGNIZED", ledger)
+
+    def test_safety_marker_prevents_prior_session_warning_suppression(self):
+        with TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            prior = datetime.now(TAIPEI) - timedelta(days=1)
+            now = datetime.now(TAIPEI) + timedelta(minutes=1)
+            (runtime / "position_baseline.json").write_text("{}\n")
+            (runtime / "position_baseline.meta.json").write_text(json.dumps({
+                "trading_date": now.date().isoformat(),
+                "captured_at": (now - timedelta(minutes=2)).isoformat(),
+            }))
+            with LiveOrderStore(runtime / "live-orders.sqlite") as store:
+                store.clear_halt("broker reconciliation succeeded")
+            prior_row = {"at": prior.isoformat(), "environment": "PROD",
+                         "submit_live": True, "state": "STOPPED_UNSAFE"}
+            (runtime / "EMERGENCY_STOP").write_text("active\n")
+            self.assertFalse(_prior_session_remediated(runtime, prior_row, now))
 
     def test_missed_window_warns_without_retroactive_order(self):
         with TemporaryDirectory() as tmp:
