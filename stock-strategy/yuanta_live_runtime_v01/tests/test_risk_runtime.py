@@ -340,6 +340,88 @@ class RuntimeGateTests(unittest.TestCase):
         self.assertEqual([item.stock_id for item in expanded_items], ["2330"])
         self.assertEqual(provenance, {"source": "official"})
 
+    def test_missing_expanded_paper_universe_does_not_block_stage_a_live_pool(self):
+        stage_item = SimpleNamespace(stock_id="1111")
+        with patch.object(
+            runtime_main, "load_stage_a_watchlist",
+            return_value=(
+                {"signal_date": "20261002", "seal_hash": "stage"},
+                [stage_item], {"source": "official"},
+            ),
+        ), patch.object(
+            runtime_main, "_validate_watchlist_day",
+        ), patch.object(
+            runtime_main, "load_universe",
+            side_effect=RuntimeError("expanded universe seal missing for 20261002"),
+        ):
+            seal, items, provenance, expanded_seal, expanded_items = (
+                runtime_main._load_live_intraday_universe()
+            )
+
+        self.assertEqual(seal["seal_hash"], "stage")
+        self.assertEqual([item.stock_id for item in items], ["1111"])
+        self.assertEqual(provenance, {"source": "official"})
+        self.assertIsNone(expanded_seal)
+        self.assertEqual(expanded_items, [])
+
+    def test_invalid_expanded_paper_universe_does_not_block_stage_a_live_pool(self):
+        stage_item = SimpleNamespace(stock_id="1111")
+        expanded_item = SimpleNamespace(stock_id="2330")
+        with patch.object(
+            runtime_main, "load_stage_a_watchlist",
+            return_value=(
+                {"signal_date": "20261002", "seal_hash": "stage"},
+                [stage_item], {"source": "official"},
+            ),
+        ), patch.object(
+            runtime_main, "_validate_watchlist_day",
+        ), patch.object(
+            runtime_main, "load_universe",
+            return_value=(
+                {"signal_date": "20261001", "seal_hash": "expanded"},
+                [expanded_item],
+            ),
+        ):
+            seal, items, _provenance, expanded_seal, expanded_items = (
+                runtime_main._load_live_intraday_universe()
+            )
+
+        self.assertEqual(seal["seal_hash"], "stage")
+        self.assertEqual([item.stock_id for item in items], ["1111"])
+        self.assertIsNone(expanded_seal)
+        self.assertEqual(expanded_items, [])
+
+    def test_stage_a_failure_remains_fail_closed(self):
+        with patch.object(
+            runtime_main, "load_stage_a_watchlist",
+            side_effect=RuntimeError("no sealed Stage A watchlist exists"),
+        ), patch.object(runtime_main, "load_universe") as expanded:
+            with self.assertRaisesRegex(RuntimeError, "no sealed Stage A"):
+                runtime_main._load_live_intraday_universe()
+
+        expanded.assert_not_called()
+
+    def test_optional_expanded_failure_does_not_reuse_stale_symbols(self):
+        stage_item = SimpleNamespace(stock_id="1111")
+        with patch.object(
+            runtime_main, "load_stage_a_watchlist",
+            return_value=(
+                {"signal_date": "20261002", "seal_hash": "stage"},
+                [stage_item], {},
+            ),
+        ), patch.object(
+            runtime_main, "_validate_watchlist_day",
+        ), patch.object(
+            runtime_main, "load_universe",
+            side_effect=ValueError("invalid optional expanded seal"),
+        ):
+            _seal, _items, _provenance, expanded_seal, expanded_items = (
+                runtime_main._load_live_intraday_universe()
+            )
+
+        self.assertIsNone(expanded_seal)
+        self.assertEqual(expanded_items, [])
+
     def test_strategy_engine_monitors_expanded_but_only_selects_stage_a(self):
         stage_item = SimpleNamespace(stock_id="1111", stock_name="Top30")
         expanded_item = SimpleNamespace(stock_id="2330", stock_name="Paper")
@@ -374,6 +456,18 @@ class RuntimeGateTests(unittest.TestCase):
             ["1111", "0050", "2330"],
         )
         self.assertIs(items[0], stage_item)
+
+    def test_quote_subscription_without_expanded_keeps_stage_a_and_benchmark(self):
+        stage_item = SimpleNamespace(
+            stock_id="1111", stock_name="Top30", market="TWSE",
+        )
+
+        items = runtime_main._quote_subscription_universe([stage_item], [])
+
+        self.assertEqual(
+            [item.stock_id for item in items],
+            ["1111", "0050"],
+        )
 
     def setUp(self):
         # No constructor/worker may reach a real notification transport.
@@ -1185,6 +1279,56 @@ class RuntimeGateTests(unittest.TestCase):
                 connect.assert_not_called()
             finally:
                 runtime_main._release_runtime_instance_lock(first)
+
+    def test_clear_halt_removes_resolved_emergency_and_force_flat_markers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            baseline = runtime / "position_baseline.json"
+            baseline.write_text("{}\n", encoding="utf-8")
+            for marker in ("EMERGENCY_STOP", "FORCE_FLAT_REQUEST", "STOP_REQUEST"):
+                (runtime / marker).write_text("test\n", encoding="utf-8")
+
+            store = LiveOrderStore(runtime / "live-orders.sqlite")
+            store.halt("RECONCILIATION_MISMATCH")
+            session = SimpleNamespace(
+                close=lambda: None,
+                _execution_account_lock=None,
+            )
+            adapter = SimpleNamespace(
+                position_baseline={},
+                reconcile=lambda **_kwargs: SimpleNamespace(
+                    external_position_adjustments={},
+                ),
+                inspect_broker_state=lambda **_kwargs: SimpleNamespace(
+                    open_orders=[], positions={},
+                ),
+                close=lambda: None,
+            )
+            args = SimpleNamespace(
+                runtime_dir=runtime,
+                baseline=baseline,
+                environment="PROD",
+                reconcile_timeout=1.0,
+                reason="test broker reconciliation",
+            )
+
+            with patch.object(
+                runtime_main,
+                "_connect_for_control",
+                return_value=(
+                    {"pfx_password": "secret", "trading_password": "secret"},
+                    session,
+                    store,
+                    adapter,
+                ),
+            ):
+                self.assertEqual(runtime_main._clear_halt(args), 0)
+
+            self.assertFalse((runtime / "EMERGENCY_STOP").exists())
+            self.assertFalse((runtime / "FORCE_FLAT_REQUEST").exists())
+            self.assertTrue((runtime / "STOP_REQUEST").exists())
+            with LiveOrderStore(runtime / "live-orders.sqlite") as reopened:
+                self.assertFalse(reopened.control_state()["halted"])
 
     def test_persistent_stop_request_blocks_runtime_before_credentials(self):
         with tempfile.TemporaryDirectory() as temporary:

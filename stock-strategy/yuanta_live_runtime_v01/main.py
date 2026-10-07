@@ -574,21 +574,30 @@ def _validate_watchlist_day(signal_date: str) -> None:
         raise RuntimeError(f"stale candidate-universe seal: expected {expected}, got {signal_date}")
 
 
-def _load_live_intraday_universe() -> tuple[dict, list, dict, dict, list]:
+def _load_live_intraday_universe() -> tuple[dict, list, dict, dict | None, list]:
     """Load Stage A as LIVE candidates and expanded as paper-only quotes.
 
-    Both universes must share the prior-session date.  The expanded seal is
-    prepared by the read-only collector and is never passed to the LIVE entry
-    engine; its symbols remain subscribed and archived for paper replay.
+    Stage A remains a mandatory, fail-closed LIVE prerequisite.  The expanded
+    universe is an optional observation-only input: when its seal is missing
+    or invalid, LIVE still subscribes the sealed Stage A candidates and the
+    benchmark, while expanded quote collection is disabled for that session.
+    A valid expanded seal must share the Stage A prior-session date and is
+    never passed to the LIVE entry engine.
     """
     stage_a_seal, stage_a_items, provenance = load_stage_a_watchlist()
     signal_date = str(stage_a_seal["signal_date"])
     _validate_watchlist_day(signal_date)
-    expanded_seal, expanded_items = load_universe(signal_date)
-    if str(expanded_seal.get("signal_date", "")) != signal_date:
-        raise RuntimeError("expanded universe and Stage A dates do not match")
-    if not expanded_items:
-        raise RuntimeError("expanded paper-only universe is empty")
+    try:
+        expanded_seal, expanded_items = load_universe(signal_date)
+        if str(expanded_seal.get("signal_date", "")) != signal_date:
+            raise RuntimeError("expanded universe and Stage A dates do not match")
+        if not expanded_items:
+            raise RuntimeError("expanded paper-only universe is empty")
+    except (OSError, RuntimeError, ValueError, KeyError, TypeError):
+        # Expanded symbols never own LIVE entry eligibility.  Their failure
+        # must not turn a paper-observation dependency into a production
+        # availability dependency.  Do not reuse a stale expanded seal.
+        expanded_seal, expanded_items = None, []
     return stage_a_seal, stage_a_items, provenance, expanded_seal, expanded_items
 
 
@@ -3938,6 +3947,9 @@ def _preflight(args, environment: str) -> int:
                     "candidate_universe": "STAGE_A_TOP30",
                     "candidate_symbols": len(items),
                     "expanded_shadow_symbols": len(expanded_items),
+                    "expanded_shadow_status": (
+                        "READY" if _expanded_seal is not None else "UNAVAILABLE_OPTIONAL"
+                    ),
                     "quote_subscription": "ACCEPTED",
                     "quote_symbols": len(quote_items),
                     "quote_readiness": readiness,
@@ -4199,8 +4211,13 @@ def _clear_halt(args) -> int:
 
         store.clear_halt(args.reason)
 
-        marker = runtime / "EMERGENCY_STOP"
-        marker.unlink(missing_ok=True)
+        # Reconciliation above proves broker inventory equals today's frozen
+        # baseline and that neither broker nor local strategy orders/exposure
+        # remain.  At that point old emergency and scheduled force-flat
+        # requests have fulfilled their purpose and must not poison a later
+        # clean startup.  A user-requested STOP remains independent.
+        for marker_name in ("EMERGENCY_STOP", "FORCE_FLAT_REQUEST"):
+            (runtime / marker_name).unlink(missing_ok=True)
 
         print(json.dumps({
             "status": "HALT_CLEARED",
