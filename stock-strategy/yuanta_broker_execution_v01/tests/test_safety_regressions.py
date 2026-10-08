@@ -281,6 +281,9 @@ class BrokerSafetyRegressions(unittest.TestCase):
         self.adapter._apply_order_result([dict(identify=999, reply_code=0, order_no="MOCK-NO-PROOF")])
         self.assertEqual(self.store.get(order.client_order_id).status, BrokerOrderStatus.SEND_PENDING)
         self.assertIsNone(self.store.get(order.client_order_id).broker_order_no)
+        self.assertFalse(self.store.control_state()["halted"])
+        self.assertEqual(len(self.adapter._deferred_order_results), 1)
+        self.adapter._retry_deferred_order_results(force_expire=True)
         self.assertEqual(self.store.control_state()["reason"], "AMBIGUOUS_BROKER_ORDER_RESULT")
 
     def test_order_result_receipt_remains_idempotent_after_durable_restart(self):

@@ -640,6 +640,7 @@ class YuantaSparkExecutionAdapter:
         position_baseline_captured_at: str | datetime | None = None,
         external_inventory_listener: Callable[[dict[str, Any]], Any] | None = None,
         pre_order_reconcile_timeout: float = 20.0,
+        ambiguous_result_grace_seconds: float = 2.0,
     ):
         clean_account = account.strip().upper()
         if not clean_account.startswith("S") or len(clean_account) != 12:
@@ -653,6 +654,12 @@ class YuantaSparkExecutionAdapter:
         self.pre_order_reconcile_timeout = float(pre_order_reconcile_timeout)
         if not math.isfinite(self.pre_order_reconcile_timeout) or self.pre_order_reconcile_timeout <= 0:
             raise ValueError("pre_order_reconcile_timeout must be positive")
+        self.ambiguous_result_grace_seconds = float(ambiguous_result_grace_seconds)
+        if (
+            not math.isfinite(self.ambiguous_result_grace_seconds)
+            or self.ambiguous_result_grace_seconds <= 0
+        ):
+            raise ValueError("ambiguous_result_grace_seconds must be positive")
         self._frozen_position_baseline: dict[str, int] = {}
         for raw_key, raw_quantity in dict(position_baseline or {}).items():
             key = str(raw_key).strip().upper()
@@ -695,6 +702,12 @@ class YuantaSparkExecutionAdapter:
         self._latest_merge: list[dict[str, Any]] | None = None
         self._latest_positions: dict[str, int] | None = None
         self._snapshot_mutation_requests: dict[str, int] = {}
+        # SPARK may return a reused Identify in SendStockOrder before the
+        # basket-backed RR_RealReport arrives.  Keep the unproven result only
+        # for a short bounded grace period.  A later report may prove the
+        # current order through account/symbol/side/day/BasketNo/OrderNo; if
+        # it does not, expiry preserves the original fail-closed halt.
+        self._deferred_order_results: dict[str, tuple[float, dict[str, Any]]] = {}
         self._query_worker: threading.Thread | None = None
         self._query_error: Exception | None = None
         self._query_uncertain = False
@@ -1970,8 +1983,10 @@ class YuantaSparkExecutionAdapter:
             try:
                 item = self._queue.get(timeout=0.2)
             except Empty:
+                self._retry_deferred_order_results()
                 continue
             if item is None:
+                self._retry_deferred_order_results(force_expire=True)
                 self._queue.task_done()
                 break
             kind, payload = item
@@ -1980,18 +1995,22 @@ class YuantaSparkExecutionAdapter:
                     self._apply_order_result(payload)
                 elif kind == "real_report":
                     self._apply_real_report(payload)
+                    self._retry_deferred_order_results()
                 elif kind == "detail_snapshot":
                     for report in payload:
                         self._apply_real_report(report)
+                    self._retry_deferred_order_results()
                     self._detail_event.set()
                 elif kind == "merge_snapshot":
                     self._latest_merge = payload
+                    self._retry_deferred_order_results()
                     self._merge_event.set()
                 elif kind == "position_snapshot":
                     self._latest_positions = payload
                     self._position_event.set()
                 elif kind == "merge_live":
                     self._apply_merge_live(payload)
+                    self._retry_deferred_order_results()
                 elif kind == "callback_error":
                     self.store.halt(f"CALLBACK_NORMALIZATION_ERROR:{payload}")
             except Exception as exc:
@@ -2089,69 +2108,194 @@ class YuantaSparkExecutionAdapter:
                 elif len(current) == 1 and (not local.broker_order_no or local.broker_order_no == order_no):
                     return exact
 
-        self.store.halt("AMBIGUOUS_BROKER_ORDER_RESULT")
         return None
+
+    @staticmethod
+    def _order_result_payload(row: Mapping[str, Any]) -> dict[str, Any]:
+        return {
+            key: row.get(key, "")
+            for key in (
+                "identify",
+                "reply_code",
+                "order_no",
+                "err_type",
+                "err_no",
+                "advisory",
+            )
+        }
+
+    @staticmethod
+    def _order_result_key(result_payload: Mapping[str, Any]) -> str:
+        return hashlib.sha256(
+            json.dumps(
+                {
+                    "day": datetime.now(TAIPEI).date().isoformat(),
+                    "result": dict(result_payload),
+                },
+                sort_keys=True,
+                default=str,
+            ).encode()
+        ).hexdigest()
+
+    def _process_order_result(
+        self,
+        row: Mapping[str, Any],
+        *,
+        result_key: str,
+        result_payload: Mapping[str, Any],
+    ) -> bool:
+        if self.store.broker_result_receipt(result_key) is not None:
+            return True
+        broker_identify = int(row.get("identify", 0))
+        request = self._resolve_order_result_request(
+            broker_identify,
+            order_no=str(row.get("order_no", "") or ""),
+        )
+        if request is None:
+            return False
+
+        identify = int(request["identify"])
+        client_order_id = request["client_order_id"]
+        operation = request["operation"]
+        success = int(row.get("reply_code", -1)) == 0
+        detail = {
+            "order_no": str(row.get("order_no", "") or ""),
+            "err_type": str(row.get("err_type", "") or ""),
+            "err_no": str(row.get("err_no", "") or ""),
+            "advisory": str(row.get("advisory", "") or ""),
+        }
+        completed = self.store.complete_request(
+            identify,
+            success=success,
+            payload=detail,
+        )
+        accepted_outcomes = {"ACCEPTED", "CONFIRMED"} if success else {"REJECTED", "FAILED"}
+        if completed is None or completed["request_status"] not in accepted_outcomes:
+            # Contradictory API results halt, but must not mark a live broker
+            # order rejected or reopen a failed/unsent request.
+            self.store.record_broker_result_receipt(
+                result_key,
+                identify,
+                result_payload,
+            )
+            return True
+
+        if success:
+            order_no = detail["order_no"]
+            if order_no:
+                self.store.bind_broker_order(client_order_id, order_no)
+            if operation == "NEW":
+                if self.store.get(client_order_id).broker_order_no:
+                    self.store.acknowledge(client_order_id)
+                else:
+                    self.store.mark_unknown(
+                        client_order_id,
+                        "ACK_WITHOUT_BROKER_ORDER_NO",
+                    )
+            # CANCEL/MODIFY/REDUCE are only request-accepted here; terminal
+            # state is driven by RR_RealReport / RR_RealReportMerge.
+            self.store.record_broker_result_receipt(
+                result_key,
+                identify,
+                result_payload,
+            )
+            return True
+
+        reason = " ".join(
+            detail[key]
+            for key in ("err_type", "err_no", "advisory")
+            if detail[key]
+        ).strip() or f"{operation} rejected"
+        if operation == "NEW":
+            self.store.reject(client_order_id, reason)
+        elif operation == "CANCEL":
+            self.store.cancel_failed(client_order_id, reason)
+        else:
+            self.store.modification_result(
+                client_order_id,
+                kind="price" if operation == "MODIFY_PRICE" else "reduce",
+                success=False,
+                reason=reason,
+            )
+        self.store.record_broker_result_receipt(
+            result_key,
+            identify,
+            result_payload,
+        )
+        return True
+
+    def _defer_order_result(
+        self,
+        row: Mapping[str, Any],
+        *,
+        result_key: str,
+    ) -> None:
+        if result_key in self._deferred_order_results:
+            return
+        self._deferred_order_results[result_key] = (
+            time.monotonic() + self.ambiguous_result_grace_seconds,
+            dict(row),
+        )
+        self.store.audit_event(
+            "BROKER_ORDER_RESULT_DEFERRED",
+            {
+                "broker_identify": int(row.get("identify", 0)),
+                "order_no": str(row.get("order_no", "") or ""),
+                "grace_seconds": self.ambiguous_result_grace_seconds,
+                "result_key": result_key,
+            },
+        )
+
+    def _retry_deferred_order_results(self, *, force_expire: bool = False) -> None:
+        now = time.monotonic()
+        for result_key, (deadline, row) in list(
+            self._deferred_order_results.items()
+        ):
+            result_payload = self._order_result_payload(row)
+            if self._process_order_result(
+                row,
+                result_key=result_key,
+                result_payload=result_payload,
+            ):
+                self._deferred_order_results.pop(result_key, None)
+                self.store.audit_event(
+                    "BROKER_ORDER_RESULT_DEFERRED_RESOLVED",
+                    {
+                        "broker_identify": int(row.get("identify", 0)),
+                        "order_no": str(row.get("order_no", "") or ""),
+                        "result_key": result_key,
+                    },
+                )
+                continue
+            if not force_expire and now < deadline:
+                continue
+            self._deferred_order_results.pop(result_key, None)
+            broker_identify = int(row.get("identify", 0))
+            self.store.audit_event(
+                "BROKER_ORDER_RESULT_DEFERRED_EXPIRED",
+                {
+                    "broker_identify": broker_identify,
+                    "order_no": str(row.get("order_no", "") or ""),
+                    "result_key": result_key,
+                },
+            )
+            self.store.halt("AMBIGUOUS_BROKER_ORDER_RESULT")
 
     def _apply_order_result(self, rows: Iterable[Mapping[str, Any]]) -> None:
         for row in rows:
-            broker_identify = int(row.get("identify", 0))
-            result_payload = {key: row.get(key, "") for key in ("identify", "reply_code", "order_no", "err_type", "err_no", "advisory")}
-            result_key = hashlib.sha256(json.dumps(
-                {"day": datetime.now(TAIPEI).date().isoformat(), "result": result_payload},
-                sort_keys=True, default=str,
-            ).encode()).hexdigest()
-            if self.store.broker_result_receipt(result_key) is not None:
+            result_payload = self._order_result_payload(row)
+            result_key = self._order_result_key(result_payload)
+            if self._process_order_result(
+                row,
+                result_key=result_key,
+                result_payload=result_payload,
+            ):
+                self._deferred_order_results.pop(result_key, None)
                 continue
-            request = self._resolve_order_result_request(broker_identify, order_no=str(row.get("order_no", "") or ""))
-            if request is None:
-                continue
-            identify = int(request["identify"])
-            client_order_id = request["client_order_id"]
-            operation = request["operation"]
-            success = int(row.get("reply_code", -1)) == 0
-            detail = {
-                "order_no": str(row.get("order_no", "") or ""),
-                "err_type": str(row.get("err_type", "") or ""),
-                "err_no": str(row.get("err_no", "") or ""),
-                "advisory": str(row.get("advisory", "") or ""),
-            }
-            completed = self.store.complete_request(identify, success=success, payload=detail)
-            accepted_outcomes = {"ACCEPTED", "CONFIRMED"} if success else {"REJECTED", "FAILED"}
-            if completed is None or completed["request_status"] not in accepted_outcomes:
-                # Contradictory API results halt, but must not mark a live
-                # broker order rejected or reopen a failed/unsent request.
-                self.store.record_broker_result_receipt(result_key, identify, result_payload)
-                continue
-
-            if success:
-                order_no = detail["order_no"]
-                if order_no:
-                    self.store.bind_broker_order(client_order_id, order_no)
-                if operation == "NEW":
-                    if self.store.get(client_order_id).broker_order_no:
-                        self.store.acknowledge(client_order_id)
-                    else:
-                        self.store.mark_unknown(client_order_id, "ACK_WITHOUT_BROKER_ORDER_NO")
-                # CANCEL/MODIFY/REDUCE are only request-accepted here; terminal
-                # state is driven by RR_RealReport / RR_RealReportMerge.
-                self.store.record_broker_result_receipt(result_key, identify, result_payload)
-                continue
-
-            reason = " ".join(
-                detail[key] for key in ("err_type", "err_no", "advisory") if detail[key]
-            ).strip() or f"{operation} rejected"
-            if operation == "NEW":
-                self.store.reject(client_order_id, reason)
-            elif operation == "CANCEL":
-                self.store.cancel_failed(client_order_id, reason)
-            else:
-                self.store.modification_result(
-                    client_order_id,
-                    kind="price" if operation == "MODIFY_PRICE" else "reduce",
-                    success=False,
-                    reason=reason,
-                )
-            self.store.record_broker_result_receipt(result_key, identify, result_payload)
+            self._defer_order_result(
+                row,
+                result_key=result_key,
+            )
 
     def _apply_real_report(self, report: Mapping[str, Any]) -> None:
         local = self._lookup_report_order(report)

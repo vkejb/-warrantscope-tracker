@@ -384,14 +384,15 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(updated.broker_order_no, "f0001")
         self.assertEqual(updated.status, BrokerOrderStatus.ACKNOWLEDGED)
 
-    def test_reused_broker_result_identifier_does_not_corrupt_prior_order(self):
+    def test_reused_broker_result_waits_for_basket_report_without_halting(self):
         """SPARK may return Identify=1 again for a later one-row send.
 
         The 2026-10-02 incident proved that treating Identify as a durable,
         process-wide key can bind a current broker order number and fills to a
         historical local order. Without a known broker OrderNo, a reused
-        identifier is ambiguous even if only one current request remains.
-        Basket-backed reports must establish ownership before fills attach.
+        identifier is temporarily ambiguous even if only one current request
+        remains. Basket-backed reports must establish ownership before fills
+        attach; the bounded wait must not trigger recovery before that proof.
         """
         first = self.adapter.submit(self.intent(intent_id="old-day-order"))
         self.store.reject(first.client_order_id, "historical terminal order")
@@ -433,7 +434,8 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(old_order.status, BrokerOrderStatus.REJECTED)
         self.assertIsNone(current_order.broker_order_no)
         self.assertEqual(current_order.status, BrokerOrderStatus.SEND_PENDING)
-        self.assertEqual(self.store.control_state()["reason"], "AMBIGUOUS_BROKER_ORDER_RESULT")
+        self.assertFalse(self.store.control_state()["halted"])
+        self.assertEqual(len(self.adapter._deferred_order_results), 1)
 
         for sequence, price in (("670069", 70.0), ("670070", 70.1)):
             fill = Obj(
@@ -462,6 +464,14 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(completed.average_fill_price, Decimal("70.05"))
         self.assertEqual(completed.broker_order_no, "new-no")
         self.assertEqual(self.store.get(first.client_order_id).filled_quantity, 0)
+        self.assertFalse(self.store.control_state()["halted"])
+        self.assertEqual(self.adapter._deferred_order_results, {})
+        self.assertEqual(
+            self.store.connection.execute(
+                "SELECT COUNT(*) FROM broker_result_receipts"
+            ).fetchone()[0],
+            1,
+        )
 
     def test_prod_prefixed_truncated_basket_still_identifies_current_fill(self):
         current = self.adapter.submit(
@@ -538,6 +548,9 @@ class AdapterTests(unittest.TestCase):
         self.api.OnResponse.emit(1, 1, "SendStockOrder", None, result)
         self.drain()
 
+        self.assertFalse(self.store.control_state()["halted"])
+        self.assertEqual(len(self.adapter._deferred_order_results), 1)
+        self.adapter._retry_deferred_order_results(force_expire=True)
         self.assertTrue(self.store.control_state()["halted"])
         self.assertEqual(
             self.store.control_state()["reason"],
