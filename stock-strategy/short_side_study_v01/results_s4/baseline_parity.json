@@ -1,0 +1,506 @@
+[
+  {
+    "date": "20260929",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20260929",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261001",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261002",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261005",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261006",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1000,
+    "matches_prior": true
+  },
+  {
+    "date": "20261008",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "volume_multiplier": 1,
+    "matches_prior": true
+  }
+]

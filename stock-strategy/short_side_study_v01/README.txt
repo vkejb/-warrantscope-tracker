@@ -64,3 +64,25 @@ signal_counts.json, and stream_quality.json. SHORT signal counts refer to stock
 per 30-second decision boundaries; continuing signals can be counted repeatedly.
 Model entry count includes open/unscorable entries, while completed-trade count
 and win/PF statistics use only completed positions. No entries are real orders.
+
+S4 controlled account extension (same six-day frozen reference cohort):
+  python3 -m short_side_study_v01.s4
+  python3 -m short_side_study_v01.s4_verify
+
+This extension writes results_s4 without changing prior results. It feeds LONG A
+and raw SHORT S1 into separate approval/confirmation states on each chronological
+boundary. The first complete approval consumes the daily attempt, even when its
+entry is unfilled; later signals and losing-trade outcomes cannot reset it.
+Only simultaneous approvals compete by existing score/notional ordering.
+
+S4 source selection occurs before any PnL calculation. All displaced standalone
+trades are separately labeled counterfactuals and are never added to the account.
+S1 0050 regimes are descriptive metadata at the approved-signal timestamp, not
+new gates; missing regime data is UNKNOWN and does not block raw SHORT.
+
+results_s4 includes comparisons for both 1000 and 1 share/unit assumptions,
+daily choices, counterfactual replacements, incremental attribution, all three
+execution scenarios, extreme-trade removals and leave-one-day-out. Baseline
+parity checks compare all 72 S0/S1 daily-scenario-unit outcomes to results_expanded.
+All S4 outputs remain UNIT_UNVERIFIED / ELIGIBILITY_UNPROVEN /
+NO_TRUE_OUT_OF_SAMPLE_SET. No SHORT broker execution layer is implemented here.
