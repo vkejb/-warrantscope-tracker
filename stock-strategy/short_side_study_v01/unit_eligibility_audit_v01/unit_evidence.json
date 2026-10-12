@@ -1,0 +1,49 @@
+{
+  "status": "UNIT_UNVERIFIED",
+  "review_date": "2026-10-12",
+  "current_sdk_directory": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python",
+  "versions": {
+    "YuantaSparkAPI_package_declaration": "2026.7.13.11604",
+    "YuantaSparkAPI_PE_fixed_file_and_product_version": "2.2026.713.0",
+    "NX_StockInfo_Model_PE_fixed_version": "2026.1.19.11214",
+    "NX_Trade_TW_Model_PE_fixed_version": "2026.7.2.10927",
+    "historical_archive_binary_binding": "HISTORICAL_SDK_VERSION_UNBOUND",
+    "note": "Package declaration and binary fixed version are distinct evidence, not interchangeable. Bundled docs lack a per-version quote-unit contract."
+  },
+  "market_types": [
+    {"value": 1, "name": "TWSE", "meaning": "上市", "archive_label": "TWSE", "quote_quantity_unit": null},
+    {"value": 2, "name": "TWOTC", "meaning": "上櫃", "archive_label": "TPEX", "quote_quantity_unit": null},
+    {"value": 5, "name": "TWSEODD", "meaning": "盤中零股-上市", "archive_label": null, "quote_quantity_unit": null},
+    {"value": 6, "name": "TWOTCODD", "meaning": "盤中零股-上櫃", "archive_label": null, "quote_quantity_unit": null},
+    {"value": null, "name": "OTHER_MARKETS", "meaning": "期貨/興櫃/海外市場另行確認", "archive_label": null, "quote_quantity_unit": null}
+  ],
+  "quote_field_matrix": [
+    {"IndexFlag": "IndexFlag20", "fields": "Vol1..5", "side": "BUY", "levels": "1..5", "type": "Int", "documented_unit": null},
+    {"IndexFlag": "IndexFlag21", "fields": "Vol1..5", "side": "SELL", "levels": "1..5", "type": "Int", "documented_unit": null},
+    {"IndexFlag": "IndexFlag42", "fields": "Vol1..5", "side": "BUY", "levels": "6..10", "type": "Int", "documented_unit": null},
+    {"IndexFlag": "IndexFlag43", "fields": "Vol1..5", "side": "SELL", "levels": "6..10", "type": "Int", "documented_unit": null},
+    {"IndexFlag": "IndexFlag50", "fields": "BuyVol1..5 / SellVol1..5", "side": "BOTH", "levels": "1..5", "type": "Int", "documented_unit": null},
+    {"IndexFlag": "IndexFlag51", "fields": "BuyVol1..5 / SellVol1..5", "side": "BOTH", "levels": "6..10", "type": "Int", "documented_unit": null}
+  ],
+  "separate_quantity_contracts": [
+    {"endpoint": "SendStockOrder", "field": "OrderQty", "APCode": "0/2/4/7", "TradeKind": "00/03/04/07", "unit": null, "status": "ORDER_UNIT_UNVERIFIED", "evidence": "Bundled SendStockOrder_IO_Spec.doc says 委託單位, long, memo empty. Current adapter converts shares//1000 for APCode0 NEW only; implementation assertion is not vendor contract."},
+    {"endpoint": "GetRealReport / RR_RealReport", "field": "OrderQty", "stock_report_context": "stock order / stock fill", "unit": "SHARES", "status": "DOCUMENTED_IN_BUNDLED_SPEC_NOT_HISTORICAL_RESPONSE_VERIFICATION", "evidence": "Memo explicitly says 委託股數 / 成交股數. Do not apply to quote depth or futures."},
+    {"endpoint": "GetRealReportMerge / RR_RealReportMerge", "field": "OrderQty / OkQty", "stock_report_context": "stock merged report", "unit": "SHARES", "status": "DOCUMENTED_IN_BUNDLED_SPEC_NOT_HISTORICAL_RESPONSE_VERIFICATION", "evidence": "Fields explicitly 委託股數 / 成交股數 and memo 股數/口數; market/product distinguishes stocks from futures."},
+    {"endpoint": "SendAlgoCOOdrStrategy", "field": "OrderQty", "stock_report_context": "conditions order settings only", "unit": "LOTS", "status": "OTHER_ENDPOINT_SCOPE_ONLY", "evidence": "Current official conditions-order docs explicitly 張. Not transferable to SendStockOrder or FiveTickA."}
+  ],
+  "inspected_sources": [
+    {"path": "IO_Doc/FunctionList.xlsx", "locator": "市場表!A2:D3 and A6:D7; 功能對照表!A27:D28", "finding": "Market and endpoint mapping, no quote quantity unit."},
+    {"path": "元大證券API操作說明(跨平台版本).pdf", "locator": "PDF pages 39,43-45 (printed 38,42-44)", "finding": "MarketType and IndexFlag enumeration, no quote quantity unit."},
+    {"path": "IO_Doc/SubscribeFiveTickA_IO_Spec.doc", "locator": "FiveTick_Flag20/21/42/43/50/51", "finding": "Only buy/sell volume description and Int type; no lot/share memo."},
+    {"path": "YSendOrder.py", "locator": "SubscribeFiveTickA callback", "finding": "Prints original fields as strings; no volume conversion or unit assertion."}
+  ],
+  "official_web_sources": [
+    {"url": "https://www.yuanta.com.tw/file-repository/content/sparkapi_docs/行情/最佳五檔行情訂閱/index.html", "finding": "Same field/level descriptions and Int only. Current website not bound to historical binary."},
+    {"url": "https://www.yuanta.com.tw/file-repository/content/sparkapi_docs/交易/國內證券下單/index.html", "finding": "委託單位 only. APCode separates regular and odd-lot orders."},
+    {"url": "https://www.yuanta.com.tw/file-repository/content/sparkapi_docs/條件單/新增條件單/index.html", "finding": "Lots documented for conditions-order settings only, not ordinary order/quote fields."},
+    {"url": "https://www.twse.com.tw/zh/about/company/guide.html", "finding": "Ordinary stock trading unit 1000 shares; sub-unit orders use odd-lot venue; product exceptions exist."},
+    {"url": "https://www.twse.com.tw/zh/products/system/day-trading.html", "finding": "Odd-lot is not applicable to this day-trade mechanism. Exchange target and broker lending/quota acceptance separate."},
+    {"url": "https://www.tpex.org.tw/zh-tw/mainboard/trading/day-trading/suspended-historical.html", "finding": "Historical query form exists; no frozen dated response obtained in this audit. Current list not used as historical proof."}
+  ],
+  "decision": "No version-bound explicit quote-unit or independently time-matched evidence. Stop guessing; draft vendor inquiry; do not rerun S0/S1/S4."
+}

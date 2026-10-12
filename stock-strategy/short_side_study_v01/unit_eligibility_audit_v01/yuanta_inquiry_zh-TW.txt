@@ -1,0 +1,39 @@
+元大 SPARK API 數量單位與版本確認（草稿，尚未寄送）
+
+您好，我們在 macOS arm64 Python 研究環境使用 YuantaSparkAPI_osx-arm64_Python。
+目前本機 YuantaSparkAPI.deps.json 宣告 YuantaSparkAPI 2026.7.13.11604；
+YuantaSparkAPI.dll 的 PE 固定 FileVersion/ProductVersion 為 2.2026.713.0，
+NX_StockInfo_Model.dll 為 2026.1.19.11214，NX_Trade_TW_Model.dll 為 2026.7.2.10927。
+DLL SHA256 與隨附文件 hash 已留存，可提供以確認實際對應套件。
+
+請提供適用上述版本的正式文件或書面確認：
+
+1. SubscribeFiveTickA / FiveTickAResult 的數量單位，請逐市場與欄位列明：
+   MarketType TWSE(1)、TWOTC(2)、TWSEODD(5)、TWOTCODD(6)，以及其他市場。
+   IndexFlag20/21/42/43 的 Vol1..5，及 IndexFlag50/51 的 BuyVol1..5、SellVol1..5，
+   究竟是股、張、口或其他單位？一般整股股票是否固定 1 單位 = 1000 股？
+   是否依市場、商品、交易單位或版本不同？若有例外，請提供取得 LotSize 的正式方法。
+   請確認 Flag50 是第1至5檔、Flag51 是第6至10檔，與零股 MarketType 各自獨立。
+
+2. SendStockOrder.StockOrder.OrderQty 請分 APCode 0/2/4/7 與
+   TradeKind 00(新單)、03(改量)、04(取消)、07(改價) 說明單位與有效值。
+   例如 APCode0 普通股票委託 1000 股，OrderQty 應填1還是1000？
+   修改/取消數量是否同單位？盤中零股是否填股數？
+   請勿以條件單 OrderSettings 的「張」直接代替此函式的規格。
+
+3. 請獨立確認國內股票 GetRealReport、RR_RealReport 的 OrderQty，
+   及 GetRealReportMerge、RR_RealReportMerge 的 OrderQty、OkQty、BeforeQty。
+   隨附文件寫「委託股數/成交股數」或「股數/口數」，請確認 APCode 與產品別
+   如何決定單位，哪些是累計、哪些是單筆成交，是否需轉換1000。
+
+4. 本研究封存交易日為 2026/09/29、10/01、10/02、10/05、10/06、10/08。
+   歷史封存未記錄當時 DLL hash，請協助確認上述版本期間的數量定義是否曾改動。
+   若可提供與原始 callback 可對時的 GUI/API 五檔示例，請包含時間、股票代碼、
+   MarketType、IndexFlag、原始數量值、顯示單位、LotSize 與版本，不必含真實帳戶資料。
+
+5. 請說明歷史先賣後買資格與當時可用券商額度／受理紀錄的查證途徑。
+   我們會把交易所逐日標的／暫停註記與券商可用額度、受理證據分開，
+   不會用今日名單代替歷史，也不會透過送測試真單來確認。
+
+目前隨附與網頁規格只有「買量/賣量、Int」不足確認五檔數量單位。
+在得到上述確認前，研究維持 UNIT_UNVERIFIED，不啟用自動交易、不送單。

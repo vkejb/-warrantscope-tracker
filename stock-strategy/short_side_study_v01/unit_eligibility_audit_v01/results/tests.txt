@@ -1,0 +1,30 @@
+test_absent_target_stays_unknown (test_audit.AuditTests) ... ok
+test_all_raw_streams_flag50_no_channel_or_sdk_proof (test_audit.AuditTests) ... ok
+test_callback_mock_roundtrip_does_not_scale (test_audit.AuditTests) ... ok
+test_doc_buy_sell_int_does_not_become_unit_proof (test_audit.AuditTests) ... ok
+test_every_daily_stock_is_accounted_for (test_audit.AuditTests) ... ok
+test_flag51_not_odd_lots_or_first_five_levels (test_audit.AuditTests) ... ok
+test_fractional_and_nonfinite_quantities_rejected (test_audit.AuditTests) ... ok
+test_frozen_cohort (test_audit.AuditTests) ... ok
+test_hash_mismatch_fails (test_audit.AuditTests) ... ok
+test_input_and_old_report_hashes_preserved (test_audit.AuditTests) ... ok
+test_invalid_exit_detected_even_if_entry_legal (test_audit.AuditTests) ... ok
+test_legacy_capacity_defect_is_reproduced_without_strategy_replay (test_audit.AuditTests) ... ok
+test_legal_regular_partial_fill_is_whole_lots (test_audit.AuditTests) ... ok
+test_mapping_cannot_override_historical_flag (test_audit.AuditTests) ... ok
+test_missing_broker_evidence_not_exchange_eligibility (test_audit.AuditTests) ... ok
+test_missing_tpex_history_not_filled_with_current_list (test_audit.AuditTests) ... ok
+test_no_target_not_reported_as_size_parity (test_audit.AuditTests) ... ok
+test_no_verified_pnl_or_rerun_from_unknown_units (test_audit.AuditTests) ... ok
+test_raw_date_mismatch_fails (test_audit.AuditTests) ... ok
+test_same_requested_size_but_illegal_partial_not_full_profit (test_audit.AuditTests) ... ok
+test_sdk_binary_and_dependency_versions_are_separate (test_audit.AuditTests) ... ok
+test_sdk_sources_unchanged (test_audit.AuditTests) ... ok
+test_selected_shorts_have_exact_dated_rows (test_audit.AuditTests) ... ok
+test_source_trace_contains_actual_conversion_once (test_audit.AuditTests) ... ok
+test_wrong_historical_date_fails (test_audit.AuditTests) ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.054s
+
+OK

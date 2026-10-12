@@ -1,0 +1,179 @@
+"""Execute audit regressions and package reproducible evidence; no performance replay."""
+from collections import Counter
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+from audit import HERE, STUDY, read, sha, verify_hash
+
+
+def report(evidence, test_count):
+    rows = evidence['historical_eligibility']
+    counts = Counter(r['exchange_status'] for r in rows)
+    streams = [s for day in evidence['sessions'] for s in day['streams']]
+    sensitivity = evidence['sensitivity_audit']
+    illegal = [r for r in sensitivity if r['audit_status'] == 'INVALID_BOARD_LOT_EXECUTION']
+    base_one = [r for r in sensitivity if r['volume_multiplier'] == 1 and r['scenario'] == 'BASE_CURRENT_EXECUTION' and r['entry_quantity']]
+    output = [
+        '五檔數量單位與歷史 SHORT 資格稽核',
+        '結論：EVIDENCE_INSUFFICIENT_CLOSED_NO_REPLAY；單位保留 UNIT_UNVERIFIED。',
+        '接續 4a659d3，凍結 S0/S1/S4；本次沒有新增策略、gate或參數搜尋。',
+        '', '1. SDK 與官方/隨附文件證據',
+        '目前 arm64 SDK 的套件宣告：YuantaSparkAPI 2026.7.13.11604。',
+        'YuantaSparkAPI.dll PE 固定 FileVersion/ProductVersion：2.2026.713.0。',
+        'NX_StockInfo_Model：2026.1.19.11214；NX_Trade_TW_Model：2026.7.2.10927。',
+        '套件版本與固定 binary 版本分開保留，不能以一個覆蓋另一個。SHA256見 sdk_evidence.json。',
+        'FunctionList.xlsx 市場表!A2:D3/A6:D7 與操作手冊 PDF第39頁確認：',
+        'TWSE=1、TWOTC=2；TWSEODD=5、TWOTCODD=6是獨立盤中零股市場。',
+        'SubscribeFiveTickA_IO_Spec.doc 與官方同名頁確認欄位配置：',
+        'Flag20/21 Vol1..5 是1至5檔；Flag42/43是6至10檔。',
+        'Flag50 BuyVol1..5/SellVol1..5是1至5檔；Flag51是6至10檔，不是零股。',
+        '這些文件對數量只寫買量/賣量、Int，沒有股/張/每單位1000股的明確定義。',
+        '元件目錄沒有 XML/CHM 欄位說明。範例YSendOrder只列印原始數量，不作單位宣告。',
+        '網頁是當前文件，未與歷史DLL hash綁定；沒有獨立可對時五檔足以驗證單位。',
+        '因此不得用數字大小、成交量或績效好壞猜單位。',
+        '', '2. 下單量與成交回報量獨立處理',
+        'SendStockOrder OrderQty只寫委託單位；APCode0/2/4/7及TradeKind新單/改量/取消/改價的單位仍待確認。',
+        '現在adapter在APCode0 NEW把shares//1000；這是程式實作，不能當五檔單位證據。',
+        'GetRealReport/RR_RealReport的OrderQty文件明寫股票委託股數/成交股數。',
+        'GetRealReportMerge/RR_RealReportMerge的OrderQty/OkQty文件明寫股數/口數；需分股票與期貨。',
+        '回報 normalization沒有乘1000；未執行任何查詢，也不主張歷史實際回報已驗證。',
+        '條件單OrderQty標「張」僅限該端點，不外推普通委託或五檔行情。',
+        '', '3. raw callback到容量的路徑',
+        '_book_payload：SDK數量欄位轉字串，未乘1000。',
+        'base_for：market從watchlist寫入，不是原始callback MarketType。',
+        'collector.append：canonical JSON/可選gzip，未乘1000。',
+        'direction_follow.load_session：float與買賣量加總，供訊號使用，未乘1000。',
+        'live_parity._record_book：訊號量直接轉交engine，未乘1000。',
+        'short_side.load_data：int(float(raw q))，尚未按IndexFlag/MarketType篩選；可能截斷非整數。',
+        'replay_trade：q*volume_multiplier是唯一容量比例轉換，買賣側各一次，不是連續重複乘。',
+        'target=floor(190000/(limit*1000))*1000是資金與整張下單量，不是五檔量再轉換。',
+        'DepthExecution把轉換後q直接當股數消耗，但沒有每筆成交1000股倍數驗證。',
+        '退出仍使用該容量模型；未平倉回傳net_pnl=null，不能當零或刪除。',
+        '逐段原碼、行號、hash見results/audit.json conversion_trace。',
+        '這是目前checkout的轉換追蹤；封存沒有collector程式/DLL hash，不能反推歷史完全相同。',
+        f'六日共檢查{sum(s["rows"] for s in streams):,}筆候選/0050五檔，全部是IndexFlag50。',
+        '本凍結樣本未見Flag51/20/21/42/43；Flag51第6至10檔誤作首5檔是潛在程式問題，不宣稱本樣本發生。',
+        '六份manifest皆未綁SDK版本；raw MarketType皆未保留。watchlist市場標籤不能補回這項證據。',
+        '未觀察到這條目前路徑漏乘/重複乘；正確倍率本身未確認，因此也不能宣布乘1000是正確的。',
+        '', '4. 舊1股/單位敏感度不符合固定整股研究契約',
+        'S0/S1/S4共108筆既有日期/情境/倍率結果，全部保留。沒有重新計算策略。',
+        f'1倍率有{len(illegal)}筆已進場列出現非1000股倍數的模擬成交；1000倍率未見此特定增量違規。',
+        '已記錄target的配對比較，沒有觀察到請求數量被改小；沒有target的列保持未知，不假裝通過。',
+        '問題是模型實際只填少量股數，再用該quantity建立ManagedPosition，改變名目本金與固定3500停損/MFE基準。',
+        '例如9/29宏致請求1000股但填47股，退出45+1+1股；10/2台亞SHORT請求4000股但填1股。',
+        '這不是合法普通股票整股部分成交，也不能在同一結果裡偷偷改用零股；零股不適用此先賣後買當沖機制。',
+        'replay另假設未成交進場餘量立即取消，沒有撤單/受理證據。即使部分成交合法，也只可報部分部位與曝險。',
+        '在base一倍率：',
+    ]
+    for r in base_one:
+        output.append(f'  {r["date"]} {r["variant"]} {r["stock_id"]}: 請求{r["target_quantity"]}股 / 填{r["entry_quantity"]}股 / 殘餘{r["residual_shares"]}股 / {r["status"]}')
+    output.extend([
+        '舊SCORED_TRADE、完成子集損益、PF與回撤均不能證明同一固定整股策略的收益。',
+        '', '5. 逐日逐股票歷史SHORT資格',
+        f'6日×30檔={len(rows)}筆，以session date核對，不用前一日seal日期或今日名單代替。',
+        f'TWSE歷史表列名且暫停註記空白：{counts["HISTORICAL_TABLE_LISTED_FLAG_CLEAR"]}筆。',
+        f'TWSE有暫停註記：{counts["HISTORICAL_SELL_FIRST_SUSPENDED"]}筆。',
+        f'TWSE表無該代碼：{counts["HISTORICAL_TARGET_UNPROVEN"]}筆，保留歷史資格未確認，不把缺列直接判不合格。',
+        f'TPEx缺歷史標的及暫停確認：{counts["TPEX_HISTORICAL_TARGET_AND_SUSPENSION_UNPROVEN"]}筆。',
+        'TWSE來源TWTB4U快取有原始response.date與完整表，核對cache mapping；原始HTTP bytes未保存，',
+        '因此保留當時上游hash為記錄值，不聲稱本次重新驗證該原始payload hash或重新取得線上response。',
+        'TPEx官方歷史查詢頁存在，但沒有取得本凍結期間逐日標的/註記回應；今日名單完全未用來補歷史。',
+        'S1/S4實際選中SHORT的5個日/股票，都在對應TWSE表列名且註記空白：',
+    ])
+    for r in evidence['selected_short_eligibility']:
+        output.append(f'  {r["date"]} {r["stock_id"]} {r["stock_name"]}: 當日表註記空白；券商額度/受理/進場時限制未確認。')
+    output.extend([
+        '表中列名與註記空白是歷史交易所證據，不是券商有額度或一定受理的證明，也非進場時間處置狀態證明。',
+        '所有180筆分開標BROKER_QUOTA_UNPROVEN、BROKER_ACCEPTANCE_UNPROVEN及ENTRY_TIME_RESTRICTIONS_UNPROVEN。',
+        'legacy selector缺TPEx mapping仍可做假設選取；TWSE缺列被get(sid,False)直接排除，',
+        '兩者不能拿來宣稱已完整確認歷史資格。本次只稽核並列明，不新增gate改變凍結規則。',
+        '', '6. 舊報告影響與停止點',
+        'affected_reports_zh-TW.txt及audit.json列出results/results_expanded/results_s4所有舊輸出與hash。',
+        '涉及容量、部分成交、損益、日/盤中回撤、+1tick、5秒延遲、counterfactual的推論仍未確認。',
+        '舊signal/inventory可當假設研究證據，不能當單位、合法交易或券商受理驗證。',
+        '檔案未被改寫；本稽核優先於舊報告的可執行績效解讀。',
+        '沒有重跑S0/S1/S4。新版完整帳戶損益、已實現/盤中回撤與robustness全部null，未填0、未刪缺資料後宣稱獲利。',
+        '這是使用者允許的證據不足結案，不是驗證交易安全或策略獲利完成。',
+        '元大詢問草稿見yuanta_inquiry_zh-TW.txt，含各版本、市場、Flag、欄位與交易/回報端點，尚未寄送。',
+        '', '7. 測試與範圍',
+        f'{test_count}項已執行離線regression全部通過；細節見results/tests.txt。',
+        '覆蓋日期不符/缺列/快取映射、合法整股增量、非整數量、非法部分退出、未知非零、配對同請求量、',
+        'mock callback→JSON不縮放、舊容量模型可填47股的缺陷重現、Flag51層級、來源/舊報告hash與SDK版本分離。',
+        '測試通過表示稽核可重現與缺陷已識別，不表示舊成交模型合法或單位已確認。',
+        '只新增unit_eligibility_audit_v01隔離檔案。broker login/orders=0；不啟停交易程序，',
+        '不改LIVE/DB/baseline/HALT/STOP，不push/merge/部署。',
+    ])
+    return '\n'.join(output) + '\n'
+
+
+def main():
+    results = HERE / 'results'
+    evidence = read(results / 'audit.json')
+    unit = read(HERE / 'unit_evidence.json')
+    if evidence['unit_status'] != 'UNIT_UNVERIFIED' or unit['status'] != 'UNIT_UNVERIFIED' or evidence['rerun_performed']:
+        raise ValueError('AUDIT_STOP_CONDITION_CHANGED')
+    # Validate originals and extraction/current-code provenance before delivery.
+    for row in evidence['inputs'] + evidence['conversion_trace']:
+        verify_hash(Path(row['path']), row['sha256'])
+    for session in evidence['sessions']:
+        for stream in session['streams']:
+            verify_hash(Path(stream['path']), stream['sha256'])
+    for row in evidence['affected_old_artifacts']:
+        verify_hash(STUDY / row['path'], row['sha256'])
+    sdk = read(HERE / 'sdk_evidence.json')
+    for row in sdk['files'] + sdk['doc_excerpts']:
+        verify_hash(Path(row['path']), row['sha256'])
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1')
+    run = subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', str(HERE / 'tests'), '-v'],
+                         capture_output=True, text=True, env=env)
+    output = run.stdout + run.stderr
+    (results / 'tests.txt').write_text(output)
+    if run.returncode:
+        print(output)
+        raise SystemExit(run.returncode)
+    count = int(re.search(r'Ran (\d+) tests', output).group(1))
+    (HERE / 'report_zh-TW.txt').write_text(report(evidence, count))
+    affected = ['受影響舊輸出（原檔保留，hash未變；本稽核優先於其可執行績效解讀）', '']
+    for row in evidence['affected_old_artifacts']:
+        affected += [row['path'], '  ' + row['impact'], '  SHA256 ' + row['sha256']]
+    (HERE / 'affected_reports_zh-TW.txt').write_text('\n'.join(affected) + '\n')
+    completion = {
+        'closure_branch': 'USER_AUTHORIZED_EVIDENCE_INSUFFICIENT',
+        'requirements': [
+            {'id': '1', 'status': 'AUDITED_WITH_EXPLICIT_UNKNOWN_HISTORICAL_BINDING',
+             'evidence': ['sdk_evidence.json', 'unit_evidence.json', 'results/audit.json#sessions', 'results/audit.json#conversion_trace']},
+            {'id': '2', 'status': 'UNIT_UNVERIFIED_INQUIRY_PREPARED_STOPPED',
+             'evidence': ['unit_evidence.json', 'yuanta_inquiry_zh-TW.txt'],
+             'missing': ['Version-bound explicit quote unit', 'Independent synchronized depth evidence', 'Historical binary binding']},
+            {'id': '3', 'status': 'INVALID_LEGACY_BOARD_LOT_SENSITIVITY_IDENTIFIED',
+             'evidence': ['results/audit.json#sensitivity_audit', 'tests/test_audit.py', 'results/tests.txt']},
+            {'id': '4', 'status': 'ALL_180_DAILY_STOCK_ROWS_ACCOUNTED_FOR_UNKNOWN_SEPARATED',
+             'evidence': ['results/audit.json#historical_eligibility', 'results/audit.json#selected_short_eligibility'],
+             'missing': ['22 TWSE target rows', '68 TPEx historical target/suspension rows', 'Broker quota/acceptance and entry-time restriction evidence']},
+            {'id': '5', 'status': 'CONDITION_NOT_SATISFIED_NO_REPLAY_NO_REPLACEMENT_METRICS',
+             'evidence': ['results/audit.json#rerun_performed', 'results/audit.json#verified_account_pnl', 'results/audit.json#verified_robustness']},
+            {'id': 'deliverables', 'status': 'DELIVERED_AND_HASH_VERIFIED',
+             'evidence': ['report_zh-TW.txt', 'affected_reports_zh-TW.txt', 'README.txt', 'results/tests.txt']},
+            {'id': 'scope', 'status': 'ISOLATED_OFFLINE_ONLY',
+             'evidence': ['audit.py', 'inspect_sdk.py', 'verify.py', 'results/audit.json#operational_actions']},
+        ],
+        'live_safety_or_profitability_certification': False,
+        'further_required_work_for_insufficient_evidence_closure': [],
+    }
+    (results / 'completion_audit.json').write_text(json.dumps(completion, ensure_ascii=False, indent=2) + '\n')
+    outputs = [p for p in sorted(HERE.rglob('*')) if p.is_file() and p.suffix != '.pyc'
+               and '__pycache__' not in p.parts and p.name != 'validation_manifest.json']
+    manifest = {'status': 'EVIDENCE_INSUFFICIENT_CLOSED_NO_REPLAY', 'unit_status': 'UNIT_UNVERIFIED',
+                'tests_passed': count, 'test_exit_code': run.returncode, 'rerun_performed': False,
+                'source_hashes_verified': True, 'old_reports_preserved': True,
+                'outputs': [{'path': str(p.relative_to(HERE)), 'sha256': sha(p)} for p in outputs]}
+    (results / 'validation_manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
+    print(json.dumps({k: manifest[k] for k in ('status', 'tests_passed', 'rerun_performed', 'old_reports_preserved')}))
+
+
+if __name__ == '__main__':
+    main()

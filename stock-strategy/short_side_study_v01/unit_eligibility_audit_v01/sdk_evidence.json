@@ -1,0 +1,335 @@
+{
+  "directory": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python",
+  "execution": "STATIC_ONLY_NO_SDK_IMPORT",
+  "files": [
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/YuantaSparkAPI.dll",
+      "sha256": "9b1b07ab827b9f1e3204ddd2622a69b79de9a577e33f171431598fe3d3dda876",
+      "bytes": 698880,
+      "fixed_versions": {
+        "fixed_file_info_offset": 696964,
+        "file_version": "2.2026.713.0",
+        "product_version": "2.2026.713.0"
+      }
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/NX_StockInfo_Model.dll",
+      "sha256": "0015b121462cec272290918804f62d3415f2250ee00bb97b9f98c284a3d75ec3",
+      "bytes": 735744,
+      "fixed_versions": {
+        "fixed_file_info_offset": 734336,
+        "file_version": "2026.1.19.11214",
+        "product_version": "2026.1.19.11214"
+      }
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/NX_Trade_TW_Model.dll",
+      "sha256": "3d6ef73123f85653871ae32dc38f8815bd82c83074c777c120c135cb564c58d0",
+      "bytes": 271872,
+      "fixed_versions": {
+        "fixed_file_info_offset": 270464,
+        "file_version": "2026.7.2.10927",
+        "product_version": "2026.7.2.10927"
+      }
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/YuantaCAPIDLL.dll",
+      "sha256": "352abc320c77331ab10d08cbc4def8939ff1a39747768be379edffd838c54a01",
+      "bytes": 1036288,
+      "fixed_versions": {
+        "fixed_file_info_offset": 1020816,
+        "file_version": "1.0.8.310",
+        "product_version": "1.0.8.310"
+      }
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/YuantaCAPIDLL64.dll",
+      "sha256": "9d030568e8a0633f69e77e154baa41baaa1a939cb10ee3a623c6d98d6f06308b",
+      "bytes": 1246720,
+      "fixed_versions": {
+        "fixed_file_info_offset": 1241276,
+        "file_version": "2.1.11.824",
+        "product_version": "2.1.11.824"
+      }
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/YuantaSparkAPI.deps.json",
+      "sha256": "825d0675a3f9b57612c912005ebe3262029d83bdbcae78686246b709102449bf",
+      "bytes": 74731,
+      "fixed_versions": null
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/YuantaSparkAPI.runtimeconfig.json",
+      "sha256": "89820d06877af285a46b0b1d987ad885d40be39be2460813a7fcaf9f33da6b0b",
+      "bytes": 465,
+      "fixed_versions": null
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/YSendOrder.py",
+      "sha256": "686c0474120d57b904149dc8a18d4194e208de8e8f65b5e78a2409031600987a",
+      "bytes": 95789,
+      "fixed_versions": null
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/IO_Doc/FunctionList.xlsx",
+      "sha256": "f91efc50984b4b1403490eb2e7bf518ae66283f46745c73a083e09958344d9b0"
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API_Python設定說明(Windows、MacOS).pdf",
+      "sha256": "5798f70de30c29c97d7a5025df0b5839d17ffc86dba44365b8014afd122d2410",
+      "pages": 30
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "sha256": "1ee0e781c1da45dd90327be81044900d5285d319b696e0b39a16dee537c664bb",
+      "pages": 66
+    }
+  ],
+  "workbook_rows": [
+    {
+      "sheet": "功能對照表",
+      "range": "A27:D27",
+      "cells": {
+        "A27": "SubscribeFiveTickA",
+        "B27": "最佳五檔行情訂閱",
+        "C27": "3523886090",
+        "D27": "訂閱"
+      }
+    },
+    {
+      "sheet": "功能對照表",
+      "range": "A28:D28",
+      "cells": {
+        "A28": "UnSubscribeFiveTickA",
+        "B28": "最佳五檔行情解訂閱",
+        "C28": "3523886090",
+        "D28": "解訂閱"
+      }
+    },
+    {
+      "sheet": "即時回報情境",
+      "range": "A1:L1",
+      "cells": {
+        "A1": "情境編號",
+        "B1": "即時回報情境說明",
+        "C1": "bytRptType",
+        "D1": "abyOrderNo",
+        "E1": "intBeforeQty",
+        "F1": "intOrderQty",
+        "G1": "abyPrice",
+        "H1": "abyOrderCond",
+        "I1": "bytTradeKind",
+        "J1": "byOrderStatus",
+        "K1": "abyPriceType",
+        "L1": "abyStkErrCode"
+      }
+    },
+    {
+      "sheet": "現貨下單常用錯誤代碼對照表",
+      "range": "A203:B203",
+      "cells": {
+        "A203": "14026",
+        "B203": "該帳號不得買進零股,請檢查並更正"
+      }
+    },
+    {
+      "sheet": "現貨下單常用錯誤代碼對照表",
+      "range": "A335:B335",
+      "cells": {
+        "A335": "19419",
+        "B335": "只允許正常零股委託或錯帳零股委託"
+      }
+    },
+    {
+      "sheet": "現貨下單常用錯誤代碼對照表",
+      "range": "A338:B338",
+      "cells": {
+        "A338": "19422",
+        "B338": "此股票不得零股交易"
+      }
+    },
+    {
+      "sheet": "市場表",
+      "range": "A2:D2",
+      "cells": {
+        "A2": "1",
+        "B2": "TWSE",
+        "D2": "上市"
+      }
+    },
+    {
+      "sheet": "市場表",
+      "range": "A3:D3",
+      "cells": {
+        "A3": "2",
+        "B3": "TWOTC",
+        "D3": "上櫃"
+      }
+    },
+    {
+      "sheet": "市場表",
+      "range": "A6:D6",
+      "cells": {
+        "A6": "5",
+        "B6": "TWSEODD",
+        "D6": "盤中零股-上市"
+      }
+    },
+    {
+      "sheet": "市場表",
+      "range": "A7:D7",
+      "cells": {
+        "A7": "6",
+        "B7": "TWOTCODD",
+        "D7": "盤中零股-上櫃"
+      }
+    }
+  ],
+  "pdf_hits": [
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 6,
+      "text": "5 \n \n2. 函式 \nI. API 功能總覽 \nTYPE Function FName Memo \nAPI 相關設定 SetLogType 設定 Log 類別    \n連線與離線 \nOpen 開啟 API 連線    \nClose 關閉 API 連線    \nDispose 釋放 API 連線    \n登入與登出 \nLogin 登入    \nLogOut 登出  登入的帳號全部登出 \n交易 \nSendStockOrder 國內證券下單  交易類發送 \nSendFutureOrder 國內期貨下單  交易類發送 \nSendOVFutureOrder 國際期貨下單  交易類發送 \nSendFutureCombined 期貨複式單組合  \n交易類發送，特殊功能需申請權\n限 \nSendFutureApart 期貨複式單拆解 \n交易類發送，特殊功能需申請權\n限 \nSendAlgoCOOdrStrategy 新增條件單 交易類發送 \nDeleteAlgoCOOdrStrategy 刪除條件單 交易類發送 \nSendPrefundedMargin  預繳款項申請 \n交易類發送，特殊功能需申請權\n限 \n SendStockEarmark  股票圈存申請 \n交易類發送，特殊功能需申請權\n限 \n訂閱 \nSubscribeWatchlist 行情報價表訂閱(指定欄位)  訂閱 \nUnSubscribeWatchlist 行情報價表解訂閱(指定欄位)  解訂閱 \nSubscribeWatchlistAll 行情報價表訂閱  訂閱 \nUnSubscribeWatchlistAll 行情報價表解訂閱  解訂閱 \nSubscribeStockTick 分時明細訂閱  訂閱 \nUnSubscribeStockTick 分時明細解訂閱  解訂閱 \nSubscribeFiveTickA 最佳五檔行情訂閱  訂閱 \nUnSubscribeFiveTickA 最佳五檔行情解訂閱  解訂閱 "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 22,
+      "text": "21 \n \n \n \n  \n函數名稱 SubscribeFiveTickA \n功能說明 最佳五檔行情訂閱 \n回傳 bool \nTrue 此功能執行成功; False 此功能執行異常 \n(結果請從回應事件 OnResponse 接收) \nC#範例 objYuantaSparkAPI.SubscribeFiveTickA(“S98875005091”, lstFiveTickA); \nPython 範例 objYuantaSparkAPI.SubscribeFiveTickA(“S98875005091”, fivetickList) \n函數名稱 UnSubscribeFiveTickA \n功能說明 最佳五檔行情解訂閱 \n回傳 bool \nTrue 此功能執行成功; False 此功能執行異常 \n(結果請從回應事件 OnResponse 接收) \nC#範例 \nobjYuantaSparkAPI.UnSubscribeFiveTickA(“S98875005091”, \nlstFiveTickA); \nPython 範例 objYuantaSparkAPI.UnSubscribeFiveTickA(“S98875005091”, fivetickList) "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 39,
+      "text": "38 \n \n \n \n名稱 enumMarketType \n說明 市場類別 \n參數 \nTWSE：上市 (1) \nTWOTC：上櫃 (2) \nTAIFEX：期貨 (3) \nTWEMERGING：興櫃 (4) \nTWSEODD：盤中零股-上市 (5) \nTWOTCODD：盤中零股-上櫃 (6)  \nSGX：新加坡交易所 (202)  \nCME：芝商所 CME Group (203) \nCBOT：芝商所原 CBOT (204) \nTCE：東京商品 TOCOM (205) \nOSE：日本交易所 JPX (207) \nHKFE：香港交易所 (208)  \nNYBOT：洲際-美國 ICE-US 交易所 (209) \nLIFFE：洲際-英國 ICE-UK 交易所 (210) \nXEUREX：歐洲交易所 (211) \nASX：澳洲交易所 (212)  \nCBOE： CBOE 期貨交易所 (215)  "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 40,
+      "text": "39 \n \n \n名稱 enumQuoteType \n說明 訂閱報價類別 \n參數 \nWatchlist：行情報價表(指定欄位) (0) \nWatchlistAll：行情報價表 (1) \nFiveTickA：最佳五檔行情 (2) \nFiveTickB：五檔報價(合併最佳五檔) (3) \nStockTick：分時明細 (4) \nMarketInformation：個股盤前資訊 (5) \nStockInformation：個股其他資訊 (6) \n名稱 enumQuoteIndexType \n說明 訂閱索引值類別 \n參數 \n開盤：0 \n最高：1 \n最低：2 \n買價：3 \n累計外盤量：4 \n賣價：5 \n累計內盤量：6 "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 41,
+      "text": "40 \n \n成交價：7 \n總成交金額：8 \n單量：9 \n總成交量：10 \n定價量：11 \n未平倉量：12 \n結算價：13 \n合約高價：14 \n合約低價：15 \n委託買進總筆數：16 \n委託買進總口數：17 \n委託賣出總筆數：18 \n委託賣出總口數：19 \n累計買進成交筆數：20 \n累計賣出成交筆數：21 \nIndexFlag22：22 \n波動率：23 \n虛擬最佳一檔買進價：24 \n虛擬最佳一檔買進量：25 \n虛擬最佳一檔賣出價：26 \n虛擬最佳一檔賣出量：27 \nIndexFlag28：28 "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 42,
+      "text": "41 \n \n \n  \nIndexFlag29：29 \n第一買量：42 \n第一賣量：43 \ndelay 一秒的成交價：45 \n瞬間價格趨勢：48 \n昨收價：201 \n漲停價：202 \n跌停價：203 \n交易狀態：240 \n試撮價：241 \n試撮量：242 \n開盤參考價：254 \n開盤參考價清盤用：255 "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 43,
+      "text": "42 \n \n名稱 enumQuoteFiveTickIndexType \n說明 訂閱五檔索引值類別 \n參數 \n第一買量：0 \n第二買量：1 \n第三買量：2 \n第四買量：3 \n第五買量：4 \n第一買價：5 \n第二買價：6 \n第三買價：7 \n第四買價：8 \n第五買價：9 \n第一賣量：10 \n第二賣量：11 \n第三賣量：12 \n第四賣量：13 \n第五賣量：14 \n第一賣價：15 \n第二賣價：16 \n第三賣價：17 \n第四賣價：18 "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 44,
+      "text": "43 \n \n第五賣價：19 \nIndexFlag20：20 \nIndexFlag21：21 \n第六買量：22 \n第七買量：23 \n第八買量：24 \n第九買量：25 \n第十買量：26 \n第六買價：27 \n第七買價：28 \n第八買價：29 \n第九買價：30 \n第十買價：31 \n第六賣量：32 \n第七賣量：33 \n第八賣量：34 \n第九賣量：35 \n第十賣量：36 \n第六賣價：37 \n第七賣價：38 \n第八賣價：39 \n第九賣價：40 "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 45,
+      "text": "44 \n \n \n \n \n  \n第十賣價：41 \nIndexFlag42：42 \nIndexFlag43：43 \nIndexFlag50：50 \nIndexFlag51：51 \n名稱 enumQuoteStkInfoIndexType \n說明 訂閱個股其他資訊索引值類別 \n參數 試搓成交時間：53 \n名稱 enumStkWarningType \n說明 股票警示類別 \n參數 \n處置股票：0 \n理財節目異常推介個股：1 \n 特殊異常股票：2 "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 47,
+      "text": "46 \n \n \n \n \n每次同量：4 \n名稱 StrategyOrder2 \n說明 條件單下單方式 2 \n參數 \n交易到設定單位全部成交：5 \n母單成交子單就立即下單：6 \n名稱 StrategyCondition1 \n說明 條件單條件 1 \n參數 \n成交價：1 \n總量：2 \n當日漲幅：3 \n當日跌幅：4 \n名稱 StrategyCondition2 \n說明 條件單條件 2 \n參數 \n成交價：1 \n總量：2 "
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/元大證券API操作說明(跨平台版本).pdf",
+      "page": 64,
+      "text": "63 \n \n GetKLine K線查詢 \n RR_RealReport 即時回報訂閱 \n RR_RealReportMerge 彙整的即時回報訂閱 \n SubscribeWatchlistAll 行情報價表訂閱 \n UnSubscribeWatchlistAll 行情報價表解訂閱 \n SubscribeStockTick 分時明細訂閱 \n UnSubscribeStockTick 分時明細解訂閱 \n SubscribeFiveTickA 最佳五檔行情訂閱 \n UnSubscribeFiveTickA 最佳五檔行情解訂閱 \n SubscribeWatchlist 行情報價表訂閱(指定欄位) \n UnSubscribeWatchlist 行情報價表解訂閱(指定欄位) \n SubscribeMarketInformation 個股盤前資訊訂閱 \n UnSubscribeMarketInformation 個股盤前資訊解訂閱 \n SubscribeStockInformation 個股其他資訊訂閱 \n UnSubscribeStockInformation 個股其他資訊解訂閱 \n範例程式： \n 測試環境B110000005憑證 \n C#範例程式 \n YuantaSparkAPI_CSharp \n NuGet套件 \n Python範例程式 \n YuantaSparkAPI_linux-arm64_Python \n YuantaSparkAPI_linux-x64_Python \n YuantaSparkAPI_osx-arm64_Python \n YuantaSparkAPI_osx-x64_Python \n YuantaSparkAPI_win-x64_Python \n YuantaSparkAPI_win-x86_Python "
+    }
+  ],
+  "doc_excerpts": [
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/IO_Doc/SubscribeFiveTickA_IO_Spec.doc",
+      "sha256": "8f3cb4eab3c0618852b129194057a3777aa998642633345cba25fb45c7c731c5",
+      "text": "\nService Input - Output Specification\nProject Name\nTCBus(.Net)\n製作者\n\nCOM Function ID\nD20A3C0A (210.10.60.10)\n製作日期\n\nService ID\nAPI SubscribeFiveTickA\nAPI UnSubscribeFiveTickA\nService Desc\n最佳五檔行情訂閱\n最佳五檔行情解訂閱\nInput Spec Table\nFunction\nbool SubscribeFiveTickA(LoginAcno, LstFiveTickA, Lng)\nbool UnSubscribeFiveTickA(LoginAcno, LstFiveTickA, Lng)\nFileld Name\nDescription\nType\nMemo\nLoginAcno\n訂閱帳號\nstring\n證券:S+分公司代號(4)+帳號(7) 例如 S98875005091\n期貨:F+分公司代號(7+3)+帳號(7) 例如 FF021000P001234567\nLstFiveTickA\n訂閱商品清單\nList<FiveTickA>\n\nLng\n語系\nenumLangType\n請參考API說明文件-列舉物件\n預設為Normal Normal:Big5\nUTF8:UTF8\nSC:簡體中文\nFiveTickA 最佳五檔行情物件\nMarketType\n市場類別\nenumMarketType\n請參考API說明文件-列舉物件\nStockCode\n商品代碼\nstring\n\nOutput Spec Table\nFiveTickAResult 最佳五檔行情回傳結果\nFileld Name\nDescription\nType\nMemo\nKey\n鍵值\nstring\nMarketType+StkCode\nMarketType\n市場類別\nenumMarketType\n請參考API說明文件-列舉物件\nStkCode\n股票代碼\nstring\n\nIndexFlag\n索引值\nenumQuoteFiveTickIndexType\n請參考API說明文件-列舉物件\nValue\n資料值\ndouble\n此值定義請參考IndexFlag 若IndexFlag=IndexFlag20、\nIndexFlag21、IndexFlag42、\nIndexFlag43、IndexFlag50、\nIndexFlag51 則無值\nIndexFlag_20\n五檔報價Flag20\nFiveTick_Flag20\nIndexFlag=IndexFlag20才有值\nIndexFlag_21\n五檔報價Flag21\nFiveTick_Flag21\nIndexFlag=IndexFlag21才有值\nIndexFlag_42\n五檔報價Flag42\nFiveTick_Flag42\nIndexFlag=IndexFlag42才有值\nIndexFlag_43\n五檔報價Flag43\nFiveTick_Flag43\nIndexFlag=IndexFlag43才有值\nIndexFlag_50\n五檔報價Flag50\nFiveTick_Flag50\nIndexFlag=IndexFlag50才有值\nIndexFlag_51\n五檔報價Flag51\nFiveTick_Flag51\nIndexFlag=IndexFlag51才有值\nFiveTick_Flag20 五檔報價IndexFlag20物件\nPrice1\n第一買價\ndouble\n\nPrice2\n第二買價\ndouble\n\nPrice3\n第三買價\ndouble\n\nPrice4\n第四買價\ndouble\n\nPrice5\n第五買價\ndouble\n\nVol1\n第一買量\nInt\n\nVol2\n第二買量\nInt\n\nVol3\n第三買量\nInt\n\nVol4\n第四買量\nInt\n\nVol5\n第五買量\nInt\n\nFiveTick_Flag21 五檔報價IndexFlag21物件\nPrice1\n第一賣價\ndouble\n\nPrice2\n第二賣價\ndouble\n\nPrice3\n第三賣價\ndouble\n\nPrice4\n第四賣價\ndouble\n\nPrice5\n第五賣價\ndouble\n\nVol1\n第一賣量\nInt\n\nVol2\n第二賣量\nInt\n\nVol3\n第三賣量\nInt\n\nVol4\n第四賣量\nInt\n\nVol5\n第五賣量\nInt\n\nFiveTick_Flag42 五檔報價IndexFlag42物件\nPrice1\n第六買價\ndouble\n\nPrice2\n第七買價\ndouble\n\nPrice3\n第八買價\ndouble\n\nPrice4\n第九買價\ndouble\n\nPrice5\n第十買價\ndouble\n\nVol1\n第六買量\nInt\n\nVol2\n第七買量\nInt\n\nVol3\n第八買量\nInt\n\nVol4\n第九買量\nInt\n\nVol5\n第十買量\nInt\n\nFiveTick_Flag43 五檔報價IndexFlag43物件\nPrice1\n第六賣價\ndouble\n\nPrice2\n第七賣價\ndouble\n\nPrice3\n第八賣價\ndouble\n\nPrice4\n第九賣價\ndouble\n\nPrice5\n第十賣價\ndouble\n\nVol1\n第六賣量\nInt\n\nVol2\n第七賣量\nInt\n\nVol3\n第八賣量\nInt\n\nVol4\n第九賣量\nInt\n\nVol5\n第十賣量\nInt\n\nFiveTick_Flag50 五檔報價IndexFlag50物件\nBuyPrice1\n第一買價\ndouble\n\nBuyPrice2\n第二買價\ndouble\n\nBuyPrice3\n第三買價\ndouble\n\nBuyPrice4\n第四買價\ndouble\n\nBuyPrice5\n第五買價\ndouble\n\nBuyVol1\n第一買量\nInt\n\nBuyVol2\n第二買量\nInt\n\nBuyVol3\n第三買量\nInt\n\nBuyVol4\n第四買量\nInt\n\nBuyVol5\n第五買量\nInt\n\nSellPrice1\n第一賣價\ndouble\n\nSellPrice2\n第二賣價\ndouble\n\nSellPrice3\n第三賣價\ndouble\n\nSellPrice4\n第四賣價\ndouble\n\nSellPrice5\n第五賣價\ndouble\n\nSellVol1\n第一賣量\nInt\n\nSellVol2\n第二賣量\nInt\n\nSellVol3\n第三賣量\nInt\n\nSellVol4\n第四賣量\nInt\n\nSellVol5\n第五賣量\nInt\n\nFiveTick_Flag51 五檔報價IndexFlag51物件\nBuyPrice1\n第六買價\ndouble\n\nBuyPrice2\n第七買價\ndouble\n\nBuyPrice3\n第八買價\ndouble\n\nBuyPrice4\n第九買價\ndouble\n\nBuyPrice5\n第十買價\ndouble\n\nBuyVol1\n第六買量\nInt\n\nBuyVol2\n第七買量\nInt\n\nBuyVol3\n第八買量\nInt\n\nBuyVol4\n第九買量\nInt\n\nBuyVol5\n第十買量\nInt\n\nSellPrice1\n第六賣價\ndouble\n\nSellPrice2\n第七賣價\ndouble\n\nSellPrice3\n第八賣價\ndouble\n\nSellPrice4\n第九賣價\ndouble\n\nSellPrice5\n第十賣價\ndouble\n\nSellVol1\n第六賣量\nInt\n\nSellVol2\n第七賣量\nInt\n\nSellVol3\n第八賣量\nInt\n\nSellVol4\n第九賣量\nInt\n\nSellVol5\n第十賣量\nInt\n\n註：買價市價買999999999，賣價市價賣-999999999\n\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/IO_Doc/SendStockOrder_IO_Spec.doc",
+      "sha256": "f7d42c6f5958ab5620a9566baed792fd1cfa4f5cee74b1e5535042bba3fc4e7d",
+      "text": "Service Input - Output Specification\nProject Name\nTCBus(.Net)\n製作者\n\nService ID\nAPI SendStockOrder\nService Desc\n國內證券下單\nInput Spec Table\nFunction\nbool SendStockOrder(LoginAcno, lstStockOrder, lng)\nFileld Name\nDescription\nType\nMemo\nLoginAcno\n下單帳號\nstring\n證券:S+分公司代號(4)+帳號(7) 例如 S98875005091\n註1\nlstStockOrder\n下單物件清單\nList<StockOrder>\n\nlng\n語系\nenumLangType\n請參考API說明文件-列舉物件\n預設為Normal Normal:Big5\nUTF8:UTF8\nSC:簡體中文\nStockOrder 國內現貨下單物件\nIdentity\n識別碼\nInt\n\nAccount\n下單帳號\nstring\n證券:S+分公司代號(4)+帳號(7) 例如 S98875005091\nOrderNo\n委託書編號\nstring\n委託新單不需填\nTradeDate\n交易日期\nstring\nyyyy/MM/dd\nAPCode\n交易單市場別\nshort\n0:一般\n2:零股 \n4:盤中零股 \n7:盤後\nTradeKind\n交易性質\nshort\n00:委託單 \n03:改量 \n04:取消 \n07:改價\nOrderType\n委託種類\nstring\n\"0\":現貨 \n\"3\":融資 \n\"4\":融券 \n\"5\":策略借券(賣出)\n\"6\":避險借券(賣出) \n\"9\":現股當沖委託控管\nStkCode\n股票代號\nstring\n\nBuySell\n買賣記號\nstring\n\"B\":買 \n\"S\":賣\nPriceFlag\n價格種類\nstring\nH:漲停 \n-:平盤  \nL:跌停\n\" \":限價  \nM:市價單\nPrice\n委託價格\ndouble\n非限價請填0\nBasketNo\n使用者自訂欄位\nstring\n(限32個英數字內)\n若為條件單委託請將識別資訊帶入\nOrderQty\n委託單位\nlong\n\nTime_in_force\n委託時間效期\nstring\n0:ROD \n3:IOC  \n4:FOK\nOutput Spec Table\nStkOrderResult 國內證券下單結果\nFileld Name\nDescription\nType\nMemo\nResultCount\n交易狀態\nOrderStatus\n\nResultList\n國內證券下單結果清單\nList<StkOrderData>\n\nOrderStatus 交易類狀態\nMsgCode\n訊息代碼\nstring\n0001:執行成功 其它:失敗\nMsgContent\n訊息內容\nstring\n\nCount\n筆數\nInt\n\nStkOrderData 國內證券下單結果明細\nIdentify\n識別碼\nInt\n\nReplyCode\n委託結果代碼\nShort\n0:委託成功  others:委託失敗\nOrderNO\n委託書編號\nTbyte5\n\nTradeDate\n交易日期\nDateTime\n日期\nErrType\n錯誤類別\nstring\n\nErrNO\n錯誤代號\nstring\nA003:預約單不支援改價或無此委託單\nA004:委託已成交，無法改價\nA005:委託已取消，無法改價\nAdvisory\n錯誤說明\nstring\n\n\n註1：限證券使用\n\n\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/IO_Doc/GetRealReport_IO_Spec.doc",
+      "sha256": "01aa73a7124a4030d82bbb648bd86e84c0d5fce3fe63b0bb2e8fc565a94afa31",
+      "text": "Service Input - Output Specification\nProject Name\nTCBus(.Net)\n製作者\n\nService ID\nAPI GetRealReport\nService Desc\n即時回報查詢\nInput Spec Table\nFunction\nbool GetRealReport(Account, lng)\nFileld Name\nDescription\nType\nMemo\nAccount\n帳號\nstring\n證券:S+分公司代號(4)+帳號(7) 例如 S98875005091\n期貨:F+分公司代號(7+3)+帳號(7) 例如 FF021000P001234567\nlng\n語系\nenumLangType\n請參考API說明文件-列舉物件\n預設為Normal Normal:Big5\nUTF8:UTF8\nSC:簡體中文\nOutput Spec Table\nRealReportResult 即時回報結果\nFileld Name\nDescription\nType\nMemo\nRealReportList\n結果清單\nList<RealReport>\n\nRealReport 即時回報物件\nAccount\n帳號\nstring\n\nRptType\n回報類別\nbyte\n50:股票委託 \n51:股票成交 2:期貨委託 \n3:期貨成交 4:期貨價差成交回報 5:期貨委託減量取消\n07:期貨改價回報 10:選擇權委託回報 11:單式成交回報 12:複式成交回報 13:選擇權減量取消回報 17:選擇權改價回報\n21:組合拆解回報 22:改變新/平倉回報 30:海外期貨委託 31:海外期貨成交\n32:海外期貨風控委託失敗單\n40:海外股票委託,\n41:海外股票委託取消\n42:海外股票委託回覆,\n43:海外股票委託取消回覆\n44:海外股票成交\nOrderNo\n委託單號\nstring\n\nMarketNo\n市場代碼\nenumMarketType\n請參考API說明文件-列舉物件\nCompanyNo\n商品代碼\nstring\n2854, 05311 FITX  200709, URO200709, \nFIGTL7/C8, TXO09000T7, TXO08000/08100U7\nStkCName\n商品名稱\nstring\n\nOrderDate\n交易日\nTYuantaDate\n請參考API說明文件-物件\nOrderTime\n交易時間\nTYuantaTime\n請參考API說明文件-物件\n委託時間/成交時間\nOrderType\n委託種類\nstring\n現貨\n0:普通\n1,3:資\n2,4:券\n5:策略借券 \n6:避險借券 \n7:資沖 \n8:券沖 期權\nM:市價  \nL:限價\nP:範圍市價 海外期\nLMT:限價單\nMKT:市價單\nSTP:停損單\nSWL:停損限價單\nCXL:取消單\n海外股票\n1:Market 2:Limit 限價單\nBS\n買賣別\nString\nS:賣\nB:買\nPrice\n價格\ndouble\n委託價 / 成交價\nEx. 23.50,1.0585\n0000125’23.5(海外期)\nTouchPrice\n停損執行價\ndouble\n000116'21.75\nBeforeQty\n改量前數量\nInt\n\nOrderQty\n數量\nInt\n委託股數 / 成交股數\nOpenOffsetKind\n新增/沖銷別\nString\n期\n0:新增 \n1:沖銷 \n2:新倉且當日沖銷單 權\n0: 新增 \n1: 沖銷\n海外股票(SettleType) \n0:外幣 \n1:台幣\nDayTrade\n當沖記號\nString\n證券：' ' OR 'X'\n期權：' ' OR 'Y'\nOrderCond\n委託條件\nString\n證券\n3:IOC  \n4:FOK  \n0:ROD\n期權\nF:FOK  \nI:IOC  \nR:ROD 海外期\n0:DAY\n2:IOC\n1:FOK\nN:非GTC單\n海外股票\n0:DAY \n3:IOC  \n4:FOK\nOrderErrorNo\n錯誤碼\nString\nP201\n證券以外的錯誤碼\nTradeKind\n交易性質\nbyte\n現貨\n1:B\n2:S\n3:改量\n4:取消\n5:查詢 \n6:改價\n9:交易所主動刪單 期權\n1:新增 \n2:減量 \n3:取消 \n5:查詢 \n6:改價\nAPCode\n委託類別\nbyte\n現貨\n0:現股\n2:零股\n4:盤中零股\n7:盤後 組合拆解回報\n83:拆解\n67:組合 改變新/平倉回報\n83:新轉平\n79:平轉新\nBasketNo\n一籃子下單編號\nString\n條件單識別資訊\nOrderStatus\n狀態碼\nshort\n0:委託成功\n1:委託失敗\n2:取消成功\n3:取消失敗\n4:減量成功\n5:減量失敗\n6:查詢成功\n7:查詢失敗\n8:已成交\n10:組合成功\n11:拆解成功\n12:平轉新\n13:新轉平\n18:委託收到 \n19:取消收到(國外股票)\n20:改價成功\n21:改價失敗\n23:取消成交 (國外股票)\n24:委託失效 \n25:價穩失效\nStkType1\n屬性1\nByte\nBit 1: 管理商品\nBit 2: 交易記號\nBit 3: 受益憑證\nBit 4: ETF商品\nBit 5: 權證記號\nBit 6: 特別股\nBit 7: 存託憑證\nBit 8: 外國股票\nStkType2\n屬性2\nByte\nBit 1: 可轉換公司債 \nBit 2: 附認股權公司債 \nBit 3: 警示股 \nBit 4: 指數記號 \nBit 5: 期貨 \nBit 6: 個股選擇權 \nBit 7: 指數選擇權 \nBit 8: TSE/OTC創新板/興櫃戰略新板\nBelongMarketNo\n所屬市場代碼\nByte\n\nBelongStkCode\n所屬股票代碼\nString\n\nSeqNo\n成交序號\nUint\nFor 股票,期貨成交單 (複委託,國際期 ->０)\n若OrderStatus =25且StkErrCode =13051、19351，此欄位會帶入成交數量\nPriceType\n價格型態\nString\n只有證券使用\n1:市價 \n2:限價\nH:漲停\nL:跌停 “-”:平盤\nStkErrorNo\n證券回報錯誤碼\nString\n證券回報錯誤碼\n\n\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/IO_Doc/GetRealReportMerge_IO_Spec.doc",
+      "sha256": "2c53f42f63cb0496d72b2438857a75ebd812caebec52b1f8ef5819b5d00f58a2",
+      "text": "Service Input - Output Specification\nProject Name\nTCBus(.Net)\n製作者\n\nService ID\nAPI GetRealReportMerge\nService Desc\n即時回報彙總查詢\nInput Spec Table\nFunction\nbool GetRealReportMerge(Account, lng)\nFileld Name\nDescription\nType\nMemo\nAccount\n帳號\nstring\n證券:S+分公司代號(4)+帳號(7) 例如 S98875005091\n期貨:F+分公司代號(7+3)+帳號(7) 例如 FF021000P001234567\nlng\n語系\nenumLangType\n請參考API說明文件-列舉物件\n預設為Normal Normal:Big5\nUTF8:UTF8\nSC:簡體中文\nOutput Spec Table\nRealReportMergeResult 即時回報彙總結果\nFileld Name\nDescription\nType\nMemo\nRealReportMergeList\n結果清單\nList<RealReportMerge>\n\nRealReportMerge 即時回報彙總物件\nAccount\n帳號\nstring\n\nRptType\n回報類別\nByte\n1:股票\n2:期貨\n3:選擇權\n4:海外期貨\n5:海外股票\nOrderNo\n委託單號\nstring\n\nMarketNo\n市場代碼\nenumMarketType\n請參考API說明文件-列舉物件\nCompanyNo\n商品代碼\nstring\n2854, 05311 FITX  200709, URO200709, \nFIGTL7/C8, TXO09000T7, TXO08000/08100U7\nOrderDate\n交易日\nTYuantaDate\n請參考API說明文件-物件\nOrderTime\n委託時間\nTYuantaTime\n請參考API說明文件-物件\nOrderType\n委託種類\nstring\n現貨\n0:普通\n1,3:資\n2,4:券\n5:策略借券 \n6:避險借券 \n7:資沖 \n8:券沖\n期權\nM:市價  \nL:限價  \nP:範圍市價\n海外期\nLMT:限價單\nMKT:市價單\nSTP:停損單\nSWL:停損限價單\nCXL:取消單\n海外股票\n1:Market 2:Limit 限價單\nBS\n買賣別\nstring\nS:賣\nB:買\nPrice\n委託價\ndouble\nEx. 23.50,1.0585\n0000125’23.5(海外期)\nTouchPrice\n停損執行價\ndouble\n000116'21.75\nLastDealPrice\n最新成交價\ndouble\n\nAvgDealPrice\n成交均價\ndouble\n\nBeforeQty\n改量前數量\nInt\n\nOrderQty\n委託股數\nInt\n股數/口數 \n(有效數量含成交)\nOkQty\n成交股數\nInt\n股數/口數\nOpenOffsetKind\n新增/沖銷別\nstring\n期\n0:新增 \n1:沖銷 \n2:新倉且當日沖銷單\n權\n0: 新增 \n1: 沖銷\n海外股票(SettleType) \n0:外幣 \n1:台幣\nDayTrade\n當沖記號\nstring\n證券：' ' OR 'X'\n期權：' ' OR 'Y'\nOrderCond\n委託條件\nstring\n證券\n3:IOC  \n4:FOK  \n0:ROD\n期權\nF:FOK  \nI:IOC  \nR:ROD 海外期\n0:DAY\n2:IOC\n1:FOK\nN:非GTC單\n海外股票\n0:DAY \n3:IOC  \n4:FOK\nOrderErrorNo\n錯誤碼\nstring\n證券以外的錯誤碼\nAPCode\n委託類別\nByte\n現貨\n0:現股\n2:零股\n4:盤中零股\n7:盤後\n99:興櫃\nOrderStatus\n狀態碼\nShort\n0:傳輸中\n5:預約單\n10:委託失敗\n20:委託成功\n24:委託失效 \n25:價穩失效\n30:取消\nLastOrderStatus\n最新一筆即回資料狀態\nByte\n0:委託成功\n1:委託失敗\n2:取消成功\n3:取消失敗\n4:減量成功\n5:減量失敗\n6:查詢成功\n7:查詢失敗\n8:已成交\n10:組合成功\n11:拆解成功\n12:平轉新\n13:新轉平\n18:委託收到 \n19:取消收到(國外股票)\n20:改價成功\n21:改價失敗\n23:取消成交 (國外股票)\n24:委託失效 \n25:價穩失效\nStkCName\n商品名稱\nstring\n\nTradeCode\n實體交易代號\nstring\nTradeCode 放下單格式 台股證券:\"2854\",\"03038\",\"03152P\"\n台股期權:\"FITX   200903\",\"XIO   C200811\"  (商品名稱[6Byte]+買賣權[1Byte]+商品年月[6Byte])\n港股證券:\"0001\",\"14200\"港股期權:\"HSIK8\",\"HSI19800K8\",\"HSI198I8/194U8\" 美股:\"A\",\"MSFT\"\nStrikePrice\n履約價\ndouble\n\nBasketNo\n一籃子下單編號\nstring\n條件單識別資訊\nStkType1\n屬性1\nByte\nBit 1: 管理商品\nBit 2: 交易記號\nBit 3: 受益憑證\nBit 4: ETF商品\nBit 5: 權證記號\nBit 6: 特別股\nBit 7: 存託憑證\nBit 8: 外國股票\nStkType2\n屬性2\nByte\nBit 1: 可轉換公司債\nBit 2: 附認股權公司債\nBit 3: 警示股\nBit 4: 指數記號\nBit 5: 期貨\nBit 6: 個股選擇權\nBit 7: 指數選擇權\nBit 8: 保留\nBelongMarketNo\n所屬市場代碼\nByte\n\nBelongStkCode\n所屬股票代碼\nstring\n\nStkType\n價格種類\nstring\n證券使用\n1:市價 \n2:限價\nH:漲停\nL:跌停\n“-”:平盤\nStkErrorNo\n證券回報錯誤碼\nstring\n證券專用的錯誤碼\n\n\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/IO_Doc/RR_RealReport_IO_Spec.doc",
+      "sha256": "4ead0753219e34b014bcb6e09f6fd4d2e9dea25f5cfbd8c062f650b48f4e69c1",
+      "text": "Service Input - Output Specification\nProject Name\nTCBus(.Net)\n製作者\n\nCOM Function ID\nC80A0A1A(200.10.10.26)\n製作日期\n\nService ID\nRR_RealReport\nService Desc\n即時回報訂閱\nOutput Spec Table\nFileld Name\nDescription\nType\nMemo\nRealReport 即時回報物件\nAccount\n帳號\nstring\n\nRptType\n回報類別\nbyte\n50:股票委託 \n51:股票成交\n2:期貨委託 \n3:期貨成交 4:期貨價差成交回報 5:期貨委託減量取消 10:選擇權委託回報 11:單式成交回報 12:複式成交回報 13:選擇權減量取消回報 21:組合拆解回報 22:改變新/平倉回報 30:海外期貨委託 31:海外期貨成交\nOrderNo\n委託單號\nstring\n\nMarketNo\n市場代碼\nenumMarketType\n請參考API說明文件-列舉物件\nCompanyNo\n商品代碼\nstring\n2854, 05311 FITX  200709, URO200709, \nFIGTL7/C8, TXO09000T7, TXO08000/08100U7\nStkCName\n商品名稱\nstring\n\nOrderDate\n交易日\nTYuantaDate\n請參考API說明文件-物件\nOrderTime\n交易時間\nTYuantaTime\n請參考API說明文件-物件 委託時間/成交時間\nOrderType\n委託種類\nstring\n現貨\n0:普通\n1,3:資\n2,4:券\n5,6:借券(賣出) 期權\nM:市價  \nL:限價  \nP:範圍市價 海外期\nLMT:限價單\nMKT:市價單\nSTP:停損單\nSWL:停損限價單\nCXL:取消單\nBS\n買賣別\nstring\nS:賣\nB:買\nPrice\n價格\ndouble\n委託價 / 成交價\nEx. 23.50,1.0585\n0000125’23.5(海外期)\nTouchPrice\n停損執行價\ndouble\n\nBeforeQty\n改量前數量\nInt\n\nOrderQty\n數量\nInt\n委託股數 / 成交股數\nOpenOffsetKind\n新增/沖銷別\nString\n期\n0:新增 \n1:沖銷 \n2:新倉且當日沖銷單 權\n0: 新增 \n1: 沖銷\nDayTrade\n當沖記號\nString\n證券：' ' OR 'X'\n期權：' ' OR 'Y' \nOrderCond\n委託條件\nString\n證券\n3:IOC  \n4:FOK  \n0:ROD\n期權\nF:FOK  \nI:IOC  \nR:ROD 海外期\n0:DAY\n2:IOC\n1:FOK\nN:非GTC單\nOrderErrorNo\n錯誤碼\nString\nP201\n證券錯誤碼改5碼，使用另一欄位\nTradeKind\n交易性質\nbyte\n現貨\n1:B\n2:S\n3:改量\n4:取消\n5:查詢\n6:改價\n9:交易所主動刪單 期權\n1:新增 \n2:減量 \n3:取消 \n5:查詢\n6:改價\nAPCode\n委託類別\nbyte\n現貨\n0:現股\n2:零股\n4:盤中零股\n7:盤後\n99:興櫃 組合拆解回報\n83:拆解\n67:組合 改變新/平倉回報\n83:新轉平\n79:平轉新\nBasketNo\n一籃子下單編號\nString\n\nOrderStatus\n狀態碼\nshort\n0委託成功\n1委託失敗\n2取消成功\n3取消失敗\n4減量成功\n5減量失敗\n6查詢成功\n7查詢失敗\n8已成交\n10組合成功\n11拆解成功\n12平轉新\n13新轉平\n18委託收到\n19取消收到\n20改價成功\n21改價失敗\n23取消成交\n24委託失效 \n25價穩失效\nStkType1\n屬性1\nByte\nBit 1: 管理商品\nBit 2: 交易記號\nBit 3: 受益憑證\nBit 4: ETF商品\nBit 5: 權證記號\nBit 6: 特別股\nBit 7: 存託憑證\nBit 8: 外國股票\nStkType2\n屬性2\nByte\nBit 1: 可轉換公司債\nBit 2: 附認股權公司債\nBit 3: 警示股\nBit 4: 指數記號\nBit 5: 期貨\nBit 6: 個股選擇權\nBit 7: 指數選擇權\nBit 8: 保留\nBelongMarketNo\n所屬市場代碼\nByte\n\nBelongStkCode\n所屬股票代碼\nString\n\nSeqNo\n成交序號\nUint\nFor 股票,期貨成交單 (複委託,國際期 ->０)\n若OrderStatus =25且StkErrCode = 13051、19351，此欄位會帶入成交數量\nPriceType\n價格型態\nString\n只有證券使用\n1:市價 \n2:限價\nH:漲停 \nL:跌停\n-:平盤\nStkErrorNo\n證券回報錯誤碼\nString\n證券回報錯誤碼\n\n\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/IO_Doc/RR_RealReportMerge_IO_Spec.doc",
+      "sha256": "68bf4f975fa70d6dcad69a33e67a5a2dbb997e46b1ee47800e7fc0c34b55cc79",
+      "text": "Service Input - Output Specification\nProject Name\nTCBus(.Net)\n製作者\n\nCOM Function ID\nC80A0A1B(200.10.10.27)\n製作日期\n\nService ID\nRR_RealReportMerge\nService Desc\n彙整的即時回報訂閱\nOutput Spec Table\nFileld Name\nDescription\nType\nMemo\nRealReportMerge 即時回報彙總物件\nAccount\n帳號\nstring\n\nRptType\n回報標記\nbyte\n1:股票\n2:期貨\n3:選擇權\n4:海外期貨\n5:海外股票\nOrderNo\n委託單號\nstring\n\nMarketNo\n市場代碼\nenumMarketType\n請參考API說明文件-列舉物件\nCompanyNo\n商品代碼\nstring\n2854, 05311 FITX  200709, URO200709, \nFIGTL7/C8, TXO09000T7, TXO08000/08100U7\nOrderDate\n交易日\nTYuantaDate\n請參考API說明文件-物件\nOrderTime\n委託時間\nTYuantaTime\n請參考API說明文件-物件\nOrderType\n委託種類\nstring\n現貨\n0:普通\n1,3:資\n2,4:券\n5,6:借券(賣出) 期權\n1:市價  \n2:限價  \n3:範圍市價 海外期\nLMT:限價單\nMKT:市價單\nSTP:停損單\nSWL:停損限價單\nCXL:取消單\n海外股票\n1:Market 2:Limit 限價單\nBS\n買賣別\nstring\nS:賣\nB:買\nPrice\n價格\ndouble\nEx. 23.50,1.0585\n0000125’23.5(海外期)\nTouchPrice\n停損執行價\ndouble\n\nLastDealPrice\n最新成交價\ndouble\nEx. 23.50,1.0585\n0000125’23.5(海外期)\nAvgDealPrice\n成交均價\ndouble\nEx. 23.50,1.0585\n0000125’23.5(海外期)\nBeforeQty\n改量前數量\nInt\n\nOrderQty\n委託股數\nInt\n股數/口數 \n(有效數量含成交)\nOkQty\n成交股數\nInt\n股數/口數\nOpenOffsetKind\n新增/沖銷別\nstring\n期\n0:新增 \n1:沖銷 \n2:新倉且當日沖銷單 權\n0: 新增 \n1: 沖銷\n海外股票 (SettleType) \n0:外幣 \n1:台幣\nDayTrade\n當沖記號\nstring\n證券：' ' OR 'X'\n期權：' ' OR 'Y' \nOrderCond\n委託條件\nstring\n證券\n3:IOC  \n4:FOK  \n0:ROD\n期權\nF:FOK  \nI:IOC  \nR:ROD 海外期\n0:DAY\n2:IOC\n1:FOK\nN:非GTC單\n海外股票\n0:DAY \n3:IOC  \n4:FOK\nOrderErrorNo\n錯誤碼\nstring\nP201\nAPCode\n委託類別\nbyte\n現貨\n0:現股\n2:零股\n4:盤中零股\n7:盤後\n99:興櫃\nOrderStatus\n狀態碼\nshort\n0：傳輸中\n5：預約單\n10：委託失敗\n20：委託成功\n24：委託失效 \n25：價穩失效\n30：取消\nLastOrderStatus\n最新一筆即回資料狀態\nByte\n0:委託成功\n1:委託失敗\n2:取消成功\n3:取消失敗\n4:減量成功\n5:減量失敗\n6:查詢成功\n7:查詢失敗\n8:已成交\n10:組合成功\n11:拆解成功\n12:平轉新\n13:新轉平\n18:委託收到 \n19:取消收到(國外股票)\n20:改價成功\n21:改價失敗\n23:取消成交 (國外股票)\n24:委託失效 \n25:價穩失效\nStkCName\n商品名稱\nstring\n此欄位代表股票名稱;但是在期貨價差的CASE下,此欄位代表第二個商品的tradecode\nTradeCode\n實體交易代號\nstring\n當期貨價差時,此欄位代表第一個商品的tradecode\nStrikePrice\n履約價\ndouble\n\nBasketNo\n一籃子下單編號\nstring\n\nStkType1\n屬性1\nByte\nBit 1: 管理商品\nBit 2: 交易記號\nBit 3: 受益憑證\nBit 4: ETF商品\nBit 5: 權證記號\nBit 6: 特別股\nBit 7: 存託憑證\nBit 8: 外國股票\nStkType2\n屬性2\nByte\nBit 1: 可轉換公司債\nBit 2: 附認股權公司債\nBit 3: 警示股\nBit 4: 指數記號\nBit 5: 期貨\nBit 6: 個股選擇權\nBit 7: 指數選擇權\nBit 8: 保留\nBelongMarketNo\n所屬市場代碼\nByte\n\nBelongStkCode\n所屬股票代碼\nstring\n\nStkType\n價格型態\nstring\n證券使用\n1:市價 \n2:限價\nH:漲停 \nL:跌停\n-:平盤\nStkErrorNo\n證券回報錯誤碼\nstring\n證券回報錯誤碼\n\n\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/IO_Doc/SubscribeStocktick_IO_Spec.doc",
+      "sha256": "d35f3b665a9f65bd7da553546f5f3ac6f2764b6d8eb09af6b0e2b2dd1dc793d1",
+      "text": "Service Input - Output Specification\nProject Name\nTCBus(.Net)\n製作者\n\nCOM Function ID\nD20A280A (210.10.40.10)\n製作日期\n\nService ID\nAPI SubscribeStockTick API UnSubscribeStockTick\nService Desc\n分時明細訂閱\n分時明細解訂閱\nInput Spec Table\nFunction\nbool SubscribeStockTick(LoginAcno, LstStocktick, Lng)\nbool UnSubscribeStockTick(LoginAcno, LstStocktick, Lng)\nFileld Name\nDescription\nType\nMemo\nLoginAcno\n訂閱帳號\nstring\n證券:S+分公司代號(4)+帳號(7) 例如 S98875005091\n期貨:F+分公司代號(7+3)+帳號(7) 例如 FF021000P001234567\nLstStocktick\n訂閱商品清單\nList<Stocktick>\n\nLng\n語系\nenumLangType\n請參考API說明文件-列舉物件\n預設為Normal Normal:Big5\nUTF8:UTF8\nSC:簡體中文\nStocktick 分時明細物件\nMarketType\n市場類別\nenumMarketType\n請參考API說明文件-列舉物件\nStockCode\n商品代碼\nstring\n\nOutput Spec Table\nStockTickResult 分時明細回傳結果\nFileld Name\nDescription\nType\nMemo\nKey\n鍵值\nstring\nMarketType+StkCode\nMarketType\n市場類別\nenumMarketType\n請參考API說明文件-列舉物件\nStkCode\n股票代碼\nstring\n\nSerialNo\n序號\nint\n以股票代碼個別編序號,從1開始\n-1代表商品清盤\nTime\n時間\nTYuantaTime\n請參考API說明文件-物件\nBuyPrice\n買價\ndouble\n當SerialNo=-1時,此欄位代表漲停價\n市價買:999999999\nSellPrice\n賣價\ndouble\n當SerialNo=-1時,此欄位代表跌停價\n市價賣:-999999999\nDealPrice\n成交價\ndouble\n當SerialNo=-1時,此欄位代表開盤參考價\nDealVol\n成交量\nInt\n海外期貨之現貨單位是千股\nInOutFlag\n內外盤註記\nByte\n0:內盤 \n1:外盤 \n2:定價內盤\n3:定價外盤\n10:一般揭示\n11:暫緩撮合且瞬間趨跌\n12:暫緩撮合且瞬間趨漲\n13:試算後延後收盤\n14:暫停交易\n15:恢復交易\n註1：當是10,11,12,13時,只有市場碼與股票代碼有值,其餘的欄位皆是0\n註2：當是14,15時,只有市場碼、股票代碼與時間有值,其餘的欄位皆是0\nType\n明細類別\nByte\n0:Normal\n\n\n\n\n\n\n\n\n\n\n\n"
+    },
+    {
+      "path": "/Users/linyunyan/Downloads/YuantaSparkAPI_osx-arm64_Python/IO_Doc/GetStockInformation_IO_Spec.doc",
+      "sha256": "d870bac9c003eb265f627363ed262c9af4c48f3c509afccb138434ea0b500c5c",
+      "text": "Service Input - Output Specification\nProject Name\nTCBus(.Net)\n製作者\n\nService ID\nAPI GetStockInformation\nService Desc\n標的資訊查詢\nInput Spec Table\nFunction\nbool GetStockInformation(Account, StkList, lng)\nField Name\nDescription\nType\nMemo\nAccount\n帳號\nstring\n證券:S+分公司代號(4)+帳號(7) 例如 S98875005091\n期貨:F+分公司代號(7+3)+帳號(7) 例如 FF021000P001234567\nStkList\n查詢商品清單\nList<StkInfo>\n\nlng\n語系\nenumLangType\n請參考API說明文件-列舉物件\n預設為Normal Normal:Big5\nUTF8:UTF8\nSC:簡體中文\nStkInfo 標的資訊\nMarketType\n市場類別\nenumMarketType\n請參考API說明文件-列舉物件\nStockCode\n商品代碼\nstring\n\nOutput Spec Table\nStkInformationResult 標的資訊查詢結果\nField Name\nDescription\nType\nMemo\nStockInformationList\n結果清單\nList<StkInformation>\n\nStkInformation 標的資訊物件\nMarketNo\n市場代碼\nenumMarketType\n請參考API說明文件-列舉物件\nStockCode\n商品代碼\nstring\n\nDayoffmark\n可否當沖\nstring\n\"X\"：現股當沖\n\"Y\"：現股當沖(暫停先賣後買)\n其他：不可現股當沖\nCreditpercent\n融資成數\nint\n\nLendpercent\n融券成數\nint\n\nCreditremnants\n融資餘額\nint\n999999：無限制\n-1：停資\n-2：有限制\nLendremnants\n融券餘額\nint\n999999：無限制\n-1：停券\n0：無券\nLendSellMark\n平盤下可放空\nstring\n\"N\"：不可放空\n\"Y\"：可放空\nRecallDate\n融券回補日期\nstring\nyyyyMMdd民國年\nLendQty\n借賣配額\nlong\n\nStockWarning\n股票警示狀態\nList<enumStkWarningType>\n請參考API說明文件-列舉物件\nUpdateDate\n更新日期\nstring\nyyyyMMdd民國年\n\n\n\n\n\n\n\n\n\n\n\n"
+    }
+  ],
+  "declared_packages": {
+    "YuantaSparkAPI/2026.7.13.11604": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "NX_StockInfo_Model/2026.1.19.11214": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-pD9BDba/sJ4UgeqYuegGJElRZUinAHpCi4RV/uEFo+gxSQyufVvbe1/o54OLuAR1xCDTVr52/a4W4OF0boW+eQ==",
+      "path": "nx_stockinfo_model/2026.1.19.11214",
+      "hashPath": "nx_stockinfo_model.2026.1.19.11214.nupkg.sha512"
+    },
+    "NX_Trade_TW_Model/2026.7.2.10927": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-OfEJunz9MaKsshMU4fcMIMjHhj8m/w60/lMvMjfiTRMa50AtrnhGK+Wj4RnvlwV6TQbK0ym9e1LE7c1AKmBrpQ==",
+      "path": "nx_trade_tw_model/2026.7.2.10927",
+      "hashPath": "nx_trade_tw_model.2026.7.2.10927.nupkg.sha512"
+    }
+  },
+  "workbook_sheets": [
+    {
+      "name": "功能對照表",
+      "rows": 51,
+      "columns": 4
+    },
+    {
+      "name": "股名檔對照表(僅供參考,最後更新日期20260422)",
+      "rows": 74559,
+      "columns": 7
+    },
+    {
+      "name": "即時回報情境",
+      "rows": 30,
+      "columns": 12
+    },
+    {
+      "name": "現貨下單常用錯誤代碼對照表",
+      "rows": 632,
+      "columns": 2
+    },
+    {
+      "name": "市場表",
+      "rows": 18,
+      "columns": 4
+    }
+  ]
+}

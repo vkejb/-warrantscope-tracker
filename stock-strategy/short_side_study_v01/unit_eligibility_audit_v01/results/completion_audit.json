@@ -1,0 +1,81 @@
+{
+  "closure_branch": "USER_AUTHORIZED_EVIDENCE_INSUFFICIENT",
+  "requirements": [
+    {
+      "id": "1",
+      "status": "AUDITED_WITH_EXPLICIT_UNKNOWN_HISTORICAL_BINDING",
+      "evidence": [
+        "sdk_evidence.json",
+        "unit_evidence.json",
+        "results/audit.json#sessions",
+        "results/audit.json#conversion_trace"
+      ]
+    },
+    {
+      "id": "2",
+      "status": "UNIT_UNVERIFIED_INQUIRY_PREPARED_STOPPED",
+      "evidence": [
+        "unit_evidence.json",
+        "yuanta_inquiry_zh-TW.txt"
+      ],
+      "missing": [
+        "Version-bound explicit quote unit",
+        "Independent synchronized depth evidence",
+        "Historical binary binding"
+      ]
+    },
+    {
+      "id": "3",
+      "status": "INVALID_LEGACY_BOARD_LOT_SENSITIVITY_IDENTIFIED",
+      "evidence": [
+        "results/audit.json#sensitivity_audit",
+        "tests/test_audit.py",
+        "results/tests.txt"
+      ]
+    },
+    {
+      "id": "4",
+      "status": "ALL_180_DAILY_STOCK_ROWS_ACCOUNTED_FOR_UNKNOWN_SEPARATED",
+      "evidence": [
+        "results/audit.json#historical_eligibility",
+        "results/audit.json#selected_short_eligibility"
+      ],
+      "missing": [
+        "22 TWSE target rows",
+        "68 TPEx historical target/suspension rows",
+        "Broker quota/acceptance and entry-time restriction evidence"
+      ]
+    },
+    {
+      "id": "5",
+      "status": "CONDITION_NOT_SATISFIED_NO_REPLAY_NO_REPLACEMENT_METRICS",
+      "evidence": [
+        "results/audit.json#rerun_performed",
+        "results/audit.json#verified_account_pnl",
+        "results/audit.json#verified_robustness"
+      ]
+    },
+    {
+      "id": "deliverables",
+      "status": "DELIVERED_AND_HASH_VERIFIED",
+      "evidence": [
+        "report_zh-TW.txt",
+        "affected_reports_zh-TW.txt",
+        "README.txt",
+        "results/tests.txt"
+      ]
+    },
+    {
+      "id": "scope",
+      "status": "ISOLATED_OFFLINE_ONLY",
+      "evidence": [
+        "audit.py",
+        "inspect_sdk.py",
+        "verify.py",
+        "results/audit.json#operational_actions"
+      ]
+    }
+  ],
+  "live_safety_or_profitability_certification": false,
+  "further_required_work_for_insufficient_evidence_closure": []
+}
