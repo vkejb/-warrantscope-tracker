@@ -1,16 +1,22 @@
 import json
+import os
 from pathlib import Path
+import ssl
+from types import SimpleNamespace
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from expanded_shadow_universe_v01.policy import POLICY
 from expanded_shadow_universe_v01.subscriptions import batches, deduplicate_items
 from expanded_shadow_universe_v01.universe import (
     ExpandedWatchItem,
+    _get,
     _parse_tpex_master,
     _parse_twse_master,
+    _post,
     _select_candidates,
+    _verified_ssl_context,
 )
 from expanded_shadow_universe_v01.paper import load_expanded_candidates, publish_expanded_paper
 from yuanta_intraday_shadow_v01.collector import AppendOnlyRun, WatchItem
@@ -21,6 +27,49 @@ def _item(symbol):
 
 
 class UniverseTests(unittest.TestCase):
+    def test_verified_ssl_context_uses_explicit_ca_and_keeps_verification(self):
+        with tempfile.TemporaryDirectory() as temp:
+            ca = Path(temp) / "trusted.pem"
+            ca.write_text("test fixture")
+            context = SimpleNamespace(
+                check_hostname=True,
+                verify_mode=ssl.CERT_REQUIRED,
+                minimum_version=None,
+            )
+            with patch.dict(os.environ, {"SSL_CERT_FILE": str(ca)}), patch(
+                "expanded_shadow_universe_v01.universe.ssl.create_default_context",
+                return_value=context,
+            ) as create:
+                self.assertIs(_verified_ssl_context(), context)
+            create.assert_called_once_with(cafile=str(ca))
+            self.assertEqual(context.minimum_version, ssl.TLSVersion.TLSv1_2)
+
+    def test_official_master_requests_use_verified_tls_context(self):
+        context = object()
+        response = Mock()
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        response.read.side_effect = [b"twse", b"tpex"]
+        with patch(
+            "expanded_shadow_universe_v01.universe._verified_ssl_context",
+            return_value=context,
+        ), patch(
+            "expanded_shadow_universe_v01.universe.urlopen",
+            return_value=response,
+        ) as open_url:
+            self.assertEqual(_get("https://example.test/twse"), b"twse")
+            self.assertEqual(
+                _post("https://example.test/tpex", {"response": "json"}),
+                b"tpex",
+            )
+        self.assertEqual(open_url.call_count, 2)
+        self.assertTrue(all(
+            call.kwargs["context"] is context for call in open_url.call_args_list
+        ))
+        self.assertTrue(all(
+            call.kwargs["timeout"] == 30 for call in open_url.call_args_list
+        ))
+
     def test_official_master_parsers(self):
         twse = _parse_twse_master(json.dumps([
             {"公司代號": "2330", "公司簡稱": "台積電", "產業別": "24"}

@@ -6,8 +6,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import ssl
 from typing import Callable
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -24,6 +26,49 @@ DEFAULT_RUNTIME_DIR = MODULE_DIR / "runtime"
 DEFAULT_AUDIT_DIR = STOCK_STRATEGY_DIR / "shadow_daily_runner" / "runtime" / "audit"
 TWSE_MASTER_URL = "https://openapi.twse.com.tw/v1/opendata/t187ap03_L"
 TPEX_MASTER_URL = "https://www.tpex.org.tw/www/zh-tw/company/otcSearch"
+
+
+def _verified_ssl_context() -> ssl.SSLContext:
+    """Return a verified TLS context for the scheduled collector's Python.
+
+    The Yuanta SDK virtualenv is based on python.org Python but does not ship
+    its configured ``.../etc/openssl/cert.pem``.  In that environment urllib
+    otherwise fails before the expanded universe can be sealed.  Prefer an
+    explicitly configured bundle, then certifi when installed, and finally
+    the macOS system bundle.  Verification and hostname checking always stay
+    enabled; an absent trust store is a hard failure.
+    """
+
+    candidates: list[Path] = []
+    configured = os.environ.get("SSL_CERT_FILE", "").strip()
+    if configured:
+        candidates.append(Path(configured))
+    try:
+        import certifi
+
+        candidates.append(Path(certifi.where()))
+    except ImportError:
+        pass
+    default = ssl.get_default_verify_paths().cafile
+    if default:
+        candidates.append(Path(default))
+    candidates.append(Path("/etc/ssl/cert.pem"))
+
+    seen: set[str] = set()
+    for candidate in candidates:
+        identity = str(candidate.expanduser())
+        if identity in seen:
+            continue
+        seen.add(identity)
+        path = candidate.expanduser()
+        if not path.is_file():
+            continue
+        context = ssl.create_default_context(cafile=str(path))
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        if not context.check_hostname or context.verify_mode != ssl.CERT_REQUIRED:
+            raise RuntimeError("expanded universe TLS verification is not enforced")
+        return context
+    raise RuntimeError("no trusted CA bundle is available for expanded universe HTTPS")
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +90,7 @@ def _sha(payload: bytes) -> str:
 
 def _get(url: str) -> bytes:
     request = Request(url, headers={"User-Agent": "WarrantScope-expanded-shadow/1.0"})
-    with urlopen(request, timeout=30) as response:
+    with urlopen(request, timeout=30, context=_verified_ssl_context()) as response:
         return response.read()
 
 
@@ -59,7 +104,7 @@ def _post(url: str, fields: dict[str, str]) -> bytes:
         },
         method="POST",
     )
-    with urlopen(request, timeout=30) as response:
+    with urlopen(request, timeout=30, context=_verified_ssl_context()) as response:
         return response.read()
 
 
