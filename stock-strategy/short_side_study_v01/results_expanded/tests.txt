@@ -1,0 +1,22 @@
+test_depth_cannot_be_reused (test_execution.ExecutionTests) ... ok
+test_future_or_stale_depth_cannot_fill (test_execution.ExecutionTests) ... ok
+test_identical_callback_does_not_replenish_consumed_liquidity (test_execution.ExecutionTests) ... ok
+test_short_sells_bid_and_covers_ask (test_execution.ExecutionTests) ... ok
+test_anti_chase_blocks_short_and_no_live_flag_needed (test_policy.PolicyTests) ... ok
+test_combined_boundary_uses_score_without_pnl (test_policy.PolicyTests) ... ok
+test_fixed_symmetric_thresholds (test_policy.PolicyTests) ... ok
+test_inherits_base_thresholds_and_symmetric_exit_unchanged (test_policy.PolicyTests) ... ok
+test_known_ineligible_short_is_filtered (test_policy.PolicyTests) ... ok
+test_stale_benchmark_counts_base_signal_but_never_approves (test_policy.PolicyTests) ... ok
+test_delay_cannot_use_pre_delay_quote (test_replay.ReplayTests) ... ok
+test_long_short_fixed_3500_risk_basis (test_replay.ReplayTests) ... ok
+test_partial_cover_never_fabricates_flat_pnl (test_replay.ReplayTests) ... ok
+test_quote_path_metrics_are_reported_without_changing_exit (test_replay.ReplayTests) ... ok
+test_short_hard_exit_and_costs (test_replay.ReplayTests) ... ok
+test_short_pnl_direction_and_sell_tax (test_replay.ReplayTests) ... ok
+test_stats_exposure_is_not_zero (test_replay.ReplayTests) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.024s
+
+OK

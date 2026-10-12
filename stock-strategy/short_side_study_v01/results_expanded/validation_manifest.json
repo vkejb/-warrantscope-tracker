@@ -1,0 +1,70 @@
+{
+  "status": "VERIFIED_OFFLINE_RESEARCH",
+  "required_rows": 144,
+  "s0_reference_rows": 18,
+  "untouched_live_modules": [
+    "yuanta_live_runtime_v01",
+    "yuanta_broker_execution_v01"
+  ],
+  "contract_hash": "8abb39da5cd97f082eb252e76c676e94274f72eba84aebf7039119ed9b77b959",
+  "source_hashes": {
+    "short_side_study_v01/execution.py": "16e489548a1d01820c918e0fb8205d3e3a552f5354421230f6216d37a2a450d2",
+    "short_side_study_v01/policy.py": "c8ca7fc177c53b19676aebaae3601a3bd6a504058bd6ce0cc247b22b024ad850",
+    "short_side_study_v01/__init__.py": "c80f4bc78ea157b7649aa962a88ab69fa13d472aee091641740bfac321604a16",
+    "short_side_study_v01/replay.py": "5c42a894a437857e5b7264170e2b1d8ad40e90c48fb923dd6e7d8437f96b7f3d",
+    "short_side_study_v01/fetch_eligibility.py": "87f1d345a9a157665e0f9235e567e2b7d6b58f89d0127c278202fa687ce39608",
+    "short_side_study_v01/statistics.py": "faa83d15e6aa65830f3e5869be4c7729bcd3121636c405f4baeefb8a27eee9ec",
+    "short_side_study_v01/verify.py": "1486de6765a5369006ac8ad2174f7ade17ee87284404c5029b1f4e4c15b68871",
+    "short_side_study_v01/main.py": "3ce6e5efd9bc87f3b2169f1b04072b47fb296b0a8753357be4d8c396c57e9f72",
+    "short_side_study_v01/inventory.py": "02d4148d632baaeaca1a3fcd6e86727b2573a55cf7dee7f2fb00c889eff289a9",
+    "short_side_study_v01/tests/test_replay.py": "4c7d949a7109ba198da7d4f8be829d25c6f97dc87d3089402736ce6577be3ef2",
+    "short_side_study_v01/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "short_side_study_v01/tests/test_execution.py": "cd81309027196495d14d14f56939984fc71fb23a2540572fac132a2da6255ff4",
+    "short_side_study_v01/tests/test_policy.py": "d9fe44b980787dd6f956e2c8ab026abe9b4bd906808904d42e7d1bb351c4221e",
+    "yuanta_live_runtime_v01/strategy.py": "77339858f1c2ff36401dd1174f3cb993d65c0e93574657a40e4fad7b045f6115",
+    "yuanta_intraday_shadow_v01/direction_follow_backtest.py": "7f7bb27be296f0b3a04cef83451f2d05749bc0eed6847993b3fa800946e1b294",
+    "yuanta_intraday_shadow_v01/live_parity_backtest.py": "d49c819249e506c8e2503472273f42e62c497333ff1a2e3d49944eafa842957e",
+    "paper_shadow_v01/runner.py": "3dc03ad923604bff28c01951083687584021ec11ccaf4bbd426d14aeb993c31b",
+    "entry_quality_edge_study_v01/analysis.py": "c9405e6a8b447d8bffb89c8d104eeff5dc777b02995c891d0c55ba8eca84274e"
+  },
+  "output_hashes": {
+    "summary.json": "f65e8f7c0455ea55f1026afaf290fb7743560078cdabffe109312b958e2289ad",
+    "qualified_signals.json": "2b191bf8ff28845dc16c1517bf0d866fe0d998bddb71769a5aacd608f8db8e10",
+    "report_zh-TW.txt": "55fda8e3d978f7c9fceeae5a331640d6654c52b74841dfc3a665986651550320",
+    "eligibility_audit.json": "ff8f72ccf3d7f19d2583d278beb2adfcee71a761e61a5144b212b99f13179e70",
+    "signal_counts.json": "5cf0a151aae3a89ec7c72d4b0c972b21afb1aa00d2fa27ed61b5aafcd169198b",
+    "tests.txt": "9dcda7df82987e25c6786f5e7856b7582f1900f2ebd6c2cf5e492df4dc001d90",
+    "simultaneous_cases.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "stream_quality.json": "9668b1dfd841ddb09c550f71de1c2ab9dfc587f6379e5adb6e99b8ab7cbe6258",
+    "daily_inventory.json": "a9daa2533116b00440ae421bd1684a56a31203175782f486c601462c59506c9d",
+    "daily_results.json": "17fae9cdf6d260b43f51daa01a46e2a7a94d2bf26ad2ffbade3922d06cdd5fbd",
+    "zip_catalog.json": "07d7be6e7400588ecad99040e1104d0cd848a6be09d0204bce88435bad6a4b0d",
+    "s0_original_full_fill_reference.json": "59d19722e89722fe125c794ee1d29612579ee44ea62f993f2d19787b58444d3b",
+    "data_inventory.json": "976df6e4a01b7f94722f8e730e97093bd38b785b3dd95aad902c9720e99fc1de",
+    "contract.json": "431b98d78247b7dffd2a73ccad6a96f32d7b3935486b007170591b244f86e65d"
+  },
+  "eligibility_source_hashes": {
+    "20261006_twse_eligibility.json": "c4b6fea4bb003f1672679ddb8ac07fe921c0d8f773ece98b0c0e9d79451c541a",
+    "20260929_twse_eligibility.json": "5eeb00f27d0c192ec443b92ad32bcbf8f30878294aa8b247cd0f548a07558d12",
+    "20261002_twse_eligibility.json": "e2c01df9d279deb1fc134297ce3adf153a0eae5cc3d089c79e8b1f78106e6e7a",
+    "20261008_twse_eligibility.json": "6c23b8875db5bb0f6197cd6872660bdc0715e13790d9d53e6f8385cde0ad451c",
+    "20261005_twse_eligibility.json": "f3a2dfa7be6ae411cc959f36e330dc4a487b7dc1992ec17c19639a29e65d2302",
+    "20261001_twse_eligibility.json": "51ae4c46b043895f9c550a0ba5b456fe4b6182bccb112bdfeabd8d811224fbe4"
+  },
+  "conclusion": "INSUFFICIENT_DATA",
+  "requirement_evidence": {
+    "all_archives": "data_inventory.json + daily_inventory.json + zip_catalog.json",
+    "top30_ticks_book_0050_coverage": "stream_quality.json + source artifact SHA256",
+    "signals_and_actual_model_entries": "signal_counts.json + daily_results.json",
+    "four_variants_chronological": "qualified_signals.json + simultaneous_cases.json + chronological assertions",
+    "fixed_thresholds_and_exits": "contract.json + inherited-method regression tests",
+    "side_aware_depth_partial_uncovered": "execution/replay tests + daily residual_shares/null PnL assertions",
+    "fees_direction": "test_short_pnl_direction_and_sell_tax + inherited frozen fee function",
+    "metrics_and_daily_pnl": "summary.json + daily_results.json",
+    "mfe_mae_giveback_and_dd": "daily mark path + summary metrics + finite realization assertions",
+    "complementarity_correlation_quality": "summary.json complementarity",
+    "adverse_delay_loo_extreme_removal": "summary.json scenarios/robustness",
+    "eligibility_no_true_oos": "eligibility_audit.json + sources + report labels",
+    "no_live_mutation": "git diff live modules = empty; no broker imports/calls in study"
+  }
+}

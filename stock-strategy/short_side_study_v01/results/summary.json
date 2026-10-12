@@ -1,0 +1,2396 @@
+{
+  "conclusion": "INSUFFICIENT_DATA",
+  "reason": "Only 4 independent complete sessions; no true OOS; TPEX eligibility and SPARK depth-volume conversion unproven.",
+  "sample_dates": [
+    "20261002",
+    "20261005",
+    "20261006",
+    "20261008"
+  ],
+  "qualification": "SIGNAL_ONLY / ELIGIBILITY_UNPROVEN",
+  "out_of_sample": "NO_TRUE_OUT_OF_SAMPLE_SET",
+  "summaries": [
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1000,
+      "variant": "S0",
+      "trades": 4,
+      "net_pnl": -2625.0,
+      "profit_factor": 0.6524559777571826,
+      "win_rate": 0.5,
+      "max_daily_realized_drawdown": 5167.0,
+      "mean_trade_pnl": -656.25,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1000,
+      "variant": "S1",
+      "trades": 4,
+      "net_pnl": 8689.0,
+      "profit_factor": 10.184989429175475,
+      "win_rate": 0.75,
+      "max_daily_realized_drawdown": 946.0,
+      "mean_trade_pnl": 2172.25,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1000,
+      "variant": "S2",
+      "trades": 0,
+      "net_pnl": 0,
+      "profit_factor": null,
+      "win_rate": null,
+      "max_daily_realized_drawdown": 0.0,
+      "mean_trade_pnl": null,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1000,
+      "variant": "S3",
+      "trades": 4,
+      "net_pnl": -2625.0,
+      "profit_factor": 0.6524559777571826,
+      "win_rate": 0.5,
+      "max_daily_realized_drawdown": 5167.0,
+      "mean_trade_pnl": -656.25,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1,
+      "variant": "S0",
+      "trades": 1,
+      "net_pnl": -90.5,
+      "profit_factor": 0.0,
+      "win_rate": 0.0,
+      "max_daily_realized_drawdown": 90.5,
+      "mean_trade_pnl": -90.5,
+      "unscorable_or_open_exposure_days": 3,
+      "account_complete": false
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1,
+      "variant": "S1",
+      "trades": 4,
+      "net_pnl": -115.1,
+      "profit_factor": 0.0,
+      "win_rate": 0.0,
+      "max_daily_realized_drawdown": 115.1,
+      "mean_trade_pnl": -28.775,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1,
+      "variant": "S2",
+      "trades": 0,
+      "net_pnl": 0,
+      "profit_factor": null,
+      "win_rate": null,
+      "max_daily_realized_drawdown": 0.0,
+      "mean_trade_pnl": null,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1,
+      "variant": "S3",
+      "trades": 1,
+      "net_pnl": -90.5,
+      "profit_factor": 0.0,
+      "win_rate": 0.0,
+      "max_daily_realized_drawdown": 90.5,
+      "mean_trade_pnl": -90.5,
+      "unscorable_or_open_exposure_days": 3,
+      "account_complete": false
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1000,
+      "variant": "S0",
+      "trades": 4,
+      "net_pnl": -9014.0,
+      "profit_factor": 0.1919318691169879,
+      "win_rate": 0.25,
+      "max_daily_realized_drawdown": 11155.0,
+      "mean_trade_pnl": -2253.5,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1000,
+      "variant": "S1",
+      "trades": 4,
+      "net_pnl": 4704.0,
+      "profit_factor": 2.244773749669225,
+      "win_rate": 0.75,
+      "max_daily_realized_drawdown": 3779.0,
+      "mean_trade_pnl": 1176.0,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1000,
+      "variant": "S2",
+      "trades": 0,
+      "net_pnl": 0,
+      "profit_factor": null,
+      "win_rate": null,
+      "max_daily_realized_drawdown": 0.0,
+      "mean_trade_pnl": null,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1000,
+      "variant": "S3",
+      "trades": 4,
+      "net_pnl": -9014.0,
+      "profit_factor": 0.1919318691169879,
+      "win_rate": 0.25,
+      "max_daily_realized_drawdown": 11155.0,
+      "mean_trade_pnl": -2253.5,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1,
+      "variant": "S0",
+      "trades": 1,
+      "net_pnl": -214.0,
+      "profit_factor": 0.0,
+      "win_rate": 0.0,
+      "max_daily_realized_drawdown": 214.0,
+      "mean_trade_pnl": -214.0,
+      "unscorable_or_open_exposure_days": 3,
+      "account_complete": false
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1,
+      "variant": "S1",
+      "trades": 4,
+      "net_pnl": -123.1,
+      "profit_factor": 0.0,
+      "win_rate": 0.0,
+      "max_daily_realized_drawdown": 123.1,
+      "mean_trade_pnl": -30.775,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1,
+      "variant": "S2",
+      "trades": 0,
+      "net_pnl": 0,
+      "profit_factor": null,
+      "win_rate": null,
+      "max_daily_realized_drawdown": 0.0,
+      "mean_trade_pnl": null,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1,
+      "variant": "S3",
+      "trades": 1,
+      "net_pnl": -214.0,
+      "profit_factor": 0.0,
+      "win_rate": 0.0,
+      "max_daily_realized_drawdown": 214.0,
+      "mean_trade_pnl": -214.0,
+      "unscorable_or_open_exposure_days": 3,
+      "account_complete": false
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1000,
+      "variant": "S0",
+      "trades": 4,
+      "net_pnl": -2425.0,
+      "profit_factor": 0.6788930084745762,
+      "win_rate": 0.5,
+      "max_daily_realized_drawdown": 4766.0,
+      "mean_trade_pnl": -606.25,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1000,
+      "variant": "S1",
+      "trades": 4,
+      "net_pnl": 5750.0,
+      "profit_factor": 2.48005148005148,
+      "win_rate": 0.75,
+      "max_daily_realized_drawdown": 3885.0,
+      "mean_trade_pnl": 1437.5,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1000,
+      "variant": "S2",
+      "trades": 0,
+      "net_pnl": 0,
+      "profit_factor": null,
+      "win_rate": null,
+      "max_daily_realized_drawdown": 0.0,
+      "mean_trade_pnl": null,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1000,
+      "variant": "S3",
+      "trades": 4,
+      "net_pnl": -2425.0,
+      "profit_factor": 0.6788930084745762,
+      "win_rate": 0.5,
+      "max_daily_realized_drawdown": 4766.0,
+      "mean_trade_pnl": -606.25,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1,
+      "variant": "S0",
+      "trades": 1,
+      "net_pnl": -89.0,
+      "profit_factor": 0.0,
+      "win_rate": 0.0,
+      "max_daily_realized_drawdown": 89.0,
+      "mean_trade_pnl": -89.0,
+      "unscorable_or_open_exposure_days": 3,
+      "account_complete": false
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1,
+      "variant": "S1",
+      "trades": 4,
+      "net_pnl": -121.30000000000001,
+      "profit_factor": 0.0,
+      "win_rate": 0.0,
+      "max_daily_realized_drawdown": 121.30000000000001,
+      "mean_trade_pnl": -30.325000000000003,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1,
+      "variant": "S2",
+      "trades": 0,
+      "net_pnl": 0,
+      "profit_factor": null,
+      "win_rate": null,
+      "max_daily_realized_drawdown": 0.0,
+      "mean_trade_pnl": null,
+      "unscorable_or_open_exposure_days": 0,
+      "account_complete": true
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1,
+      "variant": "S3",
+      "trades": 1,
+      "net_pnl": -89.0,
+      "profit_factor": 0.0,
+      "win_rate": 0.0,
+      "max_daily_realized_drawdown": 89.0,
+      "mean_trade_pnl": -89.0,
+      "unscorable_or_open_exposure_days": 3,
+      "account_complete": false
+    }
+  ],
+  "complementarity": [
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1000,
+      "daily_pnl_correlation": null,
+      "long_no_trade_short_trade": [],
+      "long_loss_days_short_qualified": [
+        {
+          "date": "20261005",
+          "long_pnl": -3589.0,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        },
+        {
+          "date": "20261008",
+          "long_pnl": -3964.0,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        }
+      ],
+      "combined_contribution": {
+        "LONG": {
+          "trades": 4,
+          "net_pnl": -2625.0,
+          "profit_factor": 0.6524559777571826,
+          "win_rate": 0.5,
+          "max_daily_realized_drawdown": 5167.0,
+          "mean_trade_pnl": -656.25,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        "SHORT": {
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      },
+      "quality_change": {
+        "long_mean_trade_pnl": -656.25,
+        "combined_mean_trade_pnl": -656.25,
+        "long_trades": 4,
+        "combined_trades": 4
+      }
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1,
+      "daily_pnl_correlation": null,
+      "long_no_trade_short_trade": [],
+      "long_loss_days_short_qualified": [
+        {
+          "date": "20261008",
+          "long_pnl": -90.5,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        }
+      ],
+      "combined_contribution": {
+        "LONG": {
+          "trades": 1,
+          "net_pnl": -90.5,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 90.5,
+          "mean_trade_pnl": -90.5,
+          "unscorable_or_open_exposure_days": 3,
+          "account_complete": false
+        },
+        "SHORT": {
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      },
+      "quality_change": {
+        "long_mean_trade_pnl": -90.5,
+        "combined_mean_trade_pnl": -90.5,
+        "long_trades": 1,
+        "combined_trades": 1
+      }
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1000,
+      "daily_pnl_correlation": null,
+      "long_no_trade_short_trade": [],
+      "long_loss_days_short_qualified": [
+        {
+          "date": "20261005",
+          "long_pnl": -3590.0,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        },
+        {
+          "date": "20261006",
+          "long_pnl": -3600.0,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        },
+        {
+          "date": "20261008",
+          "long_pnl": -3965.0,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        }
+      ],
+      "combined_contribution": {
+        "LONG": {
+          "trades": 4,
+          "net_pnl": -9014.0,
+          "profit_factor": 0.1919318691169879,
+          "win_rate": 0.25,
+          "max_daily_realized_drawdown": 11155.0,
+          "mean_trade_pnl": -2253.5,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        "SHORT": {
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      },
+      "quality_change": {
+        "long_mean_trade_pnl": -2253.5,
+        "combined_mean_trade_pnl": -2253.5,
+        "long_trades": 4,
+        "combined_trades": 4
+      }
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1,
+      "daily_pnl_correlation": null,
+      "long_no_trade_short_trade": [],
+      "long_loss_days_short_qualified": [
+        {
+          "date": "20261008",
+          "long_pnl": -214.0,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        }
+      ],
+      "combined_contribution": {
+        "LONG": {
+          "trades": 1,
+          "net_pnl": -214.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 214.0,
+          "mean_trade_pnl": -214.0,
+          "unscorable_or_open_exposure_days": 3,
+          "account_complete": false
+        },
+        "SHORT": {
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      },
+      "quality_change": {
+        "long_mean_trade_pnl": -214.0,
+        "combined_mean_trade_pnl": -214.0,
+        "long_trades": 1,
+        "combined_trades": 1
+      }
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1000,
+      "daily_pnl_correlation": null,
+      "long_no_trade_short_trade": [],
+      "long_loss_days_short_qualified": [
+        {
+          "date": "20261005",
+          "long_pnl": -3588.0,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        },
+        {
+          "date": "20261008",
+          "long_pnl": -3964.0,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        }
+      ],
+      "combined_contribution": {
+        "LONG": {
+          "trades": 4,
+          "net_pnl": -2425.0,
+          "profit_factor": 0.6788930084745762,
+          "win_rate": 0.5,
+          "max_daily_realized_drawdown": 4766.0,
+          "mean_trade_pnl": -606.25,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        "SHORT": {
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      },
+      "quality_change": {
+        "long_mean_trade_pnl": -606.25,
+        "combined_mean_trade_pnl": -606.25,
+        "long_trades": 4,
+        "combined_trades": 4
+      }
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1,
+      "daily_pnl_correlation": null,
+      "long_no_trade_short_trade": [],
+      "long_loss_days_short_qualified": [
+        {
+          "date": "20261008",
+          "long_pnl": -89.0,
+          "qualified_short_count": 0,
+          "short_pnl": 0.0
+        }
+      ],
+      "combined_contribution": {
+        "LONG": {
+          "trades": 1,
+          "net_pnl": -89.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 89.0,
+          "mean_trade_pnl": -89.0,
+          "unscorable_or_open_exposure_days": 3,
+          "account_complete": false
+        },
+        "SHORT": {
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      },
+      "quality_change": {
+        "long_mean_trade_pnl": -89.0,
+        "combined_mean_trade_pnl": -89.0,
+        "long_trades": 1,
+        "combined_trades": 1
+      }
+    }
+  ],
+  "robustness": [
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1000,
+      "variant": "S0",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": -5167.0,
+          "profit_factor": 0.3159009665033761,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 5167.0,
+          "mean_trade_pnl": -1722.3333333333333,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": 964.0,
+          "profit_factor": 1.243188698284561,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3964.0,
+          "mean_trade_pnl": 321.3333333333333,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": -5011.0,
+          "profit_factor": 0.33655501125380644,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7553.0,
+          "mean_trade_pnl": -1670.3333333333333,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": 1339.0,
+          "profit_factor": 1.3730844246308165,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3589.0,
+          "mean_trade_pnl": 446.3333333333333,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": 2542.0,
+        "trades": 3,
+        "net_pnl": -5167.0,
+        "profit_factor": 0.3159009665033761,
+        "win_rate": 0.3333333333333333,
+        "max_daily_realized_drawdown": 5167.0,
+        "mean_trade_pnl": -1722.3333333333333,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -3964.0,
+        "trades": 3,
+        "net_pnl": 1339.0,
+        "profit_factor": 1.3730844246308165,
+        "win_rate": 0.6666666666666666,
+        "max_daily_realized_drawdown": 3589.0,
+        "mean_trade_pnl": 446.3333333333333,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1000,
+      "variant": "S1",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": 9635.0,
+          "profit_factor": null,
+          "win_rate": 1.0,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": 3211.6666666666665,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": 3899.0,
+          "profit_factor": 5.121564482029599,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 946.0,
+          "mean_trade_pnl": 1299.6666666666667,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": 5664.0,
+          "profit_factor": 6.987315010570825,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 946.0,
+          "mean_trade_pnl": 1888.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": 6869.0,
+          "profit_factor": 8.261099365750528,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 946.0,
+          "mean_trade_pnl": 2289.6666666666665,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261005",
+        "removed_net_pnl": 4790.0,
+        "trades": 3,
+        "net_pnl": 3899.0,
+        "profit_factor": 5.121564482029599,
+        "win_rate": 0.6666666666666666,
+        "max_daily_realized_drawdown": 946.0,
+        "mean_trade_pnl": 1299.6666666666667,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": -946.0,
+        "trades": 3,
+        "net_pnl": 9635.0,
+        "profit_factor": null,
+        "win_rate": 1.0,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": 3211.6666666666665,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1000,
+      "variant": "S2",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": null,
+      "remove_worst_trade": null
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1000,
+      "variant": "S3",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": -5167.0,
+          "profit_factor": 0.3159009665033761,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 5167.0,
+          "mean_trade_pnl": -1722.3333333333333,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": 964.0,
+          "profit_factor": 1.243188698284561,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3964.0,
+          "mean_trade_pnl": 321.3333333333333,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": -5011.0,
+          "profit_factor": 0.33655501125380644,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7553.0,
+          "mean_trade_pnl": -1670.3333333333333,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": 1339.0,
+          "profit_factor": 1.3730844246308165,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3589.0,
+          "mean_trade_pnl": 446.3333333333333,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": 2542.0,
+        "trades": 3,
+        "net_pnl": -5167.0,
+        "profit_factor": 0.3159009665033761,
+        "win_rate": 0.3333333333333333,
+        "max_daily_realized_drawdown": 5167.0,
+        "mean_trade_pnl": -1722.3333333333333,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -3964.0,
+        "trades": 3,
+        "net_pnl": 1339.0,
+        "profit_factor": 1.3730844246308165,
+        "win_rate": 0.6666666666666666,
+        "max_daily_realized_drawdown": 3589.0,
+        "mean_trade_pnl": 446.3333333333333,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1,
+      "variant": "S0",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 1,
+          "net_pnl": -90.5,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 90.5,
+          "mean_trade_pnl": -90.5,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 1,
+          "net_pnl": -90.5,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 90.5,
+          "mean_trade_pnl": -90.5,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 1,
+          "net_pnl": -90.5,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 90.5,
+          "mean_trade_pnl": -90.5,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 3,
+          "account_complete": false
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -90.5,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -90.5,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      }
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1,
+      "variant": "S1",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": -73.30000000000001,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 73.30000000000001,
+          "mean_trade_pnl": -24.433333333333337,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": -103.19999999999999,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 103.19999999999999,
+          "mean_trade_pnl": -34.4,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": -92.3,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 92.3,
+          "mean_trade_pnl": -30.766666666666666,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": -76.5,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 76.5,
+          "mean_trade_pnl": -25.5,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261005",
+        "removed_net_pnl": -11.9,
+        "trades": 3,
+        "net_pnl": -103.19999999999999,
+        "profit_factor": 0.0,
+        "win_rate": 0.0,
+        "max_daily_realized_drawdown": 103.19999999999999,
+        "mean_trade_pnl": -34.4,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": -41.8,
+        "trades": 3,
+        "net_pnl": -73.30000000000001,
+        "profit_factor": 0.0,
+        "win_rate": 0.0,
+        "max_daily_realized_drawdown": 73.30000000000001,
+        "mean_trade_pnl": -24.433333333333337,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1,
+      "variant": "S2",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": null,
+      "remove_worst_trade": null
+    },
+    {
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "volume_multiplier": 1,
+      "variant": "S3",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 1,
+          "net_pnl": -90.5,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 90.5,
+          "mean_trade_pnl": -90.5,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 1,
+          "net_pnl": -90.5,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 90.5,
+          "mean_trade_pnl": -90.5,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 1,
+          "net_pnl": -90.5,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 90.5,
+          "mean_trade_pnl": -90.5,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 3,
+          "account_complete": false
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -90.5,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -90.5,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      }
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1000,
+      "variant": "S0",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": -11155.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 11155.0,
+          "mean_trade_pnl": -3718.3333333333335,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": -5424.0,
+          "profit_factor": 0.28301387970918707,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7565.0,
+          "mean_trade_pnl": -1808.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": -5414.0,
+          "profit_factor": 0.28338848444738585,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7555.0,
+          "mean_trade_pnl": -1804.6666666666667,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": -5049.0,
+          "profit_factor": 0.2977746870653686,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7190.0,
+          "mean_trade_pnl": -1683.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": 2141.0,
+        "trades": 3,
+        "net_pnl": -11155.0,
+        "profit_factor": 0.0,
+        "win_rate": 0.0,
+        "max_daily_realized_drawdown": 11155.0,
+        "mean_trade_pnl": -3718.3333333333335,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -3965.0,
+        "trades": 3,
+        "net_pnl": -5049.0,
+        "profit_factor": 0.2977746870653686,
+        "win_rate": 0.3333333333333333,
+        "max_daily_realized_drawdown": 7190.0,
+        "mean_trade_pnl": -1683.0,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1000,
+      "variant": "S1",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": 8483.0,
+          "profit_factor": null,
+          "win_rate": 1.0,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": 2827.6666666666665,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": 64.0,
+          "profit_factor": 1.0169356972744112,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3779.0,
+          "mean_trade_pnl": 21.333333333333332,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": 2280.0,
+          "profit_factor": 1.6033342154008996,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3779.0,
+          "mean_trade_pnl": 760.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": 3285.0,
+          "profit_factor": 1.8692775866631384,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3779.0,
+          "mean_trade_pnl": 1095.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261005",
+        "removed_net_pnl": 4640.0,
+        "trades": 3,
+        "net_pnl": 64.0,
+        "profit_factor": 1.0169356972744112,
+        "win_rate": 0.6666666666666666,
+        "max_daily_realized_drawdown": 3779.0,
+        "mean_trade_pnl": 21.333333333333332,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": -3779.0,
+        "trades": 3,
+        "net_pnl": 8483.0,
+        "profit_factor": null,
+        "win_rate": 1.0,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": 2827.6666666666665,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1000,
+      "variant": "S2",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": null,
+      "remove_worst_trade": null
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1000,
+      "variant": "S3",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": -11155.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 11155.0,
+          "mean_trade_pnl": -3718.3333333333335,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": -5424.0,
+          "profit_factor": 0.28301387970918707,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7565.0,
+          "mean_trade_pnl": -1808.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": -5414.0,
+          "profit_factor": 0.28338848444738585,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7555.0,
+          "mean_trade_pnl": -1804.6666666666667,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": -5049.0,
+          "profit_factor": 0.2977746870653686,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7190.0,
+          "mean_trade_pnl": -1683.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": 2141.0,
+        "trades": 3,
+        "net_pnl": -11155.0,
+        "profit_factor": 0.0,
+        "win_rate": 0.0,
+        "max_daily_realized_drawdown": 11155.0,
+        "mean_trade_pnl": -3718.3333333333335,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -3965.0,
+        "trades": 3,
+        "net_pnl": -5049.0,
+        "profit_factor": 0.2977746870653686,
+        "win_rate": 0.3333333333333333,
+        "max_daily_realized_drawdown": 7190.0,
+        "mean_trade_pnl": -1683.0,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1,
+      "variant": "S0",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 1,
+          "net_pnl": -214.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 214.0,
+          "mean_trade_pnl": -214.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 1,
+          "net_pnl": -214.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 214.0,
+          "mean_trade_pnl": -214.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 1,
+          "net_pnl": -214.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 214.0,
+          "mean_trade_pnl": -214.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 3,
+          "account_complete": false
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -214.0,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -214.0,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      }
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1,
+      "variant": "S1",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": -63.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 63.0,
+          "mean_trade_pnl": -21.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": -110.6,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 110.6,
+          "mean_trade_pnl": -36.86666666666667,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": -107.1,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 107.1,
+          "mean_trade_pnl": -35.699999999999996,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": -88.6,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 88.6,
+          "mean_trade_pnl": -29.53333333333333,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261005",
+        "removed_net_pnl": -12.5,
+        "trades": 3,
+        "net_pnl": -110.6,
+        "profit_factor": 0.0,
+        "win_rate": 0.0,
+        "max_daily_realized_drawdown": 110.6,
+        "mean_trade_pnl": -36.86666666666667,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": -60.1,
+        "trades": 3,
+        "net_pnl": -63.0,
+        "profit_factor": 0.0,
+        "win_rate": 0.0,
+        "max_daily_realized_drawdown": 63.0,
+        "mean_trade_pnl": -21.0,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1,
+      "variant": "S2",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": null,
+      "remove_worst_trade": null
+    },
+    {
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "volume_multiplier": 1,
+      "variant": "S3",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 1,
+          "net_pnl": -214.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 214.0,
+          "mean_trade_pnl": -214.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 1,
+          "net_pnl": -214.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 214.0,
+          "mean_trade_pnl": -214.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 1,
+          "net_pnl": -214.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 214.0,
+          "mean_trade_pnl": -214.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 3,
+          "account_complete": false
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -214.0,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -214.0,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      }
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1000,
+      "variant": "S0",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": -4766.0,
+          "profit_factor": 0.3689088983050847,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 4766.0,
+          "mean_trade_pnl": -1588.6666666666667,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": 1163.0,
+          "profit_factor": 1.293390514631685,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3964.0,
+          "mean_trade_pnl": 387.6666666666667,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": -5211.0,
+          "profit_factor": 0.3099841101694915,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7552.0,
+          "mean_trade_pnl": -1737.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": 1539.0,
+          "profit_factor": 1.4289297658862876,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3588.0,
+          "mean_trade_pnl": 513.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261006",
+        "removed_net_pnl": 2786.0,
+        "trades": 3,
+        "net_pnl": -5211.0,
+        "profit_factor": 0.3099841101694915,
+        "win_rate": 0.3333333333333333,
+        "max_daily_realized_drawdown": 7552.0,
+        "mean_trade_pnl": -1737.0,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -3964.0,
+        "trades": 3,
+        "net_pnl": 1539.0,
+        "profit_factor": 1.4289297658862876,
+        "win_rate": 0.6666666666666666,
+        "max_daily_realized_drawdown": 3588.0,
+        "mean_trade_pnl": 513.0,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1000,
+      "variant": "S1",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": 9635.0,
+          "profit_factor": null,
+          "win_rate": 1.0,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": 3211.6666666666665,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": 960.0,
+          "profit_factor": 1.247104247104247,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3885.0,
+          "mean_trade_pnl": 320.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": 2725.0,
+          "profit_factor": 1.7014157014157014,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3885.0,
+          "mean_trade_pnl": 908.3333333333334,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": 3930.0,
+          "profit_factor": 2.011583011583012,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3885.0,
+          "mean_trade_pnl": 1310.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261005",
+        "removed_net_pnl": 4790.0,
+        "trades": 3,
+        "net_pnl": 960.0,
+        "profit_factor": 1.247104247104247,
+        "win_rate": 0.6666666666666666,
+        "max_daily_realized_drawdown": 3885.0,
+        "mean_trade_pnl": 320.0,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": -3885.0,
+        "trades": 3,
+        "net_pnl": 9635.0,
+        "profit_factor": null,
+        "win_rate": 1.0,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": 3211.6666666666665,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1000,
+      "variant": "S2",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": null,
+      "remove_worst_trade": null
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1000,
+      "variant": "S3",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": -4766.0,
+          "profit_factor": 0.3689088983050847,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 4766.0,
+          "mean_trade_pnl": -1588.6666666666667,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": 1163.0,
+          "profit_factor": 1.293390514631685,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3964.0,
+          "mean_trade_pnl": 387.6666666666667,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": -5211.0,
+          "profit_factor": 0.3099841101694915,
+          "win_rate": 0.3333333333333333,
+          "max_daily_realized_drawdown": 7552.0,
+          "mean_trade_pnl": -1737.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": 1539.0,
+          "profit_factor": 1.4289297658862876,
+          "win_rate": 0.6666666666666666,
+          "max_daily_realized_drawdown": 3588.0,
+          "mean_trade_pnl": 513.0,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261006",
+        "removed_net_pnl": 2786.0,
+        "trades": 3,
+        "net_pnl": -5211.0,
+        "profit_factor": 0.3099841101694915,
+        "win_rate": 0.3333333333333333,
+        "max_daily_realized_drawdown": 7552.0,
+        "mean_trade_pnl": -1737.0,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -3964.0,
+        "trades": 3,
+        "net_pnl": 1539.0,
+        "profit_factor": 1.4289297658862876,
+        "win_rate": 0.6666666666666666,
+        "max_daily_realized_drawdown": 3588.0,
+        "mean_trade_pnl": 513.0,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1,
+      "variant": "S0",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 1,
+          "net_pnl": -89.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 89.0,
+          "mean_trade_pnl": -89.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 1,
+          "net_pnl": -89.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 89.0,
+          "mean_trade_pnl": -89.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 1,
+          "net_pnl": -89.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 89.0,
+          "mean_trade_pnl": -89.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 3,
+          "account_complete": false
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -89.0,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -89.0,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      }
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1,
+      "variant": "S1",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 3,
+          "net_pnl": -77.6,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 77.6,
+          "mean_trade_pnl": -25.866666666666664,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 3,
+          "net_pnl": -94.7,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 94.7,
+          "mean_trade_pnl": -31.566666666666666,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 3,
+          "net_pnl": -105.9,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 105.9,
+          "mean_trade_pnl": -35.300000000000004,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 3,
+          "net_pnl": -85.70000000000002,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 85.70000000000002,
+          "mean_trade_pnl": -28.566666666666674,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261006",
+        "removed_net_pnl": -15.4,
+        "trades": 3,
+        "net_pnl": -105.9,
+        "profit_factor": 0.0,
+        "win_rate": 0.0,
+        "max_daily_realized_drawdown": 105.9,
+        "mean_trade_pnl": -35.300000000000004,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261002",
+        "removed_net_pnl": -43.7,
+        "trades": 3,
+        "net_pnl": -77.6,
+        "profit_factor": 0.0,
+        "win_rate": 0.0,
+        "max_daily_realized_drawdown": 77.6,
+        "mean_trade_pnl": -25.866666666666664,
+        "unscorable_or_open_exposure_days": 0,
+        "account_complete": true
+      }
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1,
+      "variant": "S2",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 0,
+          "account_complete": true
+        }
+      ],
+      "remove_best_trade": null,
+      "remove_worst_trade": null
+    },
+    {
+      "scenario": "DELAY_5_SECONDS",
+      "volume_multiplier": 1,
+      "variant": "S3",
+      "leave_one_day_out": [
+        {
+          "removed_day": "20261002",
+          "trades": 1,
+          "net_pnl": -89.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 89.0,
+          "mean_trade_pnl": -89.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261005",
+          "trades": 1,
+          "net_pnl": -89.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 89.0,
+          "mean_trade_pnl": -89.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261006",
+          "trades": 1,
+          "net_pnl": -89.0,
+          "profit_factor": 0.0,
+          "win_rate": 0.0,
+          "max_daily_realized_drawdown": 89.0,
+          "mean_trade_pnl": -89.0,
+          "unscorable_or_open_exposure_days": 2,
+          "account_complete": false
+        },
+        {
+          "removed_day": "20261008",
+          "trades": 0,
+          "net_pnl": 0,
+          "profit_factor": null,
+          "win_rate": null,
+          "max_daily_realized_drawdown": 0.0,
+          "mean_trade_pnl": null,
+          "unscorable_or_open_exposure_days": 3,
+          "account_complete": false
+        }
+      ],
+      "remove_best_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -89.0,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      },
+      "remove_worst_trade": {
+        "removed_date": "20261008",
+        "removed_net_pnl": -89.0,
+        "trades": 0,
+        "net_pnl": 0,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_daily_realized_drawdown": 0.0,
+        "mean_trade_pnl": null,
+        "unscorable_or_open_exposure_days": 3,
+        "account_complete": false
+      }
+    }
+  ],
+  "s0_legacy_parity": [
+    {
+      "date": "20261002",
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "original_full_fill_pnl": 2542.0,
+      "depth_capped_pnl": 2542.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    },
+    {
+      "date": "20261002",
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "original_full_fill_pnl": 2141.0,
+      "depth_capped_pnl": 2141.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    },
+    {
+      "date": "20261002",
+      "scenario": "DELAY_5_SECONDS",
+      "original_full_fill_pnl": 2341.0,
+      "depth_capped_pnl": 2341.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    },
+    {
+      "date": "20261005",
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "original_full_fill_pnl": -3585.0,
+      "depth_capped_pnl": -3589.0,
+      "matches": false,
+      "partial_entry": true,
+      "partial_exit": false
+    },
+    {
+      "date": "20261005",
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "original_full_fill_pnl": -3587.0,
+      "depth_capped_pnl": -3590.0,
+      "matches": false,
+      "partial_entry": true,
+      "partial_exit": false
+    },
+    {
+      "date": "20261005",
+      "scenario": "DELAY_5_SECONDS",
+      "original_full_fill_pnl": -3588.0,
+      "depth_capped_pnl": -3588.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    },
+    {
+      "date": "20261006",
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "original_full_fill_pnl": 2386.0,
+      "depth_capped_pnl": 2386.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    },
+    {
+      "date": "20261006",
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "original_full_fill_pnl": -3600.0,
+      "depth_capped_pnl": -3600.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    },
+    {
+      "date": "20261006",
+      "scenario": "DELAY_5_SECONDS",
+      "original_full_fill_pnl": 2786.0,
+      "depth_capped_pnl": 2786.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    },
+    {
+      "date": "20261008",
+      "scenario": "BASE_CURRENT_EXECUTION",
+      "original_full_fill_pnl": -3964.0,
+      "depth_capped_pnl": -3964.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    },
+    {
+      "date": "20261008",
+      "scenario": "PLUS_1_TICK_ADVERSE",
+      "original_full_fill_pnl": -3965.0,
+      "depth_capped_pnl": -3965.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    },
+    {
+      "date": "20261008",
+      "scenario": "DELAY_5_SECONDS",
+      "original_full_fill_pnl": -3964.0,
+      "depth_capped_pnl": -3964.0,
+      "matches": true,
+      "partial_entry": false,
+      "partial_exit": false
+    }
+  ],
+  "contract_hash": "18f3daef6fb1f0f487e565ac872ab7dece4d05252193d33b5278d54f1145aa3c",
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "limitations": [
+    "Displayed capacity is a proxy, not queue-position proof.",
+    "Volume multipliers 1000 and 1 are sensitivity assumptions, not verified SDK units.",
+    "Uncompleted exposure has null PnL; never treated as flat or zero.",
+    "S0 shares unchanged signal/exit policy; depth execution is reported separately from legacy full-fill proxy.",
+    "Partial-entry remainder is canceled in the model; no broker cancel latency evidence.",
+    "Daily realized drawdown is not intraday mark-to-market drawdown."
+  ]
+}

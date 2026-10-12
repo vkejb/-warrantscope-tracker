@@ -1,0 +1,254 @@
+[
+  {
+    "session_date": "20260922",
+    "included": false,
+    "selected_sources": [],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260922T013004.755449Z_05c15937",
+        "reasons": [
+          "SESSION_TIME_COVERAGE_INCOMPLETE",
+          "MARKET_CONTEXT_TICKS_MISSING",
+          "MARKET_CONTEXT_BOOKS_MISSING"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260922T020840.649408Z_17d23790",
+        "reasons": [
+          "STATUS_NOT_COMPLETE",
+          "SESSION_TIME_COVERAGE_INCOMPLETE",
+          "MARKET_CONTEXT_TICKS_MISSING",
+          "MARKET_CONTEXT_BOOKS_MISSING"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20260923",
+    "included": false,
+    "selected_sources": [],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260923T005607.514430Z_03a37394",
+        "reasons": [
+          "STATUS_NOT_COMPLETE",
+          "SESSION_TIME_COVERAGE_INCOMPLETE",
+          "MARKET_CONTEXT_TICKS_MISSING",
+          "MARKET_CONTEXT_BOOKS_MISSING"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260923T011925.463586Z_7c281f4d",
+        "reasons": [
+          "SESSION_TIME_COVERAGE_INCOMPLETE",
+          "CALLBACK_ERRORS",
+          "MARKET_CONTEXT_TICKS_MISSING",
+          "MARKET_CONTEXT_BOOKS_MISSING"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20260924",
+    "included": false,
+    "selected_sources": [],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260924T005009.425842Z_37d9c717",
+        "reasons": [
+          "MARKET_CONTEXT_TICKS_MISSING",
+          "MARKET_CONTEXT_BOOKS_MISSING"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20260929",
+    "included": true,
+    "selected_sources": [
+      "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260928T233201.400374Z_fe5a7b98"
+    ],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260929T005009.334944Z_d199b440",
+        "reasons": [
+          "CALLBACK_ERRORS"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20260930",
+    "included": false,
+    "selected_sources": [],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260930T004032.037372Z_cb3e4bcd",
+        "reasons": [
+          "STATUS_NOT_COMPLETE",
+          "SESSION_TIME_COVERAGE_INCOMPLETE"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260930T012715.505778Z_08bdc748",
+        "reasons": [
+          "SESSION_TIME_COVERAGE_INCOMPLETE"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260930T052651.423826Z_4e02437f",
+        "reasons": [
+          "SESSION_TIME_COVERAGE_INCOMPLETE"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260930T005009.221028Z_c408fefe",
+        "reasons": [
+          "CALLBACK_ERRORS"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20261001",
+    "included": true,
+    "selected_sources": [
+      "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261001T004849.174778Z_feb27b61"
+    ],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261001T005008.808100Z_cfa497f0",
+        "reasons": [
+          "CALLBACK_ERRORS"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20261002",
+    "included": true,
+    "selected_sources": [
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261002T005007.842444Z_e3c519f7"
+    ],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_incident_backups/20261002_3094_20261002T151056/quote_archive_20261002T003714.550501Z_b5a3b048",
+        "reasons": [
+          "STATUS_NOT_COMPLETE",
+          "SESSION_TIME_COVERAGE_INCOMPLETE"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261002T003714.550501Z_b5a3b048",
+        "reasons": [
+          "STATUS_NOT_COMPLETE",
+          "SESSION_TIME_COVERAGE_INCOMPLETE"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20261005",
+    "included": true,
+    "selected_sources": [
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261005T005009.197952Z_d84fb34a"
+    ],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261005T015549.951163Z_bc459688",
+        "reasons": [
+          "STATUS_NOT_COMPLETE",
+          "SESSION_TIME_COVERAGE_INCOMPLETE"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261005T022046.290028Z_5c601651",
+        "reasons": [
+          "RUN_MANIFEST_MISSING"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20261006",
+    "included": true,
+    "selected_sources": [
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261006T005009.128762Z_29b7d155"
+    ],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/incident_backups/20261006T005847.474832Z_cc1b87ef.prekill",
+        "reasons": [
+          "RUN_MANIFEST_MISSING"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/recovered_runs/20261006T005847.474832Z_cc1b87ef_recovered_partial",
+        "reasons": [
+          "STATUS_NOT_COMPLETE"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261006T005250.663168Z_159311b9",
+        "reasons": [
+          "STATUS_NOT_COMPLETE",
+          "SESSION_TIME_COVERAGE_INCOMPLETE"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261006T005847.474832Z_cc1b87ef",
+        "reasons": [
+          "RUN_MANIFEST_MISSING"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20261007",
+    "included": false,
+    "selected_sources": [],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261007T011700.172220Z_3fd60a01",
+        "reasons": [
+          "RUN_MANIFEST_MISSING"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20261008",
+    "included": true,
+    "selected_sources": [
+      "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261008T005008.806423Z_65c0a64f"
+    ],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261008T010053.261618Z_86cf39df",
+        "reasons": [
+          "STATUS_NOT_COMPLETE",
+          "SESSION_TIME_COVERAGE_INCOMPLETE"
+        ]
+      }
+    ]
+  },
+  {
+    "session_date": "20261012",
+    "included": false,
+    "selected_sources": [],
+    "excluded_sources": [
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261012T003339.400860Z_c4937566",
+        "reasons": [
+          "RUN_MANIFEST_MISSING"
+        ]
+      },
+      {
+        "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261012T005008.137481Z_b263fa22",
+        "reasons": [
+          "RUN_MANIFEST_MISSING"
+        ]
+      }
+    ]
+  }
+]

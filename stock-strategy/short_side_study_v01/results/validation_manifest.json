@@ -1,0 +1,49 @@
+{
+  "status": "VERIFIED_OFFLINE_RESEARCH",
+  "required_rows": 96,
+  "s0_reference_rows": 12,
+  "untouched_live_modules": [
+    "yuanta_live_runtime_v01",
+    "yuanta_broker_execution_v01"
+  ],
+  "contract_hash": "18f3daef6fb1f0f487e565ac872ab7dece4d05252193d33b5278d54f1145aa3c",
+  "source_hashes": {
+    "short_side_study_v01/execution.py": "b9a484a614a8b4bffd40d92bf4b297ca7059ac0006981c56ea81b03cef4fcc7a",
+    "short_side_study_v01/policy.py": "4ed929d898148947b1d36e025d692be2a3c021a1f41aa40157380b199116ed52",
+    "short_side_study_v01/__init__.py": "c80f4bc78ea157b7649aa962a88ab69fa13d472aee091641740bfac321604a16",
+    "short_side_study_v01/replay.py": "f54bb3e22cd7c5cd1b1942a7c7e4bca94ee2beae00ef31cdaae3d0b47c90ca05",
+    "short_side_study_v01/fetch_eligibility.py": "3ca8877c6ab7f6cc785fa72827a6cd76cb94043f9e027e1a7294cdcecbc33cc0",
+    "short_side_study_v01/statistics.py": "89873b8380f51965edb640249ef17eca8ee30b2cedeef9e0d5a6b69e669986bd",
+    "short_side_study_v01/verify.py": "00ebf73408bdd806a830ebeb9897da24531ef88ad9f4c5d38b4c44c32341b796",
+    "short_side_study_v01/main.py": "a62ad3bd54fdc332500ac2e9dd11f5c68f4329d07b7ebda4efe579c0598b58b1",
+    "short_side_study_v01/inventory.py": "81fdf0e7d0a0be3a286b94924f93e0382e14eb0339692b498163f6d97da5b158",
+    "short_side_study_v01/tests/test_replay.py": "8645f97fe5fadbff9178f0c0cde82187a8dddcacf777faac6f1239caeeae4a34",
+    "short_side_study_v01/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "short_side_study_v01/tests/test_execution.py": "327e15540948a19ffb30a6f3d63d0d09340b69761a9ece3d56714ce2dbb82b6d",
+    "short_side_study_v01/tests/test_policy.py": "f0a12b470ca6d4d195aa9faecf8e576847153011f1fe3798920d119f53c933c0",
+    "yuanta_live_runtime_v01/strategy.py": "77339858f1c2ff36401dd1174f3cb993d65c0e93574657a40e4fad7b045f6115",
+    "yuanta_intraday_shadow_v01/direction_follow_backtest.py": "7f7bb27be296f0b3a04cef83451f2d05749bc0eed6847993b3fa800946e1b294",
+    "yuanta_intraday_shadow_v01/live_parity_backtest.py": "d49c819249e506c8e2503472273f42e62c497333ff1a2e3d49944eafa842957e",
+    "paper_shadow_v01/runner.py": "3dc03ad923604bff28c01951083687584021ec11ccaf4bbd426d14aeb993c31b",
+    "entry_quality_edge_study_v01/analysis.py": "c9405e6a8b447d8bffb89c8d104eeff5dc777b02995c891d0c55ba8eca84274e"
+  },
+  "output_hashes": {
+    "summary.json": "a46b026a019e3f515da0f3a87f568aa61bb7e22a4caea96379bc75990a7d470e",
+    "qualified_signals.json": "61e09a46fe6c5f7efab87bcf6214bad5ef63489fb19f6c47c70f9bb265dd3188",
+    "report_zh-TW.txt": "970e0962935146fff86019729d3a3b729b999420f0413c39b065ebe30ab95274",
+    "eligibility_audit.json": "166134032db3366f916b935227ef347b80256c79e288d4f2ebe8557e973ea81c",
+    "tests.txt": "b8ff222528c0d15d2cbd9401935e5ee69702e9fd13f289a1cefa7aa82bed6af8",
+    "simultaneous_cases.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "daily_results.json": "6f91c15f8af16cc933903829fa31963a60f1426b7a9c5d31a5c252242fb8b7b1",
+    "s0_original_full_fill_reference.json": "a427d0970758e00dfa3a5df4a2079ab91b01179863a52f6b843a10eb5820a535",
+    "data_inventory.json": "96291bf1dfd86a36ac292a8ff55b603cc58afc1862f85507fa89e7779e405433",
+    "contract.json": "274dd30be6c3227e9260ae168338a3c24fb1a3c41cd398ca89f86f8a58b858dd"
+  },
+  "eligibility_source_hashes": {
+    "20261006_twse_eligibility.json": "c4b6fea4bb003f1672679ddb8ac07fe921c0d8f773ece98b0c0e9d79451c541a",
+    "20261002_twse_eligibility.json": "e2c01df9d279deb1fc134297ce3adf153a0eae5cc3d089c79e8b1f78106e6e7a",
+    "20261008_twse_eligibility.json": "6c23b8875db5bb0f6197cd6872660bdc0715e13790d9d53e6f8385cde0ad451c",
+    "20261005_twse_eligibility.json": "f3a2dfa7be6ae411cc959f36e330dc4a487b7dc1992ec17c19639a29e65d2302"
+  },
+  "conclusion": "INSUFFICIENT_DATA"
+}

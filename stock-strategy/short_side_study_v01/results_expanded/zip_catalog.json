@@ -1,0 +1,1527 @@
+[
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/deliverables/yuanta_broker_execution_v01_engineer_handoff_20260923_eb8ac1e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W01_clean_93c5e128a46a_5773e183b319.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W01_official_gap_patch_v01_through_20260908_c204c8b0c05c_48774779f0c1.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W02_clean_5317442e9d72_bf37d3f25813.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W02_official_gap_patch_v01_through_20260908_1f44b9f57e03_b05f609f42c6.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W03_clean_f5d40468d1a2_92f9f17139b2.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W03_official_gap_patch_v01_through_20260908_d3f223a1918f_617ef19ea8c5.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W04_clean_cbf1668736ea_bdeee4fa3fd7.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W04_official_gap_patch_v01_through_20260908_29a7ff81c262_550eebe9318d.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W05_clean_9c6f1db41d0e_5f866ca747e9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W05_official_gap_patch_v01_through_20260908_f60576993396_75a9e4dc3450.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W06_clean_caaf0b0da4c7_a7540b9254b8.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W06_official_gap_patch_v01_through_20260908_1387fa388a40_6e9700af4609.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W07_clean_0f23cf234242_eb2d737ce895.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W07_official_gap_patch_v01_through_20260908_7aaf3325ece2_91ac3a635478.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W09_clean_ca2126b9641e_0da1ce881da3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W09_official_gap_patch_v01_through_20260908_c24242f6dc83_82d8e843356b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W10_clean_0b60213844d0_cd4a6e746ff0.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W10_official_gap_patch_v01_through_20260908_32bb4eb47220_ba04e7956847.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W11_clean_811320a13f90_96bc1d5ad138.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W11_official_gap_patch_v01_through_20260908_6ba1ee3f7c62_03faf8113992.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W12_clean_6be1d22f9849_3a5e90757468.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W12_official_gap_patch_v01_through_20260908_f04c6635d0a4_1c172b7ebb7c.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W13_clean_67587953e1b0_cf9c4f41f790.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W13_official_gap_patch_v01_through_20260908_6dcfbdc91277_4562aefab0c9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W14_clean_48d61df4aaea_07611f31c007.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W14_official_gap_patch_v01_through_20260908_58452b6ad37c_cec2a36b59c0.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W15_clean_9bfd58244f10_a4741b6039d8.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W15_official_gap_patch_v01_through_20260908_b5d65d45d790_58449b3e70b3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W16_clean_c7fe18c84c7c_55fc930594c3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W16_official_gap_patch_v01_through_20260908_300e0464fddc_0fd26f5f9737.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W17_clean_8fd1ab43988e_6122d4d976f0.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W17_official_gap_patch_v01_through_20260908_548d090744cb_0a8713a7a29e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W18_clean_b48e7f45d134_368b237d8c0b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W18_official_gap_patch_v01_through_20260908_876fb6b30019_60a0667ec33b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W19_clean_4354ab6e9db3_30377334679b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W19_official_gap_patch_v01_through_20260908_499db80abc28_3c425e117b4a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W20_clean_3f6067b6e296_2b14eb4f3922.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W20_official_gap_patch_v01_through_20260908_a3fcc0030cc9_0dcf111c0e5d.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W21_clean_df567b0cead5_fc4f1e945043.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W21_official_gap_patch_v01_through_20260908_f2a0a50142d0_2232d80c8938.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W22_clean_88a791e8244d_ceb878cbf1b9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W22_official_gap_patch_v01_through_20260908_43daa1473b47_f3916c671563.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W22_official_gap_patch_v01_through_20260908_87ccf1e9aecc_f9c17cb731bc.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W22_official_gap_patch_v01_through_20260915_a58911ccc1cb_439f7366e992.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W23_clean_3e4e16b06566_f557a50ef18b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W23_official_gap_patch_v01_through_20260908_6df4a7b16c6e_bf06fbd0519e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W24_clean_2fa86c8ab8b8_1093814b9f48.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W24_official_gap_patch_v01_through_20260908_02f11cad917c_ec68238d6438.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W25_clean_da2cf2a126c1_02fef836c930.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W25_official_gap_patch_v01_through_20260908_c7b5738d2b49_c74d26740b29.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W26_clean_668dcc47b714_86a6ce416b6e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W26_official_gap_patch_v01_through_20260908_d9bd3d769b26_eec9013949c9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W27_clean_3e954954ee46_badcf01db9ac.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W27_official_gap_patch_v01_through_20260908_9801b056c051_861deeb3bb66.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W28_clean_477fabc82d9e_b5dd91b18904.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W28_official_gap_patch_v01_through_20260908_c950fd8210e7_1cbb5afaac37.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W29_clean_1b831a129a4d_e7087ec042af.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W29_official_gap_patch_v01_through_20260908_01b707e33832_45532d82ed0b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W30_clean_087d568aed30_92c44d975968.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W30_official_gap_patch_v01_through_20260908_157a499205be_23fbc3ccee88.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W31_clean_45993750fb46_cf337c2e5847.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W31_official_gap_patch_v01_through_20260908_10fb39157211_0f8e1ea93244.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W32_clean_2e6530d97187_b66bc5c44eab.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W32_official_gap_patch_v01_through_20260908_34dc7f8521c8_b0da074561d5.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W33_clean_0b19d0145072_0fa7139c277a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W33_official_gap_patch_v01_through_20260908_6da224aeabce_519fe5f18e6b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W34_clean_f6ac9ab37d97_bc52c34bd06e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W34_official_gap_patch_v01_through_20260908_2d4722f215b8_10f4cdefdb2a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W35_clean_5f1677810d09_e7e1489bca99.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W35_official_gap_patch_v01_through_20260908_53492a60c4c4_dedceda4d0e4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W36_official_through_20260904_3167c11b7c82_1786bc331ca9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W36_official_through_20260904_3167c11b7c82_37deb337e41f.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W36_official_through_20260904_9f1265c5e435_1786bc331ca9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260908_bba0ba86532c_cf58fc703cc0.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260908_ded8c803d07c_765c8ee71b41.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260908_ef43c4a27ce7_faab85f52bf4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260909_1094fe10a3aa_d18adbc34138.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260910_9cea9837e13c_f604d8ddd972.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260911_a2fcef53d96f_823c3ca277ad.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260915_c2e1687b3ecb_149daad70e56.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260916_7b2f63966ac5_a7935935e7d7.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260916_8d0e1c16e7b4_305efe83ab8e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260917_0376c51df0b0_c4fdd5ca6d84.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260917_87b27a9d1bd1_0be58544c404.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260918_62b9264ce042_ca53941426db.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260921_63843ce5969c_ead497494b62.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260921_708dd0332150_4a52b4cb1b11.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260922_67449cd8fea1_2303ae895de5.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260922_d8000cc3b55e_74309b14877d.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260923_314e295348a5_cd8975e1cad3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260923_4d3210b6d15e_edc9d7e611c8.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260924_53fb5d10e626_d8394e2fe7a1.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260924_6ed17a10f76f_122f8584d614.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W01/abb17095be2e28b05aa3dd5772dedcd2fa11b690b3e57e458a3d81146f9f2388.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W02/299d876a0dbbd3c0afc22f8cf50fc671e83ea175fc7046c9de2d8f1ed005cf63.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W03/999b2a8397b9f68fbcabb0d7f41ed1fd6e8eb10d238622719565f201755fb269.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W04/60427d9eba29c3e3e5fee574ca6461af54fe75dca07cb01c338e57901725d91e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W05/769656d3ad0bd722523d2bf23e879c1bf985e54d7e9f5828b5a3b399404814d4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W06/e7751c474bfea4660b803cd631d98eaf7325707daf4bc6c77036279f0318222d.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W07/3bf9c152f40385dc862be603d89b3067dff31fdb2108ce18ff432820f2b74e19.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W09/9d9e0578e218bd6c10d9b07b6beb7a0dfb762fd38b6e6025c0c9a64ca917f02e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W10/9547ddba598ee23a65af26365fa7c6a2941bac8b9be8e8218ec51a0be732b049.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W11/17e19be6de068d66d88ed1b00b97c1b5edc1452817bca92a8c57d066ba5f4da8.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W12/efe1cc76722794308c62c11f0bb2696bea8769ddd7646f3e5ea50b01404fa7e5.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W13/19f49bd2d0cbda32e56c35443b751c409fc13c24c38252a0c178af6602870445.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W14/0b148bbbd747eb0843f0a80d0985c35aea15e443abc5aef88f932226f3b45fb4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W15/17ff0ebf7854dadf93a8ca9a9bd7be10a267834e559657e5e123668a858851fd.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W16/a4e6c78f9f70ee59f2a6e8f5a8afaf2319195804a1455e232d287b2faabfeb7a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W17/c219fda85c4959f5ed252c01681c4be43b27d4a566c11fb67e8c728321358f62.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W18/3d56b508a615fece0c731cb40067590bde7fd942c73ea2851e93bfa359240ff2.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W19/74be3508fa0b3d65cda334c0974da4e5470fe010121b6c93a58db192f3fc0e63.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W20/4a1c7d6ffb004ab475f114a8e23cf3dab4c995433b2a5b53cb09b6d994008238.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W21/d9020e3251aeb6cf35eb6800b3b6eba88a08d673e4b42a5574621725051a9276.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W22/30a6322d32033cbdf8d94b56d03ddec227f8bf748a40d111629773003ba2493a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W23/a6be6a4dc47c8f5e341b546dc8fe56b6860348a5cd3fc16a4e414516871469d7.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W24/db5b6d86b506731abefd384d725c2c45596136e0178a1882442b26cdcd552cfb.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W25/6cd014f5865369c065aac4496026ebf05282b8e4f4061f4789f29419bf8551c4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W26/33eed4f86cdb4edc15ec79bb7c7b61f5e4ae36618b01bffacbb7af8ad8249b17.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W27/c65284546fec291e27c9888ffa3f4ce838980e990e50175a1d64f0669c9c0bab.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W28/bc673ffa7607e887ce01364baf745dcb32a52678e50eb62a251bc1ca0e2296db.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W29/28e20867e7db969539fd6541aca3c20ff2b7b00d99c69bbcf4f5d35d71250a99.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W30/eaa0ed4f725fb4bc2a0e1237d6bbdbc0f8bd00eeb44eb43ce58a8ca0102fa439.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W31/0ba4fddbac2be4c84397b9513bc2ca55c48ac33a9deb4ec51561ca020bd0c181.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W32/04d86d4ebbc12eae7a2b2e2f6359dfd11b50c6c41e0c657ce6484a79f269c7fa.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W33/a60cff874c7c9e7ac09acba65ed1916f3032bec88a1369cb2b8a8aa8ebd7f155.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W34/44434941ca4b3aa05ee3ce71b2b3ae99fbd9ada4eee82f2cea88d6d1fe5f331a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W35/381e118a48b17451fa24a1459383c900dcad7da1c989349b0f01d352bd7e0821.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W36/d6db143492a94734902f55cb632bf829563dad64e4d781de8ef836386a957fd3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/deliverables/yuanta_broker_execution_v01_engineer_handoff_20260923_eb8ac1e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_futures_2020.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_futures_2021.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_futures_2022.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_futures_2023.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_futures_2024.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_futures_2025.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_options_2020.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_options_2021.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_options_2022.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_options_2023.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_options_2024.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/derivatives_context_gate_study_v01/runtime/official_raw/taifex_options_2025.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W01_clean_93c5e128a46a_5773e183b319.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W01_official_gap_patch_v01_through_20260908_c204c8b0c05c_48774779f0c1.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W02_clean_5317442e9d72_bf37d3f25813.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W02_official_gap_patch_v01_through_20260908_1f44b9f57e03_b05f609f42c6.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W03_clean_f5d40468d1a2_92f9f17139b2.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W03_official_gap_patch_v01_through_20260908_d3f223a1918f_617ef19ea8c5.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W04_clean_cbf1668736ea_bdeee4fa3fd7.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W04_official_gap_patch_v01_through_20260908_29a7ff81c262_550eebe9318d.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W05_clean_9c6f1db41d0e_5f866ca747e9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W05_official_gap_patch_v01_through_20260908_f60576993396_75a9e4dc3450.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W06_clean_caaf0b0da4c7_a7540b9254b8.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W06_official_gap_patch_v01_through_20260908_1387fa388a40_6e9700af4609.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W07_clean_0f23cf234242_eb2d737ce895.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W07_official_gap_patch_v01_through_20260908_7aaf3325ece2_91ac3a635478.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W09_clean_ca2126b9641e_0da1ce881da3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W09_official_gap_patch_v01_through_20260908_c24242f6dc83_82d8e843356b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W10_clean_0b60213844d0_cd4a6e746ff0.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W10_official_gap_patch_v01_through_20260908_32bb4eb47220_ba04e7956847.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W11_clean_811320a13f90_96bc1d5ad138.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W11_official_gap_patch_v01_through_20260908_6ba1ee3f7c62_03faf8113992.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W12_clean_6be1d22f9849_3a5e90757468.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W12_official_gap_patch_v01_through_20260908_f04c6635d0a4_1c172b7ebb7c.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W13_clean_67587953e1b0_cf9c4f41f790.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W13_official_gap_patch_v01_through_20260908_6dcfbdc91277_4562aefab0c9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W14_clean_48d61df4aaea_07611f31c007.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W14_official_gap_patch_v01_through_20260908_58452b6ad37c_cec2a36b59c0.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W15_clean_9bfd58244f10_a4741b6039d8.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W15_official_gap_patch_v01_through_20260908_b5d65d45d790_58449b3e70b3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W16_clean_c7fe18c84c7c_55fc930594c3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W16_official_gap_patch_v01_through_20260908_300e0464fddc_0fd26f5f9737.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W17_clean_8fd1ab43988e_6122d4d976f0.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W17_official_gap_patch_v01_through_20260908_548d090744cb_0a8713a7a29e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W18_clean_b48e7f45d134_368b237d8c0b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W18_official_gap_patch_v01_through_20260908_876fb6b30019_60a0667ec33b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W19_clean_4354ab6e9db3_30377334679b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W19_official_gap_patch_v01_through_20260908_499db80abc28_3c425e117b4a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W20_clean_3f6067b6e296_2b14eb4f3922.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W20_official_gap_patch_v01_through_20260908_a3fcc0030cc9_0dcf111c0e5d.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W21_clean_df567b0cead5_fc4f1e945043.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W21_official_gap_patch_v01_through_20260908_f2a0a50142d0_2232d80c8938.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W22_clean_88a791e8244d_ceb878cbf1b9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W22_official_gap_patch_v01_through_20260908_43daa1473b47_f3916c671563.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W22_official_gap_patch_v01_through_20260908_87ccf1e9aecc_f9c17cb731bc.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W22_official_gap_patch_v01_through_20260915_a58911ccc1cb_439f7366e992.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W23_clean_3e4e16b06566_f557a50ef18b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W23_official_gap_patch_v01_through_20260908_6df4a7b16c6e_bf06fbd0519e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W24_clean_2fa86c8ab8b8_1093814b9f48.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W24_official_gap_patch_v01_through_20260908_02f11cad917c_ec68238d6438.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W25_clean_da2cf2a126c1_02fef836c930.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W25_official_gap_patch_v01_through_20260908_c7b5738d2b49_c74d26740b29.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W26_clean_668dcc47b714_86a6ce416b6e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W26_official_gap_patch_v01_through_20260908_d9bd3d769b26_eec9013949c9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W27_clean_3e954954ee46_badcf01db9ac.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W27_official_gap_patch_v01_through_20260908_9801b056c051_861deeb3bb66.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W28_clean_477fabc82d9e_b5dd91b18904.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W28_official_gap_patch_v01_through_20260908_c950fd8210e7_1cbb5afaac37.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W29_clean_1b831a129a4d_e7087ec042af.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W29_official_gap_patch_v01_through_20260908_01b707e33832_45532d82ed0b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W30_clean_087d568aed30_92c44d975968.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W30_official_gap_patch_v01_through_20260908_157a499205be_23fbc3ccee88.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W31_clean_45993750fb46_cf337c2e5847.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W31_official_gap_patch_v01_through_20260908_10fb39157211_0f8e1ea93244.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W32_clean_2e6530d97187_b66bc5c44eab.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W32_official_gap_patch_v01_through_20260908_34dc7f8521c8_b0da074561d5.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W33_clean_0b19d0145072_0fa7139c277a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W33_official_gap_patch_v01_through_20260908_6da224aeabce_519fe5f18e6b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W34_clean_f6ac9ab37d97_bc52c34bd06e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W34_official_gap_patch_v01_through_20260908_2d4722f215b8_10f4cdefdb2a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W35_clean_5f1677810d09_e7e1489bca99.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W35_official_gap_patch_v01_through_20260908_53492a60c4c4_dedceda4d0e4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W36_official_through_20260904_3167c11b7c82_1786bc331ca9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W36_official_through_20260904_3167c11b7c82_37deb337e41f.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W36_official_through_20260904_9f1265c5e435_1786bc331ca9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260908_bba0ba86532c_cf58fc703cc0.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260908_ded8c803d07c_765c8ee71b41.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260908_ef43c4a27ce7_faab85f52bf4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260909_1094fe10a3aa_d18adbc34138.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260910_9cea9837e13c_f604d8ddd972.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W37_official_through_20260911_a2fcef53d96f_823c3ca277ad.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260915_c2e1687b3ecb_149daad70e56.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260916_7b2f63966ac5_a7935935e7d7.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260916_8d0e1c16e7b4_305efe83ab8e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260917_0376c51df0b0_c4fdd5ca6d84.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260917_87b27a9d1bd1_0be58544c404.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W38_official_through_20260918_62b9264ce042_ca53941426db.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260921_63843ce5969c_ead497494b62.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260921_708dd0332150_4a52b4cb1b11.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260922_67449cd8fea1_2303ae895de5.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260922_d8000cc3b55e_74309b14877d.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260923_314e295348a5_cd8975e1cad3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260923_4d3210b6d15e_edc9d7e611c8.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260924_53fb5d10e626_d8394e2fe7a1.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W39_official_through_20260924_6ed17a10f76f_122f8584d614.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W40_official_through_20260929_d8c50e3374a8_a6f89c28f2f3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W40_official_through_20260930_21a065d82b02_8a9985e866be.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W40_official_through_20260930_afdf61eee37f_d01f0b9929e9.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W40_official_through_20261001_b028c503896b_eb0dbacd33f3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W40_official_through_20261001_b80ebe96ba9a_a9f954238699.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W40_official_through_20261002_20143c39de5b_5735d1842048.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W40_official_through_20261002_a5c12ee624e0_308ae5a49e73.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W41_official_through_20261005_3333586fbfac_70a7c826bd8b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W41_official_through_20261005_52b0da2f0526_10deef2c6d62.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W41_official_through_20261006_65a09dc9ee4c_2d09f69301eb.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W41_official_through_20261006_a59dfca48442_eab4f12ab534.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W41_official_through_20261007_200b8a6b8031_f136b2e292e6.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W41_official_through_20261007_bfb28ef3e649_287882543b3b.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W41_official_through_20261008_61b9c8494943_3a745818baf1.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/clean/weekly_2026_W41_official_through_20261008_e04379b9441a_290643239670.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W01/abb17095be2e28b05aa3dd5772dedcd2fa11b690b3e57e458a3d81146f9f2388.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W02/299d876a0dbbd3c0afc22f8cf50fc671e83ea175fc7046c9de2d8f1ed005cf63.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W03/999b2a8397b9f68fbcabb0d7f41ed1fd6e8eb10d238622719565f201755fb269.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W04/60427d9eba29c3e3e5fee574ca6461af54fe75dca07cb01c338e57901725d91e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W05/769656d3ad0bd722523d2bf23e879c1bf985e54d7e9f5828b5a3b399404814d4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W06/e7751c474bfea4660b803cd631d98eaf7325707daf4bc6c77036279f0318222d.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W07/3bf9c152f40385dc862be603d89b3067dff31fdb2108ce18ff432820f2b74e19.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W09/9d9e0578e218bd6c10d9b07b6beb7a0dfb762fd38b6e6025c0c9a64ca917f02e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W10/9547ddba598ee23a65af26365fa7c6a2941bac8b9be8e8218ec51a0be732b049.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W11/17e19be6de068d66d88ed1b00b97c1b5edc1452817bca92a8c57d066ba5f4da8.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W12/efe1cc76722794308c62c11f0bb2696bea8769ddd7646f3e5ea50b01404fa7e5.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W13/19f49bd2d0cbda32e56c35443b751c409fc13c24c38252a0c178af6602870445.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W14/0b148bbbd747eb0843f0a80d0985c35aea15e443abc5aef88f932226f3b45fb4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W15/17ff0ebf7854dadf93a8ca9a9bd7be10a267834e559657e5e123668a858851fd.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W16/a4e6c78f9f70ee59f2a6e8f5a8afaf2319195804a1455e232d287b2faabfeb7a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W17/c219fda85c4959f5ed252c01681c4be43b27d4a566c11fb67e8c728321358f62.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W18/3d56b508a615fece0c731cb40067590bde7fd942c73ea2851e93bfa359240ff2.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W19/74be3508fa0b3d65cda334c0974da4e5470fe010121b6c93a58db192f3fc0e63.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W20/4a1c7d6ffb004ab475f114a8e23cf3dab4c995433b2a5b53cb09b6d994008238.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W21/d9020e3251aeb6cf35eb6800b3b6eba88a08d673e4b42a5574621725051a9276.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W22/30a6322d32033cbdf8d94b56d03ddec227f8bf748a40d111629773003ba2493a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W23/a6be6a4dc47c8f5e341b546dc8fe56b6860348a5cd3fc16a4e414516871469d7.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W24/db5b6d86b506731abefd384d725c2c45596136e0178a1882442b26cdcd552cfb.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W25/6cd014f5865369c065aac4496026ebf05282b8e4f4061f4789f29419bf8551c4.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W26/33eed4f86cdb4edc15ec79bb7c7b61f5e4ae36618b01bffacbb7af8ad8249b17.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W27/c65284546fec291e27c9888ffa3f4ce838980e990e50175a1d64f0669c9c0bab.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W28/bc673ffa7607e887ce01364baf745dcb32a52678e50eb62a251bc1ca0e2296db.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W29/28e20867e7db969539fd6541aca3c20ff2b7b00d99c69bbcf4f5d35d71250a99.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W30/eaa0ed4f725fb4bc2a0e1237d6bbdbc0f8bd00eeb44eb43ce58a8ca0102fa439.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W31/0ba4fddbac2be4c84397b9513bc2ca55c48ac33a9deb4ec51561ca020bd0c181.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W32/04d86d4ebbc12eae7a2b2e2f6359dfd11b50c6c41e0c657ce6484a79f269c7fa.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W33/a60cff874c7c9e7ac09acba65ed1916f3032bec88a1369cb2b8a8aa8ebd7f155.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W34/44434941ca4b3aa05ee3ce71b2b3ae99fbd9ada4eee82f2cea88d6d1fe5f331a.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W35/381e118a48b17451fa24a1459383c900dcad7da1c989349b0f01d352bd7e0821.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/shadow_daily_runner/runtime/raw/release_2026_W36/d6db143492a94734902f55cb632bf829563dad64e4d781de8ef836386a957fd3.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W01.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W02.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W03.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W04.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/weekly_2026_W05.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2019.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2020.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2021.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2022.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2023.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2024.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/winner_coverage_taxonomy_v01/runtime/input/yearly_2025.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_trading_outsource_handoff_2026-09-23.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_update_2026-09-10_V1.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/WarrantScope_update_2026-09-11_V1.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/sleep-project-main/hardware/wristband/.venv-cad/lib/python3.12/site-packages/trimesh/resources/schema/gltf2.schema.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/sleep-project-main/hardware/wristband/.venv-cad/lib/python3.12/site-packages/trimesh/resources/templates/viewer.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/sleep-project-main/hardware/wristband/output/wristband_design_v01.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/warrantscope-warm-restart/deliverables/yuanta_broker_execution_v01_engineer_handoff_20260923_eb8ac1e.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  },
+  {
+    "path": "/Users/linyunyan/Downloads/yuanta_live_runtime_latest_20260924.zip",
+    "quote_archive_prefixes": [],
+    "status": "NO_TICK_ARCHIVE_NOT_INTRADAY_INPUT"
+  }
+]

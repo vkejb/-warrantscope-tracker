@@ -1,0 +1,206 @@
+WarrantScope SHORT side study V0.1
+結論：INSUFFICIENT_DATA
+SIGNAL_ONLY / ELIGIBILITY_UNPROVEN / NO_TRUE_OUT_OF_SAMPLE_SET
+完整資料日期：20260929, 20261001, 20261002, 20261005, 20261006, 20261008
+資料目錄共 29 個來源；完整且通過雜湊驗證的獨立日期 6 天。
+另掃描 305 個壓縮檔的目錄；沒有尚未處理的 tick archive。
+S0=原 LONG A；S1=無0050 gate 的 SHORT 診斷；S2=固定對稱 SHORT gate；S3=按時間先後共用一天一筆。
+SHORT gate：BEARISH RS<=0 / 1次；NEUTRAL RS<=-0.0025 / 2次；BULLISH RS<=-0.005 / 2次。
+固定原始 Top30、base thresholds、30秒決策、side-aware anti-chase、190000資金、費稅、-3500 hard stop、MFE_V1、13:20強平。
+五檔限制成交量，賣出以bid、買回以ask。用原有保守限價計成交價格，不以最佳價改善績效。
+舊版S0全量成交代理另存 s0_original_full_fill_reference.json；主表是同一代理加五檔容量限制。
+原始五檔量單位未在元大API文件明示：1000股/單位與1股/單位均只是敏感度假設。
+部分入場取消剩餘量為回測假設；未回補曝險保留null PnL，不能當成已平倉。
+net_pnl遇未平倉/無法評分日即為null；completed_subset_net_pnl僅為已完成交易的局部損益。
+勝率、PF、平均盈虧以已完成交易計；entered_trades另含已入場但未完成交易。
+max_daily_realized_drawdown為逐日已實現DD；max_quote_mark_account_drawdown另計盤中報價估值DD。
+MFE/MAE/giveback為可執行方向報價與既有費稅估值，不保證足量深度可實現全部估值。
+MFE＝持有期間峰值淨估值；MAE＝最低淨估值；giveback＝峰值淨估值減最終淨損益。MFE可為負，代表從未回到扣費後損益兩平。
+新五檔回呼不代表流動性自動補足；僅同價位可見量增加才補入可用量。
+
+主表（1000股/五檔量單位假設）：
+S0 / BASE_CURRENT_EXECUTION
+  SHORT base訊號boundary=0；合格SHORT boundary=0；回測進場=5；完成交易=5
+  net=-6,204.00；PF=0.44；勝率=40.00%
+  平均獲利=2,464.00；平均虧損=-3,710.67；已實現maxDD=6,204.00；盤中報價估值maxDD=8,984.00
+  平均MFE=1,193.40；平均MAE=-3,156.40；平均giveback=2,434.20；無法評分／曝險未完日=0
+S1 / BASE_CURRENT_EXECUTION
+  SHORT base訊號boundary=47；合格SHORT boundary=12；回測進場=5；完成交易=5
+  net=5,075.00；PF=2.11；勝率=60.00%
+  平均獲利=3,211.67；平均虧損=-2,280.00；已實現maxDD=4,560.00；盤中報價估值maxDD=7,567.00
+  平均MFE=2,706.20；平均MAE=-2,478.40；平均giveback=1,691.20；無法評分／曝險未完日=0
+S2 / BASE_CURRENT_EXECUTION
+  SHORT base訊號boundary=47；合格SHORT boundary=1；回測進場=1；完成交易=1
+  net=-3,613.00；PF=0.00；勝率=0.00%
+  平均獲利=—；平均虧損=-3,613.00；已實現maxDD=3,613.00；盤中報價估值maxDD=3,613.00
+  平均MFE=-160.00；平均MAE=-3,613.00；平均giveback=3,453.00；無法評分／曝險未完日=0
+S3 / BASE_CURRENT_EXECUTION
+  SHORT base訊號boundary=47；合格SHORT boundary=1；回測進場=6；完成交易=6
+  net=-9,817.00；PF=0.33；勝率=33.33%
+  平均獲利=2,464.00；平均虧損=-3,686.25；已實現maxDD=9,817.00；盤中報價估值maxDD=11,639.00
+  平均MFE=967.83；平均MAE=-3,232.50；平均giveback=2,604.00；無法評分／曝險未完日=0
+S0 / PLUS_1_TICK_ADVERSE
+  SHORT base訊號boundary=0；合格SHORT boundary=0；回測進場=5；完成交易=5
+  net=-12,595.00；PF=0.15；勝率=20.00%
+  平均獲利=2,141.00；平均虧損=-3,684.00；已實現maxDD=12,595.00；盤中報價估值maxDD=13,151.00
+  平均MFE=-483.40；平均MAE=-3,277.20；平均giveback=2,035.60；無法評分／曝險未完日=0
+S1 / PLUS_1_TICK_ADVERSE
+  SHORT base訊號boundary=47；合格SHORT boundary=12；回測進場=5；完成交易=5
+  net=1,090.00；PF=1.15；勝率=60.00%
+  平均獲利=2,827.67；平均虧損=-3,696.50；已實現maxDD=7,393.00；盤中報價估值maxDD=10,560.00
+  平均MFE=2,279.80；平均MAE=-2,984.60；平均giveback=2,061.80；無法評分／曝險未完日=0
+S2 / PLUS_1_TICK_ADVERSE
+  SHORT base訊號boundary=47；合格SHORT boundary=1；回測進場=1；完成交易=1
+  net=-3,613.00；PF=0.00；勝率=0.00%
+  平均獲利=—；平均虧損=-3,613.00；已實現maxDD=3,613.00；盤中報價估值maxDD=3,613.00
+  平均MFE=-461.00；平均MAE=-3,613.00；平均giveback=3,152.00；無法評分／曝險未完日=0
+S3 / PLUS_1_TICK_ADVERSE
+  SHORT base訊號boundary=47；合格SHORT boundary=1；回測進場=6；完成交易=6
+  net=-16,208.00；PF=0.12；勝率=16.67%
+  平均獲利=2,141.00；平均虧損=-3,669.80；已實現maxDD=16,208.00；盤中報價估值maxDD=16,208.00
+  平均MFE=-479.67；平均MAE=-3,333.17；平均giveback=2,221.67；無法評分／曝險未完日=0
+S0 / DELAY_5_SECONDS
+  SHORT base訊號boundary=0；合格SHORT boundary=0；回測進場=5；完成交易=5
+  net=-6,004.00；PF=0.46；勝率=40.00%
+  平均獲利=2,563.50；平均虧損=-3,710.33；已實現maxDD=6,004.00；盤中報價估值maxDD=8,983.00
+  平均MFE=1,013.60；平均MAE=-3,196.40；平均giveback=2,214.40；無法評分／曝險未完日=0
+S1 / DELAY_5_SECONDS
+  SHORT base訊號boundary=47；合格SHORT boundary=12；回測進場=5；完成交易=5
+  net=2,287.00；PF=1.31；勝率=60.00%
+  平均獲利=3,211.67；平均虧損=-3,674.00；已實現maxDD=7,348.00；盤中報價估值maxDD=10,365.00
+  平均MFE=2,569.00；平均MAE=-2,835.80；平均giveback=2,111.60；無法評分／曝險未完日=0
+S2 / DELAY_5_SECONDS
+  SHORT base訊號boundary=47；合格SHORT boundary=1；回測進場=1；完成交易=1
+  net=-3,613.00；PF=0.00；勝率=0.00%
+  平均獲利=—；平均虧損=-3,613.00；已實現maxDD=3,613.00；盤中報價估值maxDD=3,613.00
+  平均MFE=-160.00；平均MAE=-3,613.00；平均giveback=3,453.00；無法評分／曝險未完日=0
+S3 / DELAY_5_SECONDS
+  SHORT base訊號boundary=47；合格SHORT boundary=1；回測進場=6；完成交易=6
+  net=-9,617.00；PF=0.35；勝率=33.33%
+  平均獲利=2,563.50；平均虧損=-3,686.00；已實現maxDD=9,617.00；盤中報價估值maxDD=11,839.00
+  平均MFE=818.00；平均MAE=-3,265.83；平均giveback=2,420.83；無法評分／曝險未完日=0
+
+逐日納入／排除：
+20260922: 排除; MARKET_CONTEXT_BOOKS_MISSING, MARKET_CONTEXT_TICKS_MISSING, SESSION_TIME_COVERAGE_INCOMPLETE, STATUS_NOT_COMPLETE
+20260923: 排除; CALLBACK_ERRORS, MARKET_CONTEXT_BOOKS_MISSING, MARKET_CONTEXT_TICKS_MISSING, SESSION_TIME_COVERAGE_INCOMPLETE, STATUS_NOT_COMPLETE
+20260924: 排除; MARKET_CONTEXT_BOOKS_MISSING, MARKET_CONTEXT_TICKS_MISSING
+20260929: 納入; CALLBACK_ERRORS
+  使用來源：/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260928T233201.400374Z_fe5a7b98
+20260930: 排除; CALLBACK_ERRORS, SESSION_TIME_COVERAGE_INCOMPLETE, STATUS_NOT_COMPLETE
+20261001: 納入; CALLBACK_ERRORS
+  使用來源：/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261001T004849.174778Z_feb27b61
+20261002: 納入; SESSION_TIME_COVERAGE_INCOMPLETE, STATUS_NOT_COMPLETE
+  使用來源：/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261002T005007.842444Z_e3c519f7
+20261005: 納入; RUN_MANIFEST_MISSING, SESSION_TIME_COVERAGE_INCOMPLETE, STATUS_NOT_COMPLETE
+  使用來源：/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261005T005009.197952Z_d84fb34a
+20261006: 納入; RUN_MANIFEST_MISSING, SESSION_TIME_COVERAGE_INCOMPLETE, STATUS_NOT_COMPLETE
+  使用來源：/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261006T005009.128762Z_29b7d155
+20261007: 排除; RUN_MANIFEST_MISSING
+20261008: 納入; SESSION_TIME_COVERAGE_INCOMPLETE, STATUS_NOT_COMPLETE
+  使用來源：/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261008T005008.806423Z_65c0a64f
+20261012: 排除; RUN_MANIFEST_MISSING
+
+每日 base 損益、MFE／MAE／giveback（1000股單位假設）：
+{"date": "20260929", "variant": "S0", "side": "LONG", "stock_id": "3605", "status": "SCORED_TRADE", "entry_quantity": 1000, "residual_shares": 0, "net_pnl": -3579.0, "mfe_net_pnl": -1583.0, "mae_net_pnl": -3579.0, "giveback_net_pnl": 1996.0}
+{"date": "20260929", "variant": "S1", "side": null, "stock_id": null, "status": "NO_TRADE", "entry_quantity": null, "residual_shares": 0, "net_pnl": 0.0, "mfe_net_pnl": null, "mae_net_pnl": null, "giveback_net_pnl": null}
+{"date": "20260929", "variant": "S2", "side": null, "stock_id": null, "status": "NO_TRADE", "entry_quantity": null, "residual_shares": 0, "net_pnl": 0.0, "mfe_net_pnl": null, "mae_net_pnl": null, "giveback_net_pnl": null}
+{"date": "20260929", "variant": "S3", "side": "LONG", "stock_id": "3605", "status": "SCORED_TRADE", "entry_quantity": 1000, "residual_shares": 0, "net_pnl": -3579.0, "mfe_net_pnl": -1583.0, "mae_net_pnl": -3579.0, "giveback_net_pnl": 1996.0}
+{"date": "20261001", "variant": "S0", "side": null, "stock_id": null, "status": "NO_TRADE", "entry_quantity": null, "residual_shares": 0, "net_pnl": 0.0, "mfe_net_pnl": null, "mae_net_pnl": null, "giveback_net_pnl": null}
+{"date": "20261001", "variant": "S1", "side": "SHORT", "stock_id": "4956", "status": "SCORED_TRADE", "entry_quantity": 3000, "residual_shares": 0, "net_pnl": -3614.0, "mfe_net_pnl": 140.0, "mae_net_pnl": -3614.0, "giveback_net_pnl": 3754.0}
+{"date": "20261001", "variant": "S2", "side": "SHORT", "stock_id": "4956", "status": "SCORED_TRADE", "entry_quantity": 3000, "residual_shares": 0, "net_pnl": -3613.0, "mfe_net_pnl": -160.0, "mae_net_pnl": -3613.0, "giveback_net_pnl": 3453.0}
+{"date": "20261001", "variant": "S3", "side": "SHORT", "stock_id": "4956", "status": "SCORED_TRADE", "entry_quantity": 3000, "residual_shares": 0, "net_pnl": -3613.0, "mfe_net_pnl": -160.0, "mae_net_pnl": -3613.0, "giveback_net_pnl": 3453.0}
+{"date": "20261002", "variant": "S0", "side": "LONG", "stock_id": "3094", "status": "SCORED_TRADE", "entry_quantity": 2000, "residual_shares": 0, "net_pnl": 2542.0, "mfe_net_pnl": 4537.0, "mae_net_pnl": -1250.0, "giveback_net_pnl": 1995.0}
+{"date": "20261002", "variant": "S1", "side": "SHORT", "stock_id": "2340", "status": "SCORED_TRADE", "entry_quantity": 1000, "residual_shares": 0, "net_pnl": -946.0, "mfe_net_pnl": -46.0, "mae_net_pnl": -2548.0, "giveback_net_pnl": 900.0}
+{"date": "20261002", "variant": "S2", "side": null, "stock_id": null, "status": "NO_TRADE", "entry_quantity": null, "residual_shares": 0, "net_pnl": 0.0, "mfe_net_pnl": null, "mae_net_pnl": null, "giveback_net_pnl": null}
+{"date": "20261002", "variant": "S3", "side": "LONG", "stock_id": "3094", "status": "SCORED_TRADE", "entry_quantity": 2000, "residual_shares": 0, "net_pnl": 2542.0, "mfe_net_pnl": 4537.0, "mae_net_pnl": -1250.0, "giveback_net_pnl": 1995.0}
+{"date": "20261005", "variant": "S0", "side": "LONG", "stock_id": "6456", "status": "SCORED_TRADE", "entry_quantity": 1000, "residual_shares": 0, "net_pnl": -3589.0, "mfe_net_pnl": 102.0, "mae_net_pnl": -3589.0, "giveback_net_pnl": 3691.0}
+{"date": "20261005", "variant": "S1", "side": "SHORT", "stock_id": "6226", "status": "SCORED_TRADE", "entry_quantity": 3000, "residual_shares": 0, "net_pnl": 4790.0, "mfe_net_pnl": 7192.0, "mae_net_pnl": -2867.0, "giveback_net_pnl": 2402.0}
+{"date": "20261005", "variant": "S2", "side": null, "stock_id": null, "status": "NO_TRADE", "entry_quantity": null, "residual_shares": 0, "net_pnl": 0.0, "mfe_net_pnl": null, "mae_net_pnl": null, "giveback_net_pnl": null}
+{"date": "20261005", "variant": "S3", "side": "LONG", "stock_id": "6456", "status": "SCORED_TRADE", "entry_quantity": 1000, "residual_shares": 0, "net_pnl": -3589.0, "mfe_net_pnl": 102.0, "mae_net_pnl": -3589.0, "giveback_net_pnl": 3691.0}
+{"date": "20261006", "variant": "S0", "side": "LONG", "stock_id": "2340", "status": "SCORED_TRADE", "entry_quantity": 4000, "residual_shares": 0, "net_pnl": 2386.0, "mfe_net_pnl": 4381.0, "mae_net_pnl": -3400.0, "giveback_net_pnl": 1995.0}
+{"date": "20261006", "variant": "S1", "side": "SHORT", "stock_id": "2305", "status": "SCORED_TRADE", "entry_quantity": 3000, "residual_shares": 0, "net_pnl": 3025.0, "mfe_net_pnl": 3625.0, "mae_net_pnl": -1179.0, "giveback_net_pnl": 600.0}
+{"date": "20261006", "variant": "S2", "side": null, "stock_id": null, "status": "NO_TRADE", "entry_quantity": null, "residual_shares": 0, "net_pnl": 0.0, "mfe_net_pnl": null, "mae_net_pnl": null, "giveback_net_pnl": null}
+{"date": "20261006", "variant": "S3", "side": "LONG", "stock_id": "2340", "status": "SCORED_TRADE", "entry_quantity": 4000, "residual_shares": 0, "net_pnl": 2386.0, "mfe_net_pnl": 4381.0, "mae_net_pnl": -3400.0, "giveback_net_pnl": 1995.0}
+{"date": "20261008", "variant": "S0", "side": "LONG", "stock_id": "6207", "status": "SCORED_TRADE", "entry_quantity": 1000, "residual_shares": 0, "net_pnl": -3964.0, "mfe_net_pnl": -1470.0, "mae_net_pnl": -3964.0, "giveback_net_pnl": 2494.0}
+{"date": "20261008", "variant": "S1", "side": "SHORT", "stock_id": "6226", "status": "SCORED_TRADE", "entry_quantity": 4000, "residual_shares": 0, "net_pnl": 1820.0, "mfe_net_pnl": 2620.0, "mae_net_pnl": -2184.0, "giveback_net_pnl": 800.0}
+{"date": "20261008", "variant": "S2", "side": null, "stock_id": null, "status": "NO_TRADE", "entry_quantity": null, "residual_shares": 0, "net_pnl": 0.0, "mfe_net_pnl": null, "mae_net_pnl": null, "giveback_net_pnl": null}
+{"date": "20261008", "variant": "S3", "side": "LONG", "stock_id": "6207", "status": "SCORED_TRADE", "entry_quantity": 1000, "residual_shares": 0, "net_pnl": -3964.0, "mfe_net_pnl": -1470.0, "mae_net_pnl": -3964.0, "giveback_net_pnl": 2494.0}
+
+SHORT訊號數（每檔每個30秒boundary算一個；同一持續訊號可重複計數）：
+{"date": "20260929", "variant": "S0", "raw_short_boundaries": 0, "raw_short_distinct_symbols": 0, "approved_short_boundaries": 0}
+{"date": "20260929", "variant": "S1", "raw_short_boundaries": 0, "raw_short_distinct_symbols": 0, "approved_short_boundaries": 0}
+{"date": "20260929", "variant": "S2", "raw_short_boundaries": 0, "raw_short_distinct_symbols": 0, "approved_short_boundaries": 0}
+{"date": "20260929", "variant": "S3", "raw_short_boundaries": 0, "raw_short_distinct_symbols": 0, "approved_short_boundaries": 0}
+{"date": "20261001", "variant": "S0", "raw_short_boundaries": 0, "raw_short_distinct_symbols": 0, "approved_short_boundaries": 0}
+{"date": "20261001", "variant": "S1", "raw_short_boundaries": 6, "raw_short_distinct_symbols": 3, "approved_short_boundaries": 2}
+{"date": "20261001", "variant": "S2", "raw_short_boundaries": 6, "raw_short_distinct_symbols": 3, "approved_short_boundaries": 1}
+{"date": "20261001", "variant": "S3", "raw_short_boundaries": 6, "raw_short_distinct_symbols": 3, "approved_short_boundaries": 1}
+{"date": "20261002", "variant": "S0", "raw_short_boundaries": 0, "raw_short_distinct_symbols": 0, "approved_short_boundaries": 0}
+{"date": "20261002", "variant": "S1", "raw_short_boundaries": 7, "raw_short_distinct_symbols": 3, "approved_short_boundaries": 5}
+{"date": "20261002", "variant": "S2", "raw_short_boundaries": 7, "raw_short_distinct_symbols": 3, "approved_short_boundaries": 0}
+{"date": "20261002", "variant": "S3", "raw_short_boundaries": 7, "raw_short_distinct_symbols": 3, "approved_short_boundaries": 0}
+{"date": "20261005", "variant": "S0", "raw_short_boundaries": 0, "raw_short_distinct_symbols": 0, "approved_short_boundaries": 0}
+{"date": "20261005", "variant": "S1", "raw_short_boundaries": 13, "raw_short_distinct_symbols": 5, "approved_short_boundaries": 1}
+{"date": "20261005", "variant": "S2", "raw_short_boundaries": 13, "raw_short_distinct_symbols": 5, "approved_short_boundaries": 0}
+{"date": "20261005", "variant": "S3", "raw_short_boundaries": 13, "raw_short_distinct_symbols": 5, "approved_short_boundaries": 0}
+{"date": "20261006", "variant": "S0", "raw_short_boundaries": 0, "raw_short_distinct_symbols": 0, "approved_short_boundaries": 0}
+{"date": "20261006", "variant": "S1", "raw_short_boundaries": 16, "raw_short_distinct_symbols": 5, "approved_short_boundaries": 1}
+{"date": "20261006", "variant": "S2", "raw_short_boundaries": 16, "raw_short_distinct_symbols": 5, "approved_short_boundaries": 0}
+{"date": "20261006", "variant": "S3", "raw_short_boundaries": 16, "raw_short_distinct_symbols": 5, "approved_short_boundaries": 0}
+{"date": "20261008", "variant": "S0", "raw_short_boundaries": 0, "raw_short_distinct_symbols": 0, "approved_short_boundaries": 0}
+{"date": "20261008", "variant": "S1", "raw_short_boundaries": 5, "raw_short_distinct_symbols": 3, "approved_short_boundaries": 3}
+{"date": "20261008", "variant": "S2", "raw_short_boundaries": 5, "raw_short_distinct_symbols": 3, "approved_short_boundaries": 0}
+{"date": "20261008", "variant": "S3", "raw_short_boundaries": 5, "raw_short_distinct_symbols": 3, "approved_short_boundaries": 0}
+
+補充性與交易品質：
+{"scenario": "BASE_CURRENT_EXECUTION", "volume_multiplier": 1000, "daily_pnl_correlation": -0.16496858712619503, "diagnostic_s0_s1_daily_pnl_correlation": -0.3112107066604128, "diagnostic_long_no_trade_s1_short_trade": [{"date": "20261001", "short_pnl": -3614.0, "stock_id": "4956", "status": "SCORED_TRADE"}], "diagnostic_long_loss_days_s1": [{"date": "20260929", "long_pnl": -3579.0, "s1_short_pnl": 0.0, "s1_short_signal_count": 0}, {"date": "20261005", "long_pnl": -3589.0, "s1_short_pnl": 4790.0, "s1_short_signal_count": 1}, {"date": "20261008", "long_pnl": -3964.0, "s1_short_pnl": 1820.0, "s1_short_signal_count": 3}], "long_no_trade_short_trade": [{"date": "20261001", "short_pnl": -3613.0, "stock_id": "4956"}], "long_loss_days_short_qualified": [{"date": "20260929", "long_pnl": -3579.0, "qualified_short_count": 0, "short_pnl": 0.0}, {"date": "20261005", "long_pnl": -3589.0, "qualified_short_count": 0, "short_pnl": 0.0}, {"date": "20261008", "long_pnl": -3964.0, "qualified_short_count": 0, "short_pnl": 0.0}], "combined_contribution": {"LONG": {"trades": 5, "entered_trades": 5, "net_pnl": -6204.0, "completed_subset_net_pnl": -6204.0, "profit_factor": 0.4426877470355731, "win_rate": 0.4, "max_daily_realized_drawdown": 6204.0, "mean_trade_pnl": -1240.8, "max_quote_mark_account_drawdown": 8984.0, "avg_winner": 2464.0, "avg_loser": -3710.6666666666665, "mean_mfe_net_pnl": 1193.4, "mean_mae_net_pnl": -3156.4, "mean_giveback_net_pnl": 2434.2, "unscorable_or_open_exposure_days": 0, "account_complete": true}, "SHORT": {"trades": 1, "entered_trades": 1, "net_pnl": -3613.0, "completed_subset_net_pnl": -3613.0, "profit_factor": 0.0, "win_rate": 0.0, "max_daily_realized_drawdown": 3613.0, "mean_trade_pnl": -3613.0, "max_quote_mark_account_drawdown": 3613.0, "avg_winner": null, "avg_loser": -3613.0, "mean_mfe_net_pnl": -160.0, "mean_mae_net_pnl": -3613.0, "mean_giveback_net_pnl": 3453.0, "unscorable_or_open_exposure_days": 0, "account_complete": true}}, "quality_change": {"long_mean_trade_pnl": -1240.8, "combined_mean_trade_pnl": -1636.1666666666667, "long_trades": 5, "combined_trades": 6, "additional_entered_trades": 1, "net_pnl_increment": -3613.0}}
+{"scenario": "PLUS_1_TICK_ADVERSE", "volume_multiplier": 1000, "daily_pnl_correlation": -0.4031286831007136, "diagnostic_s0_s1_daily_pnl_correlation": -0.858110174371541, "diagnostic_long_no_trade_s1_short_trade": [{"date": "20261001", "short_pnl": -3614.0, "stock_id": "4956", "status": "SCORED_TRADE"}], "diagnostic_long_loss_days_s1": [{"date": "20260929", "long_pnl": -3581.0, "s1_short_pnl": 0.0, "s1_short_signal_count": 0}, {"date": "20261005", "long_pnl": -3590.0, "s1_short_pnl": 4640.0, "s1_short_signal_count": 1}, {"date": "20261006", "long_pnl": -3600.0, "s1_short_pnl": 2424.0, "s1_short_signal_count": 1}, {"date": "20261008", "long_pnl": -3965.0, "s1_short_pnl": 1419.0, "s1_short_signal_count": 3}], "long_no_trade_short_trade": [{"date": "20261001", "short_pnl": -3613.0, "stock_id": "4956"}], "long_loss_days_short_qualified": [{"date": "20260929", "long_pnl": -3581.0, "qualified_short_count": 0, "short_pnl": 0.0}, {"date": "20261005", "long_pnl": -3590.0, "qualified_short_count": 0, "short_pnl": 0.0}, {"date": "20261006", "long_pnl": -3600.0, "qualified_short_count": 0, "short_pnl": 0.0}, {"date": "20261008", "long_pnl": -3965.0, "qualified_short_count": 0, "short_pnl": 0.0}], "combined_contribution": {"LONG": {"trades": 5, "entered_trades": 5, "net_pnl": -12595.0, "completed_subset_net_pnl": -12595.0, "profit_factor": 0.14529044516829534, "win_rate": 0.2, "max_daily_realized_drawdown": 12595.0, "mean_trade_pnl": -2519.0, "max_quote_mark_account_drawdown": 13151.0, "avg_winner": 2141.0, "avg_loser": -3684.0, "mean_mfe_net_pnl": -483.4, "mean_mae_net_pnl": -3277.2, "mean_giveback_net_pnl": 2035.6, "unscorable_or_open_exposure_days": 0, "account_complete": true}, "SHORT": {"trades": 1, "entered_trades": 1, "net_pnl": -3613.0, "completed_subset_net_pnl": -3613.0, "profit_factor": 0.0, "win_rate": 0.0, "max_daily_realized_drawdown": 3613.0, "mean_trade_pnl": -3613.0, "max_quote_mark_account_drawdown": 3613.0, "avg_winner": null, "avg_loser": -3613.0, "mean_mfe_net_pnl": -461.0, "mean_mae_net_pnl": -3613.0, "mean_giveback_net_pnl": 3152.0, "unscorable_or_open_exposure_days": 0, "account_complete": true}}, "quality_change": {"long_mean_trade_pnl": -2519.0, "combined_mean_trade_pnl": -2701.3333333333335, "long_trades": 5, "combined_trades": 6, "additional_entered_trades": 1, "net_pnl_increment": -3613.0}}
+{"scenario": "DELAY_5_SECONDS", "volume_multiplier": 1000, "daily_pnl_correlation": -0.15719051425580255, "diagnostic_s0_s1_daily_pnl_correlation": -0.4161292375438761, "diagnostic_long_no_trade_s1_short_trade": [{"date": "20261001", "short_pnl": -3463.0, "stock_id": "4956", "status": "SCORED_TRADE"}], "diagnostic_long_loss_days_s1": [{"date": "20260929", "long_pnl": -3579.0, "s1_short_pnl": 0.0, "s1_short_signal_count": 0}, {"date": "20261005", "long_pnl": -3588.0, "s1_short_pnl": 4790.0, "s1_short_signal_count": 1}, {"date": "20261008", "long_pnl": -3964.0, "s1_short_pnl": 1820.0, "s1_short_signal_count": 3}], "long_no_trade_short_trade": [{"date": "20261001", "short_pnl": -3613.0, "stock_id": "4956"}], "long_loss_days_short_qualified": [{"date": "20260929", "long_pnl": -3579.0, "qualified_short_count": 0, "short_pnl": 0.0}, {"date": "20261005", "long_pnl": -3588.0, "qualified_short_count": 0, "short_pnl": 0.0}, {"date": "20261008", "long_pnl": -3964.0, "qualified_short_count": 0, "short_pnl": 0.0}], "combined_contribution": {"LONG": {"trades": 5, "entered_trades": 5, "net_pnl": -6004.0, "completed_subset_net_pnl": -6004.0, "profit_factor": 0.4606055161261342, "win_rate": 0.4, "max_daily_realized_drawdown": 6004.0, "mean_trade_pnl": -1200.8, "max_quote_mark_account_drawdown": 8983.0, "avg_winner": 2563.5, "avg_loser": -3710.3333333333335, "mean_mfe_net_pnl": 1013.6, "mean_mae_net_pnl": -3196.4, "mean_giveback_net_pnl": 2214.4, "unscorable_or_open_exposure_days": 0, "account_complete": true}, "SHORT": {"trades": 1, "entered_trades": 1, "net_pnl": -3613.0, "completed_subset_net_pnl": -3613.0, "profit_factor": 0.0, "win_rate": 0.0, "max_daily_realized_drawdown": 3613.0, "mean_trade_pnl": -3613.0, "max_quote_mark_account_drawdown": 3613.0, "avg_winner": null, "avg_loser": -3613.0, "mean_mfe_net_pnl": -160.0, "mean_mae_net_pnl": -3613.0, "mean_giveback_net_pnl": 3453.0, "unscorable_or_open_exposure_days": 0, "account_complete": true}}, "quality_change": {"long_mean_trade_pnl": -1200.8, "combined_mean_trade_pnl": -1602.8333333333333, "long_trades": 5, "combined_trades": 6, "additional_entered_trades": 1, "net_pnl_increment": -3613.0}}
+
+Leave-one-day-out、移除最佳／最差交易（不重新選股或調參）：
+S0 / BASE_CURRENT_EXECUTION
+  移除20260929→net -2,625.00；移除20261001→net -6,204.00；移除20261002→net -8,746.00；移除20261005→net -2,615.00；移除20261006→net -8,590.00；移除20261008→net -2,240.00
+  移除最佳交易→-8,746.00；移除最差交易→-2,240.00
+S1 / BASE_CURRENT_EXECUTION
+  移除20260929→net 5,075.00；移除20261001→net 8,689.00；移除20261002→net 6,021.00；移除20261005→net 285.00；移除20261006→net 2,050.00；移除20261008→net 3,255.00
+  移除最佳交易→285.00；移除最差交易→8,689.00
+S2 / BASE_CURRENT_EXECUTION
+  移除20260929→net -3,613.00；移除20261001→net 0.00；移除20261002→net -3,613.00；移除20261005→net -3,613.00；移除20261006→net -3,613.00；移除20261008→net -3,613.00
+  移除最佳交易→0.00；移除最差交易→0.00
+S3 / BASE_CURRENT_EXECUTION
+  移除20260929→net -6,238.00；移除20261001→net -6,204.00；移除20261002→net -12,359.00；移除20261005→net -6,228.00；移除20261006→net -12,203.00；移除20261008→net -5,853.00
+  移除最佳交易→-12,359.00；移除最差交易→-5,853.00
+S0 / PLUS_1_TICK_ADVERSE
+  移除20260929→net -9,014.00；移除20261001→net -12,595.00；移除20261002→net -14,736.00；移除20261005→net -9,005.00；移除20261006→net -8,995.00；移除20261008→net -8,630.00
+  移除最佳交易→-14,736.00；移除最差交易→-8,630.00
+S1 / PLUS_1_TICK_ADVERSE
+  移除20260929→net 1,090.00；移除20261001→net 4,704.00；移除20261002→net 4,869.00；移除20261005→net -3,550.00；移除20261006→net -1,334.00；移除20261008→net -329.00
+  移除最佳交易→-3,550.00；移除最差交易→4,869.00
+S2 / PLUS_1_TICK_ADVERSE
+  移除20260929→net -3,613.00；移除20261001→net 0.00；移除20261002→net -3,613.00；移除20261005→net -3,613.00；移除20261006→net -3,613.00；移除20261008→net -3,613.00
+  移除最佳交易→0.00；移除最差交易→0.00
+S3 / PLUS_1_TICK_ADVERSE
+  移除20260929→net -12,627.00；移除20261001→net -12,595.00；移除20261002→net -18,349.00；移除20261005→net -12,618.00；移除20261006→net -12,608.00；移除20261008→net -12,243.00
+  移除最佳交易→-18,349.00；移除最差交易→-12,243.00
+S0 / DELAY_5_SECONDS
+  移除20260929→net -2,425.00；移除20261001→net -6,004.00；移除20261002→net -8,345.00；移除20261005→net -2,416.00；移除20261006→net -8,790.00；移除20261008→net -2,040.00
+  移除最佳交易→-8,790.00；移除最差交易→-2,040.00
+S1 / DELAY_5_SECONDS
+  移除20260929→net 2,287.00；移除20261001→net 5,750.00；移除20261002→net 6,172.00；移除20261005→net -2,503.00；移除20261006→net -738.00；移除20261008→net 467.00
+  移除最佳交易→-2,503.00；移除最差交易→6,172.00
+S2 / DELAY_5_SECONDS
+  移除20260929→net -3,613.00；移除20261001→net 0.00；移除20261002→net -3,613.00；移除20261005→net -3,613.00；移除20261006→net -3,613.00；移除20261008→net -3,613.00
+  移除最佳交易→0.00；移除最差交易→0.00
+S3 / DELAY_5_SECONDS
+  移除20260929→net -6,038.00；移除20261001→net -6,004.00；移除20261002→net -11,958.00；移除20261005→net -6,029.00；移除20261006→net -12,403.00；移除20261008→net -5,653.00
+  移除最佳交易→-12,403.00；移除最差交易→-5,653.00
+
+同一決策點雙方向同時合格案例數：0
+歷史TWSE先賣後買資格已快取並套用；TPEX與券商帳戶資格尚未證實。
+資料屬探索樣本；即使日後SUPPORTED也只准prospective shadow。
+本研究無券商登入、無送單、未修改LIVE、未push、未merge、未部署。
+
+官方資料參考：
+TWSE歷史當沖標的與暫停先賣後買註記：https://www.twse.com.tw/exchangeReport/TWTB4U?date=20261002&response=json
+元大五檔API文件僅列BuyVol/SellVol型別與買賣量，沒有在該欄位明示股數轉換：
+https://www.yuanta.com.tw/file-repository/content/sparkapi_docs/行情/最佳五檔行情訂閱/index.html

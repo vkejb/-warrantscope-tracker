@@ -1,0 +1,205 @@
+[
+  {
+    "run_id": "20260922T013004.755449Z_05c15937",
+    "eligible": false,
+    "reasons": [
+      "SESSION_TIME_COVERAGE_INCOMPLETE",
+      "MARKET_CONTEXT_TICKS_MISSING",
+      "MARKET_CONTEXT_BOOKS_MISSING"
+    ],
+    "session_date": "20260922",
+    "source_manifest_hash": "756710447f938a47818673e391c7506e1d7b1c28b9aaa8bf1ce5fff10f3cd46e",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20260922T020840.649408Z_17d23790",
+    "eligible": false,
+    "reasons": [
+      "STATUS_NOT_COMPLETE",
+      "SESSION_TIME_COVERAGE_INCOMPLETE",
+      "MARKET_CONTEXT_TICKS_MISSING",
+      "MARKET_CONTEXT_BOOKS_MISSING"
+    ],
+    "session_date": "20260922",
+    "source_manifest_hash": "07e756fc816b3e114539ecec5c026c35ef4e4fc4087bbef2d1410d975beec082",
+    "status": "STOPPED_BY_USER"
+  },
+  {
+    "run_id": "20260923T005607.514430Z_03a37394",
+    "eligible": false,
+    "reasons": [
+      "STATUS_NOT_COMPLETE",
+      "SESSION_TIME_COVERAGE_INCOMPLETE",
+      "MARKET_CONTEXT_TICKS_MISSING",
+      "MARKET_CONTEXT_BOOKS_MISSING"
+    ],
+    "session_date": "20260923",
+    "source_manifest_hash": "bdb1edd1eda451801ad98b90afb4a7014d2b8d322435c6209d81a9fa34be3e19",
+    "status": "FAILED"
+  },
+  {
+    "run_id": "20260923T011925.463586Z_7c281f4d",
+    "eligible": false,
+    "reasons": [
+      "SESSION_TIME_COVERAGE_INCOMPLETE",
+      "CALLBACK_ERRORS",
+      "MARKET_CONTEXT_TICKS_MISSING",
+      "MARKET_CONTEXT_BOOKS_MISSING"
+    ],
+    "session_date": "20260923",
+    "source_manifest_hash": "89f6d89e9111b24f1d7805d0105e9ead70736e02874232ca916a66d997bc1769",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20260924T005009.425842Z_37d9c717",
+    "eligible": false,
+    "reasons": [
+      "MARKET_CONTEXT_TICKS_MISSING",
+      "MARKET_CONTEXT_BOOKS_MISSING"
+    ],
+    "session_date": "20260924",
+    "source_manifest_hash": "d7ead3e7f7ceb6f8bce5b646581748b39bb578ef7a411913eee546abcc7fc22d",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20260929T005009.334944Z_d199b440",
+    "eligible": false,
+    "reasons": [
+      "CALLBACK_ERRORS"
+    ],
+    "session_date": "20260929",
+    "source_manifest_hash": "7a91c8e81bb60f1990cdaadd616af4ef760ee8170b2a7228d7be394418613f35",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20260930T005009.221028Z_c408fefe",
+    "eligible": false,
+    "reasons": [
+      "CALLBACK_ERRORS"
+    ],
+    "session_date": "20260930",
+    "source_manifest_hash": "713186876cf5a0f5869507ffa56131be725d26e3d54fd7b328390dbc3fae14cb",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20261001T005008.808100Z_cfa497f0",
+    "eligible": false,
+    "reasons": [
+      "CALLBACK_ERRORS"
+    ],
+    "session_date": "20261001",
+    "source_manifest_hash": "2223fda56e1729a48dfb93554a8259581c0143d1d30e3160c3eca9a66f3760a4",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20261002T003714.550501Z_b5a3b048",
+    "eligible": false,
+    "reasons": [
+      "STATUS_NOT_COMPLETE",
+      "SESSION_TIME_COVERAGE_INCOMPLETE"
+    ],
+    "session_date": "20261002",
+    "source_manifest_hash": "78d17cc7a782930f47c086d45a4bb290cb0d6d083faa4fc3196cd0b1661364bc",
+    "status": "FAILED"
+  },
+  {
+    "run_id": "20261002T005007.842444Z_e3c519f7",
+    "eligible": true,
+    "reasons": [],
+    "session_date": "20261002",
+    "source_manifest_hash": "046f083c4f9db8995cc9730e19ccad9672026bea7ed9996c2381d55dd4dbeaf4",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20261005T005009.197952Z_d84fb34a",
+    "eligible": true,
+    "reasons": [],
+    "session_date": "20261005",
+    "source_manifest_hash": "60cb01d3b0efed8e99aa8d7f675b0e013116208dce508f95f91eea7b694a6ce9",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20261005T015549.951163Z_bc459688",
+    "eligible": false,
+    "reasons": [
+      "STATUS_NOT_COMPLETE",
+      "SESSION_TIME_COVERAGE_INCOMPLETE"
+    ],
+    "session_date": "20261005",
+    "source_manifest_hash": "fc5a868b8d633d2fe05a83457de37bb2227c8a1378cd0d87652b984541e41c62",
+    "status": "STOPPED_CLEAN"
+  },
+  {
+    "run_id": "20261005T022046.290028Z_5c601651",
+    "eligible": false,
+    "reasons": [
+      "RUN_MANIFEST_MISSING"
+    ]
+  },
+  {
+    "run_id": "20261006T005009.128762Z_29b7d155",
+    "eligible": true,
+    "reasons": [],
+    "session_date": "20261006",
+    "source_manifest_hash": "09c55debe62d996aec42aa2017cc40e0a49cf84eeef75c33a0b30515a776804c",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20261006T005250.663168Z_159311b9",
+    "eligible": false,
+    "reasons": [
+      "STATUS_NOT_COMPLETE",
+      "SESSION_TIME_COVERAGE_INCOMPLETE"
+    ],
+    "session_date": "20261006",
+    "source_manifest_hash": "4a938e3accc25dc9bb240c9cb621c2e861525b460801712b17bb9d61b9a1ac1f",
+    "status": "STOPPED_CLEAN"
+  },
+  {
+    "run_id": "20261006T005847.474832Z_cc1b87ef",
+    "eligible": false,
+    "reasons": [
+      "RUN_MANIFEST_MISSING"
+    ]
+  },
+  {
+    "run_id": "20261007T011700.172220Z_3fd60a01",
+    "eligible": false,
+    "reasons": [
+      "RUN_MANIFEST_MISSING"
+    ]
+  },
+  {
+    "run_id": "20261008T005008.806423Z_65c0a64f",
+    "eligible": true,
+    "reasons": [],
+    "session_date": "20261008",
+    "source_manifest_hash": "a48a7ddfffddb55e0f0c8fc1f87ca6bdaf4c41c236c560bb91d7ae55f111ce8b",
+    "status": "COMPLETE"
+  },
+  {
+    "run_id": "20261008T010053.261618Z_86cf39df",
+    "eligible": false,
+    "reasons": [
+      "STATUS_NOT_COMPLETE",
+      "SESSION_TIME_COVERAGE_INCOMPLETE"
+    ],
+    "session_date": "20261008",
+    "source_manifest_hash": "63118226ca85332218b9b9eb6ce7ae83993cb3f9aa2dccb29898ec9bb48f5a1b",
+    "status": "STOPPED_CLEAN"
+  },
+  {
+    "run_id": "20261012T003339.400860Z_c4937566",
+    "eligible": false,
+    "reasons": [
+      "RUN_MANIFEST_MISSING"
+    ]
+  },
+  {
+    "run_id": "20261012T005008.137481Z_b263fa22",
+    "eligible": false,
+    "reasons": [
+      "RUN_MANIFEST_MISSING"
+    ]
+  }
+]

@@ -1,0 +1,1088 @@
+[
+  {
+    "date": "20260929",
+    "source": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20260928T233201.400374Z_fe5a7b98",
+    "coverage": {
+      "session_date": "20260929",
+      "source_run_ids": [
+        "20260928T233201.400374Z_fe5a7b98"
+      ],
+      "source_statuses": [
+        "COMPLETE"
+      ],
+      "started_at_taipei": "2026-09-29T07:32:01.399000+08:00",
+      "ended_at_taipei": "2026-09-29T13:25:00.942000+08:00",
+      "callback_errors": 0,
+      "coverage_status": "PARTIAL_SESSION",
+      "stream_quality": {
+        "1709": {
+          "ticks": 6845,
+          "books": 15881,
+          "raw_five_level_snapshots": 15881
+        },
+        "1727": {
+          "ticks": 7584,
+          "books": 19247,
+          "raw_five_level_snapshots": 19253
+        },
+        "2221": {
+          "ticks": 55,
+          "books": 2340,
+          "raw_five_level_snapshots": 2888
+        },
+        "2305": {
+          "ticks": 120,
+          "books": 4978,
+          "raw_five_level_snapshots": 5373
+        },
+        "2466": {
+          "ticks": 651,
+          "books": 3318,
+          "raw_five_level_snapshots": 3318
+        },
+        "3016": {
+          "ticks": 18831,
+          "books": 32237,
+          "raw_five_level_snapshots": 32659
+        },
+        "3055": {
+          "ticks": 2824,
+          "books": 9417,
+          "raw_five_level_snapshots": 9417
+        },
+        "3094": {
+          "ticks": 1605,
+          "books": 2357,
+          "raw_five_level_snapshots": 5558
+        },
+        "3219": {
+          "ticks": 318,
+          "books": 466,
+          "raw_five_level_snapshots": 1403
+        },
+        "3229": {
+          "ticks": 536,
+          "books": 2583,
+          "raw_five_level_snapshots": 2623
+        },
+        "3441": {
+          "ticks": 116,
+          "books": 1993,
+          "raw_five_level_snapshots": 1993
+        },
+        "3498": {
+          "ticks": 1772,
+          "books": 3349,
+          "raw_five_level_snapshots": 4108
+        },
+        "3605": {
+          "ticks": 3891,
+          "books": 12921,
+          "raw_five_level_snapshots": 12921
+        },
+        "3624": {
+          "ticks": 5801,
+          "books": 17829,
+          "raw_five_level_snapshots": 17863
+        },
+        "4923": {
+          "ticks": 477,
+          "books": 2458,
+          "raw_five_level_snapshots": 2458
+        },
+        "4956": {
+          "ticks": 4745,
+          "books": 12542,
+          "raw_five_level_snapshots": 12576
+        },
+        "6168": {
+          "ticks": 133,
+          "books": 5362,
+          "raw_five_level_snapshots": 5362
+        },
+        "6173": {
+          "ticks": 2463,
+          "books": 9490,
+          "raw_five_level_snapshots": 9490
+        },
+        "6218": {
+          "ticks": 130,
+          "books": 3123,
+          "raw_five_level_snapshots": 3125
+        },
+        "6226": {
+          "ticks": 130,
+          "books": 3060,
+          "raw_five_level_snapshots": 3062
+        },
+        "6426": {
+          "ticks": 1346,
+          "books": 4791,
+          "raw_five_level_snapshots": 4948
+        },
+        "6538": {
+          "ticks": 1620,
+          "books": 4734,
+          "raw_five_level_snapshots": 4766
+        },
+        "6620": {
+          "ticks": 894,
+          "books": 3477,
+          "raw_five_level_snapshots": 3627
+        },
+        "6715": {
+          "ticks": 105,
+          "books": 1750,
+          "raw_five_level_snapshots": 1751
+        },
+        "6834": {
+          "ticks": 977,
+          "books": 5400,
+          "raw_five_level_snapshots": 5400
+        },
+        "6933": {
+          "ticks": 2187,
+          "books": 6171,
+          "raw_five_level_snapshots": 6441
+        },
+        "7772": {
+          "ticks": 62,
+          "books": 543,
+          "raw_five_level_snapshots": 552
+        },
+        "8064": {
+          "ticks": 7203,
+          "books": 18230,
+          "raw_five_level_snapshots": 18231
+        },
+        "8150": {
+          "ticks": 10981,
+          "books": 25155,
+          "raw_five_level_snapshots": 25157
+        },
+        "8227": {
+          "ticks": 760,
+          "books": 1369,
+          "raw_five_level_snapshots": 2103
+        }
+      },
+      "benchmark_coverage": {
+        "ticks": {
+          "count": 16578,
+          "first": "2026-09-29T09:00:02.911000+08:00",
+          "last": "2026-09-29T13:24:56.229000+08:00"
+        },
+        "books": {
+          "count": 31144,
+          "first": "2026-09-29T08:30:02.999000+08:00",
+          "last": "2026-09-29T13:24:59.769000+08:00"
+        }
+      }
+    }
+  },
+  {
+    "date": "20261001",
+    "source": "/Users/linyunyan/Downloads/-warrantscope-tracker/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261001T004849.174778Z_feb27b61",
+    "coverage": {
+      "session_date": "20261001",
+      "source_run_ids": [
+        "20261001T004849.174778Z_feb27b61"
+      ],
+      "source_statuses": [
+        "COMPLETE"
+      ],
+      "started_at_taipei": "2026-10-01T08:48:49.174000+08:00",
+      "ended_at_taipei": "2026-10-01T13:25:01.175000+08:00",
+      "callback_errors": 0,
+      "coverage_status": "PARTIAL_SESSION",
+      "stream_quality": {
+        "1303": {
+          "ticks": 14624,
+          "books": 28650,
+          "raw_five_level_snapshots": 28650
+        },
+        "1709": {
+          "ticks": 493,
+          "books": 684,
+          "raw_five_level_snapshots": 6514
+        },
+        "2033": {
+          "ticks": 196,
+          "books": 276,
+          "raw_five_level_snapshots": 1009
+        },
+        "2221": {
+          "ticks": 132,
+          "books": 3569,
+          "raw_five_level_snapshots": 3629
+        },
+        "2305": {
+          "ticks": 1285,
+          "books": 1978,
+          "raw_five_level_snapshots": 2435
+        },
+        "2409": {
+          "ticks": 110062,
+          "books": 124123,
+          "raw_five_level_snapshots": 124123
+        },
+        "2466": {
+          "ticks": 1780,
+          "books": 5879,
+          "raw_five_level_snapshots": 5997
+        },
+        "3016": {
+          "ticks": 133,
+          "books": 5569,
+          "raw_five_level_snapshots": 5569
+        },
+        "3055": {
+          "ticks": 128,
+          "books": 3066,
+          "raw_five_level_snapshots": 3066
+        },
+        "3094": {
+          "ticks": 6663,
+          "books": 10797,
+          "raw_five_level_snapshots": 13722
+        },
+        "3219": {
+          "ticks": 129,
+          "books": 3238,
+          "raw_five_level_snapshots": 3238
+        },
+        "3441": {
+          "ticks": 919,
+          "books": 1378,
+          "raw_five_level_snapshots": 3236
+        },
+        "3455": {
+          "ticks": 1561,
+          "books": 5528,
+          "raw_five_level_snapshots": 5530
+        },
+        "3498": {
+          "ticks": 1444,
+          "books": 5719,
+          "raw_five_level_snapshots": 5719
+        },
+        "3532": {
+          "ticks": 4839,
+          "books": 12405,
+          "raw_five_level_snapshots": 12405
+        },
+        "3605": {
+          "ticks": 3618,
+          "books": 12142,
+          "raw_five_level_snapshots": 12142
+        },
+        "4556": {
+          "ticks": 846,
+          "books": 2618,
+          "raw_five_level_snapshots": 3155
+        },
+        "4956": {
+          "ticks": 6299,
+          "books": 14756,
+          "raw_five_level_snapshots": 14756
+        },
+        "6168": {
+          "ticks": 133,
+          "books": 5366,
+          "raw_five_level_snapshots": 5366
+        },
+        "6207": {
+          "ticks": 11001,
+          "books": 22229,
+          "raw_five_level_snapshots": 22235
+        },
+        "6226": {
+          "ticks": 133,
+          "books": 4242,
+          "raw_five_level_snapshots": 4242
+        },
+        "6426": {
+          "ticks": 1029,
+          "books": 5048,
+          "raw_five_level_snapshots": 5048
+        },
+        "6456": {
+          "ticks": 4962,
+          "books": 12617,
+          "raw_five_level_snapshots": 12619
+        },
+        "6533": {
+          "ticks": 6525,
+          "books": 14115,
+          "raw_five_level_snapshots": 14726
+        },
+        "6538": {
+          "ticks": 797,
+          "books": 3420,
+          "raw_five_level_snapshots": 3420
+        },
+        "6672": {
+          "ticks": 6301,
+          "books": 12782,
+          "raw_five_level_snapshots": 14187
+        },
+        "7772": {
+          "ticks": 59,
+          "books": 471,
+          "raw_five_level_snapshots": 471
+        },
+        "8064": {
+          "ticks": 2707,
+          "books": 9388,
+          "raw_five_level_snapshots": 9388
+        },
+        "8150": {
+          "ticks": 16376,
+          "books": 30763,
+          "raw_five_level_snapshots": 30801
+        },
+        "8227": {
+          "ticks": 5393,
+          "books": 13046,
+          "raw_five_level_snapshots": 13050
+        }
+      },
+      "benchmark_coverage": {
+        "ticks": {
+          "count": 8490,
+          "first": "2026-10-01T09:00:02.421000+08:00",
+          "last": "2026-10-01T13:24:59.475000+08:00"
+        },
+        "books": {
+          "count": 21179,
+          "first": "2026-10-01T08:49:05.869000+08:00",
+          "last": "2026-10-01T13:24:59.480000+08:00"
+        }
+      }
+    }
+  },
+  {
+    "date": "20261002",
+    "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261002T005007.842444Z_e3c519f7",
+    "coverage": {
+      "session_date": "20261002",
+      "source_run_ids": [
+        "20261002T005007.842444Z_e3c519f7"
+      ],
+      "source_statuses": [
+        "COMPLETE"
+      ],
+      "started_at_taipei": "2026-10-02T08:50:07.845000+08:00",
+      "ended_at_taipei": "2026-10-02T13:35:09.156000+08:00",
+      "callback_errors": 0,
+      "coverage_status": "PARTIAL_SESSION",
+      "stream_quality": {
+        "1709": {
+          "ticks": 4253,
+          "books": 4623,
+          "raw_five_level_snapshots": 9040
+        },
+        "2033": {
+          "ticks": 0,
+          "books": 48,
+          "raw_five_level_snapshots": 930
+        },
+        "2221": {
+          "ticks": 134,
+          "books": 2850,
+          "raw_five_level_snapshots": 2850
+        },
+        "2305": {
+          "ticks": 5332,
+          "books": 13524,
+          "raw_five_level_snapshots": 13696
+        },
+        "2340": {
+          "ticks": 10260,
+          "books": 20816,
+          "raw_five_level_snapshots": 20816
+        },
+        "2466": {
+          "ticks": 615,
+          "books": 1795,
+          "raw_five_level_snapshots": 2544
+        },
+        "3016": {
+          "ticks": 134,
+          "books": 5937,
+          "raw_five_level_snapshots": 5937
+        },
+        "3042": {
+          "ticks": 13557,
+          "books": 26239,
+          "raw_five_level_snapshots": 26239
+        },
+        "3055": {
+          "ticks": 131,
+          "books": 2593,
+          "raw_five_level_snapshots": 2593
+        },
+        "3094": {
+          "ticks": 11261,
+          "books": 21615,
+          "raw_five_level_snapshots": 21695
+        },
+        "3219": {
+          "ticks": 130,
+          "books": 2651,
+          "raw_five_level_snapshots": 2651
+        },
+        "3441": {
+          "ticks": 8516,
+          "books": 18121,
+          "raw_five_level_snapshots": 18884
+        },
+        "3455": {
+          "ticks": 3091,
+          "books": 9111,
+          "raw_five_level_snapshots": 9111
+        },
+        "3498": {
+          "ticks": 1233,
+          "books": 5231,
+          "raw_five_level_snapshots": 5231
+        },
+        "3605": {
+          "ticks": 4226,
+          "books": 13500,
+          "raw_five_level_snapshots": 13500
+        },
+        "3624": {
+          "ticks": 12316,
+          "books": 25203,
+          "raw_five_level_snapshots": 25203
+        },
+        "4556": {
+          "ticks": 1500,
+          "books": 4936,
+          "raw_five_level_snapshots": 5388
+        },
+        "4923": {
+          "ticks": 2361,
+          "books": 6677,
+          "raw_five_level_snapshots": 6679
+        },
+        "4956": {
+          "ticks": 2954,
+          "books": 8976,
+          "raw_five_level_snapshots": 8976
+        },
+        "6168": {
+          "ticks": 134,
+          "books": 4785,
+          "raw_five_level_snapshots": 4785
+        },
+        "6226": {
+          "ticks": 9099,
+          "books": 18651,
+          "raw_five_level_snapshots": 18657
+        },
+        "6426": {
+          "ticks": 2315,
+          "books": 7994,
+          "raw_five_level_snapshots": 8009
+        },
+        "6533": {
+          "ticks": 3028,
+          "books": 9166,
+          "raw_five_level_snapshots": 9168
+        },
+        "6538": {
+          "ticks": 988,
+          "books": 3782,
+          "raw_five_level_snapshots": 3782
+        },
+        "6620": {
+          "ticks": 1240,
+          "books": 5017,
+          "raw_five_level_snapshots": 5017
+        },
+        "6672": {
+          "ticks": 6950,
+          "books": 15784,
+          "raw_five_level_snapshots": 15784
+        },
+        "6933": {
+          "ticks": 1753,
+          "books": 5894,
+          "raw_five_level_snapshots": 5894
+        },
+        "7772": {
+          "ticks": 83,
+          "books": 661,
+          "raw_five_level_snapshots": 661
+        },
+        "8150": {
+          "ticks": 14775,
+          "books": 20096,
+          "raw_five_level_snapshots": 27606
+        },
+        "8227": {
+          "ticks": 130,
+          "books": 2065,
+          "raw_five_level_snapshots": 2065
+        }
+      },
+      "benchmark_coverage": {
+        "ticks": {
+          "count": 9001,
+          "first": "2026-10-02T09:02:04.452000+08:00",
+          "last": "2026-10-02T13:30:05.320000+08:00"
+        },
+        "books": {
+          "count": 22103,
+          "first": "2026-10-02T08:50:18.190000+08:00",
+          "last": "2026-10-02T13:30:05.850000+08:00"
+        }
+      }
+    }
+  },
+  {
+    "date": "20261005",
+    "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261005T005009.197952Z_d84fb34a",
+    "coverage": {
+      "session_date": "20261005",
+      "source_run_ids": [
+        "20261005T005009.197952Z_d84fb34a"
+      ],
+      "source_statuses": [
+        "COMPLETE"
+      ],
+      "started_at_taipei": "2026-10-05T08:50:09.203000+08:00",
+      "ended_at_taipei": "2026-10-05T13:35:10.508000+08:00",
+      "callback_errors": 0,
+      "coverage_status": "PARTIAL_SESSION",
+      "stream_quality": {
+        "1709": {
+          "ticks": 26,
+          "books": 89,
+          "raw_five_level_snapshots": 4427
+        },
+        "1727": {
+          "ticks": 4856,
+          "books": 14291,
+          "raw_five_level_snapshots": 14295
+        },
+        "2033": {
+          "ticks": 2507,
+          "books": 7276,
+          "raw_five_level_snapshots": 7400
+        },
+        "2221": {
+          "ticks": 125,
+          "books": 2309,
+          "raw_five_level_snapshots": 2309
+        },
+        "2305": {
+          "ticks": 3483,
+          "books": 10137,
+          "raw_five_level_snapshots": 10137
+        },
+        "2340": {
+          "ticks": 1621,
+          "books": 1809,
+          "raw_five_level_snapshots": 8522
+        },
+        "2409": {
+          "ticks": 122386,
+          "books": 136222,
+          "raw_five_level_snapshots": 136222
+        },
+        "2466": {
+          "ticks": 1003,
+          "books": 2323,
+          "raw_five_level_snapshots": 3288
+        },
+        "3016": {
+          "ticks": 134,
+          "books": 5553,
+          "raw_five_level_snapshots": 5553
+        },
+        "3042": {
+          "ticks": 10676,
+          "books": 22392,
+          "raw_five_level_snapshots": 22394
+        },
+        "3055": {
+          "ticks": 125,
+          "books": 2297,
+          "raw_five_level_snapshots": 2297
+        },
+        "3094": {
+          "ticks": 7232,
+          "books": 15378,
+          "raw_five_level_snapshots": 15378
+        },
+        "3441": {
+          "ticks": 2049,
+          "books": 2740,
+          "raw_five_level_snapshots": 4292
+        },
+        "3455": {
+          "ticks": 3268,
+          "books": 9753,
+          "raw_five_level_snapshots": 9753
+        },
+        "3498": {
+          "ticks": 1743,
+          "books": 5639,
+          "raw_five_level_snapshots": 6257
+        },
+        "3605": {
+          "ticks": 2605,
+          "books": 9690,
+          "raw_five_level_snapshots": 9690
+        },
+        "3624": {
+          "ticks": 4458,
+          "books": 13495,
+          "raw_five_level_snapshots": 13495
+        },
+        "4556": {
+          "ticks": 1088,
+          "books": 4385,
+          "raw_five_level_snapshots": 4612
+        },
+        "6207": {
+          "ticks": 5274,
+          "books": 15057,
+          "raw_five_level_snapshots": 15057
+        },
+        "6226": {
+          "ticks": 10036,
+          "books": 19340,
+          "raw_five_level_snapshots": 19376
+        },
+        "6426": {
+          "ticks": 1753,
+          "books": 6128,
+          "raw_five_level_snapshots": 6128
+        },
+        "6456": {
+          "ticks": 5448,
+          "books": 13900,
+          "raw_five_level_snapshots": 13900
+        },
+        "6538": {
+          "ticks": 788,
+          "books": 1783,
+          "raw_five_level_snapshots": 1829
+        },
+        "6672": {
+          "ticks": 5735,
+          "books": 13679,
+          "raw_five_level_snapshots": 13679
+        },
+        "6715": {
+          "ticks": 1533,
+          "books": 5196,
+          "raw_five_level_snapshots": 5196
+        },
+        "6834": {
+          "ticks": 3130,
+          "books": 10502,
+          "raw_five_level_snapshots": 10504
+        },
+        "6933": {
+          "ticks": 1166,
+          "books": 4003,
+          "raw_five_level_snapshots": 4003
+        },
+        "8111": {
+          "ticks": 10404,
+          "books": 17857,
+          "raw_five_level_snapshots": 20410
+        },
+        "8150": {
+          "ticks": 19351,
+          "books": 33194,
+          "raw_five_level_snapshots": 33326
+        },
+        "8227": {
+          "ticks": 115,
+          "books": 1709,
+          "raw_five_level_snapshots": 1709
+        }
+      },
+      "benchmark_coverage": {
+        "ticks": {
+          "count": 18169,
+          "first": "2026-10-05T09:02:03.824000+08:00",
+          "last": "2026-10-05T13:30:04.717000+08:00"
+        },
+        "books": {
+          "count": 32130,
+          "first": "2026-10-05T08:50:17.776000+08:00",
+          "last": "2026-10-05T13:30:04.964000+08:00"
+        }
+      }
+    }
+  },
+  {
+    "date": "20261006",
+    "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261006T005009.128762Z_29b7d155",
+    "coverage": {
+      "session_date": "20261006",
+      "source_run_ids": [
+        "20261006T005009.128762Z_29b7d155"
+      ],
+      "source_statuses": [
+        "COMPLETE"
+      ],
+      "started_at_taipei": "2026-10-06T08:50:09.135000+08:00",
+      "ended_at_taipei": "2026-10-06T13:35:09.939000+08:00",
+      "callback_errors": 0,
+      "coverage_status": "PARTIAL_SESSION",
+      "stream_quality": {
+        "1303": {
+          "ticks": 29799,
+          "books": 44180,
+          "raw_five_level_snapshots": 44180
+        },
+        "1709": {
+          "ticks": 15680,
+          "books": 27440,
+          "raw_five_level_snapshots": 27586
+        },
+        "1727": {
+          "ticks": 4940,
+          "books": 14655,
+          "raw_five_level_snapshots": 14655
+        },
+        "2033": {
+          "ticks": 123,
+          "books": 2584,
+          "raw_five_level_snapshots": 2584
+        },
+        "2221": {
+          "ticks": 111,
+          "books": 1774,
+          "raw_five_level_snapshots": 1774
+        },
+        "2305": {
+          "ticks": 7783,
+          "books": 16974,
+          "raw_five_level_snapshots": 17442
+        },
+        "2340": {
+          "ticks": 8238,
+          "books": 17101,
+          "raw_five_level_snapshots": 17374
+        },
+        "2426": {
+          "ticks": 9789,
+          "books": 22039,
+          "raw_five_level_snapshots": 22043
+        },
+        "2466": {
+          "ticks": 2254,
+          "books": 6116,
+          "raw_five_level_snapshots": 6679
+        },
+        "3016": {
+          "ticks": 134,
+          "books": 5292,
+          "raw_five_level_snapshots": 5292
+        },
+        "3055": {
+          "ticks": 119,
+          "books": 1703,
+          "raw_five_level_snapshots": 1703
+        },
+        "3094": {
+          "ticks": 5335,
+          "books": 13603,
+          "raw_five_level_snapshots": 13603
+        },
+        "3441": {
+          "ticks": 4937,
+          "books": 6691,
+          "raw_five_level_snapshots": 9680
+        },
+        "3455": {
+          "ticks": 131,
+          "books": 3009,
+          "raw_five_level_snapshots": 3009
+        },
+        "3498": {
+          "ticks": 2936,
+          "books": 8347,
+          "raw_five_level_snapshots": 8435
+        },
+        "3605": {
+          "ticks": 3468,
+          "books": 11713,
+          "raw_five_level_snapshots": 11713
+        },
+        "3624": {
+          "ticks": 4094,
+          "books": 13121,
+          "raw_five_level_snapshots": 13121
+        },
+        "4556": {
+          "ticks": 1837,
+          "books": 6442,
+          "raw_five_level_snapshots": 6484
+        },
+        "6168": {
+          "ticks": 4626,
+          "books": 11087,
+          "raw_five_level_snapshots": 11137
+        },
+        "6207": {
+          "ticks": 3655,
+          "books": 11813,
+          "raw_five_level_snapshots": 11813
+        },
+        "6226": {
+          "ticks": 7803,
+          "books": 16021,
+          "raw_five_level_snapshots": 16021
+        },
+        "6426": {
+          "ticks": 1455,
+          "books": 5382,
+          "raw_five_level_snapshots": 5382
+        },
+        "6620": {
+          "ticks": 1413,
+          "books": 5477,
+          "raw_five_level_snapshots": 5477
+        },
+        "6672": {
+          "ticks": 134,
+          "books": 4652,
+          "raw_five_level_snapshots": 4652
+        },
+        "6715": {
+          "ticks": 1198,
+          "books": 4220,
+          "raw_five_level_snapshots": 4220
+        },
+        "6834": {
+          "ticks": 1233,
+          "books": 5691,
+          "raw_five_level_snapshots": 5691
+        },
+        "6933": {
+          "ticks": 534,
+          "books": 2704,
+          "raw_five_level_snapshots": 2704
+        },
+        "8111": {
+          "ticks": 11762,
+          "books": 21612,
+          "raw_five_level_snapshots": 21612
+        },
+        "8150": {
+          "ticks": 17897,
+          "books": 31742,
+          "raw_five_level_snapshots": 31742
+        },
+        "8227": {
+          "ticks": 115,
+          "books": 2054,
+          "raw_five_level_snapshots": 2054
+        }
+      },
+      "benchmark_coverage": {
+        "ticks": {
+          "count": 12571,
+          "first": "2026-10-06T09:02:02.098000+08:00",
+          "last": "2026-10-06T13:30:03.049000+08:00"
+        },
+        "books": {
+          "count": 26227,
+          "first": "2026-10-06T08:50:20.862000+08:00",
+          "last": "2026-10-06T13:30:03.159000+08:00"
+        }
+      }
+    }
+  },
+  {
+    "date": "20261008",
+    "source": "/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/yuanta_intraday_shadow_v01/runtime/runs/20261008T005008.806423Z_65c0a64f",
+    "coverage": {
+      "session_date": "20261008",
+      "source_run_ids": [
+        "20261008T005008.806423Z_65c0a64f"
+      ],
+      "source_statuses": [
+        "COMPLETE"
+      ],
+      "started_at_taipei": "2026-10-08T08:50:08.821000+08:00",
+      "ended_at_taipei": "2026-10-08T13:35:09.856000+08:00",
+      "callback_errors": 0,
+      "coverage_status": "PARTIAL_SESSION",
+      "stream_quality": {
+        "1303": {
+          "ticks": 19931,
+          "books": 34059,
+          "raw_five_level_snapshots": 34059
+        },
+        "1709": {
+          "ticks": 134,
+          "books": 5983,
+          "raw_five_level_snapshots": 5983
+        },
+        "2033": {
+          "ticks": 95,
+          "books": 1406,
+          "raw_five_level_snapshots": 1406
+        },
+        "2221": {
+          "ticks": 108,
+          "books": 1763,
+          "raw_five_level_snapshots": 1763
+        },
+        "2305": {
+          "ticks": 616,
+          "books": 820,
+          "raw_five_level_snapshots": 4005
+        },
+        "2340": {
+          "ticks": 10275,
+          "books": 15941,
+          "raw_five_level_snapshots": 19737
+        },
+        "2426": {
+          "ticks": 2832,
+          "books": 12554,
+          "raw_five_level_snapshots": 12554
+        },
+        "2466": {
+          "ticks": 134,
+          "books": 4210,
+          "raw_five_level_snapshots": 4210
+        },
+        "2492": {
+          "ticks": 22997,
+          "books": 36543,
+          "raw_five_level_snapshots": 36543
+        },
+        "3016": {
+          "ticks": 134,
+          "books": 5390,
+          "raw_five_level_snapshots": 5390
+        },
+        "3055": {
+          "ticks": 97,
+          "books": 1363,
+          "raw_five_level_snapshots": 1363
+        },
+        "3441": {
+          "ticks": 134,
+          "books": 3275,
+          "raw_five_level_snapshots": 3275
+        },
+        "3498": {
+          "ticks": 671,
+          "books": 3782,
+          "raw_five_level_snapshots": 3782
+        },
+        "3605": {
+          "ticks": 1130,
+          "books": 5994,
+          "raw_five_level_snapshots": 5994
+        },
+        "3624": {
+          "ticks": 8136,
+          "books": 10817,
+          "raw_five_level_snapshots": 14760
+        },
+        "3707": {
+          "ticks": 8111,
+          "books": 18150,
+          "raw_five_level_snapshots": 18150
+        },
+        "4556": {
+          "ticks": 116,
+          "books": 2335,
+          "raw_five_level_snapshots": 2335
+        },
+        "4908": {
+          "ticks": 2445,
+          "books": 8816,
+          "raw_five_level_snapshots": 8932
+        },
+        "6147": {
+          "ticks": 12870,
+          "books": 25945,
+          "raw_five_level_snapshots": 25945
+        },
+        "6168": {
+          "ticks": 2984,
+          "books": 9704,
+          "raw_five_level_snapshots": 9704
+        },
+        "6207": {
+          "ticks": 1487,
+          "books": 7185,
+          "raw_five_level_snapshots": 7185
+        },
+        "6226": {
+          "ticks": 7588,
+          "books": 15843,
+          "raw_five_level_snapshots": 15903
+        },
+        "6456": {
+          "ticks": 4488,
+          "books": 13272,
+          "raw_five_level_snapshots": 13272
+        },
+        "6715": {
+          "ticks": 755,
+          "books": 2955,
+          "raw_five_level_snapshots": 2955
+        },
+        "6716": {
+          "ticks": 0,
+          "books": 0,
+          "raw_five_level_snapshots": 249
+        },
+        "6834": {
+          "ticks": 6343,
+          "books": 17321,
+          "raw_five_level_snapshots": 17321
+        },
+        "6933": {
+          "ticks": 424,
+          "books": 2570,
+          "raw_five_level_snapshots": 2570
+        },
+        "8111": {
+          "ticks": 5838,
+          "books": 14220,
+          "raw_five_level_snapshots": 14220
+        },
+        "8150": {
+          "ticks": 7214,
+          "books": 20165,
+          "raw_five_level_snapshots": 20165
+        },
+        "8227": {
+          "ticks": 84,
+          "books": 1928,
+          "raw_five_level_snapshots": 2490
+        }
+      },
+      "benchmark_coverage": {
+        "ticks": {
+          "count": 15204,
+          "first": "2026-10-08T09:00:03.706000+08:00",
+          "last": "2026-10-08T13:30:04.722000+08:00"
+        },
+        "books": {
+          "count": 29457,
+          "first": "2026-10-08T08:50:17.429000+08:00",
+          "last": "2026-10-08T13:30:05.520000+08:00"
+        }
+      }
+    }
+  }
+]

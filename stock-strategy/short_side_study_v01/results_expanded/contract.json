@@ -1,0 +1,114 @@
+{
+  "research_only": true,
+  "capital_twd": 190000,
+  "max_trades_per_day": 1,
+  "base_signal_spec": {
+    "analysis_id": "YUANTA_TOP30_CAUSAL_DIRECTION_FOLLOW_V0_1",
+    "decision_interval_seconds": 30,
+    "direction_window_seconds": 60,
+    "large_trade_reference_seconds": 300,
+    "large_trade_percentile": 0.9,
+    "breakout_lookback_seconds": 180,
+    "breakout_excludes_latest_seconds": 30,
+    "minimum_ticks_in_direction_window": 10,
+    "maximum_tick_staleness_seconds": 5,
+    "maximum_book_staleness_seconds": 10,
+    "maximum_spread_bps": 40,
+    "volume_delta_threshold": 0.35,
+    "large_trade_delta_threshold": 0.25,
+    "book_imbalance_threshold": 0.1,
+    "entry_confirmations": 1,
+    "reversal_confirmations": 2,
+    "entry_start": "09:05",
+    "last_entry_time": "13:10",
+    "hard_exit_time": "13:20",
+    "maximum_hard_exit_quote_staleness_seconds": 60,
+    "stop_loss_net_twd": 5000,
+    "trailing_profit_activation": 0.02,
+    "trailing_profit_drawdown": 0.02,
+    "loss_recovery_required": 0.02,
+    "portfolio_notional_cap_twd": 190000,
+    "position_size": "maximum_whole_1000_share_board_lots_within_cap",
+    "maximum_trades_per_session": 1,
+    "fill_proxy": "displayed_bid_or_ask_plus_one_adverse_tick",
+    "commission_rate_each_side": 0.000855,
+    "minimum_commission_twd": 20,
+    "day_trade_sell_tax_rate": 0.0015,
+    "short_limitation": "THEORETICAL_SHORT_REPLAY_ELIGIBILITY_NOT_CHECKED",
+    "interpretation": "IN_SAMPLE_EXPLORATORY_ONLY_NOT_EXPECTED_RETURN_OR_TRADING_SIGNAL"
+  },
+  "anti_chase": {
+    "policy_id": "ANTI_CHASE_BALANCED_V1",
+    "maximum_directional_opening_extension": 0.02,
+    "maximum_directional_vwap_extension": 0.0125,
+    "opening_reference_must_arrive_by": "09:05",
+    "applies_to": "ENTRY_ONLY_SIDE_AWARE"
+  },
+  "exit_policy": {
+    "policy_id": "HARD_3500_PLUS_MFE_V1_NO_LOSS_RECOVERY",
+    "stop_loss_net_twd": 3500.0,
+    "one_r_definition": "entry_to_net_3500_stop_price",
+    "mfe_variant": "MFE_V1",
+    "retain_1_5": 0.6,
+    "retain_2_0": 0.7,
+    "retain_3_0": 0.75
+  },
+  "long_gate": {
+    "policy_id": "LONG_0050_RELATIVE_STRENGTH_V1",
+    "benchmark_symbol": "0050",
+    "benchmark_name": "元大台灣50",
+    "benchmark_market": "TWSE",
+    "lookback_seconds": 300,
+    "maximum_staleness_seconds": 5.0,
+    "bullish_min_relative_strength": 0.0,
+    "neutral_min_relative_strength": 0.0025,
+    "bearish_min_relative_strength": 0.005,
+    "bullish_confirmations": 1,
+    "neutral_confirmations": 2,
+    "bearish_confirmations": 2,
+    "short_behavior": "UNCHANGED_NOT_ENABLED_BY_THIS_POLICY"
+  },
+  "short_gate": {
+    "BEARISH": {
+      "maximum_relative_strength": 0.0,
+      "confirmations": 1
+    },
+    "NEUTRAL": {
+      "maximum_relative_strength": -0.0025,
+      "confirmations": 2
+    },
+    "BULLISH": {
+      "maximum_relative_strength": -0.005,
+      "confirmations": 2
+    }
+  },
+  "variants": {
+    "S0": "LONG_A",
+    "S1": "SHORT_BASE_DIAGNOSTIC",
+    "S2": "SHORT_SYMMETRIC_0050",
+    "S3": "CHRONOLOGICAL_LONG_A_PLUS_S2"
+  },
+  "same_boundary_tie_break": [
+    "score",
+    "entry_price_times_quantity",
+    "sorted_symbol_stable_order"
+  ],
+  "scenarios": [
+    "BASE_CURRENT_EXECUTION",
+    "PLUS_1_TICK_ADVERSE",
+    "DELAY_5_SECONDS"
+  ],
+  "qualification": "SIGNAL_ONLY / ELIGIBILITY_UNPROVEN",
+  "out_of_sample": "NO_TRUE_OUT_OF_SAMPLE_SET",
+  "authorized_broker_connections": 0,
+  "authorized_broker_orders": 0,
+  "archive_selection": "ALL_DISCOVERED_ARCHIVES_QUALITY_FIRST_NOT_LONG_TRADE_DATE_FILTER",
+  "depth_capacity_policy": "POSITIVE_DISPLAYED_SIZE_INCREMENTS_ONLY_NO_DUPLICATE_REPLENISHMENT",
+  "conclusion_choices": [
+    "SHORT_EDGE_SUPPORTED",
+    "SHORT_EDGE_WEAK",
+    "NO_SHORT_EDGE",
+    "INSUFFICIENT_DATA"
+  ],
+  "contract_hash": "8abb39da5cd97f082eb252e76c676e94274f72eba84aebf7039119ed9b77b959"
+}
