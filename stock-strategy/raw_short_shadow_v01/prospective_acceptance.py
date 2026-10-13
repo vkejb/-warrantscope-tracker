@@ -5,16 +5,18 @@ from dataclasses import asdict
 from datetime import datetime
 import json
 from pathlib import Path
+import sqlite3
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from short_side_study_v01 import s4 as selection_module
 from short_side_study_v01.policy import StudyEngine
+from short_side_study_v01.account_replay_v02.run import safe_metrics
 from yuanta_live_runtime_v01.strategy import LiveDirectionEngine
 from yuanta_intraday_shadow_v01.live_parity_backtest import _validate_full_session_coverage
 
 from .main import DEFAULT_RUNTIME, STRATEGY, inspect_published, is_prospective, load_activation
-from .pipeline import VARIANTS, episodes, load_inputs, sha
+from .pipeline import VARIANTS, episodes, load_inputs, observed_replay, sha
 
 
 TAIPEI = ZoneInfo('Asia/Taipei')
@@ -89,6 +91,36 @@ def replay_raw_selection(stocks, market, date, vetoes):
     return (selected, approvals, ties, regime, context), trace
 
 
+def inspect_mock_ledger(path, *, account, symbol, trade, saved_events):
+    """Read persisted paper fills without reopening its writable engine."""
+    if not path.is_file():
+        return {'issues': ['MOCK_LEDGER_MISSING']}
+    with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as db:
+        identity_row = db.execute("SELECT value FROM short_mock_meta WHERE key='identity'").fetchone()
+        identity = json.loads(identity_row[0]) if identity_row else None
+        orders = db.execute('SELECT side, intent, status, idempotency_key, quantity, filled_quantity FROM orders').fetchall()
+        fills = db.execute('SELECT o.side, f.quantity FROM fills f JOIN orders o ON o.order_id=f.order_id').fetchall()
+        critical = [{'event_type': event, 'payload': payload} for event, payload in db.execute(
+            "SELECT event_type,payload FROM events WHERE event_type='SHORT_MOCK_CRITICAL' ORDER BY sequence")]
+    sold = sum(quantity for side, quantity in fills if side == 'SELL')
+    bought = sum(quantity for side, quantity in fills if side == 'BUY')
+    issues = []
+    if identity != {'mode': 'MOCK_ONLY', 'account': account, 'symbol': symbol, 'baseline': 0}:
+        issues.append('MOCK_LEDGER_IDENTITY_MISMATCH')
+    if len({order[3] for order in orders}) != len(orders) or sum(order[1] == 'ENTRY' for order in orders) != 1:
+        issues.append('MOCK_LEDGER_DUPLICATE_OR_MULTIPLE_ENTRIES')
+    if any(order[2] in ('SUBMITTED', 'ACKNOWLEDGED', 'PARTIALLY_FILLED', 'CANCEL_PENDING') for order in orders):
+        issues.append('MOCK_LEDGER_OPEN_ORDER')
+    if any(quantity <= 0 or quantity % 1000 for _, quantity in fills):
+        issues.append('MOCK_LEDGER_NONLOT_FILL')
+    if sold != trade.get('entry_quantity') or bought != trade.get('covered_shares') or sold - bought != trade.get('residual_shares'):
+        issues.append('MOCK_LEDGER_FILL_POSITION_MISMATCH')
+    if critical != saved_events:
+        issues.append('MOCK_LEDGER_CRITICAL_EVENTS_MISMATCH')
+    return {'entry_filled_shares': sold, 'covered_shares': bought, 'remaining_shares': sold - bought,
+            'order_count': len(orders), 'critical_event_count': len(critical), 'issues': issues}
+
+
 def audit_day(source_dir, day_dir, activation):
     issues = []
     publication = inspect_published(day_dir)
@@ -112,7 +144,7 @@ def audit_day(source_dir, day_dir, activation):
                 'issues': issues, 'accounts': {a: {'status': 'DATA_MISSING'} for a in VARIANTS}}
 
     try:
-        stocks, market, depths, raw, _, watch, coverage, quality = load_inputs(source_dir)
+        stocks, market, depths, raw, replay_manifest, watch, coverage, quality = load_inputs(source_dir)
     except Exception as exc:
         return {'status': 'DATA_MISSING', 'date': date, 'source_run_id': manifest['run_id'],
                 'issues': issues + [type(exc).__name__ + ': ' + str(exc)],
@@ -173,6 +205,18 @@ def audit_day(source_dir, day_dir, activation):
                 account_issues.append(f'UNIT_{unit}_IDENTITY_OR_LABEL_MISMATCH')
             if trade.get('signal_sample_count') != int(signal is not None) or trade.get('independent_trade_sample') != bool(trade.get('entry_quantity', 0)):
                 account_issues.append(f'UNIT_{unit}_SAMPLE_COUNT_MISMATCH')
+            if trade.get('status') == 'PRIOR_FILLED_POSITION_UNRESOLVED_NO_NEW_ENTRY':
+                account_issues.append(f'UNIT_{unit}_UNEXPECTED_CARRIED_POSITION_ON_FIRST_DAY')
+            else:
+                execution_variant = 'S1' if signal and signal.side == 'SHORT' else 'S0'
+                expected = json.loads(json.dumps(observed_replay(
+                    signal, stocks, depths, replay_manifest, execution_variant,
+                    'BASE_CURRENT_EXECUTION', unit), default=str))
+                mismatch = sorted(key for key, value in expected.items() if trade.get(key) != value)
+                if mismatch:
+                    account_issues.append(f'UNIT_{unit}_TRADE_REPLAY_MISMATCH:' + ','.join(mismatch))
+            if report.get('conditional_metrics', {}).get(str(unit)) != safe_metrics([trade]):
+                account_issues.append(f'UNIT_{unit}_REPORT_METRICS_MISMATCH')
             remaining = trade.get('residual_shares', 0)
             cover = trade.get('cover_safety', {})
             if remaining < 0 or (trade.get('entry_quantity', 0) and remaining > trade['entry_quantity']):
@@ -182,9 +226,18 @@ def audit_day(source_dir, day_dir, activation):
                     account_issues.append(f'UNIT_{unit}_COVER_OR_POSITION_MISMATCH')
                 if remaining or cover.get('pending_orders') or cover.get('needs_reconcile'):
                     account_issues.append(f'UNIT_{unit}_SHORT_EXPOSURE_UNRESOLVED')
+                events_path = day_dir / account / f'unit_{unit}/critical_events.json'
+                saved_events = json.loads(events_path.read_text()) if events_path.exists() else None
+                ledger = inspect_mock_ledger(day_dir / account / f'unit_{unit}/mock_short_witness.sqlite',
+                                             account=account, symbol=signal.stock_id, trade=trade,
+                                             saved_events=saved_events)
+                account_issues.extend(f'UNIT_{unit}_{issue}' for issue in ledger['issues'])
+            else:
+                ledger = None
             unit_rows[str(unit)] = {'trade_status': trade.get('status'), 'entry_quantity': trade.get('entry_quantity', 0),
                                     'residual_shares': remaining, 'cover_status': cover.get('status'),
-                                    'conditional_only': trade.get('unit_status') == 'UNIT_UNVERIFIED'}
+                                    'conditional_only': trade.get('unit_status') == 'UNIT_UNVERIFIED',
+                                    'mock_ledger': ledger}
         account_status = classify_account(signal, source_ok=True, candidate_data_ok=candidate_data_ok,
                                           benchmark_ok=benchmark_ok if account in ('S0', 'S4') else None)
         if account_issues:

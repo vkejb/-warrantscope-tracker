@@ -46,7 +46,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m raw_short_shadow_v01.prospective_acceptance
 WAITING_FOR_FIRST_COMPLETE_DAY表示尚無達到既有時段/回呼條件的COMPLETE封存；
 READY_FOR_MANUAL_DRAIN表示已有新封存但尚未手動處理，資料是否合格須待驗收器逐檔核對。
 處理後重新執行驗收，分帳顯示SIGNAL、NO_SIGNAL或DATA_MISSING，逐一核對原始訊號/五檔、
-兩種五檔單位假設下的進出場、剩餘持倉、回補、去重及來源品質。NEEDS_REVIEW或
+兩種五檔單位假設下重新計算進出場，唯讀查核mock SQLite成交、剩餘持倉、回補、去重及來源品質。NEEDS_REVIEW或
 ACCEPTANCE_FAILED不得當成通過；UNIT_UNVERIFIED和模擬成交未經券商驗證的標記保留。
 
 紙上activation.json記實際UTC凍結/手動啟用時間及程式hash，無倒填時間參數。

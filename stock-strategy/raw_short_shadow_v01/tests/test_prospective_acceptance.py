@@ -7,8 +7,10 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from raw_short_shadow_v01.pipeline import write
-from raw_short_shadow_v01.prospective_acceptance import audit_day, classify_account, first_complete_source, replay_raw_selection
+from raw_short_shadow_v01.prospective_acceptance import audit_day, classify_account, first_complete_source, replay_raw_selection, inspect_mock_ledger
+from raw_short_shadow_v01.safety import ShortCoverSafety
 from short_side_study_v01.policy import StudyEngine
+from short_side_study_v01.account_replay_v02.run import safe_metrics
 
 
 class ProspectiveAcceptanceTests(TestCase):
@@ -65,6 +67,29 @@ class ProspectiveAcceptanceTests(TestCase):
         self.assertEqual(trace['minimum_candidates_per_boundary'], 30)
         self.assertFalse(trace['live_allow_short_flag_used'])
 
+    def test_mock_ledger_is_read_only_and_matches_filled_remainder(self):
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / 'mock_short_test.sqlite'
+            at = datetime(2026, 10, 14, 9, 10, tzinfo=ZoneInfo('Asia/Taipei'))
+            safety = ShortCoverSafety(path, account='S1', symbol='TEST')
+            entry = safety.entry('paper-entry', 1000, 100., at)
+            safety.fill(entry.order_id, 'entry-fill', 1000, 100.)
+            safety.reconcile(**safety.mock_snapshot())
+            cover = safety.cover('paper-cover', at=at, ask=99., ask_quantity=1000, quote_at=at)
+            safety.fill(cover.order_id, 'cover-fill', 1000, 99.)
+            safety.reconcile(**safety.mock_snapshot())
+            safety.close()
+            ledger = inspect_mock_ledger(path, account='S1', symbol='TEST',
+                                         trade={'entry_quantity': 1000, 'covered_shares': 1000, 'residual_shares': 0},
+                                         saved_events=[])
+            self.assertEqual(ledger['issues'], [])
+            self.assertEqual(ledger['remaining_shares'], 0)
+            self.assertEqual(ledger['order_count'], 2)
+            wrong = inspect_mock_ledger(path, account='S1', symbol='TEST',
+                                        trade={'entry_quantity': 1000, 'covered_shares': 0, 'residual_shares': 1000},
+                                        saved_events=[])
+            self.assertIn('MOCK_LEDGER_FILL_POSITION_MISMATCH', wrong['issues'])
+
     def test_first_complete_source_starts_on_october_14_and_requires_coverage(self):
         with TemporaryDirectory() as folder:
             root = Path(folder)
@@ -94,13 +119,18 @@ class ProspectiveAcceptanceTests(TestCase):
                 {'stock_id': f'{n:04d}', 'sell_first_suspended': 'UNKNOWN'} for n in range(30)]})
             write(day / 'signal_episodes.json', [])
             for account in ('S0', 'S1', 'S4'):
-                write(day / account / 'report.json', {'logical_signal_samples': 0, 'unit_status': 'UNIT_UNVERIFIED'})
+                trade_rows = {}
                 for unit in (1000, 1):
-                    write(day / account / f'unit_{unit}/trade.json', {
+                    trade = {
                         'variant': account, 'volume_multiplier': unit, 'unit_status': 'UNIT_UNVERIFIED',
-                        'status': 'NO_TRADE', 'signal_sample_count': 0, 'independent_trade_sample': False,
+                        'date': '20261014', 'status': 'NO_TRADE', 'net_pnl': 0,
+                        'signal_sample_count': 0, 'independent_trade_sample': False,
                         'entry_quantity': 0, 'residual_shares': 0,
-                        'cover_safety': {'status': 'NO_FILLED_SHORT_TO_MANAGE'}})
+                        'cover_safety': {'status': 'NO_FILLED_SHORT_TO_MANAGE'}}
+                    trade_rows[str(unit)] = trade
+                    write(day / account / f'unit_{unit}/trade.json', trade)
+                write(day / account / 'report.json', {'logical_signal_samples': 0, 'unit_status': 'UNIT_UNVERIFIED',
+                    'conditional_metrics': {unit: safe_metrics([row]) for unit, row in trade_rows.items()}})
             stocks = {f'{n:04d}': {'ticks': [1], 'books': [1]} for n in range(30)}
             depths = {s: [1] for s in stocks}
             watch = {'stocks': [{'stock_id': s} for s in stocks]}
@@ -113,7 +143,9 @@ class ProspectiveAcceptanceTests(TestCase):
                 patch('raw_short_shadow_v01.prospective_acceptance.replay_raw_selection', return_value=((
                     {'S0': None, 'S1': None, 'S4': None}, [], [], 'UNKNOWN', None),
                     {'all_candidate_symbols_scanned_at_every_boundary': True,
-                     'selected_s1_was_raw_short_candidate': True, 'live_allow_short_flag_used': False})):
+                     'selected_s1_was_raw_short_candidate': True, 'live_allow_short_flag_used': False})), \
+                patch('raw_short_shadow_v01.prospective_acceptance.observed_replay', return_value={
+                    'date': '20261014', 'status': 'NO_TRADE', 'net_pnl': 0}):
                 result = audit_day(source, day, {'enabled_at': '2026-10-13T07:16:00+00:00'})
             self.assertEqual(result['status'], 'ACCEPTED')
             self.assertEqual({a['status'] for a in result['accounts'].values()}, {'NO_SIGNAL'})
