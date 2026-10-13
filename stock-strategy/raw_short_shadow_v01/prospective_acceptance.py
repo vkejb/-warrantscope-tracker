@@ -5,9 +5,12 @@ from dataclasses import asdict
 from datetime import datetime
 import json
 from pathlib import Path
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from short_side_study_v01.s4 import chronological_selection
+from short_side_study_v01 import s4 as selection_module
+from short_side_study_v01.policy import StudyEngine
+from yuanta_live_runtime_v01.strategy import LiveDirectionEngine
 from yuanta_intraday_shadow_v01.live_parity_backtest import _validate_full_session_coverage
 
 from .main import DEFAULT_RUNTIME, STRATEGY, inspect_published, is_prospective, load_activation
@@ -45,6 +48,45 @@ def classify_account(signal, *, source_ok, candidate_data_ok, benchmark_ok):
     if not source_ok or not candidate_data_ok or (benchmark_ok is False):
         return 'DATA_MISSING'
     return 'SIGNAL' if signal is not None else 'NO_SIGNAL'
+
+
+def replay_raw_selection(stocks, market, date, vetoes):
+    """Trace original S1 raw signal calls over the complete archived cohort."""
+    scanned = {}
+    raw_short = set()
+    s1_live_gate_calls = []
+    original_live_choose = LiveDirectionEngine.choose_entry
+
+    def traced_live_choose(engine, decision, *, allow_short):
+        if getattr(engine, 'variant', None) == 'S1':
+            s1_live_gate_calls.append({'decision_time': decision.isoformat(), 'allow_short': allow_short})
+        return original_live_choose(engine, decision, allow_short=allow_short)
+
+    class TracedStudyEngine(StudyEngine):
+        def _signal_for(self, symbol, decision):
+            result = super()._signal_for(symbol, decision)
+            if self.variant == 'S1':
+                scanned.setdefault(decision.isoformat(), set()).add(symbol)
+                if result is not None and result['side'] == 'SHORT':
+                    raw_short.add((symbol, decision.isoformat()))
+            return result
+
+    with patch.object(selection_module, 'StudyEngine', TracedStudyEngine), \
+         patch.object(LiveDirectionEngine, 'choose_entry', traced_live_choose):
+        selected, approvals, ties, regime, context = selection_module.chronological_selection(
+            stocks, market, date, vetoes)
+    candidates = set(stocks)
+    scan_complete = bool(scanned) and all(seen == candidates for seen in scanned.values())
+    s1 = selected['S1']
+    s1_in_raw = s1 is None or (s1.stock_id, s1.decision_time.isoformat()) in raw_short
+    trace = {'source': 'ORIGINAL__signal_for_ON_ARCHIVED_TICK_AND_BOOK',
+             'candidate_count': len(candidates), 'decision_boundaries_scanned': len(scanned),
+             'minimum_candidates_per_boundary': min(map(len, scanned.values()), default=0),
+             'all_candidate_symbols_scanned_at_every_boundary': scan_complete,
+             'raw_short_candidate_boundary_count': len(raw_short),
+             'selected_s1_was_raw_short_candidate': s1_in_raw,
+             'live_allow_short_flag_used': bool(s1_live_gate_calls)}
+    return (selected, approvals, ties, regime, context), trace
 
 
 def audit_day(source_dir, day_dir, activation):
@@ -92,7 +134,7 @@ def audit_day(source_dir, day_dir, activation):
         issues.append('QUALIFICATION_SNAPSHOT_MISSING_OR_WRONG_DATE')
     vetoes = {r['stock_id']: False for r in saved_qualification.get('rows', []) if r.get('sell_first_suspended') is True}
     try:
-        signals, approvals, _, _, _ = chronological_selection(stocks, market, date, vetoes)
+        (signals, approvals, _, _, _), raw_trace = replay_raw_selection(stocks, market, date, vetoes)
     except Exception as exc:
         return {'status': 'DATA_MISSING', 'date': date, 'source_run_id': manifest['run_id'],
                 'issues': issues + ['RAW_REPLAY_FAILED:' + type(exc).__name__ + ': ' + str(exc)],
@@ -100,6 +142,10 @@ def audit_day(source_dir, day_dir, activation):
     saved_episodes = json.loads((day_dir / 'signal_episodes.json').read_text())
     if saved_episodes != json.loads(json.dumps(episodes(approvals), default=str)):
         issues.append('SIGNAL_EPISODE_REPLAY_MISMATCH')
+    if (not raw_trace['all_candidate_symbols_scanned_at_every_boundary']
+            or not raw_trace['selected_s1_was_raw_short_candidate']
+            or raw_trace['live_allow_short_flag_used']):
+        issues.append('RAW_SHORT_FULL_COHORT_TRACE_FAILED')
     accounts = {}
     for account in VARIANTS:
         signal = signals[account]
@@ -149,7 +195,7 @@ def audit_day(source_dir, day_dir, activation):
     issues.extend(f'{a}:{item}' for a, v in accounts.items() for item in v['issues'])
     return {'status': 'ACCEPTED' if not issues and all(a['status'] != 'DATA_MISSING' for a in accounts.values()) else 'NEEDS_REVIEW',
             'date': date, 'source_run_id': manifest['run_id'], 'source_manifest_sha256': sha(source_dir / 'run_manifest.json'),
-            'coverage': coverage, 'quality': quality, 'missing_candidate_data': missing,
+            'coverage': coverage, 'quality': quality, 'missing_candidate_data': missing, 'raw_short_trace': raw_trace,
             'unit_status': 'UNIT_UNVERIFIED', 'fills_are_not_broker_verified': True,
             'accounts': accounts, 'issues': issues}
 

@@ -7,7 +7,7 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from raw_short_shadow_v01.pipeline import write
-from raw_short_shadow_v01.prospective_acceptance import audit_day, classify_account, first_complete_source
+from raw_short_shadow_v01.prospective_acceptance import audit_day, classify_account, first_complete_source, replay_raw_selection
 from short_side_study_v01.policy import StudyEngine
 
 
@@ -40,6 +40,30 @@ class ProspectiveAcceptanceTests(TestCase):
         self.assertEqual(classify_account(None, source_ok=False, candidate_data_ok=True, benchmark_ok=True), 'DATA_MISSING')
         self.assertEqual(classify_account(None, source_ok=True, candidate_data_ok=False, benchmark_ok=True), 'DATA_MISSING')
         self.assertEqual(classify_account(None, source_ok=True, candidate_data_ok=True, benchmark_ok=False), 'DATA_MISSING')
+
+    def test_raw_trace_replays_all_30_without_long_filtered_pool(self):
+        at = datetime(2026, 10, 14, 9, 10, tzinfo=ZoneInfo('Asia/Taipei'))
+        symbols = [f'{n:04d}' for n in range(30)]
+        def raw_signal(engine, symbol, decision):
+            if symbol != symbols[-1]:
+                return None
+            return {'stock_id': symbol, 'stock_name': symbol, 'side': 'SHORT', 'decision_time': decision,
+                    'score': .8, 'volume_delta': -.5, 'large_trade_delta': -.5, 'vwap_gap': -.01,
+                    'book_imbalance': -.3, 'spread_bps': 10., 'entry_price': 100., 'quantity': 1000,
+                    'return_5m': None, 'directional_opening_extension': .005,
+                    'directional_vwap_extension': .005, 'breakout_boundary_price': 101.}
+        stocks = {s: {'ticks': [], 'books': []} for s in symbols}
+        with patch.object(StudyEngine, '_signal_for', raw_signal), \
+             patch.object(StudyEngine, '_market_context', return_value=None), \
+             patch('short_side_study_v01.s4._feed_until'), \
+             patch('short_side_study_v01.s4._decision_times', return_value=[at]):
+            (selected, _, _, _, _), trace = replay_raw_selection(stocks, {'0050': {'ticks': [], 'books': []}}, '20261014', {})
+        self.assertIsNone(selected['S0'])
+        self.assertEqual(selected['S1'].stock_id, symbols[-1])
+        self.assertTrue(trace['all_candidate_symbols_scanned_at_every_boundary'])
+        self.assertTrue(trace['selected_s1_was_raw_short_candidate'])
+        self.assertEqual(trace['minimum_candidates_per_boundary'], 30)
+        self.assertFalse(trace['live_allow_short_flag_used'])
 
     def test_first_complete_source_starts_on_october_14_and_requires_coverage(self):
         with TemporaryDirectory() as folder:
@@ -86,8 +110,10 @@ class ProspectiveAcceptanceTests(TestCase):
                 patch('raw_short_shadow_v01.prospective_acceptance.load_inputs', return_value=(
                     stocks, market, depths, {}, manifest, watch, {},
                     {'invalid_depth_rows': 0, 'market_context': 'AVAILABLE_DESCRIPTIVE_ONLY'})), \
-                patch('raw_short_shadow_v01.prospective_acceptance.chronological_selection', return_value=(
-                    {'S0': None, 'S1': None, 'S4': None}, [], [], 'UNKNOWN', None)):
+                patch('raw_short_shadow_v01.prospective_acceptance.replay_raw_selection', return_value=((
+                    {'S0': None, 'S1': None, 'S4': None}, [], [], 'UNKNOWN', None),
+                    {'all_candidate_symbols_scanned_at_every_boundary': True,
+                     'selected_s1_was_raw_short_candidate': True, 'live_allow_short_flag_used': False})):
                 result = audit_day(source, day, {'enabled_at': '2026-10-13T07:16:00+00:00'})
             self.assertEqual(result['status'], 'ACCEPTED')
             self.assertEqual({a['status'] for a in result['accounts'].values()}, {'NO_SIGNAL'})
