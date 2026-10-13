@@ -1,0 +1,32 @@
+{
+  "status": "VERIFIED_CONDITIONAL_LEGAL_LOT_CHRONOLOGICAL_ACCOUNT",
+  "rows": 108,
+  "tests_passed": 54,
+  "1000_unit_original_parity_rows": 54,
+  "unit_status": "UNIT_UNVERIFIED",
+  "eligibility": "ELIGIBILITY_UNPROVEN",
+  "live_or_strategy_source_changes": false,
+  "new_short_threshold_or_0050_gate": false,
+  "output_hashes": {
+    "quantity_parity.json": "2d7d2e85884a9c6a9c76d0d304c0de51fd41342dd685b9c83aa2c0a9eb98d0c9",
+    "summary.json": "07369d9c739b829baded7e0e8adb877b4d7930a6eeea8d860e28bd96ffa9f200",
+    "report_zh-TW.txt": "548e1186a394440c762bee4317cf2f5604c456257e57793c78658711b4daaa44",
+    "provenance.json": "899de4e01c67ed9770f02aaab96614ecaa35f6c5e7ae27c37396620a578ec616",
+    "baseline_parity.json": "d38cee91be114d7a34b1e747c47ebbc339a6fcb1a24ceb5d69fd5ef7eacd92ff",
+    "tests.txt": "c6c24bb66b732e27c3f1c2331189e9c4fb1a5e1efd03c9db6dff53ce774911a1",
+    "counterfactual_replacements.json": "93e82b33c03ac4db52f13213d74cbbf5897cbc0b5882cff76c44181257c7db28",
+    "simultaneous_cases.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "approved_boundaries.json": "facf1d625bd8eadec0242d9a0c457744b03254d66082c92ed26c086e8f7b9550",
+    "daily_results.json": "45d868bf26ea046ad183830c8a15f2aa7932e933906f83969bb1832be2fb8b16",
+    "source_quality.json": "c931ded681a8217679f34238b6d547ec4e1e0a1b8d524490a54e21f32d0588ac",
+    "selections.json": "8f315cc44cc7cddbfd444ba7d511172dbab8979814722a9c0b8bc0af149a08c2",
+    "contract.json": "8c0213234aa31bff1e150281678af0d3ce2a31b8016c130f013bdf3b92d97de4"
+  },
+  "implementation_hashes": {
+    "run.py": "c758c938bb0f19550d4bcef0ddaabce1bcf5b72ef0815a3a032b36e9101edc85",
+    "execution.py": "14e2ab5d54f0feeaf687ea404a8d4f1cf94c0ad3c681d3f8380cdd51e5854676",
+    "__init__.py": "d5485bbe5df94a8fc3fbcbc49aaea9f9117387787dfc614efeb7264a273d8b0a",
+    "verify.py": "ab301bcc504b9e744698e6d73327df05c6b1525a4f9cefb44cc7faec6e09c29a",
+    "tests/test_account.py": "11a868f9bea359abd34429825afb3204bf9ac92430d0b44fe553efa719bf46f5"
+  }
+}

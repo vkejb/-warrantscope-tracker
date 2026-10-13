@@ -1,0 +1,29 @@
+{
+  "prior_unit_audit_manifest_sha256": "b524400ee9265fdd82ec73784b930cdcf8ab59216b288806a70abbe5b4dad420",
+  "legacy_s4_output_hashes": {
+    "summary.json": "ac3885fce3b8a87885a2f022f59fb532c39a3e82dbecb157ddab344151593c71",
+    "report_zh-TW.txt": "7e26cb8231b5791ddf19eab3e08a6a435b4c395dcf00f00e8b3b2899707dc2e7",
+    "baseline_parity.json": "61a5c844bffe0ade3f33c1142a40102600f3a28e849c31a203981ef5f4e99f4b",
+    "tests.txt": "bc3927478c5d454212be81e116d6a42a1bec14a6c5d3c589b4151540839576dc",
+    "counterfactual_replacements.json": "a41feeddfc38860528bbf5e6675d65dc76392ff6e3fcfa04b95fb7bb06fe4a08",
+    "simultaneous_cases.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "approved_boundaries.json": "facf1d625bd8eadec0242d9a0c457744b03254d66082c92ed26c086e8f7b9550",
+    "daily_results.json": "034427969232c10743a3a6b3c7a21437d65fe7752837329c42df72a28b83f198",
+    "source_quality.json": "c931ded681a8217679f34238b6d547ec4e1e0a1b8d524490a54e21f32d0588ac",
+    "selections.json": "8f315cc44cc7cddbfd444ba7d511172dbab8979814722a9c0b8bc0af149a08c2",
+    "validation_manifest.json": "ccf5a764696c049fa1fe610e600d4c7eee3b43e1c78696b799177e34ca19b15c",
+    "contract.json": "ca98c94035d70ff8bedcfb20935a71b3a37a1cba6c5616bef620ec6a373aa3a4"
+  },
+  "unchanged_legacy_code_hashes": {
+    "short_side_study_v01/s4.py": "c8634c5621996129867525bc1471eb7b128d344d47a87f4b58bbd0ad4fd9ad4f",
+    "short_side_study_v01/replay.py": "5c42a894a437857e5b7264170e2b1d8ad40e90c48fb923dd6e7d8437f96b7f3d",
+    "short_side_study_v01/execution.py": "16e489548a1d01820c918e0fb8205d3e3a552f5354421230f6216d37a2a450d2",
+    "short_side_study_v01/policy.py": "c8ca7fc177c53b19676aebaae3601a3bd6a504058bd6ce0cc247b22b024ad850",
+    "short_side_study_v01/statistics.py": "faa83d15e6aa65830f3e5869be4c7729bcd3121636c405f4baeefb8a27eee9ec",
+    "yuanta_live_runtime_v01/strategy.py": "77339858f1c2ff36401dd1174f3cb993d65c0e93574657a40e4fad7b045f6115"
+  },
+  "no_live_changes": true,
+  "broker_connections": 0,
+  "actual_orders": 0,
+  "actual_fills": 0
+}

@@ -1,0 +1,338 @@
+[
+  {
+    "date": "20260929",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20260929",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20260929",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20260929",
+    "variant": "S4",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20260929",
+    "variant": "S4",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20260929",
+    "variant": "S4",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261001",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261001",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261001",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261001",
+    "variant": "S4",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261001",
+    "variant": "S4",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261001",
+    "variant": "S4",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261002",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 2000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261002",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 2000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261002",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 2000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261002",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261002",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261002",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261002",
+    "variant": "S4",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 2000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261002",
+    "variant": "S4",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 2000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261002",
+    "variant": "S4",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 2000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261005",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 2000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261005",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 2000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261005",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 2000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261005",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261005",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261005",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261005",
+    "variant": "S4",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261005",
+    "variant": "S4",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261005",
+    "variant": "S4",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261006",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261006",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261006",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261006",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261006",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261006",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 3000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261006",
+    "variant": "S4",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261006",
+    "variant": "S4",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261006",
+    "variant": "S4",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261008",
+    "variant": "S0",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261008",
+    "variant": "S0",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261008",
+    "variant": "S0",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261008",
+    "variant": "S1",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261008",
+    "variant": "S1",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261008",
+    "variant": "S1",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 4000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261008",
+    "variant": "S4",
+    "scenario": "BASE_CURRENT_EXECUTION",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261008",
+    "variant": "S4",
+    "scenario": "PLUS_1_TICK_ADVERSE",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  },
+  {
+    "date": "20261008",
+    "variant": "S4",
+    "scenario": "DELAY_5_SECONDS",
+    "same_target_shares": 1000,
+    "legal_fill_increment": 1000
+  }
+]

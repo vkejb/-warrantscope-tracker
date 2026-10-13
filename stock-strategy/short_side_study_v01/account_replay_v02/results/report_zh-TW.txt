@@ -1,0 +1,115 @@
+S4：LONG A + raw SHORT，合法整股容量的 chronological 帳戶回放
+UNIT_UNVERIFIED / ELIGIBILITY_UNPROVEN / NO_TRUE_OUT_OF_SAMPLE_SET
+本報告取代舊1股敏感度的非法小股數成交解讀，不覆寫舊檔。
+原base訊號、SHORT thresholds、confirmation、anti-chase、資金190000、成本、-3500 hard stop、MFE_V1與13:20 exit不變。
+LONG與SHORT獨立approved；最早approved佔用當日唯一機會，即使未成交也不轉向其他交易。
+同一boundary才用原score/notional/stable symbol排序，沒有事後選盈利方向或LONG虧損後再開SHORT。
+SHORT使用bid深度，cover使用ask深度。0050 regime只是first SHORT approved時的描述，沒有新gate。
+唯一執行修正：raw-share容量記帳後，每價位成交必須為1000股倍數；相同請求數量，不偷縮倉、不混零股。
+未成交進場餘量假設立即撤除是研究模型假設，沒有券商受理/撤單驗證；不是正式execution認證。
+未完成回補/缺報價結果保留null；不以完成子集冒充完整帳戶損益、PF、勝率或回撤。
+每日已實現DD與盤中quote-mark DD並列；估值報價不保證能足量清倉。
+
+各版完整比較：
+S0 / BASE_CURRENT_EXECUTION / 1000股每單位：進場5；完成5；net -6,204.00；PF 0.44；win% 40.00；avg win 2,464.00；avg loss -3,710.67；daily DD 6,204.00；intraday mark DD 8,984.00；未完成/未知日 0
+S1 / BASE_CURRENT_EXECUTION / 1000股每單位：進場5；完成5；net 5,075.00；PF 2.11；win% 60.00；avg win 3,211.67；avg loss -2,280.00；daily DD 4,560.00；intraday mark DD 7,567.00；未完成/未知日 0
+S4 / BASE_CURRENT_EXECUTION / 1000股每單位：進場6；完成6；net -1,439.00；PF 0.87；win% 50.00；avg win 3,239.33；avg loss -3,719.00；daily DD 7,193.00；intraday mark DD 8,443.00；未完成/未知日 0
+S0 / BASE_CURRENT_EXECUTION / 1股每單位：進場0；完成0；net 0.00；PF n.a.；win% n.a.；avg win n.a.；avg loss n.a.；daily DD 0.00；intraday mark DD 0.00；未完成/未知日 0
+S1 / BASE_CURRENT_EXECUTION / 1股每單位：進場0；完成0；net 0.00；PF n.a.；win% n.a.；avg win n.a.；avg loss n.a.；daily DD 0.00；intraday mark DD 0.00；未完成/未知日 0
+S4 / BASE_CURRENT_EXECUTION / 1股每單位：進場0；完成0；net 0.00；PF n.a.；win% n.a.；avg win n.a.；avg loss n.a.；daily DD 0.00；intraday mark DD 0.00；未完成/未知日 0
+S0 / PLUS_1_TICK_ADVERSE / 1000股每單位：進場5；完成5；net -12,595.00；PF 0.15；win% 20.00；avg win 2,141.00；avg loss -3,684.00；daily DD 12,595.00；intraday mark DD 13,151.00；未完成/未知日 0
+S1 / PLUS_1_TICK_ADVERSE / 1000股每單位：進場5；完成5；net 1,090.00；PF 1.15；win% 60.00；avg win 2,827.67；avg loss -3,696.50；daily DD 7,393.00；intraday mark DD 10,560.00；未完成/未知日 0
+S4 / PLUS_1_TICK_ADVERSE / 1000股每單位：進場6；完成6；net -7,979.00；PF 0.46；win% 33.33；avg win 3,390.50；avg loss -3,690.00；daily DD 7,979.00；intraday mark DD 9,817.00；未完成/未知日 0
+S0 / PLUS_1_TICK_ADVERSE / 1股每單位：進場0；完成0；net 0.00；PF n.a.；win% n.a.；avg win n.a.；avg loss n.a.；daily DD 0.00；intraday mark DD 0.00；未完成/未知日 0
+S1 / PLUS_1_TICK_ADVERSE / 1股每單位：進場0；完成0；net 0.00；PF n.a.；win% n.a.；avg win n.a.；avg loss n.a.；daily DD 0.00；intraday mark DD 0.00；未完成/未知日 0
+S4 / PLUS_1_TICK_ADVERSE / 1股每單位：進場0；完成0；net 0.00；PF n.a.；win% n.a.；avg win n.a.；avg loss n.a.；daily DD 0.00；intraday mark DD 0.00；未完成/未知日 0
+S0 / DELAY_5_SECONDS / 1000股每單位：進場5；完成5；net -6,004.00；PF 0.46；win% 40.00；avg win 2,563.50；avg loss -3,710.33；daily DD 6,004.00；intraday mark DD 8,983.00；未完成/未知日 0
+S1 / DELAY_5_SECONDS / 1000股每單位：進場5；完成5；net 2,287.00；PF 1.31；win% 60.00；avg win 3,211.67；avg loss -3,674.00；daily DD 7,348.00；intraday mark DD 10,365.00；未完成/未知日 0
+S4 / DELAY_5_SECONDS / 1000股每單位：進場6；完成6；net -1,089.00；PF 0.90；win% 50.00；avg win 3,305.67；avg loss -3,668.67；daily DD 7,042.00；intraday mark DD 8,493.00；未完成/未知日 0
+S0 / DELAY_5_SECONDS / 1股每單位：進場0；完成0；net 0.00；PF n.a.；win% n.a.；avg win n.a.；avg loss n.a.；daily DD 0.00；intraday mark DD 0.00；未完成/未知日 0
+S1 / DELAY_5_SECONDS / 1股每單位：進場0；完成0；net 0.00；PF n.a.；win% n.a.；avg win n.a.；avg loss n.a.；daily DD 0.00；intraday mark DD 0.00；未完成/未知日 0
+S4 / DELAY_5_SECONDS / 1股每單位：進場0；完成0；net 0.00；PF n.a.；win% n.a.；avg win n.a.；avg loss n.a.；daily DD 0.00；intraday mark DD 0.00；未完成/未知日 0
+
+每日帳戶選擇/被取代交易（base，1000假設；反事實未加入帳戶）：
+20260929：LONG 3605 @ 2026-09-29T09:09:30+08:00；net -3,579.00；vs LONG 0.00
+  LONG_ONLY_OPPORTUNITY；被取代 None None @ None；counterfactual n.a.
+20261001：SHORT 4956 @ 2026-10-01T09:27:30+08:00；net -3,614.00；vs LONG -3,614.00
+  NEW_SHORT_OPPORTUNITY；被取代 None None @ None；counterfactual n.a.
+20261002：LONG 3094 @ 2026-10-02T09:13:30+08:00；net 2,542.00；vs LONG 0.00
+  LONG_BLOCKS_LATER_SHORT；被取代 SHORT 2340 @ 2026-10-02T09:26:30+08:00；counterfactual -946.00
+20261005：SHORT 6226 @ 2026-10-05T09:09:00+08:00；net 4,790.00；vs LONG 8,379.00
+  DIRECTION_REPLACEMENT；被取代 LONG 6456 @ 2026-10-05T09:12:30+08:00；counterfactual -3,589.00
+20261006：LONG 2340 @ 2026-10-06T11:25:30+08:00；net 2,386.00；vs LONG 0.00
+  LONG_BLOCKS_LATER_SHORT；被取代 SHORT 2305 @ 2026-10-06T12:35:00+08:00；counterfactual 3,025.00
+20261008：LONG 6207 @ 2026-10-08T09:13:30+08:00；net -3,964.00；vs LONG 0.00
+  LONG_BLOCKS_LATER_SHORT；被取代 SHORT 6226 @ 2026-10-08T09:34:00+08:00；counterfactual 1,820.00
+
+1股假設的每日選擇與真正成交（base；未成交為模型零交易，不是資料未知被填零）：
+20260929 LONG 3605：status UNFILLED_ENTRY；請求 1000；成交 0；殘餘 0；net 0.00
+20261001 SHORT 4956：status UNFILLED_ENTRY；請求 3000；成交 0；殘餘 0；net 0.00
+20261002 LONG 3094：status UNFILLED_ENTRY；請求 2000；成交 0；殘餘 0；net 0.00
+20261005 SHORT 6226：status UNFILLED_ENTRY；請求 3000；成交 0；殘餘 0；net 0.00
+20261006 LONG 2340：status UNFILLED_ENTRY；請求 4000；成交 0；殘餘 0；net 0.00
+20261008 LONG 6207：status UNFILLED_ENTRY；請求 1000；成交 0；殘餘 0；net 0.00
+
+S1 regime僅描述（base，1000假設）：
+BEARISH：trade count 0；net 0.00
+NEUTRAL：trade count 1；net -946.00
+BULLISH：trade count 4；net 6,021.00
+UNKNOWN：trade count 0；net 0.00
+
+改善來源（base，1000假設）：
+NEW_SHORT_OPPORTUNITY：1日 ['20261001']；vs S0增量 -3,614.00
+DIRECTION_REPLACEMENT：1日 ['20261005']；vs S0增量 8,379.00
+LONG_BLOCKS_LATER_SHORT：3日 ['20261002', '20261006', '20261008']；vs S0增量 0.00
+LONG_ONLY_OPPORTUNITY：1日 ['20260929']；vs S0增量 0.00
+NO_APPROVED_SIGNAL：0日 []；vs S0增量 0.00
+LONG losing days改善：['20261005']
+LONG winners被取代：[]
+
+壓力：remove-best / remove-worst / leave-one-day-out（全部情境、兩種單位）：
+S0 / BASE_CURRENT_EXECUTION / 1000：remove best net -8,746.00；remove worst net -2,240.00
+  remove 20260929 net -2,625.00；remove 20261001 net -6,204.00；remove 20261002 net -8,746.00；remove 20261005 net -2,615.00；remove 20261006 net -8,590.00；remove 20261008 net -2,240.00
+S1 / BASE_CURRENT_EXECUTION / 1000：remove best net 285.00；remove worst net 8,689.00
+  remove 20260929 net 5,075.00；remove 20261001 net 8,689.00；remove 20261002 net 6,021.00；remove 20261005 net 285.00；remove 20261006 net 2,050.00；remove 20261008 net 3,255.00
+S4 / BASE_CURRENT_EXECUTION / 1000：remove best net -6,229.00；remove worst net 2,525.00
+  remove 20260929 net 2,140.00；remove 20261001 net 2,175.00；remove 20261002 net -3,981.00；remove 20261005 net -6,229.00；remove 20261006 net -3,825.00；remove 20261008 net 2,525.00
+S0 / BASE_CURRENT_EXECUTION / 1：remove best net n.a.；remove worst net n.a.
+  remove 20260929 net 0.00；remove 20261001 net 0.00；remove 20261002 net 0.00；remove 20261005 net 0.00；remove 20261006 net 0.00；remove 20261008 net 0.00
+S1 / BASE_CURRENT_EXECUTION / 1：remove best net n.a.；remove worst net n.a.
+  remove 20260929 net 0.00；remove 20261001 net 0.00；remove 20261002 net 0.00；remove 20261005 net 0.00；remove 20261006 net 0.00；remove 20261008 net 0.00
+S4 / BASE_CURRENT_EXECUTION / 1：remove best net n.a.；remove worst net n.a.
+  remove 20260929 net 0.00；remove 20261001 net 0.00；remove 20261002 net 0.00；remove 20261005 net 0.00；remove 20261006 net 0.00；remove 20261008 net 0.00
+S0 / PLUS_1_TICK_ADVERSE / 1000：remove best net -14,736.00；remove worst net -8,630.00
+  remove 20260929 net -9,014.00；remove 20261001 net -12,595.00；remove 20261002 net -14,736.00；remove 20261005 net -9,005.00；remove 20261006 net -8,995.00；remove 20261008 net -8,630.00
+S1 / PLUS_1_TICK_ADVERSE / 1000：remove best net -3,550.00；remove worst net 4,869.00
+  remove 20260929 net 1,090.00；remove 20261001 net 4,704.00；remove 20261002 net 4,869.00；remove 20261005 net -3,550.00；remove 20261006 net -1,334.00；remove 20261008 net -329.00
+S4 / PLUS_1_TICK_ADVERSE / 1000：remove best net -12,619.00；remove worst net -4,014.00
+  remove 20260929 net -4,398.00；remove 20261001 net -4,365.00；remove 20261002 net -10,120.00；remove 20261005 net -12,619.00；remove 20261006 net -4,379.00；remove 20261008 net -4,014.00
+S0 / PLUS_1_TICK_ADVERSE / 1：remove best net n.a.；remove worst net n.a.
+  remove 20260929 net 0.00；remove 20261001 net 0.00；remove 20261002 net 0.00；remove 20261005 net 0.00；remove 20261006 net 0.00；remove 20261008 net 0.00
+S1 / PLUS_1_TICK_ADVERSE / 1：remove best net n.a.；remove worst net n.a.
+  remove 20260929 net 0.00；remove 20261001 net 0.00；remove 20261002 net 0.00；remove 20261005 net 0.00；remove 20261006 net 0.00；remove 20261008 net 0.00
+S4 / PLUS_1_TICK_ADVERSE / 1：remove best net n.a.；remove worst net n.a.
+  remove 20260929 net 0.00；remove 20261001 net 0.00；remove 20261002 net 0.00；remove 20261005 net 0.00；remove 20261006 net 0.00；remove 20261008 net 0.00
+S0 / DELAY_5_SECONDS / 1000：remove best net -8,790.00；remove worst net -2,040.00
+  remove 20260929 net -2,425.00；remove 20261001 net -6,004.00；remove 20261002 net -8,345.00；remove 20261005 net -2,416.00；remove 20261006 net -8,790.00；remove 20261008 net -2,040.00
+S1 / DELAY_5_SECONDS / 1000：remove best net -2,503.00；remove worst net 6,172.00
+  remove 20260929 net 2,287.00；remove 20261001 net 5,750.00；remove 20261002 net 6,172.00；remove 20261005 net -2,503.00；remove 20261006 net -738.00；remove 20261008 net 467.00
+S4 / DELAY_5_SECONDS / 1000：remove best net -5,879.00；remove worst net 2,875.00
+  remove 20260929 net 2,490.00；remove 20261001 net 2,374.00；remove 20261002 net -3,430.00；remove 20261005 net -5,879.00；remove 20261006 net -3,875.00；remove 20261008 net 2,875.00
+S0 / DELAY_5_SECONDS / 1：remove best net n.a.；remove worst net n.a.
+  remove 20260929 net 0.00；remove 20261001 net 0.00；remove 20261002 net 0.00；remove 20261005 net 0.00；remove 20261006 net 0.00；remove 20261008 net 0.00
+S1 / DELAY_5_SECONDS / 1：remove best net n.a.；remove worst net n.a.
+  remove 20260929 net 0.00；remove 20261001 net 0.00；remove 20261002 net 0.00；remove 20261005 net 0.00；remove 20261006 net 0.00；remove 20261008 net 0.00
+S4 / DELAY_5_SECONDS / 1：remove best net n.a.；remove worst net n.a.
+  remove 20260929 net 0.00；remove 20261001 net 0.00；remove 20261002 net 0.00；remove 20261005 net 0.00；remove 20261006 net 0.00；remove 20261008 net 0.00
+
+最後四項回答（1000假設只描述樣本，不是已確認實盤edge）：
+1. raw SHORT值得維持隔離prospective shadow來累積證據；5筆樣本、移除最佳與單位/資格未確認，不能稱正期望已成立。
+2. S4比LONG-only少虧，但base、+1tick、5sec delay仍為負；每日已實現DD反而較大，不構成可交易優勢。
+3. 本樣本主要由較早SHORT替換一筆LONG虧損而改善；新增SHORT機會是負貢獻。沒有搶掉LONG winner，但也有較早LONG擋住後續獲利SHORT。
+4. 不建議現在開始正式SHORT execution layer；先確認單位、資格/額度與prospective結果。只建議SHORT shadow，不啟用LIVE。
+1股假設按合法整張容量評估的成交/績效與1000假設並列；不可選擇較好假設猜真實單位。
+54項離線測試通過；1000假設54筆與舊S4輸出逐筆相同，1假設只修正非法成交增量。
+舊S4、單位稽核與LIVE原碼hash保持不變；無券商登入/下單，無push/merge/部署。

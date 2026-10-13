@@ -1,0 +1,488 @@
+[
+  {
+    "key": [
+      "20260929",
+      "S0",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20260929",
+      "S0",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20260929",
+      "S0",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20260929",
+      "S1",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20260929",
+      "S1",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20260929",
+      "S1",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20260929",
+      "S4",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20260929",
+      "S4",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20260929",
+      "S4",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261001",
+      "S0",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261001",
+      "S0",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261001",
+      "S0",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261001",
+      "S1",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261001",
+      "S1",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261001",
+      "S1",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261001",
+      "S4",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261001",
+      "S4",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261001",
+      "S4",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261002",
+      "S0",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261002",
+      "S0",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261002",
+      "S0",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261002",
+      "S1",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261002",
+      "S1",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261002",
+      "S1",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261002",
+      "S4",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261002",
+      "S4",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261002",
+      "S4",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261005",
+      "S0",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261005",
+      "S0",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261005",
+      "S0",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261005",
+      "S1",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261005",
+      "S1",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261005",
+      "S1",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261005",
+      "S4",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261005",
+      "S4",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261005",
+      "S4",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261006",
+      "S0",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261006",
+      "S0",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261006",
+      "S0",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261006",
+      "S1",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261006",
+      "S1",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261006",
+      "S1",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261006",
+      "S4",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261006",
+      "S4",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261006",
+      "S4",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261008",
+      "S0",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261008",
+      "S0",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261008",
+      "S0",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261008",
+      "S1",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261008",
+      "S1",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261008",
+      "S1",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261008",
+      "S4",
+      "BASE_CURRENT_EXECUTION",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261008",
+      "S4",
+      "PLUS_1_TICK_ADVERSE",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  },
+  {
+    "key": [
+      "20261008",
+      "S4",
+      "DELAY_5_SECONDS",
+      1000
+    ],
+    "matches_original_1000_unit_result": true
+  }
+]
