@@ -1,0 +1,40 @@
+{
+  "buy_prices": [
+    "53.6",
+    "53.5",
+    "53.4",
+    "53.3",
+    "53.2"
+  ],
+  "buy_volumes": [
+    "24",
+    "68",
+    "20",
+    "30",
+    "16"
+  ],
+  "event_type": "FIVE_LEVEL",
+  "index_flag": "IndexFlag50",
+  "market": "TPEX",
+  "received_at": "2026-10-13T01:29:29.175Z",
+  "role": "STAGE_A_CANDIDATE",
+  "sell_prices": [
+    "53.7",
+    "53.8",
+    "53.9",
+    "54.0",
+    "54.1"
+  ],
+  "sell_volumes": [
+    "5",
+    "12",
+    "46",
+    "203",
+    "54"
+  ],
+  "signal_date": "20261012",
+  "stage_a_rank": 19,
+  "stage_a_score": 0.0843268453696348,
+  "stock_id": "4903",
+  "stock_name": "聯光通"
+}

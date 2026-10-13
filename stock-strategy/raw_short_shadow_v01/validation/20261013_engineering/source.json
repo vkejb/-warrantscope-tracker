@@ -1,0 +1,37 @@
+{
+  "run_id": "20261013T005009.746979Z_cca032b2",
+  "session_date": "20261013",
+  "source_directory": "yuanta_intraday_shadow_v01/runtime/runs/20261013T005009.746979Z_cca032b2",
+  "manifest_sha256": "16ebfb4adc2e3a425cf76cfd2e3420d674510cd4650b97da838df188db54d4cb",
+  "watchlist_sha256": "0dddda63bf381b5a9e9b609763106cb7a93c58b7365ed6e78ba9efd290a2c451",
+  "started_at": "2026-10-13T00:50:09.761Z",
+  "ended_at": "2026-10-13T05:35:11.824Z",
+  "observation_scope": "ENGINEERING_ACCEPTANCE_NOT_PROSPECTIVE",
+  "unit_status": "UNIT_UNVERIFIED",
+  "eligibility": "ELIGIBILITY_UNPROVEN",
+  "accounts_are_not_combined": true,
+  "status": "PAPER_DAY_COMPLETE",
+  "coverage": {
+    "session_date": "20261013",
+    "source_run_ids": [
+      "20261013T005009.746979Z_cca032b2"
+    ],
+    "source_statuses": [
+      "COMPLETE"
+    ],
+    "started_at_taipei": "2026-10-13T08:50:09.761000+08:00",
+    "ended_at_taipei": "2026-10-13T13:35:11.824000+08:00",
+    "callback_errors": 0,
+    "coverage_status": "PARTIAL_SESSION"
+  },
+  "quality": {
+    "market_context": "AVAILABLE_DESCRIPTIVE_ONLY",
+    "invalid_depth_rows": 0
+  },
+  "artifact_hashes": {
+    "books.jsonl.gz": "735e551672b19c1c67cf2d2830998d239e33f6038feb1e32415664d122eaf27c",
+    "market_context_books.jsonl.gz": "559e83a65d14defe75abd40764947836baf2e4d935ed6f8133e56f48ff022ed0",
+    "market_context_ticks.jsonl.gz": "0016b6db1e2d2954ac5cd1df69f2a2d443101dd22c1b2115f9adff88b265941f",
+    "ticks.jsonl.gz": "73fe899806a8482d737393f70e9565ec6d21bab4d5f887e15fbb5f52779f5d50"
+  }
+}

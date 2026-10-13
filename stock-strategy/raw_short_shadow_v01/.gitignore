@@ -1,0 +1,6 @@
+__pycache__/
+runtime/
+validation/**/*.sqlite
+validation/**/*.sqlite-wal
+validation/**/*.sqlite-shm
+validation/replay-check*/

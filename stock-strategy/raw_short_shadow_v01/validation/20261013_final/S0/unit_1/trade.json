@@ -1,0 +1,27 @@
+{
+  "date": "20261013",
+  "variant": "S0",
+  "scenario": "BASE_CURRENT_EXECUTION",
+  "volume_multiplier": 1,
+  "status": "NO_TRADE",
+  "side": null,
+  "net_pnl": 0.0,
+  "residual_shares": 0,
+  "source_run_id": "20261013T005009.746979Z_cca032b2",
+  "eligibility": "ELIGIBILITY_UNPROVEN",
+  "depth_units": "DEPTH_UNITS_UNPROVEN",
+  "fill_increment_shares": 1000,
+  "execution_model": "DISPLAYED_DEPTH_LEGAL_ORDINARY_STOCK_LOTS",
+  "unit_status": "UNIT_UNVERIFIED",
+  "remainder_cancel_basis": "IMMEDIATE_CANCELLATION_MODEL_ASSUMPTION_NOT_BROKER_EVIDENCE",
+  "execution_attempts": [],
+  "observation_scope": "ENGINEERING_ACCEPTANCE_NOT_PROSPECTIVE",
+  "account_id": "S0:20261013:1",
+  "signal_sample_count": 0,
+  "independent_trade_sample": false,
+  "s1_regime_descriptive_only": null,
+  "cover_safety": {
+    "status": "NO_FILLED_SHORT_TO_MANAGE",
+    "actual_orders": 0
+  }
+}

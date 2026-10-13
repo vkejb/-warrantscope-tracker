@@ -1,0 +1,14 @@
+{
+  "mode": "MOCK_ONLY",
+  "account": "S1",
+  "symbol": "4903",
+  "baseline": 0,
+  "baseline_source": "SYNTHETIC_NOT_REAL_ACCOUNT",
+  "remaining_filled_short": 0,
+  "needs_reconcile": false,
+  "status": "FLAT",
+  "pending_orders": [],
+  "actual_orders": 0,
+  "broker_connections": 0,
+  "live_send_available": false
+}

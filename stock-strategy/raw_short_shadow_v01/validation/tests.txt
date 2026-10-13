@@ -1,0 +1,98 @@
+/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/raw_short_shadow_v01/tests
+test_account_specific_missing_day_not_hidden_as_zero (test_pipeline.WiringTests) ... ok
+test_bad_archive_preserved_as_missing_data_for_all_accounts (test_pipeline.WiringTests) ... ok
+test_consecutive_approved_boundaries_are_one_episode_not_samples (test_pipeline.WiringTests) ... ok
+test_daily_qualification_preserves_unknown_and_exact_date (test_pipeline.WiringTests) ... ok
+test_duplicate_day_not_counted_and_conflict_retained (test_pipeline.WiringTests) ... ok
+test_frozen_rules_and_isolated_accounts_no_live_capability (test_pipeline.WiringTests) ... ok
+test_known_suspension_only_reuses_existing_veto (test_pipeline.WiringTests) ... ok
+test_missing_0050_never_adds_short_gate (test_pipeline.WiringTests) ... ok
+test_no_backdated_prospective_session (test_pipeline.WiringTests) ... ok
+test_official_runtime_paths_cannot_be_written (test_pipeline.WiringTests) ... ok
+test_signal_gap_starts_episode_but_not_new_trade_sample (test_pipeline.WiringTests) ... ok
+test_twenty_entries_review_does_not_enable_live (test_pipeline.WiringTests) ... ok
+test_uncovered_paper_position_not_reset_next_day (test_pipeline.WiringTests) ... ok
+test_cancel_ack_before_final_snapshot_keeps_reservation (test_safety.CoverSafetyTests) ... ok
+test_cancel_failure_and_unknown_keep_exposure (test_safety.CoverSafetyTests) ... ok
+test_cancel_pending_then_fill_does_not_overbuy (test_safety.CoverSafetyTests) ... ok
+test_cannot_overbuy_on_fill_or_change_baseline (test_safety.CoverSafetyTests) ... ok
+test_cross_1320_no_entry_but_cover_remains_required (test_safety.CoverSafetyTests) ... ok
+test_duplicate_fill_and_same_intent_do_not_add_shares (test_safety.CoverSafetyTests) ... ok
+test_limit_up_no_ask_stays_uncovered (test_safety.CoverSafetyTests) ... ok
+test_manual_cover_before_rescue_preserves_baseline (test_safety.CoverSafetyTests) ... ok
+test_manual_cover_with_open_buy_cannot_mark_flat (test_safety.CoverSafetyTests) ... ok
+test_no_filled_entry_no_cover_intent (test_safety.CoverSafetyTests) ... ok
+test_partial_cover_reserves_remaining_no_second_cover (test_safety.CoverSafetyTests) ... ok
+test_partial_fill_then_failure_rescues_real_remainder (test_safety.CoverSafetyTests) ... ok
+test_partial_sell_manages_only_filled_not_requested (test_safety.CoverSafetyTests) ... ok
+test_real_snapshot_and_real_database_names_forbidden (test_safety.CoverSafetyTests) ... ok
+test_reconcile_lost_callback_before_releasing_cancel (test_safety.CoverSafetyTests) ... ok
+test_rejection_cannot_leave_flat_and_retry_needs_reconcile (test_safety.CoverSafetyTests) ... ok
+test_restart_restores_fills_and_reservations_requires_snapshot (test_safety.CoverSafetyTests) ... ok
+test_stale_ask_does_not_use_last_price (test_safety.CoverSafetyTests) ... ok
+test_utc_clock_converts_to_taipei_hard_exit (test_safety.CoverSafetyTests) ... ok
+
+----------------------------------------------------------------------
+Ran 32 tests in 0.144s
+
+OK
+
+/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/intraday_paper_execution_v01/tests
+test_default_is_disabled_live_is_rejected_and_mode_persists (test_engine.PaperExecutionEngineTests) ... ok
+test_disabling_requests_cancel_and_blocks_new_entries (test_engine.PaperExecutionEngineTests) ... ok
+test_emergency_stop_cancel_then_flatten_and_reset (test_engine.PaperExecutionEngineTests) ... ok
+test_fill_id_is_idempotent_and_overfill_is_rejected (test_engine.PaperExecutionEngineTests) ... ok
+test_matching_reconciliation_passes (test_engine.PaperExecutionEngineTests) ... ok
+test_order_idempotency_suppresses_duplicate (test_engine.PaperExecutionEngineTests) ... ok
+test_reconciliation_mismatch_fails_closed (test_engine.PaperExecutionEngineTests) ... ok
+test_restart_recovers_orders_positions_and_stop (test_engine.PaperExecutionEngineTests) ... ok
+test_snapshot_proves_zero_live_execution (test_engine.PaperExecutionEngineTests) ... ok
+test_state_machine_and_partial_fills (test_engine.PaperExecutionEngineTests) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.030s
+
+OK
+
+/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/short_side_study_v01/tests
+test_depth_cannot_be_reused (test_execution.ExecutionTests) ... ok
+test_future_or_stale_depth_cannot_fill (test_execution.ExecutionTests) ... ok
+test_identical_callback_does_not_replenish_consumed_liquidity (test_execution.ExecutionTests) ... ok
+test_short_sells_bid_and_covers_ask (test_execution.ExecutionTests) ... ok
+test_anti_chase_blocks_short_and_no_live_flag_needed (test_policy.PolicyTests) ... ok
+test_combined_boundary_uses_score_without_pnl (test_policy.PolicyTests) ... ok
+test_fixed_symmetric_thresholds (test_policy.PolicyTests) ... ok
+test_inherits_base_thresholds_and_symmetric_exit_unchanged (test_policy.PolicyTests) ... ok
+test_known_ineligible_short_is_filtered (test_policy.PolicyTests) ... ok
+test_stale_benchmark_counts_base_signal_but_never_approves (test_policy.PolicyTests) ... ok
+test_delay_cannot_use_pre_delay_quote (test_replay.ReplayTests) ... ok
+test_long_short_fixed_3500_risk_basis (test_replay.ReplayTests) ... ok
+test_partial_cover_never_fabricates_flat_pnl (test_replay.ReplayTests) ... ok
+test_quote_path_metrics_are_reported_without_changing_exit (test_replay.ReplayTests) ... ok
+test_short_hard_exit_and_costs (test_replay.ReplayTests) ... ok
+test_short_pnl_direction_and_sell_tax (test_replay.ReplayTests) ... ok
+test_stats_exposure_is_not_zero (test_replay.ReplayTests) ... ok
+test_counterfactual_is_never_added_to_account_pnl (test_s4.S4Tests) ... ok
+test_earlier_short_consumes_day_before_later_higher_score_long (test_s4.S4Tests) ... ok
+test_later_short_cannot_replace_long_even_if_long_loses (test_s4.S4Tests) ... ok
+test_same_boundary_uses_existing_score_then_notional (test_s4.S4Tests) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.017s
+
+OK
+
+/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/short_side_study_v01/account_replay_v02/tests
+test_duplicate_and_stale_no_reuse (test_account.LegalAccountTests) ... ok
+test_full_replay_keeps_same_order_size_with_no_illegal_small_fill (test_account.LegalAccountTests) ... ok
+test_full_replay_retains_legal_partial_cover_exposure (test_account.LegalAccountTests) ... ok
+test_illegal_requested_quantity_rejected (test_account.LegalAccountTests) ... ok
+test_incomplete_account_stats_not_completed_subset (test_account.LegalAccountTests) ... ok
+test_no_odd_lot_fill_or_downsize (test_account.LegalAccountTests) ... ok
+test_raw_replenishment_not_rounding_artifact (test_account.LegalAccountTests) ... ok
+test_short_bid_cover_ask_legal_partial_exposure (test_account.LegalAccountTests) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.010s
+
+OK

@@ -1,0 +1,6 @@
+[
+  {
+    "event_type": "SHORT_MOCK_CRITICAL",
+    "payload": "{\"account\": \"S1\", \"code\": \"CANCEL_ACK_REQUIRES_FINAL_MOCK_RECONCILIATION\", \"severity\": \"CRITICAL\"}"
+  }
+]

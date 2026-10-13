@@ -1,0 +1,29 @@
+raw SHORT S1紙上接線與回補安全離線驗收
+重用既有S1/S4訊號與退出管理、legal lot容量及PaperExecutionEngine；未修改正常LONG下單/adapter/OrderQty/回報/正式DB。
+新接線：既有行情封存→訊號→紙上進場→持倉管理→回補→獨立S0/S1/S4日報。
+執行模式是手動單次收盤後因果回放，不是已部署的即時SHORT系統。原collector與LaunchAgent未更動。
+排程缺口：新SHORT紙上作業未安裝，交付方案與範例plist；本輪未copy/launchctl/啟停任何服務。
+實際凍結/手動紙上啟用：2026-10-13T15:16:00.004086+08:00；prospective起點依這份activation收據，不倒填。
+目前新prospective紙上交易=0。2026/10/13行情開始早於啟用，只是工程驗收，不列入新樣本。
+二十筆只是各紙上帳戶/單位假設重新檢視節點，永不自動上線；不等待樣本。
+UNIT_UNVERIFIED只指行情五檔到研究容量換算，不代表正常LONG下單有問題。
+原始五檔字串與源檔hash保留；兩單位容量損益僅為假設，不相加、不事後選方向。
+0050對S1只描述；stock pool/base/anti-chase/confirmation/190000資金/一日一筆/-3500停損/MFE/13:20不變。
+連續訊號合併episode，並非獨立交易；同日重跑不增加样本，來源衝突留存且不算完整帳戶結果。
+已成交剩餘空單與未終結BUY保留量獨立管理，合成baseline不被回補侵入。從未讀取實際baseline或帳戶庫存。
+未回補不能標FLAT；跨日未完成不重設部位，新日帳會保留該帳戶/假設曝險並禁止新進場。
+紙上跨日曝險仍需資料與mock對帳後續處理；本輪未另造跨日稅費/借券或券商救援模型。
+每日已保存30檔當沖/暫停先賣後買資格欄位；本日無可用exact-day官方快取，保持UNKNOWN。
+首次公開TWSE抓取DNS失敗已記錄於20261013_engineering/qualification.json，未反覆抓取或用今日清單補歷史。
+權限、券源、額度皆UNKNOWN，並非下單授權。ELIGIBILITY_UNPROVEN保留。
+source.coverage_status沿用原loader的PARTIAL_SESSION標記；本验收只證明原interval/hash检查通过，不主張LIVE輸入對等或完整交易資格。
+71項離線測試通過，包含全部指定部分成交/重複/拒單/取消中成交/重啟/人工回補/無賣盤/跨強平情境。
+
+工程驗收的獨立帳戶（不是prospective）：
+S0: {"1000": {"status": "NO_TRADE", "entry_quantity": 0, "residual_shares": 0, "conditional_net_pnl": 0.0}, "1": {"status": "NO_TRADE", "entry_quantity": 0, "residual_shares": 0, "conditional_net_pnl": 0.0}}
+S1: {"1000": {"status": "SCORED_TRADE", "entry_quantity": 3000, "residual_shares": 0, "conditional_net_pnl": 2486.0}, "1": {"status": "UNFILLED_ENTRY", "entry_quantity": 0, "residual_shares": 0, "conditional_net_pnl": 0.0}}
+S4: {"1000": {"status": "SCORED_TRADE", "entry_quantity": 3000, "residual_shares": 0, "conditional_net_pnl": 2486.0}, "1": {"status": "UNFILLED_ENTRY", "entry_quantity": 0, "residual_shares": 0, "conditional_net_pnl": 0.0}}
+
+交付：README.txt（唯讀重跑/狀態命令）；schedule_plan_zh-TW.txt與schedule.example.plist（未安裝）；
+pending_yuanta_zh-TW.txt（只問行情容量，不重做LONG下單）；validation各帳戶report.json、mock安全狀態、測試与hash清單。
+不登入、不送單、不啟停交易/行情程序、不改正式DB/風控、不push/merge/部署。

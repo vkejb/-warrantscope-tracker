@@ -1,0 +1,13 @@
+待元大確認清單（只針對紙上研究行情容量，未寄送）
+
+SDK套件宣告2026.7.13.11604；DLL固定版本2.2026.713.0；行情模型2026.1.19.11214。
+1. 一般整股MarketType TWSE/TWOTC下，SubscribeFiveTickA：
+   IndexFlag_20/21.Vol1..5及IndexFlag_50.BuyVol1..5/SellVol1..5是股、張或商品交易單位？
+   每原始數量應如何換算股數？請提供此版本正式規格與LotSize例外。
+2. TWSEODD/TWOTCODD盤中零股的五檔單位與市場是否另定義？不由一般整股單位外推。
+3. 若可提供既有callback可對時的行情示例，需含市場、股票、時間、Flag、原始數量、顯示單位與版本。
+4. 紙上SHORT的每日交易所標的/暫停註記、未有資料的TPEx exact-day資格取得途徑。
+   帳戶SHORT權限、券源、額度沒有證據仍標UNKNOWN；確認這些不是開啟正式做空的授權。
+
+UNIT_UNVERIFIED不代表現有LONG下單有問題。本輪不重做OrderQty、adapter、成交回報或正式DB；
+不送測試單，不擴大下單單位稽核。正式SHORT不開啟，二十筆紙上交易也不是自動上線條件。

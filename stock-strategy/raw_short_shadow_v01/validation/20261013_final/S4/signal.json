@@ -1,0 +1,22 @@
+{
+  "stock_id": "4903",
+  "stock_name": "聯光通",
+  "side": "SHORT",
+  "decision_time": "2026-10-13 09:29:30+08:00",
+  "score": 0.6871800237245723,
+  "volume_delta": -0.775,
+  "large_trade_delta": -1.0,
+  "vwap_gap": -0.002453689923658242,
+  "book_imbalance": -0.3389121338912134,
+  "spread_bps": 18.639328984156833,
+  "entry_price": 53.5,
+  "quantity": 3000,
+  "market_regime": null,
+  "benchmark_vwap_gap": null,
+  "benchmark_return_5m": null,
+  "relative_strength_5m": null,
+  "required_confirmations": 1,
+  "directional_opening_extension": -0.020522388059701524,
+  "directional_vwap_extension": 0.002453689923658242,
+  "breakout_boundary_price": 53.7
+}

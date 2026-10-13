@@ -1,0 +1,22 @@
+{
+  "requirements": {
+    "existing_wiring_checked_and_reused": "wiring_status.json",
+    "frozen_s1_no_new_0050_gate": "activation_receipt.json and tests/test_pipeline.py",
+    "independent_s0_s1_s4_accounts_and_dedup": "20261013_final/*/report.json and signal_episodes.json",
+    "raw_depth_preserved_conditional_capacity_only": "20261013_final/*/raw_entry_book.json and unit_*/trade.json",
+    "daily_exchange_qualification_and_unknown_broker_fields": "20261013_final/qualification.json",
+    "all_named_cover_mock_cases_and_synthetic_baseline": "tests.txt and tests/test_safety.py",
+    "actual_activation_no_backfill_zero_new_samples": "activation_receipt.json and prospective_status.json",
+    "readonly_replay_commands_and_uninstalled_schedule": "../README.txt and ../schedule_plan_zh-TW.txt",
+    "pending_yuanta_scope_only": "../pending_yuanta_zh-TW.txt"
+  },
+  "gaps_explicit": [
+    "Schedule not installed by design",
+    "Exchange exact-day evidence unavailable remains UNKNOWN",
+    "Broker permission/supply/quota UNKNOWN",
+    "Five-level conversion UNIT_UNVERIFIED",
+    "Uncovered cross-day paper exposures retained and new entries blocked"
+  ],
+  "not_a_live_short_or_normal_long_fault_certification": true,
+  "not_waiting_for_new_samples": true
+}

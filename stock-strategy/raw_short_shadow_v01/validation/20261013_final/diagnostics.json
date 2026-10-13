@@ -1,0 +1,13 @@
+{
+  "same_boundary_ties": [],
+  "s1_regime_descriptive_only": "BULLISH",
+  "context": {
+    "benchmark_symbol": "0050",
+    "market_regime": "BULLISH",
+    "benchmark_price": 113.05,
+    "benchmark_vwap_gap": 0.002181026607343206,
+    "benchmark_return_5m": 0.0,
+    "benchmark_quote_age_seconds": 0.046
+  },
+  "approved_boundaries_are_not_independent_samples": true
+}

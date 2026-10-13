@@ -1,0 +1,89 @@
+{
+  "existing": {
+    "collector": "EXISTING_READ_ONLY_ARCHIVE_REUSED",
+    "scheduled_long_paper": "ALREADY_WIRED_LONG_ONLY",
+    "s1_selector_and_lifecycle": "REUSED_FROZEN_SHORT_SIDE_AND_LEGAL_REPLAY",
+    "mock_execution": "REUSED_EXISTING_PAPER_ENGINE"
+  },
+  "new": {
+    "raw_s1_daily_wiring": "MANUAL_ONE_SHOT_POST_SESSION_READY",
+    "independent_accounts": [
+      "S0",
+      "S1",
+      "S4"
+    ],
+    "short_mock_cover_safety": "VERIFIED_OFFLINE",
+    "schedule": "PROPOSAL_ONLY_NOT_INSTALLED",
+    "live_short_routing": "NOT_IMPLEMENTED"
+  },
+  "source_hashes": {
+    "short_side_study_v01/policy.py": "c8ca7fc177c53b19676aebaae3601a3bd6a504058bd6ce0cc247b22b024ad850",
+    "short_side_study_v01/s4.py": "c8634c5621996129867525bc1471eb7b128d344d47a87f4b58bbd0ad4fd9ad4f",
+    "short_side_study_v01/replay.py": "5c42a894a437857e5b7264170e2b1d8ad40e90c48fb923dd6e7d8437f96b7f3d",
+    "short_side_study_v01/account_replay_v02/run.py": "c758c938bb0f19550d4bcef0ddaabce1bcf5b72ef0815a3a032b36e9101edc85",
+    "short_side_study_v01/account_replay_v02/execution.py": "14e2ab5d54f0feeaf687ea404a8d4f1cf94c0ad3c681d3f8380cdd51e5854676",
+    "yuanta_live_runtime_v01/strategy.py": "77339858f1c2ff36401dd1174f3cb993d65c0e93574657a40e4fad7b045f6115",
+    "intraday_paper_execution_v01/engine.py": "e79f117164277cf6cdd3e9910af0a0e2c028d98ef87518e86a7af5cf4b81b981",
+    "raw_short_shadow_v01/main.py": "1168a2cb4adb5a8652a8294439408e2c48cc3d04124ac7f021bee2c0edb664a5",
+    "raw_short_shadow_v01/pipeline.py": "e43c506f0091a9fc6da602ec61a43815281074ef000ebeb560ddd327703ca0d6",
+    "raw_short_shadow_v01/safety.py": "146e05bd8d1ea783b374a052f4adb95ea6b95e7c6d4dfc8957f026a0eeb41fa2"
+  },
+  "installed_collector_plist_sha256": "43d071d756c2019f9bf481586b741db01abcb5ec8b6c38d47070b4f2dda0b3dd",
+  "qualification": "UNKNOWN_WITH_DAILY_SNAPSHOT_NO_BROKER_ENTITLEMENT_PROOF",
+  "engineering_day_is_not_prospective": true,
+  "prospective_entries": 0,
+  "tests_passed": 71,
+  "accounts": {
+    "S0": {
+      "report": "validation/20261013_final/S0/report.json",
+      "units": {
+        "1000": {
+          "status": "NO_TRADE",
+          "entry_quantity": 0,
+          "residual_shares": 0,
+          "conditional_net_pnl": 0.0
+        },
+        "1": {
+          "status": "NO_TRADE",
+          "entry_quantity": 0,
+          "residual_shares": 0,
+          "conditional_net_pnl": 0.0
+        }
+      }
+    },
+    "S1": {
+      "report": "validation/20261013_final/S1/report.json",
+      "units": {
+        "1000": {
+          "status": "SCORED_TRADE",
+          "entry_quantity": 3000,
+          "residual_shares": 0,
+          "conditional_net_pnl": 2486.0
+        },
+        "1": {
+          "status": "UNFILLED_ENTRY",
+          "entry_quantity": 0,
+          "residual_shares": 0,
+          "conditional_net_pnl": 0.0
+        }
+      }
+    },
+    "S4": {
+      "report": "validation/20261013_final/S4/report.json",
+      "units": {
+        "1000": {
+          "status": "SCORED_TRADE",
+          "entry_quantity": 3000,
+          "residual_shares": 0,
+          "conditional_net_pnl": 2486.0
+        },
+        "1": {
+          "status": "UNFILLED_ENTRY",
+          "entry_quantity": 0,
+          "residual_shares": 0,
+          "conditional_net_pnl": 0.0
+        }
+      }
+    }
+  }
+}

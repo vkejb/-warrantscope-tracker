@@ -1,0 +1,23 @@
+排程方案（尚未安裝；本輪不執行以下安裝操作）
+
+缺口：既有com.linyunyan.warrantscope.yuanta-intraday-shadow只接LONG-only收盤paper runner。
+本次新增raw_short_shadow_v01可手動單次處理既有行情；沒有改原auto_runner或任何LaunchAgent。
+
+建議獨立新增com.linyunyan.warrantscope.raw-short-paper，週一至週五台北時間14:10執行一次。
+既有collector通常13:35結束；新作業只讀已COMPLETE、零callback錯誤、開始/結束時間覆蓋的封存。
+如果尚未完成或沒有新資料，記NO_NEW_COMPLETE_ARCHIVE_AFTER_ACTIVATION，不重啟collector、不重試登入。
+假日沒有封存就沒有樣本，不自行補交易日。作業也不等待二十筆。
+
+方案檔：schedule.example.plist；ProgramArguments只有Python -B -m raw_short_shadow_v01.main drain --fetch-public。
+不含SDK連線、憑證、Keychain、行情collector或trading-bot參數。
+採本機目前python3絕對路徑；正式安裝前由使用者確認Python可匯入既有研究依賴並檢查mac睡眠狀態。
+本輪不改pmset、caffeinate或既有排程。若機器未醒，隔天drain仍只讀既有封存，缺失資料不能補成樣本。
+
+後續安裝需另行授權，步驟：
+1. 確認runtime/activation.json仍與程式hash相符（不可重寫enabled_at）。
+2. 確認主機使用Asia/Taipei排程；檢查新的label不與既有排程重複。
+3. 使用者審閱範例後複製為Library/LaunchAgents下的新label，不覆寫任何既有plist。
+4. 只bootstrap新的label；不kickstart/bootout/kill既有collector或交易程序。
+5. 以status與日publication/來源hash驗證新完整封存只處理一次；排程安裝本身不能算完成紙上交易。
+
+不提供任何啟用正式SHORT、改正常LONG adapter/OrderQty或修改正式DB的安裝步驟。

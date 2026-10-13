@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>com.linyunyan.warrantscope.raw-short-paper</string>
+<key>ProgramArguments</key><array>
+<string>/Library/Frameworks/Python.framework/Versions/3.10/bin/python3</string><string>-B</string><string>-m</string><string>raw_short_shadow_v01.main</string><string>drain</string><string>--fetch-public</string>
+</array>
+<key>WorkingDirectory</key><string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy</string>
+<key>EnvironmentVariables</key><dict><key>TZ</key><string>Asia/Taipei</string><key>PYTHONDONTWRITEBYTECODE</key><string>1</string></dict>
+<key>StartCalendarInterval</key><array>
+<dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>14</integer><key>Minute</key><integer>10</integer></dict>
+<dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>14</integer><key>Minute</key><integer>10</integer></dict>
+<dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>14</integer><key>Minute</key><integer>10</integer></dict>
+<dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>14</integer><key>Minute</key><integer>10</integer></dict>
+<dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>14</integer><key>Minute</key><integer>10</integer></dict>
+</array>
+<key>StandardOutPath</key><string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/raw_short_shadow_v01/runtime/schedule.stdout.log</string>
+<key>StandardErrorPath</key><string>/Users/linyunyan/Downloads/WarrantScope_tracker_web_v1_2026-09-01_COMPLETE/stock-strategy/raw_short_shadow_v01/runtime/schedule.stderr.log</string>
+<key>Umask</key><integer>63</integer>
+</dict></plist>
