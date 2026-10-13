@@ -43,7 +43,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m raw_short_shadow_v01.main drain --fetch-pub
 
 10/14起首次prospective驗收（唯讀檢查，不處理或改寫封存/日帳）：
 PYTHONDONTWRITEBYTECODE=1 python3 -m raw_short_shadow_v01.prospective_acceptance
-WAITING_FOR_FIRST_COMPLETE_DAY表示尚無達到既有時段/回呼條件的COMPLETE封存；
+WAITING_FOR_FIRST_QUALIFIED_COMPLETE_DAY表示尚無符合完整時段、零回呼錯誤及30檔有效tick/book的封存；
 READY_FOR_MANUAL_DRAIN表示已有新封存但尚未手動處理，資料是否合格須待驗收器逐檔核對。
 處理後重新執行驗收，分帳顯示SIGNAL、NO_SIGNAL或DATA_MISSING，逐一核對原始訊號/五檔、
 兩種五檔單位假設下重新計算進出場，唯讀查核mock SQLite成交、剩餘持倉、回補、去重及來源品質。NEEDS_REVIEW或

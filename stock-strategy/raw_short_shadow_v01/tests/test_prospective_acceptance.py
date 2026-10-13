@@ -99,9 +99,39 @@ class ProspectiveAcceptanceTests(TestCase):
                 ('eligible', '2026-10-14T00:50:00Z', '2026-10-14T05:35:00Z')):
                 write(root / name / 'run_manifest.json', {'run_id': name, 'started_at': start, 'ended_at': end,
                                                            'status': 'COMPLETE', 'event_counts': {'callback_errors': 0}})
-            source, rejected = first_complete_source(root, {'enabled_at': '2026-10-13T07:16:00+00:00'})
+            stocks = {f'{n:04d}': {'ticks': [1], 'books': [1]} for n in range(30)}
+            depths = {s: [1] for s in stocks}
+            watch = {'stocks': [{'stock_id': s} for s in stocks]}
+            with patch('raw_short_shadow_v01.prospective_acceptance.load_inputs', return_value=(
+                    stocks, {'0050': {'ticks': [1], 'books': [1]}}, depths, {}, {}, watch, {},
+                    {'invalid_depth_rows': 0, 'market_context': 'AVAILABLE_DESCRIPTIVE_ONLY'})):
+                source, rejected = first_complete_source(root, {'enabled_at': '2026-10-13T07:16:00+00:00'})
             self.assertEqual(source.name, 'eligible')
             self.assertEqual([r['run_id'] for r in rejected], ['short'])
+
+    def test_first_complete_source_skips_earlier_missing_candidate_data(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name, day in (('earlier', '14'), ('later', '15')):
+                write(root / name / 'run_manifest.json', {'run_id': name,
+                    'started_at': f'2026-10-{day}T00:50:00Z', 'ended_at': f'2026-10-{day}T05:35:00Z',
+                    'status': 'COMPLETE', 'event_counts': {'callback_errors': 0}})
+            stocks = {f'{n:04d}': {'ticks': [1], 'books': [1]} for n in range(30)}
+            depths = {s: [1] for s in stocks}
+            watch = {'stocks': [{'stock_id': s} for s in stocks]}
+            market = {'0050': {'ticks': [1], 'books': [1]}}
+            def data(directory):
+                observed = {s: dict(rows) for s, rows in stocks.items()}
+                if directory.name == 'earlier':
+                    observed['0001']['ticks'] = []
+                return observed, market, depths, {}, {}, watch, {}, {
+                    'invalid_depth_rows': 0, 'market_context': 'AVAILABLE_DESCRIPTIVE_ONLY'}
+            with patch('raw_short_shadow_v01.prospective_acceptance.load_inputs', side_effect=data):
+                source, rejected = first_complete_source(root, {'enabled_at': '2026-10-13T07:16:00+00:00'})
+            self.assertEqual(source.name, 'later')
+            self.assertEqual(rejected[0]['run_id'], 'earlier')
+            self.assertEqual(rejected[0]['reason'], 'DATA_MISSING')
+            self.assertEqual(rejected[0]['missing_candidate_symbols'], ['0001'])
 
     def test_complete_published_day_with_no_signal_is_not_data_missing(self):
         with TemporaryDirectory() as folder:

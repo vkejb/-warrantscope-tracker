@@ -24,7 +24,7 @@ FIRST_DATE = '20261014'
 
 
 def first_complete_source(source_root, activation):
-    """Find the earliest eligible sealed run, retaining rejected run reasons."""
+    """Find the earliest fully observable sealed run, retaining rejection reasons."""
     rejected = []
     candidates = []
     for path in sorted(source_root.glob('*/run_manifest.json')):
@@ -43,7 +43,27 @@ def first_complete_source(source_root, activation):
         except Exception as exc:
             rejected.append({'run_id': path.parent.name, 'reason': type(exc).__name__ + ': ' + str(exc)})
     candidates.sort()
-    return (candidates[0][2] if candidates else None), rejected
+    for date, _, directory in candidates:
+        try:
+            stocks, market, depths, _, _, watch, _, quality = load_inputs(directory)
+            ids = {str(row['stock_id']) for row in watch['stocks']}
+            missing = sorted(s for s in ids if s not in stocks or not stocks[s]['ticks']
+                             or not stocks[s]['books'] or not depths[s])
+            benchmark = market.get('0050', {})
+            if len(ids) != 30 or missing or quality['invalid_depth_rows'] or (
+                quality['market_context'] != 'AVAILABLE_DESCRIPTIVE_ONLY'
+                or not benchmark.get('ticks') or not benchmark.get('books')
+            ):
+                rejected.append({'run_id': directory.name, 'date': date,
+                                 'reason': 'DATA_MISSING', 'missing_candidate_symbols': missing,
+                                 'invalid_depth_rows': quality['invalid_depth_rows'],
+                                 'benchmark_status': quality['market_context']})
+                continue
+            return directory, rejected
+        except Exception as exc:
+            rejected.append({'run_id': directory.name, 'date': date,
+                             'reason': type(exc).__name__ + ': ' + str(exc)})
+    return None, rejected
 
 
 def classify_account(signal, *, source_ok, candidate_data_ok, benchmark_ok):
@@ -261,7 +281,7 @@ def main():
     activation = load_activation(args.runtime_dir)
     source, rejected = first_complete_source(args.source_root, activation)
     if source is None:
-        result = {'status': 'WAITING_FOR_FIRST_COMPLETE_DAY', 'from_date': FIRST_DATE, 'rejected': rejected,
+        result = {'status': 'WAITING_FOR_FIRST_QUALIFIED_COMPLETE_DAY', 'from_date': FIRST_DATE, 'rejected': rejected,
                   'prospective_samples_claimed': 0}
     else:
         manifest = json.loads((source / 'run_manifest.json').read_text())
