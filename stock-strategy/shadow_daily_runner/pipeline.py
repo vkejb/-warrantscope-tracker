@@ -77,9 +77,7 @@ def _source_from_path(path: Path, request_url: str = "LOCAL_CLEAN_ARCHIVE") -> S
 def _twse_eod(
     client: OfficialSourceClient, day: str, *, refresh: bool
 ) -> ParsedSource:
-    validator = None
-    if not refresh:
-        validator = lambda snapshot: not parse_twse(snapshot, day).errors
+    validator = lambda snapshot: not parse_twse(snapshot, day).errors
     return parse_twse(
         client.twse_eod(day, refresh=refresh, cache_validator=validator), day
     )
@@ -88,9 +86,7 @@ def _twse_eod(
 def _tpex_eod(
     client: OfficialSourceClient, day: str, *, refresh: bool
 ) -> ParsedSource:
-    validator = None
-    if not refresh:
-        validator = lambda snapshot: not parse_tpex(snapshot, day).errors
+    validator = lambda snapshot: not parse_tpex(snapshot, day).errors
     return parse_tpex(
         client.tpex_eod(day, refresh=refresh, cache_validator=validator), day
     )

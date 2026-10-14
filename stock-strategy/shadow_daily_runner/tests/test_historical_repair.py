@@ -193,13 +193,19 @@ class FixtureOfficialClient:
         self.release_calls += 1
         raise AssertionError("historical release must not be downloaded in this fixture")
 
-    def twse_eod(self, day: str, *, refresh: bool = True) -> SourceSnapshot:
+    def twse_eod(
+        self, day: str, *, refresh: bool = True, cache_validator=None,
+    ) -> SourceSnapshot:
         del refresh
+        del cache_validator
         self.twse_calls += 1
         return self._twse[day]
 
-    def tpex_eod(self, day: str, *, refresh: bool = True) -> SourceSnapshot:
+    def tpex_eod(
+        self, day: str, *, refresh: bool = True, cache_validator=None,
+    ) -> SourceSnapshot:
         del refresh
+        del cache_validator
         self.tpex_calls += 1
         return self._tpex[day]
 

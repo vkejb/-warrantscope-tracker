@@ -43,6 +43,89 @@ class OfficialSourceClient:
         self.cfg = cfg
         self._last_network_request = 0.0
 
+    def _valid_cached_snapshot(
+        self,
+        *,
+        source: str,
+        source_dir: Path,
+        request_url: str,
+        expected_kind: str | None,
+        cache_validator: Callable[[SourceSnapshot], bool] | None,
+        exclude: set[Path] | None = None,
+    ) -> SourceSnapshot | None:
+        """Return the newest exact-request cache accepted by the parser."""
+
+        if not source_dir.is_dir():
+            return None
+        excluded = {path.resolve() for path in (exclude or set())}
+        candidates = sorted(
+            (
+                path
+                for path in source_dir.iterdir()
+                if path.is_file()
+                and not path.name.endswith(".metadata.json")
+                and path.resolve() not in excluded
+            ),
+            key=lambda item: item.stat().st_mtime_ns,
+            reverse=True,
+        )
+        for path in candidates:
+            payload = path.read_bytes()
+            if not self._payload_matches(payload, expected_kind):
+                continue
+            digest = sha256_bytes(payload)
+            if path.stem != digest:
+                raise RuntimeError(f"cached source hash/name mismatch: {path}")
+            metadata_path = source_dir / f"{digest}.metadata.json"
+            if metadata_path.is_file():
+                metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                if (
+                    metadata.get("sha256") != digest
+                    or metadata.get("request_url") != request_url
+                    or int(metadata.get("bytes", -1)) != len(payload)
+                ):
+                    continue
+            else:
+                retrieved = datetime.fromtimestamp(
+                    path.stat().st_mtime, tz=timezone.utc
+                ).isoformat(timespec="seconds").replace("+00:00", "Z")
+                metadata = {
+                    "source": source,
+                    "request_url": request_url,
+                    "retrieved_at_utc": retrieved,
+                    "sha256": digest,
+                    "bytes": len(payload),
+                    "local_cache_import": True,
+                }
+                write_immutable(
+                    metadata_path,
+                    (
+                        json.dumps(
+                            metadata,
+                            ensure_ascii=False,
+                            sort_keys=True,
+                            indent=2,
+                        )
+                        + "\n"
+                    ).encode("utf-8"),
+                )
+            snapshot = SourceSnapshot(
+                source=source,
+                request_url=request_url,
+                retrieved_at_utc=str(metadata.get("retrieved_at_utc", "CACHED")),
+                sha256=digest,
+                path=path,
+                payload=payload,
+            )
+            if cache_validator is None:
+                return snapshot
+            try:
+                if cache_validator(snapshot):
+                    return snapshot
+            except (RuntimeError, ValueError, UnicodeError):
+                continue
+        return None
+
     @staticmethod
     def _payload_matches(payload: bytes, expected_kind: str | None) -> bool:
         if expected_kind is None:
@@ -79,68 +162,16 @@ class OfficialSourceClient:
         query = urlencode(params or {})
         request_url = f"{url}?{query}" if query else url
         source_dir = self.cfg.raw_dir / source
-        if not refresh and source_dir.is_dir():
-            candidates = sorted(
-                path
-                for path in source_dir.iterdir()
-                if path.is_file() and not path.name.endswith(".metadata.json")
+        if not refresh:
+            cached = self._valid_cached_snapshot(
+                source=source,
+                source_dir=source_dir,
+                request_url=request_url,
+                expected_kind=expected_kind,
+                cache_validator=cache_validator,
             )
-            valid_candidates = [
-                path
-                for path in candidates
-                if self._payload_matches(path.read_bytes(), expected_kind)
-            ]
-            for path in sorted(
-                valid_candidates,
-                key=lambda item: item.stat().st_mtime_ns,
-                reverse=True,
-            ):
-                payload = path.read_bytes()
-                digest = sha256_bytes(payload)
-                if path.stem != digest:
-                    raise RuntimeError(f"cached source hash/name mismatch: {path}")
-                metadata_path = source_dir / f"{digest}.metadata.json"
-                if metadata_path.is_file():
-                    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-                else:
-                    retrieved = datetime.fromtimestamp(
-                        path.stat().st_mtime, tz=timezone.utc
-                    ).isoformat(timespec="seconds").replace("+00:00", "Z")
-                    metadata = {
-                        "source": source,
-                        "request_url": request_url,
-                        "retrieved_at_utc": retrieved,
-                        "sha256": digest,
-                        "bytes": len(payload),
-                        "local_cache_import": True,
-                    }
-                    write_immutable(
-                        metadata_path,
-                        (
-                            json.dumps(
-                                metadata,
-                                ensure_ascii=False,
-                                sort_keys=True,
-                                indent=2,
-                            )
-                            + "\n"
-                        ).encode("utf-8"),
-                    )
-                snapshot = SourceSnapshot(
-                    source=source,
-                    request_url=request_url,
-                    retrieved_at_utc=str(metadata.get("retrieved_at_utc", "CACHED")),
-                    sha256=digest,
-                    path=path,
-                    payload=payload,
-                )
-                if cache_validator is not None:
-                    try:
-                        if not cache_validator(snapshot):
-                            continue
-                    except (RuntimeError, ValueError, UnicodeError):
-                        continue
-                return snapshot
+            if cached is not None:
+                return cached
         payload = b""
         last_error = ""
         for attempt in range(4):
@@ -213,7 +244,7 @@ class OfficialSourceClient:
                 + "\n"
             ).encode("utf-8")
             write_immutable(metadata_path, metadata_payload)
-        return SourceSnapshot(
+        snapshot = SourceSnapshot(
             source=source,
             request_url=request_url,
             # This is the retrieval used by this run.  The content-addressed
@@ -223,6 +254,27 @@ class OfficialSourceClient:
             path=path,
             payload=payload,
         )
+        if cache_validator is not None:
+            try:
+                fresh_is_valid = bool(cache_validator(snapshot))
+            except (RuntimeError, ValueError, UnicodeError):
+                fresh_is_valid = False
+            if not fresh_is_valid:
+                cached = self._valid_cached_snapshot(
+                    source=source,
+                    source_dir=source_dir,
+                    request_url=request_url,
+                    expected_kind=expected_kind,
+                    cache_validator=cache_validator,
+                    exclude={path},
+                )
+                if cached is not None:
+                    return cached
+                raise RuntimeError(
+                    "fresh official source failed semantic validation and no "
+                    f"valid exact-request cache exists: {source}"
+                )
+        return snapshot
 
     def release_week(self, year: int, week: int) -> SourceSnapshot:
         name = f"weekly_{year}_W{week:02d}.zip"

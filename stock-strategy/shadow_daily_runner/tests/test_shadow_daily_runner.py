@@ -65,6 +65,108 @@ def release_payload(rows: list[list[str]]) -> bytes:
 
 
 class NormalizationTests(unittest.TestCase):
+    @staticmethod
+    def _tpex_payload(day: str, *, duplicate: bool) -> bytes:
+        roc = f"{int(day[:4]) - 1911:03d}/{day[4:6]}/{day[6:]}"
+        header = [
+            "上櫃股票每日收盤行情(不含定價)",
+            "產業類別:所有證券",
+            f"資料日期:{roc}",
+            "代號,名稱,收盤 ,漲跌,開盤 ,最高 ,最低,成交股數  ,成交金額(元),成交筆數",
+        ]
+        row = '"6488","環球晶","500","+1","495","505","490","1,000","500,000","100"'
+        return "\n".join([*header, row, *([row] if duplicate else [])]).encode("big5")
+
+    def test_refresh_falls_back_to_valid_exact_request_cache(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = replace(CFG, runtime_dir=root / "runtime")
+            source_dir = cfg.raw_dir / "tpex_eod_20261013"
+            source_dir.mkdir(parents=True)
+            valid_payload = self._tpex_payload("20261013", duplicate=False)
+            invalid_payload = self._tpex_payload("20261013", duplicate=True)
+            valid_hash = hashlib.sha256(valid_payload).hexdigest()
+            valid_path = source_dir / f"{valid_hash}.csv"
+            valid_path.write_bytes(valid_payload)
+            request_url = (
+                "https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?"
+                "date=115%2F10%2F13&type=AL&id=&response=csv&order=0&sort=asc"
+            )
+            (source_dir / f"{valid_hash}.metadata.json").write_text(
+                json.dumps(
+                    {
+                        "source": "tpex_eod_20261013",
+                        "request_url": request_url,
+                        "retrieved_at_utc": "2026-10-13T06:32:43Z",
+                        "sha256": valid_hash,
+                        "bytes": len(valid_payload),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            completed = type(
+                "Completed", (),
+                {"returncode": 0, "stdout": invalid_payload, "stderr": b""},
+            )()
+
+            client = OfficialSourceClient(cfg)
+            with patch(
+                "shadow_daily_runner.sources.subprocess.run",
+                return_value=completed,
+            ):
+                selected = client.tpex_eod(
+                    "20261013",
+                    refresh=True,
+                    cache_validator=lambda item: not parse_tpex(
+                        item, "20261013"
+                    ).errors,
+                )
+
+            self.assertEqual(valid_hash, selected.sha256)
+            self.assertEqual(0, len(parse_tpex(selected, "20261013").errors))
+
+    def test_refresh_invalid_without_valid_exact_request_cache_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = replace(CFG, runtime_dir=root / "runtime")
+            source_dir = cfg.raw_dir / "tpex_eod_20261013"
+            source_dir.mkdir(parents=True)
+            valid_payload = self._tpex_payload("20261013", duplicate=False)
+            valid_hash = hashlib.sha256(valid_payload).hexdigest()
+            (source_dir / f"{valid_hash}.csv").write_bytes(valid_payload)
+            (source_dir / f"{valid_hash}.metadata.json").write_text(
+                json.dumps(
+                    {
+                        "source": "tpex_eod_20261013",
+                        "request_url": "https://example.invalid/not-the-exact-request",
+                        "retrieved_at_utc": "2026-10-13T06:32:43Z",
+                        "sha256": valid_hash,
+                        "bytes": len(valid_payload),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            invalid_payload = self._tpex_payload("20261013", duplicate=True)
+            completed = type(
+                "Completed", (),
+                {"returncode": 0, "stdout": invalid_payload, "stderr": b""},
+            )()
+
+            client = OfficialSourceClient(cfg)
+            with patch(
+                "shadow_daily_runner.sources.subprocess.run",
+                return_value=completed,
+            ), self.assertRaisesRegex(
+                RuntimeError, "no valid exact-request cache exists"
+            ):
+                client.tpex_eod(
+                    "20261013",
+                    refresh=True,
+                    cache_validator=lambda item: not parse_tpex(
+                        item, "20261013"
+                    ).errors,
+                )
+
     def test_cached_source_selection_skips_newer_parser_invalid_payload(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
