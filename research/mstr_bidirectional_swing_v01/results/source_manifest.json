@@ -1,0 +1,58 @@
+[
+  {
+    "name": "validated daily alignment",
+    "path": "mstr_btc_price_linkage_v01/data/processed/daily_aligned.csv",
+    "source_url": "derived by mstr_btc_price_linkage_v01",
+    "bytes": 842149,
+    "sha256": "ceed1b865f3564e37ea0ff1a7037d9926847cfa3a67df6bb387b2b628375462a"
+  },
+  {
+    "name": "MSTR OHLCV",
+    "path": "mstr_btc_price_linkage_v01/data/raw/mstr_daily.csv",
+    "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/MSTR",
+    "bytes": 226928,
+    "sha256": "f8fb46e120c86cbd0aa89184d71ca6b6c4562ca1909b15c2542a162d915260f2"
+  },
+  {
+    "name": "MSTR corporate actions",
+    "path": "mstr_btc_price_linkage_v01/data/raw/mstr_corporate_actions.csv",
+    "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/MSTR",
+    "bytes": 133,
+    "sha256": "a9f8a5bf3d248a1d0d1eaef5ce91644a074ad9c230840dd232d09f9b410252ed"
+  },
+  {
+    "name": "QQQ OHLCV",
+    "path": "mstr_btc_price_linkage_v01/data/raw/qqq_daily.csv",
+    "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/QQQ",
+    "bytes": 228800,
+    "sha256": "3375e86aa517ef0dad2706aedefab14e92df23b9a9cb6892a3f492d82fd0997f"
+  },
+  {
+    "name": "BTC/USD 15m",
+    "path": "mstr_btc_price_linkage_v01/data/raw/bitstamp_btcusd_15m.csv",
+    "source_url": "https://www.bitstamp.net/api/v2/ohlc/btcusd/",
+    "bytes": 23104720,
+    "sha256": "e9492cf9d460f1d1d36489de923957096908967b781976b6285ca68a3bbf1b59"
+  },
+  {
+    "name": "IBIT OHLCV",
+    "path": "mstr_bidirectional_swing_v01/data/raw/ibit_daily.csv",
+    "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/IBIT",
+    "bytes": 93448,
+    "sha256": "d8522dff1d09714521315046ed1fd1aeeee154db5a189c91d555686fc4e64ca8"
+  },
+  {
+    "name": "IBIT corporate actions",
+    "path": "mstr_bidirectional_swing_v01/data/raw/ibit_corporate_actions.csv",
+    "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/IBIT",
+    "bytes": 74,
+    "sha256": "40f47aeff7ae8e31d2c9c4726a99c96b86da5d919fd67c673aaba32c20b7b4b4"
+  },
+  {
+    "name": "IBIT download metadata",
+    "path": "mstr_bidirectional_swing_v01/data/raw/ibit_download_metadata.json",
+    "source_url": "local acquisition record",
+    "bytes": 276,
+    "sha256": "1cbeb29f5012a7941ab20bada86c7696ed4a0de41eb024f366665029d3de1892"
+  }
+]

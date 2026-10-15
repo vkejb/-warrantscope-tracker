@@ -1,0 +1,7 @@
+{
+  "status": "NO_ROBUST_EDGE",
+  "short_status": "INSUFFICIENT_DATA",
+  "eligible_versions": [],
+  "m4_incremental_value_supported": false,
+  "warning": "Historical backtest only; SHORT versions are conditional and are not live-readiness evidence."
+}

@@ -1,0 +1,23 @@
+{
+  "generated_at_utc": "2026-10-15T09:36:24.693572+00:00",
+  "aligned_rows": 1705,
+  "first_date": "2020-01-02",
+  "last_date": "2026-10-14",
+  "research_rows": 1006,
+  "holdout_rows": 699,
+  "ibit_first_date": "2024-01-11",
+  "ibit_rows": 692,
+  "ibit_prelisting_values": 0,
+  "ibit_tls_verification": false,
+  "ibit_downloaded_at_utc": "2026-10-15T09:29:02.006372+00:00",
+  "mstr_split_date": "2024-08-08",
+  "mstr_split_ratio": "10:1",
+  "split_window_max_abs_return": 0.09066854999341589,
+  "btc_close_point_in_time_pass": true,
+  "btc_30d_point_in_time_pass": true,
+  "btc_30d_warmup_missing_rows": 20,
+  "missing_mstr_ohlcv_rows": 0,
+  "missing_qqq_rows": 0,
+  "short_borrow_data_status": "INSUFFICIENT_DATA",
+  "short_reason": "No reliable historical daily locate, borrow availability, fee, recall, or forced-buy-in series was available."
+}
