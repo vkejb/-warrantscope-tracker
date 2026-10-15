@@ -1,0 +1,2 @@
+status,horizons_minutes,reason
+INSUFFICIENT_INTRADAY_DATA,"5,15,30,60",No reliable 2020-latest timestamped MSTR intraday source was available; daily data was not substituted.

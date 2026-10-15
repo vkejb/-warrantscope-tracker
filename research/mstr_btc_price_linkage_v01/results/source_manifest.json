@@ -1,0 +1,57 @@
+[
+  {
+    "name": "MSTR",
+    "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/MSTR",
+    "local_file": "data/raw/mstr_daily.csv",
+    "rows": 1705,
+    "first_timestamp": "2020-01-02 14:30:00+00:00",
+    "last_timestamp": "2026-10-14 13:30:00+00:00",
+    "sha256": "f8fb46e120c86cbd0aa89184d71ca6b6c4562ca1909b15c2542a162d915260f2",
+    "downloaded_or_verified_at_utc": "2026-10-15T09:06:25.431324+00:00",
+    "tls_verification": false
+  },
+  {
+    "name": "MSTR corporate actions",
+    "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/MSTR",
+    "local_file": "data/raw/mstr_corporate_actions.csv",
+    "rows": 1,
+    "first_timestamp": "2024-08-08 13:30:00+00:00",
+    "last_timestamp": "2024-08-08 13:30:00+00:00",
+    "sha256": "a9f8a5bf3d248a1d0d1eaef5ce91644a074ad9c230840dd232d09f9b410252ed",
+    "downloaded_or_verified_at_utc": "2026-10-15T09:06:25.431324+00:00",
+    "tls_verification": false
+  },
+  {
+    "name": "QQQ",
+    "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/QQQ",
+    "local_file": "data/raw/qqq_daily.csv",
+    "rows": 1705,
+    "first_timestamp": "2020-01-02 14:30:00+00:00",
+    "last_timestamp": "2026-10-14 13:30:00+00:00",
+    "sha256": "3375e86aa517ef0dad2706aedefab14e92df23b9a9cb6892a3f492d82fd0997f",
+    "downloaded_or_verified_at_utc": "2026-10-15T09:06:25.431324+00:00",
+    "tls_verification": false
+  },
+  {
+    "name": "QQQ corporate actions",
+    "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/QQQ",
+    "local_file": "data/raw/qqq_corporate_actions.csv",
+    "rows": 27,
+    "first_timestamp": "2020-03-23 13:30:00+00:00",
+    "last_timestamp": "2026-09-21 13:30:00+00:00",
+    "sha256": "5917f9ead2973998a4ad565e9cdb137bcb78386e95b6ac735eb436f88946e987",
+    "downloaded_or_verified_at_utc": "2026-10-15T09:06:25.431324+00:00",
+    "tls_verification": false
+  },
+  {
+    "name": "BTC/USD",
+    "source_url": "https://www.bitstamp.net/api/v2/ohlc/btcusd/",
+    "local_file": "data/raw/bitstamp_btcusd_15m.csv",
+    "rows": 238020,
+    "first_timestamp": "2020-01-01 00:00:00+00:00",
+    "last_timestamp": "2026-10-15 09:00:00+00:00",
+    "sha256": "e9492cf9d460f1d1d36489de923957096908967b781976b6285ca68a3bbf1b59",
+    "downloaded_or_verified_at_utc": "2026-10-15T09:06:25.431324+00:00",
+    "tls_verification": false
+  }
+]

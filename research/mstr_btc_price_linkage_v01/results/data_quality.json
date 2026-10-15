@@ -1,0 +1,23 @@
+{
+  "generated_at_utc": "2026-10-15T09:06:25.431324+00:00",
+  "tls_verification": false,
+  "aligned_rows": 1705,
+  "first_aligned_date": "2020-01-02",
+  "last_aligned_date": "2026-10-14",
+  "point_in_time_all_pass": true,
+  "max_open_staleness_seconds": 0.0,
+  "max_close_staleness_seconds": 0.0,
+  "btc_requested_candles": 238080,
+  "btc_contiguous_expected_candles": 238020,
+  "btc_rows": 238020,
+  "btc_internal_missing_candles": 0,
+  "btc_unavailable_tail_candles": 60,
+  "btc_intervals_over_15m": 0,
+  "mstr_missing_core_values": 0,
+  "qqq_missing_core_values": 0,
+  "mstr_split": {
+    "split_date": "2024-08-08",
+    "ratio": "10:1",
+    "continuity_max_abs_return": 0.09066854999341589
+  }
+}

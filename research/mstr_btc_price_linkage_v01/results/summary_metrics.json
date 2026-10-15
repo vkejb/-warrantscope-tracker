@@ -1,0 +1,51 @@
+{
+  "generated_at_utc": "2026-10-15T09:06:25.431324+00:00",
+  "all": {
+    "n": 1704,
+    "pearson": 0.7250783924645515,
+    "spearman": 0.7375224108916891,
+    "direction_agreement": 0.7946009389671361,
+    "mstr_vol_annualized": 0.8881680025132533,
+    "btc_vol_annualized": 0.583819344869231,
+    "volatility_ratio_mstr_to_btc": 1.5213062230957641,
+    "r2": 0.5257386752189783,
+    "intercept": -0.00025078765436580507,
+    "pvalue_reference": "two-sided normal, HC3 SE",
+    "beta_btc_session_log_return": 1.103066270688595,
+    "pvalue_btc_session_log_return": 1.682081031439945e-145,
+    "tstat_btc_session_log_return": 25.68585466604277
+  },
+  "research_2020_2023": {
+    "n": 1005,
+    "pearson": 0.7063800567925143,
+    "spearman": 0.703945406469431,
+    "direction_agreement": 0.7731343283582089,
+    "mstr_vol_annualized": 0.875070692254227,
+    "btc_vol_annualized": 0.6445889412275402,
+    "volatility_ratio_mstr_to_btc": 1.3575639237430335,
+    "r2": 0.49897278463419537,
+    "intercept": -0.00025156469048652323,
+    "pvalue_reference": "two-sided normal, HC3 SE",
+    "beta_btc_session_log_return": 0.9589560815530724,
+    "pvalue_btc_session_log_return": 1.377856417226303e-78,
+    "tstat_btc_session_log_return": 18.768076112785767
+  },
+  "holdout_2024_plus": {
+    "n": 699,
+    "pearson": 0.7844107353468609,
+    "spearman": 0.7849510996646282,
+    "direction_agreement": 0.8254649499284692,
+    "mstr_vol_annualized": 0.9072911428868201,
+    "btc_vol_annualized": 0.4835820082531348,
+    "volatility_ratio_mstr_to_btc": 1.8761887899102556,
+    "r2": 0.6153002017274036,
+    "intercept": -0.00022860061636750676,
+    "pvalue_reference": "two-sided normal, HC3 SE",
+    "beta_btc_session_log_return": 1.4717026283430408,
+    "pvalue_btc_session_log_return": 2.687615828502197e-120,
+    "tstat_btc_session_log_return": 23.321430589696583
+  },
+  "price_level_pearson": 0.9515072950154474,
+  "price_level_spearman": 0.9784888632415264,
+  "important_boundary": "Price-level correlation and synchronous return relation are not predictive evidence."
+}
