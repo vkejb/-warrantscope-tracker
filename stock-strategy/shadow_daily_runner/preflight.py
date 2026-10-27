@@ -470,6 +470,96 @@ def _coverage_audit(
     }
 
 
+def refresh_source_coverage_calendar_binding(
+    *,
+    path: Path,
+    calendar_path: Path,
+) -> dict:
+    """Rebind a coverage manifest after a harmless official-calendar refresh.
+
+    The runner regenerates the full-year calendar before it downloads the target
+    session.  An official closure announced after the coverage manifest's
+    ``through_date`` legitimately changes the calendar file hash, even though
+    every already-covered session is unchanged.  Requiring the old full-file
+    hash in that case creates a deadlock: target data cannot be downloaded until
+    preflight passes, while the manifest cannot acquire the new hash until after
+    the download.
+
+    This helper only updates the binding when the current official calendar and
+    the manifest contain *exactly* the same session dates throughout the
+    manifest's recorded scope.  Any historical addition/removal, malformed
+    scope, duplicate, or unsorted session remains fail-closed.
+    """
+
+    if not path.is_file():
+        return {
+            "status": "NOT_PRESENT",
+            "scope": None,
+            "verified_session_count": 0,
+            "previous_sha256": None,
+            "current_sha256": sha256_file(calendar_path),
+        }
+
+    payload = _load_json(path)
+    if payload.get("schema_version") != "1":
+        raise RuntimeError("cannot rebind malformed coverage schema")
+    items = payload.get("sessions")
+    scope = payload.get("scope")
+    if not isinstance(items, list) or not isinstance(scope, dict):
+        raise RuntimeError("cannot rebind coverage without sessions and scope")
+
+    start = _iso_day(scope.get("start_date"))
+    through = _iso_day(scope.get("through_date"))
+    if start > through:
+        raise RuntimeError("cannot rebind coverage with inverted scope")
+
+    manifest_sessions: list[str] = []
+    for index, item in enumerate(items):
+        if not isinstance(item, dict):
+            raise RuntimeError(f"cannot rebind non-object session at index {index}")
+        manifest_sessions.append(_iso_day(item.get("date")))
+    if manifest_sessions != sorted(manifest_sessions):
+        raise RuntimeError("cannot rebind unsorted coverage sessions")
+    if len(manifest_sessions) != len(set(manifest_sessions)):
+        raise RuntimeError("cannot rebind duplicate coverage sessions")
+    if not manifest_sessions or manifest_sessions[0] != start or manifest_sessions[-1] != through:
+        raise RuntimeError("cannot rebind coverage whose scope does not match sessions")
+
+    current_sessions = [
+        day
+        for day in read_sessions(calendar_path.read_bytes())
+        if start <= day <= through
+    ]
+    if current_sessions != manifest_sessions:
+        raise RuntimeError(
+            "refusing calendar rebind because covered historical sessions changed"
+        )
+
+    current_hash = sha256_file(calendar_path)
+    old_binding = payload.get("trading_calendar")
+    previous_hash = (
+        old_binding.get("sha256") if isinstance(old_binding, dict) else None
+    )
+    result = {
+        "status": "UNCHANGED",
+        "scope": {"start_date": start, "through_date": through},
+        "verified_session_count": len(manifest_sessions),
+        "previous_sha256": previous_hash,
+        "current_sha256": current_hash,
+    }
+    if previous_hash == current_hash:
+        return result
+
+    payload["trading_calendar"] = {
+        "path": str(calendar_path),
+        "sha256": current_hash,
+    }
+    payload["generated_at_utc"] = utc_timestamp()
+    atomic_write_json(path, payload)
+    result["status"] = "REBOUND_VERIFIED_SCOPE_UNCHANGED"
+    return result
+
+
 def extend_source_coverage_from_direct_audit(
     *,
     path: Path,

@@ -39,6 +39,7 @@ from .normalize import (
 )
 from .preflight import (
     extend_source_coverage_from_direct_audit,
+    refresh_source_coverage_calendar_binding,
     run_historical_preflight,
 )
 from .sources import OfficialSourceClient, SourceSnapshot
@@ -598,6 +599,11 @@ def prepare_inputs(
         if prior_sessions:
             prior = prior_sessions[-1]
             prior_archives = load_previous_archives_for_preflight(prior, cfg)
+            calendar_binding = refresh_source_coverage_calendar_binding(
+                path=cfg.historical_source_coverage_path,
+                calendar_path=cfg.calendar_path,
+            )
+            audit["historical_source_coverage_calendar_binding"] = calendar_binding
             before_download_health = run_historical_preflight(
                 archives=prior_archives,
                 calendar_path=cfg.calendar_path,

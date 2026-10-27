@@ -33,6 +33,7 @@ from shadow_daily_runner.normalize import (
 from shadow_daily_runner.pipeline import PreparedInputs
 from shadow_daily_runner.preflight import (
     extend_source_coverage_from_direct_audit,
+    refresh_source_coverage_calendar_binding,
     run_historical_preflight,
 )
 from shadow_daily_runner.runner import attempt
@@ -641,6 +642,62 @@ class HistoricalPreflightTests(unittest.TestCase):
             self.assertEqual(
                 ["2026-09-07", "2026-09-08"],
                 [row["date"] for row in merged["sessions"]],
+            )
+
+    def test_calendar_binding_refresh_accepts_only_future_calendar_change(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            old_calendar = self.write_calendar(cfg, ["2026-09-07"])
+            coverage = self.coverage(old_calendar, ["2026-09-07"])
+            cfg.historical_source_coverage_path.parent.mkdir(parents=True, exist_ok=True)
+            cfg.historical_source_coverage_path.write_text(
+                json.dumps(coverage), encoding="utf-8"
+            )
+
+            new_calendar = self.write_calendar(
+                cfg, ["2026-09-07", "2026-09-08"]
+            )
+            result = refresh_source_coverage_calendar_binding(
+                path=cfg.historical_source_coverage_path,
+                calendar_path=new_calendar,
+            )
+
+            rebound = json.loads(
+                cfg.historical_source_coverage_path.read_text(encoding="utf-8")
+            )
+            self.assertEqual("REBOUND_VERIFIED_SCOPE_UNCHANGED", result["status"])
+            self.assertEqual(
+                sha256_file(new_calendar), rebound["trading_calendar"]["sha256"]
+            )
+            self.assertEqual(1, result["verified_session_count"])
+
+    def test_calendar_binding_refresh_rejects_covered_history_change(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cfg = self.temporary_config(root)
+            old_calendar = self.write_calendar(
+                cfg, ["2026-09-07", "2026-09-08"]
+            )
+            coverage = self.coverage(
+                old_calendar, ["2026-09-07", "2026-09-08"]
+            )
+            cfg.historical_source_coverage_path.parent.mkdir(parents=True, exist_ok=True)
+            cfg.historical_source_coverage_path.write_text(
+                json.dumps(coverage), encoding="utf-8"
+            )
+            before = cfg.historical_source_coverage_path.read_bytes()
+
+            changed_calendar = self.write_calendar(cfg, ["2026-09-07"])
+            with self.assertRaisesRegex(
+                RuntimeError, "covered historical sessions changed"
+            ):
+                refresh_source_coverage_calendar_binding(
+                    path=cfg.historical_source_coverage_path,
+                    calendar_path=changed_calendar,
+                )
+            self.assertEqual(
+                before, cfg.historical_source_coverage_path.read_bytes()
             )
 
     def test_preflight_through_date_ignores_later_valid_archive_and_coverage_rows(self):
