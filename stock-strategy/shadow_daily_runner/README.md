@@ -203,6 +203,25 @@ Stage A 封存成功後，runner 會同步且重新驗證：
 - 當日 TWSE／TPEx 官方 raw source 與 official EOD audit；
 - 交易日曆及其 metadata。
 
+## Top30 每日行情摘要
+
+Stage A seal 完成後，runner 會另外建立不改動原 seal/hash 的伴隨檔：
+
+- `runtime/top30_market_summary/YYYYMMDD.json`
+- `runtime/top30_market_summary/YYYYMMDD.csv`
+
+每檔包含官方當日開、高、低、收、總成交股數、含當日在內的20個交易觀察均量、
+收盤相對元大已收集逐筆成交 VWAP、以昨日收盤為分母的日內振幅，以及官方日高／
+日低在已收集逐筆中的首次發生時間。逐筆不完整時，VWAP或時間欄位維持 `null` 並寫入
+warning，不以日線推估或補值。這些欄位只用於封存、通知與後續查詢；不會回寫 Stage A、
+改變 Top30 排名、影響當沖訊號或接觸任何下單路徑。
+
+查詢指定日期：
+
+```bash
+python3 -B -m shadow_daily_runner.top30_market_summary status --date YYYYMMDD
+```
+
 同步不會讀寫 LIVE order database、position baseline、Keychain、LIVE gate、委託或成交
 紀錄。既有 immutable 目的檔若內容不同會 fail closed，錯誤只記錄為
 `LIVE_DATA_SYNC` post-seal error，不會回寫或改變已完成的研究 seal。

@@ -25,7 +25,12 @@ def _postseal_notifications(
     allow_same_day_recovery: bool = False,
 ) -> dict:
     """Side effects only after the N ledger has sealed; never alter N records."""
-    from prospective_notifications_v01.notifier import daily_message, notify, warning_message
+    from prospective_notifications_v01.notifier import (
+        daily_message,
+        notify,
+        top30_market_summary_messages,
+        warning_message,
+    )
     from stage_a_prospective_watchlist_v01.seal_store import latest_seal
     activation_date = "20260916"
 
@@ -122,6 +127,8 @@ def _postseal_notifications(
         }
     entry_state_result = {"status": "INPUT_NOT_READY"}
     outcome_result = {"status": "INPUT_NOT_READY"}
+    market_summary_result = {"status": "INPUT_NOT_READY"}
+    market_summary_payload = None
     if prepared is not None and prepared.ready:
         # Both ledgers are independent post-Stage-A-seal effects. An error must
         # never roll back or rewrite the N or Stage A signal seals.
@@ -144,6 +151,43 @@ def _postseal_notifications(
         except Exception as exc:
             append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "STAGE_A_T1_OUTCOMES", "traceback": traceback.format_exc()})
             outcome_result = {"status": "FAILED_AFTER_STAGE_A_SEAL", "error_type": type(exc).__name__}
+        try:
+            from .top30_market_summary import build_top30_market_summary
+
+            market_summary_payload = build_top30_market_summary(
+                target,
+                stage_seal_path=cfg.stage_a_runtime_dir / "seals" / f"{target}.json",
+                archives=list(prepared.archives),
+                calendar_path=prepared.calendar_path,
+                yuanta_runs_root=(
+                    STOCK_STRATEGY_DIR
+                    / "yuanta_intraday_shadow_v01"
+                    / "runtime"
+                    / "runs"
+                ),
+                output_root=cfg.runtime_dir / "top30_market_summary",
+            )
+            market_summary_result = {
+                "status": market_summary_payload["status"],
+                "summary_hash": market_summary_payload["summary_hash"],
+                "row_count": len(market_summary_payload["rows"]),
+                "warnings": market_summary_payload["warnings"],
+                "artifacts": market_summary_payload["artifacts"],
+            }
+        except Exception as exc:
+            append_jsonl(
+                cfg.logs_dir / "postseal_errors.jsonl",
+                {
+                    "at": utc_timestamp(),
+                    "target_date": target,
+                    "module": "TOP30_MARKET_SUMMARY",
+                    "traceback": traceback.format_exc(),
+                },
+            )
+            market_summary_result = {
+                "status": "FAILED_AFTER_STAGE_A_SEAL",
+                "error_type": type(exc).__name__,
+            }
     try:
         compact_rows = [row for row in _read_csv(cfg.shadow_store_dir / "prospective_signals.csv") if row.get("signal_date") == target]
         entry_state_seal = None
@@ -157,12 +201,41 @@ def _postseal_notifications(
     except Exception as exc:
         append_jsonl(cfg.logs_dir / "postseal_errors.jsonl", {"at": utc_timestamp(), "target_date": target, "module": "NOTIFICATION", "traceback": traceback.format_exc()})
         notification = {"status": "FAILED_AFTER_SEAL", "error_type": type(exc).__name__}
+    market_summary_notifications = []
+    if market_summary_payload is not None:
+        try:
+            messages = top30_market_summary_messages(target, market_summary_payload)
+            for index, market_message in enumerate(messages, 1):
+                market_summary_notifications.append(
+                    notify(
+                        "WARRANTSCOPE_TOP30_MARKET_SUMMARY",
+                        target,
+                        f"{stage['seal_hash']}:{market_summary_payload['summary_hash']}:{index}",
+                        f"SEALED_TOP30_MARKET_SUMMARY_{index}_OF_{len(messages)}",
+                        market_message,
+                    )
+                )
+        except Exception as exc:
+            append_jsonl(
+                cfg.logs_dir / "postseal_errors.jsonl",
+                {
+                    "at": utc_timestamp(),
+                    "target_date": target,
+                    "module": "TOP30_MARKET_SUMMARY_NOTIFICATION",
+                    "traceback": traceback.format_exc(),
+                },
+            )
+            market_summary_notifications = [
+                {"status": "FAILED_AFTER_SUMMARY", "error_type": type(exc).__name__}
+            ]
     return {
         "status": "SEALED",
         "stage_a": stage_summary,
         "live_data_sync": live_data_sync,
         "entry_state": entry_state_result,
         "t1_outcomes": outcome_result,
+        "top30_market_summary": market_summary_result,
+        "top30_market_summary_notifications": market_summary_notifications,
         "notification": notification,
     }
 

@@ -230,6 +230,83 @@ def daily_message(date: str, scan: dict, stage: dict, entry_state: dict | None =
     return "\n".join(lines)
 
 
+def _market_number(value: object, digits: int = 2) -> str:
+    if value is None or value == "":
+        return "N/A"
+    return f"{float(value):.{digits}f}".rstrip("0").rstrip(".")
+
+
+def _market_pct(value: object) -> str:
+    if value is None or value == "":
+        return "N/A"
+    return f"{float(value):+.2f}%"
+
+
+def _market_volume(value: object) -> str:
+    if value is None or value == "":
+        return "N/A"
+    return f"{int(round(float(value))):,}"
+
+
+def top30_market_summary_messages(
+    date: str,
+    summary: dict,
+    *,
+    maximum_length: int = 3800,
+) -> list[str]:
+    """Render the companion market summary without mutating the Stage A seal."""
+
+    rows = summary.get("rows")
+    if not isinstance(rows, list) or len(rows) != 30:
+        raise ValueError("Top30 market summary must contain exactly 30 rows")
+    if summary.get("signal_date") != date:
+        raise ValueError("Top30 market summary date mismatch")
+    body = []
+    for row in rows:
+        body.append(
+            f"{int(row['rank'])}. {row['stock_id']} {row['stock_name']}｜"
+            f"O{_market_number(row.get('open'))}/H{_market_number(row.get('high'))}/"
+            f"L{_market_number(row.get('low'))}/C{_market_number(row.get('close'))}｜"
+            f"量{_market_volume(row.get('total_volume'))}/20均{_market_volume(row.get('average_volume_20'))}｜"
+            f"C-VWAP{_market_pct(row.get('close_vs_vwap_pct'))}｜"
+            f"振幅{_market_pct(row.get('intraday_range_pct')).lstrip('+')}｜"
+            f"高{row.get('high_first_time') or 'N/A'}/低{row.get('low_first_time') or 'N/A'}"
+        )
+
+    label = f"{date[:4]}-{date[4:6]}-{date[6:]}"
+    footer = (
+        "總量/20均：股；20均含當日。振幅=(高-低)/前收。"
+        "VWAP與高低時間來自元大已收集逐筆；時間取首次，缺值不補。"
+    )
+    chunks: list[list[str]] = []
+    current: list[str] = []
+    for line in body:
+        tentative = "\n".join(current + [line])
+        # Reserve room for the numbered header and the shared definition footer.
+        if current and len(tentative) + len(footer) + 80 > maximum_length:
+            chunks.append(current)
+            current = []
+        current.append(line)
+    if current:
+        chunks.append(current)
+
+    messages = []
+    total = len(chunks)
+    for index, lines in enumerate(chunks, 1):
+        message = "\n".join(
+            [
+                f"【Stage A Top30 行情摘要｜{label}｜{index}/{total}】",
+                *lines,
+                footer,
+                "研究封存資料｜不是買賣訊號｜不影響 LIVE",
+            ]
+        )
+        if len(message) > maximum_length:
+            raise ValueError("Top30 market summary notification exceeds maximum length")
+        messages.append(message)
+    return messages
+
+
 def chip_watch_message(
     date: str,
     candidates: list[dict],
