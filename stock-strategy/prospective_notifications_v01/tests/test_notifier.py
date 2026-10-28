@@ -23,6 +23,16 @@ class _TelegramResponse:
         return b'{"ok": true}'
 
 
+class _LargeTelegramResponse(_TelegramResponse):
+    payload = json.dumps(
+        {"ok": True, "result": {"text": "測" * 3376}},
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+    def read(self, limit):
+        return self.payload[:limit]
+
+
 class NotificationTests(unittest.TestCase):
     def test_success_is_idempotent_failed_is_retryable(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -51,6 +61,22 @@ class NotificationTests(unittest.TestCase):
         self.assertEqual(result["TELEGRAM"], "SUCCESS")
         self.assertEqual(urlopen.call_count, 2)
         sleep.assert_called_once_with(1.0)
+
+    def test_large_success_response_is_not_truncated_or_retried(self):
+        with patch.dict("os.environ", {
+            "WARRANTSCOPE_TELEGRAM_BOT_TOKEN": "private-token",
+            "WARRANTSCOPE_TELEGRAM_CHAT_ID": "12345",
+        }, clear=True), patch(
+            "prospective_notifications_v01.notifier.urllib.request.urlopen",
+            return_value=_LargeTelegramResponse(),
+        ) as urlopen:
+            result = notify(
+                "M", "20261028", "large-response", "SEALED", "測" * 3376,
+                ledger=Path(tempfile.mkdtemp()) / "ledger.jsonl",
+                providers=("TELEGRAM",),
+            )
+        self.assertEqual(result["TELEGRAM"], "SUCCESS")
+        self.assertEqual(urlopen.call_count, 1)
 
     def test_permanent_client_error_is_not_retried_and_is_sanitized(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {

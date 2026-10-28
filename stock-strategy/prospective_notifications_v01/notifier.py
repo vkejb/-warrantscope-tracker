@@ -19,6 +19,11 @@ ENTRY_STATE_RUNTIME = Path(__file__).resolve().parents[1] / "stage_a_t1_extreme_
 ENTRY_STATE_ORDER = ("READY", "WATCH", "COOLING_BUT_WEAK", "OVERHEATED")
 TELEGRAM_MAX_ATTEMPTS = 3
 TELEGRAM_RETRY_DELAYS_SECONDS = (1.0, 3.0)
+# Telegram echoes the sent message in a successful ``sendMessage`` response.
+# A 4,096-character Traditional-Chinese message can therefore exceed 4 KiB in
+# UTF-8.  Truncating that response makes valid JSON look malformed and can
+# cause the retry loop to send the same notification again.
+TELEGRAM_RESPONSE_READ_LIMIT_BYTES = 128 * 1024
 
 
 def _digest(message: str) -> str:
@@ -67,7 +72,7 @@ def _telegram(message: str) -> tuple[str, int | None, str | None, int]:
         retry_delay: float | None = None
         try:
             with urllib.request.urlopen(request, timeout=10) as response:
-                body = json.loads(response.read(4096))
+                body = json.loads(response.read(TELEGRAM_RESPONSE_READ_LIMIT_BYTES))
                 if response.status == 200 and body.get("ok") is True:
                     return "SUCCESS", response.status, None, attempt
                 last_code = response.status
