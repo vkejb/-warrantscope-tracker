@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+node_modules
+freeze*.json
+precheck.json
+# The frozen audit helper embeds a private historical ledger identifier.
+# Preserve it locally and in the private delivery, never on the public remote.
+precheck.py
+PRECHECK.md
+results*/
+*.zip
