@@ -32,6 +32,13 @@ LIVE_EXIT_POLICY = {
     "retain_3_0": 0.75,
 }
 
+ENTRY_BUY_CONCENTRATION_POLICY = {
+    "policy_id": "LONG_ACTIVE_BUY_CONCENTRATION_30S_CAP25_V1",
+    "window_seconds": 30,
+    "maximum_single_buy_share": 0.25,
+    "applies_to": "NEW_LONG_ENTRIES_ONLY",
+}
+
 LONG_MARKET_REGIME_POLICY = {
     "policy_id": "LONG_0050_RELATIVE_STRENGTH_V1",
     "benchmark_symbol": "0050",
@@ -46,6 +53,7 @@ LONG_MARKET_REGIME_POLICY = {
     "neutral_confirmations": 2,
     "bearish_confirmations": 2,
     "short_behavior": "UNCHANGED_NOT_ENABLED_BY_THIS_POLICY",
+    "long_entry_buy_concentration_policy": ENTRY_BUY_CONCENTRATION_POLICY,
 }
 
 ANTI_CHASE_ENTRY_POLICY = {
@@ -725,6 +733,35 @@ class LiveDirectionEngine:
             if row["time"] <= decision and row["received_at"] <= decision
         ]
 
+    def _entry_buy_concentration(self, symbol: str, decision: datetime) -> dict:
+        """Use accepted, already-received buys in the inclusive exchange window."""
+        start = decision - timedelta(
+            seconds=int(ENTRY_BUY_CONCENTRATION_POLICY["window_seconds"])
+        )
+        known = [
+            row for row in self._states[symbol].ticks
+            if start <= row["time"] <= decision
+            and row.get("received_at", row["time"]) <= decision
+        ]
+        buys = [
+            float(row["volume"]) for row in known
+            if self._signed_volume(row) > 0
+            and math.isfinite(float(row["volume"]))
+            and float(row["volume"]) > 0
+        ]
+        total = sum(buys)
+        valid_total = math.isfinite(total) and total > 0
+        return {
+            "concentration": max(buys) / total if buys and valid_total else None,
+            "buy_volume": total if math.isfinite(total) else None,
+            "max_buy_volume": max(buys) if buys else None,
+            "buy_tick_count": len(buys),
+            "window_tick_count": len(known),
+            "inferred_flag_count": sum(
+                str(row.get("flag", "")) not in {"0", "1"} for row in known
+            ),
+        }
+
     @staticmethod
     def _return_over(rows: list[dict], decision: datetime, seconds: int) -> float | None:
         if not rows:
@@ -930,6 +967,7 @@ class LiveDirectionEngine:
         self.last_entry_diagnostics = {
             "policy_id": LONG_MARKET_REGIME_POLICY["policy_id"],
             "anti_chase_policy": ANTI_CHASE_ENTRY_POLICY,
+            "entry_buy_concentration_policy": ENTRY_BUY_CONCENTRATION_POLICY,
             "decision_time": decision,
             "benchmark_required": self.benchmark_symbol is not None,
             "market_context": market,
@@ -1010,6 +1048,18 @@ class LiveDirectionEngine:
             if streak < required_confirmations:
                 diagnostic["gate_reason"] = "CONFIRMATIONS_INCOMPLETE"
                 continue
+            if signal["side"] == "LONG":
+                concentration = self._entry_buy_concentration(symbol, decision)
+                diagnostic["entry_buy_concentration"] = concentration
+                value = concentration["concentration"]
+                if value is None or not math.isfinite(value):
+                    diagnostic["gate_reason"] = "BUY_CONCENTRATION_UNAVAILABLE"
+                    continue
+                if value > float(
+                    ENTRY_BUY_CONCENTRATION_POLICY["maximum_single_buy_share"]
+                ) + 1e-12:
+                    diagnostic["gate_reason"] = "BUY_CONCENTRATION_EXCEEDS_LIMIT"
+                    continue
             signal.pop("minimum_relative_strength", None)
             confirmed.append(signal)
         if not confirmed:

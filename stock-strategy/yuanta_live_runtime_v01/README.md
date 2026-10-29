@@ -2,7 +2,7 @@
 
 這個模組把目前 repo 已存在的三層串起來：
 
-`每日 Stage A Top30 → 即時逐筆/五檔 → direction rule → 0050 market gate → ANTI_CHASE_BALANCED_V1 → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
+`每日 Stage A Top30 → 即時逐筆/五檔 → direction rule → 0050 market gate → ANTI_CHASE_BALANCED_V1 → 原確認 → 25%買量集中度 → 原排序 → APPROVED intent → risk boundary → yuanta_broker_execution_v01 → SPARK SendStockOrder`
 
 LIVE 當沖候選池固定為前一交易日封存的 Stage A Top30。擴大池不會傳入 LIVE
 進場引擎，只保留正式逐筆／五檔行情收集與盤後紙上回放。兩個池子使用同一資料日；
@@ -36,6 +36,8 @@ LIVE 當沖候選池固定為前一交易日封存的 Stage A Top30。擴大池�
 - 0050 缺少完整 5 分鐘暖機資料、行情 stale 或計算無效時 fail closed，不建立新倉
 - 正式做多進場套用 `ANTI_CHASE_BALANCED_V1`：訊號價相對當日第一筆有效價不得超過 2.0%，相對當日即時 VWAP 不得超過 1.25%；任一超標即拒絕該次進場並保留拒絕原因
 - 防追高只改變進場核准，不改選股、原始方向訊號、部位 sizing、停損、MFE、強制出場、broker gate 或送單路由
+- 做多完成原本確認後、原最大分數排序前，固定套用 `LONG_ACTIVE_BUY_CONCENTRATION_30S_CAP25_V1`：最近30秒主動買量中，單筆最大買量占比必須小於等於25%；無正買量時拒絕該次新倉。分母不含主動賣量，買賣分類沿用原引擎，僅使用已通過ingest且在決策前收到、交易所時間落於含端點 `[decision-30s, decision]` 的逐筆。
+- 此條件固定生效、沒有新增啟用開關；不重置原確認次數，不改做空規則。同一決策中集中度不合格者先排除，再對其餘原合格候選沿用原排序；拒絕原因與集中度寫入既有進場診斷。它不參與持倉監控或13:20／13:23平倉，亦不保證未來減虧或獲利。
 - 每個 30 秒決策的市場狀態、相對強度、通過／拒絕原因寫入獨立 signal ledger，供後續累積樣本驗證
 - 單日最多一次進場嘗試
 - 預設資金上限 190,000 元，以整張 1,000 股 sizing
