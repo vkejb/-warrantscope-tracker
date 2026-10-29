@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+node_modules
+results*/
+private*/
+sources*/
+isolated*/
+snapshots*/
+*.zip
+forward_freeze*.json
+session_snapshot*.json
