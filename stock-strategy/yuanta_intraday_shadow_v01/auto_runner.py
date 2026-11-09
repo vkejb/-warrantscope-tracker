@@ -27,6 +27,7 @@ from .yuanta_keychain import load_credentials
 from stage_a_prospective_watchlist_v01.seal_store import latest_seal
 from expanded_shadow_universe_v01.paper import publish_expanded_paper
 from expanded_shadow_universe_v01.universe import load_or_build_universe
+from dynamic_market_scanner_shadow_v01.scanner import publish_dynamic_scan
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -188,6 +189,8 @@ def main() -> int:
             paper = publish_paper_day(run_dir, session)
             expanded_paper = None
             expanded_paper_error = ""
+            dynamic_scan = None
+            dynamic_scan_error = ""
             if expanded_universe is not None:
                 try:
                     expanded_paper = publish_expanded_paper(run_dir, session)
@@ -201,6 +204,19 @@ def main() -> int:
                         "actual_orders": 0, "actual_fills": 0,
                         "broker_order_calls": 0,
                     })
+                if expanded_paper is not None:
+                    try:
+                        dynamic_scan = publish_dynamic_scan(expanded_paper)
+                    except Exception as exc:
+                        dynamic_scan_error = f"{type(exc).__name__}: {exc}"
+                        _append({
+                            "at": utc_now(), "date": day,
+                            "signal_date": signal_date,
+                            "status": "DYNAMIC_SCAN_FAILED",
+                            "reason": dynamic_scan_error,
+                            "actual_orders": 0, "actual_fills": 0,
+                            "broker_order_calls": 0,
+                        })
             comparison = write_comparison()
             dual_track = publish_dual_track()
             _append({
@@ -219,6 +235,13 @@ def main() -> int:
                 ),
                 "expanded_universe_error": expanded_prepare_error or None,
                 "expanded_paper_error": expanded_paper_error or None,
+                "dynamic_scan_error": dynamic_scan_error or None,
+                "dynamic_scan_run_id": (
+                    dynamic_scan["scan_run_id"] if dynamic_scan is not None else None
+                ),
+                "dynamic_scan_selected_count": (
+                    dynamic_scan["selected_signal_count"] if dynamic_scan is not None else 0
+                ),
                 "expanded_paper_run_id": (
                     expanded_paper["paper_run_id"] if expanded_paper is not None else None
                 ),

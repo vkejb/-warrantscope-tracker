@@ -1,0 +1,25 @@
+# Dynamic market scanner shadow v01
+
+This module turns the existing expanded-universe production-engine diagnostics
+into an auditable candidate lifecycle:
+
+`MONITORING -> OBSERVING -> READY -> PAPER_SELECTED`, or
+`REJECTED / EXPIRED`.
+
+It is post-session causal shadow analysis. It does not import an order adapter,
+open a broker connection, or submit an order. The existing expanded collector
+continues to cap the premarket universe at 400 symbols and requires the prior
+close to be no higher than TWD 190. This module adds an entry-time TWD 190 cap
+and fee-aware whole-lot affordability check.
+
+Run from `stock-strategy`:
+
+```bash
+python3 -m dynamic_market_scanner_shadow_v01.main --session-date YYYYMMDD
+python3 -m dynamic_market_scanner_shadow_v01.aggregate
+python3 -m unittest discover -s dynamic_market_scanner_shadow_v01/tests -v
+```
+
+The scheduled shadow collector publishes this diagnostic after the immutable
+expanded paper replay succeeds. Failures are isolated from Top30 collection and
+formal order handling.
