@@ -1,0 +1,48 @@
+{
+  "analysis_id": "VOLUME_FLOW_ENTRY_STUDY_V0_1",
+  "frozen_at_utc": "2026-11-09T02:23:12Z",
+  "frozen_git_head": "9f646a489ed06e683f30a8fb2e9dbdebeb7f4466",
+  "mode": "SHADOW_ONLY_OFFLINE_REPLAY",
+  "actual_orders": 0,
+  "actual_fills": 0,
+  "broker_connections": 0,
+  "capital_twd": 190000,
+  "maximum_trades_per_day": 1,
+  "variants": {
+    "V0_CURRENT_PRODUCTION": {
+      "entry_filter": "NONE"
+    },
+    "V1_SUSTAINED_DISTRIBUTED_BUYING": {
+      "pre_window_seconds": 120,
+      "minimum_tick_count": 20,
+      "minimum_volume_delta": 0.30,
+      "minimum_buyer_tick_ratio": 0.65,
+      "concentration_window_seconds": 30,
+      "maximum_largest_buy_share": 0.25
+    },
+    "V2_RECENT_VOLUME_ACCELERATION": {
+      "window_seconds": 30,
+      "minimum_ticks_each_window": 5,
+      "minimum_recent_volume_delta": 0.35,
+      "minimum_recent_to_previous_volume_ratio": 1.0
+    },
+    "V3_SUSTAINED_PLUS_ACCELERATION": {
+      "requires": [
+        "V1_SUSTAINED_DISTRIBUTED_BUYING",
+        "V2_RECENT_VOLUME_ACCELERATION"
+      ]
+    }
+  },
+  "execution_scenarios": {
+    "BASE": {
+      "entry_delay_seconds": 0,
+      "extra_adverse_ticks_each_side": 0
+    },
+    "STRESS": {
+      "entry_delay_seconds": 5,
+      "extra_adverse_ticks_each_side": 1
+    }
+  },
+  "future_prospective_cutoff": "2026-11-09T02:23:12Z",
+  "existing_dates_status": "EXPLORATORY_KNOWN_ARCHIVES_NOT_NEW_OUT_OF_SAMPLE"
+}
