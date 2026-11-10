@@ -37,3 +37,10 @@ python3 -m dynamic_market_scanner_shadow_v01.strict_main
 
 The generated `strict_results/` evidence stays local. This research path is not
 wired into the scheduler or the formal order system.
+
+`STRICT_ABLATION_V1_SPEC.md` preserves a bounded one-gate-at-a-time diagnostic.
+Run it only after the parent strict ledger exists:
+
+```bash
+python3 -m dynamic_market_scanner_shadow_v01.strict_ablation_main
+```
