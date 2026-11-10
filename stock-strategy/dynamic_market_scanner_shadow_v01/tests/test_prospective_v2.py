@@ -55,6 +55,23 @@ class ProspectiveV2Test(unittest.TestCase):
             self.assertGreater(result["review_metrics"]["BASE"]["net_pnl_twd"], 0)
             self.assertLess(result["current_metrics"]["BASE"]["net_pnl_twd"], 0)
 
+    def test_current_metrics_expose_concentration_and_drawdown(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self.write_day(root, "20261110", 100)
+            self.write_day(root, "20261111", -50)
+            self.write_day(root, "20261112", 20)
+            metrics = aggregate_prospective(root)["current_metrics"]["BASE"]
+            self.assertEqual(metrics["wins"], 2)
+            self.assertEqual(metrics["losses"], 1)
+            self.assertAlmostEqual(metrics["win_rate"], 2 / 3)
+            self.assertAlmostEqual(metrics["mean_trade_twd"], 70 / 3)
+            self.assertEqual(metrics["median_trade_twd"], 20)
+            self.assertEqual(metrics["best_day"], "20261110")
+            self.assertEqual(metrics["net_pnl_ex_best_day_twd"], -30)
+            self.assertEqual(metrics["worst_day"], "20261111")
+            self.assertEqual(metrics["max_drawdown_twd"], 50)
+
     def test_known_date_is_rejected_before_source_access(self):
         with self.assertRaisesRegex(RuntimeError, "rejects known date"):
             publish_prospective_v2(Path("/definitely/missing"), {

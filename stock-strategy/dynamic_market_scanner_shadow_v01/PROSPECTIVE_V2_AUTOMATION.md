@@ -33,6 +33,11 @@ removing the best trade. A failure becomes
 `REJECTED_AT_FROZEN_PROSPECTIVE_REVIEW`; a pass becomes only
 `ELIGIBLE_FOR_SEPARATE_UAT_REVIEW_ONLY`. Neither state changes live settings.
 
+The aggregate also reports win rate, mean and median trade P&L, best-day and
+worst-day concentration, net P&L after removing the best day, positive-day
+rate, and daily mark-to-market maximum drawdown. These are diagnostics only;
+they do not add gates or change the frozen entry policy after seeing outcomes.
+
 ## Current initialized state
 
 As of 2026-11-10, no post-freeze full session has been published:

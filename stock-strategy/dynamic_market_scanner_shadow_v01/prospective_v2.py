@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import shutil
+import statistics
 from typing import Any
 
 from expanded_shadow_universe_v01.paper import load_expanded_candidates
@@ -78,7 +79,19 @@ def _track_metrics(rows: list[dict[str, str]], scenario: str) -> dict[str, Any]:
               if row.get("status") == "SCORED" and row.get("net_pnl") not in {None, ""}]
     values = [float(row["net_pnl"]) for row in scored]
     wins, losses = [v for v in values if v > 0], [v for v in values if v < 0]
+    breakeven = [v for v in values if v == 0]
     best = max(values) if values else None
+    daily: dict[str, float] = {}
+    for row in scored:
+        day = str(row["session_date"])
+        daily[day] = daily.get(day, 0.0) + float(row["net_pnl"])
+    best_day = max(daily, key=lambda day: (daily[day], day)) if daily else None
+    worst_day = min(daily, key=lambda day: (daily[day], day)) if daily else None
+    equity = peak = max_drawdown = 0.0
+    for day in sorted(daily):
+        equity += daily[day]
+        peak = max(peak, equity)
+        max_drawdown = max(max_drawdown, peak - equity)
     profit_factor = sum(wins) / abs(sum(losses)) if losses else None
     profit_factor_pass = bool(values and ((losses and profit_factor is not None and profit_factor > 1)
                                           or (not losses and sum(wins) > 0)))
@@ -87,11 +100,25 @@ def _track_metrics(rows: list[dict[str, str]], scenario: str) -> dict[str, Any]:
         "scored_trade_count": len(scored),
         "distinct_scored_dates": len({row["session_date"] for row in scored}),
         "unfilled_or_unscorable_count": len(matching) - len(scored),
-        "wins": len(wins), "losses": len(losses),
+        "wins": len(wins), "losses": len(losses), "breakeven": len(breakeven),
+        "win_rate": len(wins) / len(values) if values else None,
         "net_pnl_twd": sum(values), "profit_factor": profit_factor,
         "profit_factor_pass": profit_factor_pass,
+        "mean_trade_twd": statistics.fmean(values) if values else None,
+        "median_trade_twd": statistics.median(values) if values else None,
         "best_trade_twd": best,
         "net_pnl_ex_best_trade_twd": sum(values) - best if best is not None else None,
+        "best_day": best_day,
+        "best_day_pnl_twd": daily[best_day] if best_day is not None else None,
+        "net_pnl_ex_best_day_twd": (
+            sum(values) - daily[best_day] if best_day is not None else None
+        ),
+        "worst_day": worst_day,
+        "worst_day_pnl_twd": daily[worst_day] if worst_day is not None else None,
+        "positive_day_rate": (
+            sum(value > 0 for value in daily.values()) / len(daily) if daily else None
+        ),
+        "max_drawdown_twd": max_drawdown if values else None,
     }
 
 
