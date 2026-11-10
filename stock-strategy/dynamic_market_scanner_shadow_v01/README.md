@@ -50,3 +50,13 @@ python3 -m dynamic_market_scanner_shadow_v01.strict_ablation_main
 ```bash
 python3 -m dynamic_market_scanner_shadow_v01.signal_outcomes_main
 ```
+
+`CAUSAL_AUCTION_V1_SPEC.md` freezes the single five-minute relative-strength
+auction hypothesis:
+
+```bash
+python3 -m dynamic_market_scanner_shadow_v01.causal_auction_main
+```
+
+The known-archive result is recorded in `CAUSAL_AUCTION_V1_REPORT.md`; the
+auction is not a promotion candidate.
