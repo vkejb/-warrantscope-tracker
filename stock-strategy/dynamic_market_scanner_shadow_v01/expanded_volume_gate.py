@@ -139,6 +139,47 @@ def _metrics(variant: str, scenario: str, selections: int,
     }
 
 
+def replay_volume_day(day: str, rows: list[dict[str, Any]],
+                      candidates: dict[str, dict], market: dict[str, dict],
+                      coverage: dict[str, Any]) -> dict[str, Any]:
+    """Replay all frozen variants for one sealed day without broker access."""
+    variants = list(VOLUME_POLICY["variants"])
+    scenarios = list(VOLUME_POLICY["execution_scenarios"])
+    diagnostics, trades = [], []
+    selections = {(variant, scenario): 0 for variant in variants for scenario in scenarios}
+    for variant in variants:
+        selected, gate_rows = select_candidate(rows, candidates, variant)
+        diagnostics.extend(gate_rows)
+        if selected is None:
+            continue
+        symbol = str(selected["stock_id"])
+        for scenario in scenarios:
+            selections[(variant, scenario)] += 1
+            fill = entry_fill(selected, candidates[symbol], scenario)
+            if fill is None:
+                trades.append({
+                    "session_date": day, "variant": variant, "scenario": scenario,
+                    "stock_id": symbol, "stock_name": selected["stock_name"],
+                    "signal_time": selected["signal_time"],
+                    "status": "UNFILLED_ENTRY_QUOTE_OR_CAP",
+                    "net_pnl": None, "actual_orders": 0, "actual_fills": 0,
+                    "broker_order_calls": 0,
+                })
+                continue
+            payload = {
+                **selected, "confirmation_time": fill["entry_time"],
+                "delayed_entry_price": fill["entry_price"],
+                "delayed_entry_quantity": fill["quantity"],
+            }
+            trade = _simulate_exit(payload, {symbol: candidates[symbol]}, market, coverage)
+            trade.update({"variant": variant, "scenario": scenario,
+                          "strategy_variant": f"{variant}_{scenario}",
+                          "entry_fee_twd": fill["entry_fee_twd"],
+                          "cash_required_twd": fill["cash_required_twd"]})
+            trades.append(trade)
+    return {"signals": diagnostics, "trades": trades, "selections": selections}
+
+
 def run_volume_gate(
     ledger_path: Path = DEFAULT_RESULTS_DIR / "candidate_ledger.csv",
     results_dir: Path = DEFAULT_VOLUME_RESULTS_DIR,
@@ -167,36 +208,11 @@ def run_volume_gate(
             "callback_errors": int(source.get("event_counts", {}).get("callback_errors", 0)),
             "coverage_status": "FULL_SESSION",
         }
-        for variant in variants:
-            selected, gate_rows = select_candidate(rows, candidates, variant)
-            diagnostics.extend(gate_rows)
-            if selected is None:
-                continue
-            symbol = str(selected["stock_id"])
-            for scenario in scenarios:
-                selections[(variant, scenario)] += 1
-                fill = entry_fill(selected, candidates[symbol], scenario)
-                if fill is None:
-                    trades.append({
-                        "session_date": day, "variant": variant, "scenario": scenario,
-                        "stock_id": symbol, "stock_name": selected["stock_name"],
-                        "signal_time": selected["signal_time"],
-                        "status": "UNFILLED_ENTRY_QUOTE_OR_CAP",
-                        "net_pnl": None, "actual_orders": 0, "actual_fills": 0,
-                        "broker_order_calls": 0,
-                    })
-                    continue
-                payload = {
-                    **selected, "confirmation_time": fill["entry_time"],
-                    "delayed_entry_price": fill["entry_price"],
-                    "delayed_entry_quantity": fill["quantity"],
-                }
-                trade = _simulate_exit(payload, {symbol: candidates[symbol]}, market, coverage)
-                trade.update({"variant": variant, "scenario": scenario,
-                              "strategy_variant": f"{variant}_{scenario}",
-                              "entry_fee_twd": fill["entry_fee_twd"],
-                              "cash_required_twd": fill["cash_required_twd"]})
-                trades.append(trade)
+        result = replay_volume_day(day, rows, candidates, market, coverage)
+        diagnostics.extend(result["signals"])
+        trades.extend(result["trades"])
+        for key, value in result["selections"].items():
+            selections[key] += value
     metrics = [_metrics(variant, scenario, selections[(variant, scenario)],
                         trades, session_dates)
                for variant in variants for scenario in scenarios]

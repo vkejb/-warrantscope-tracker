@@ -28,6 +28,7 @@ from stage_a_prospective_watchlist_v01.seal_store import latest_seal
 from expanded_shadow_universe_v01.paper import publish_expanded_paper
 from expanded_shadow_universe_v01.universe import load_or_build_universe
 from dynamic_market_scanner_shadow_v01.scanner import publish_dynamic_scan
+from dynamic_market_scanner_shadow_v01.prospective_v2 import publish_prospective_v2
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -191,6 +192,8 @@ def main() -> int:
             expanded_paper_error = ""
             dynamic_scan = None
             dynamic_scan_error = ""
+            prospective_v2 = None
+            prospective_v2_error = ""
             if expanded_universe is not None:
                 try:
                     expanded_paper = publish_expanded_paper(run_dir, session)
@@ -217,6 +220,20 @@ def main() -> int:
                             "actual_orders": 0, "actual_fills": 0,
                             "broker_order_calls": 0,
                         })
+                    try:
+                        prospective_v2 = publish_prospective_v2(run_dir, session)
+                    except Exception as exc:
+                        # Prospective research must never change collection,
+                        # paper publication, or formal execution state.
+                        prospective_v2_error = f"{type(exc).__name__}: {exc}"
+                        _append({
+                            "at": utc_now(), "date": day,
+                            "signal_date": signal_date,
+                            "status": "PROSPECTIVE_V2_FAILED",
+                            "reason": prospective_v2_error,
+                            "actual_orders": 0, "actual_fills": 0,
+                            "broker_order_calls": 0,
+                        })
             comparison = write_comparison()
             dual_track = publish_dual_track()
             _append({
@@ -236,6 +253,15 @@ def main() -> int:
                 "expanded_universe_error": expanded_prepare_error or None,
                 "expanded_paper_error": expanded_paper_error or None,
                 "dynamic_scan_error": dynamic_scan_error or None,
+                "prospective_v2_error": prospective_v2_error or None,
+                "prospective_v2_run_id": (
+                    prospective_v2["prospective_run_id"]
+                    if prospective_v2 is not None else None
+                ),
+                "prospective_v2_validation_status": (
+                    prospective_v2["validation_status"]
+                    if prospective_v2 is not None else None
+                ),
                 "dynamic_scan_run_id": (
                     dynamic_scan["scan_run_id"] if dynamic_scan is not None else None
                 ),

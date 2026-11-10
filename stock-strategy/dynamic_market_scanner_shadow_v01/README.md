@@ -67,3 +67,10 @@ the expanded candidate ledger without retuning it:
 ```bash
 python3 -m dynamic_market_scanner_shadow_v01.expanded_volume_gate_main
 ```
+
+New full sessions after the 2026-11-09 freeze are automatically published to
+the Git-ignored `prospective_v2_runtime/` after expanded paper replay. Failure
+is isolated by the automatic runner. The publisher cannot connect to a broker,
+and even a passing result is only eligible for a separate UAT review.
+
+Operational and review-state details are in `PROSPECTIVE_V2_AUTOMATION.md`.
