@@ -1,3 +1,5 @@
 # Prospective post-seal side effects and immutable local watchlist records.
 stage_a_prospective_watchlist_v01/runtime/
 prospective_notifications_v01/runtime/
+dynamic_market_scanner_shadow_v01/strict_results/
+dynamic_market_scanner_shadow_v01/strict_groups/

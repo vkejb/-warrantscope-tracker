@@ -23,3 +23,17 @@ python3 -m unittest discover -s dynamic_market_scanner_shadow_v01/tests -v
 The scheduled shadow collector publishes this diagnostic after the immutable
 expanded paper replay succeeds. Failures are isolated from Top30 collection and
 formal order handling.
+
+## Frozen strict replay
+
+`STRICT_MARKET_WIDE_V1_SPEC.md` and `strict_main.py` implement the first strict
+expanded-universe replay: non-bearish market context, 60-second follow-through,
+executable-bid after-cost progress, causal VWAP/breakout hold, and ranking among
+candidates that mature at the same checkpoint.
+
+```bash
+python3 -m dynamic_market_scanner_shadow_v01.strict_main
+```
+
+The generated `strict_results/` evidence stays local. This research path is not
+wired into the scheduler or the formal order system.
