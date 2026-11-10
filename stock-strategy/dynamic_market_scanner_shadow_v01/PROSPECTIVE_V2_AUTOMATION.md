@@ -45,3 +45,17 @@ As of 2026-11-10, no post-freeze full session has been published:
 The state will advance only when the existing scheduled full-session collector
 produces a new valid archive. No broker login, quote subscription, or new
 LaunchAgent was added for this validation.
+
+## Offline catch-up
+
+For a full-session archive produced by a process that started before this hook
+was deployed, run:
+
+```bash
+python -m dynamic_market_scanner_shadow_v01.prospective_v2_main \
+  yuanta_intraday_shadow_v01/runtime/runs/<run-id>
+```
+
+The entry verifies and reuses the run's immutable
+`session_analyses/<run-id>/session_manifest.json`. If it is absent, it creates
+only that analysis; it does not repeat the automatic completion notification.
