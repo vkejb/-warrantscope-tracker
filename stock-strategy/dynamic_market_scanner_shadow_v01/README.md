@@ -44,3 +44,9 @@ Run it only after the parent strict ledger exists:
 ```bash
 python3 -m dynamic_market_scanner_shadow_v01.strict_ablation_main
 ```
+
+`SIGNAL_OUTCOMES_V1_SPEC.md` defines the fixed-horizon, all-signal diagnostic:
+
+```bash
+python3 -m dynamic_market_scanner_shadow_v01.signal_outcomes_main
+```
