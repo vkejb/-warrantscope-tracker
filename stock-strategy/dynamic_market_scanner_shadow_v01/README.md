@@ -74,3 +74,17 @@ is isolated by the automatic runner. The publisher cannot connect to a broker,
 and even a passing result is only eligible for a separate UAT review.
 
 Operational and review-state details are in `PROSPECTIVE_V2_AUTOMATION.md`.
+
+## Flow-reversal breakeven exit diagnostic
+
+`FLOW_BREAKEVEN_EXIT_SPEC.md` freezes a paired, cost-aware exit study on the
+known expanded-universe archive. It requires two consecutive adverse-flow
+checks and exits only at the first later executable quote whose net P&L has
+returned to zero or below. It is not connected to the scheduler or broker.
+
+```bash
+python3 -m dynamic_market_scanner_shadow_v01.flow_breakeven_exit_main
+```
+
+Outputs are written to `flow_breakeven_exit_results/`; the known-archive result
+does not support adding this rule to the formal strategy.
