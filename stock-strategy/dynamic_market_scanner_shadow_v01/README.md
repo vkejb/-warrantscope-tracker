@@ -60,3 +60,10 @@ python3 -m dynamic_market_scanner_shadow_v01.causal_auction_main
 
 The known-archive result is recorded in `CAUSAL_AUCTION_V1_REPORT.md`; the
 auction is not a promotion candidate.
+
+`EXPANDED_VOLUME_GATE_SPEC.md` applies the older frozen V2 acceleration gate to
+the expanded candidate ledger without retuning it:
+
+```bash
+python3 -m dynamic_market_scanner_shadow_v01.expanded_volume_gate_main
+```
