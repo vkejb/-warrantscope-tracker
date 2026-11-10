@@ -1,9 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import unittest
 from zoneinfo import ZoneInfo
 
 from dynamic_market_scanner_shadow_v01.expanded_volume_gate import (
-    gate_result, select_candidate,
+    entry_fill_with_reason, gate_result, select_candidate,
 )
 
 
@@ -30,6 +30,24 @@ class ExpandedVolumeGateTest(unittest.TestCase):
         selected, _ = select_candidate(rows, {"LOW": {}, "HIGH": {}},
                                        "V0_NO_ADDITIONAL_GATE")
         self.assertEqual(selected["stock_id"], "HIGH")
+
+    def test_stress_fill_reports_stale_tick_without_changing_decision(self):
+        at = datetime(2026, 11, 10, 9, 5, 30,
+                      tzinfo=ZoneInfo("Asia/Taipei"))
+        row = {"signal_time": at, "original_entry_price": 34.25}
+        data = {"ticks": [{"time": at + timedelta(seconds=11.008),
+                            "ask": 34.2}]}
+        fill, reason = entry_fill_with_reason(row, data, "STRESS")
+        self.assertIsNone(fill)
+        self.assertEqual(reason, "TICK_STALE_AFTER_DELAY")
+
+    def test_fill_reports_price_cap_separately(self):
+        at = datetime(2026, 11, 10, 9, 5, 30,
+                      tzinfo=ZoneInfo("Asia/Taipei"))
+        row = {"signal_time": at, "original_entry_price": 190.5}
+        fill, reason = entry_fill_with_reason(row, {"ticks": []}, "BASE")
+        self.assertIsNone(fill)
+        self.assertEqual(reason, "ENTRY_PRICE_ABOVE_190_CAP")
 
 
 if __name__ == "__main__":

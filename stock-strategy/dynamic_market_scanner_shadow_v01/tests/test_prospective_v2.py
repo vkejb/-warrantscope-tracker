@@ -43,7 +43,7 @@ class ProspectiveV2Test(unittest.TestCase):
     def test_first_mature_prefix_is_final(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            start = date(2026, 11, 10)
+            start = date(2026, 11, 11)
             for index in range(10):
                 pnl = -50 if index == 0 else 100
                 self.write_day(root, (start + timedelta(days=index)).strftime("%Y%m%d"), pnl)
@@ -51,31 +51,31 @@ class ProspectiveV2Test(unittest.TestCase):
             self.write_day(root, (start + timedelta(days=10)).strftime("%Y%m%d"), -10_000)
             result = aggregate_prospective(root)
             self.assertEqual(result["status"], "ELIGIBLE_FOR_SEPARATE_UAT_REVIEW_ONLY")
-            self.assertEqual(result["review_cutoff_date"], "20261119")
+            self.assertEqual(result["review_cutoff_date"], "20261120")
             self.assertGreater(result["review_metrics"]["BASE"]["net_pnl_twd"], 0)
             self.assertLess(result["current_metrics"]["BASE"]["net_pnl_twd"], 0)
 
     def test_current_metrics_expose_concentration_and_drawdown(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            self.write_day(root, "20261110", 100)
-            self.write_day(root, "20261111", -50)
-            self.write_day(root, "20261112", 20)
+            self.write_day(root, "20261111", 100)
+            self.write_day(root, "20261112", -50)
+            self.write_day(root, "20261113", 20)
             metrics = aggregate_prospective(root)["current_metrics"]["BASE"]
             self.assertEqual(metrics["wins"], 2)
             self.assertEqual(metrics["losses"], 1)
             self.assertAlmostEqual(metrics["win_rate"], 2 / 3)
             self.assertAlmostEqual(metrics["mean_trade_twd"], 70 / 3)
             self.assertEqual(metrics["median_trade_twd"], 20)
-            self.assertEqual(metrics["best_day"], "20261110")
+            self.assertEqual(metrics["best_day"], "20261111")
             self.assertEqual(metrics["net_pnl_ex_best_day_twd"], -30)
-            self.assertEqual(metrics["worst_day"], "20261111")
+            self.assertEqual(metrics["worst_day"], "20261112")
             self.assertEqual(metrics["max_drawdown_twd"], 50)
 
     def test_known_date_is_rejected_before_source_access(self):
         with self.assertRaisesRegex(RuntimeError, "rejects known date"):
             publish_prospective_v2(Path("/definitely/missing"), {
-                "session_date": "20261109", "coverage_status": "FULL_SESSION"
+                "session_date": "20261110", "coverage_status": "FULL_SESSION"
             })
 
     def test_offline_entry_reuses_matching_sealed_session(self):

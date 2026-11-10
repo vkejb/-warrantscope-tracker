@@ -24,7 +24,7 @@ from .strict_replay import _write_csv, replay_session
 
 MODULE_DIR = Path(__file__).resolve().parent
 DEFAULT_PROSPECTIVE_RUNTIME_DIR = MODULE_DIR / "prospective_v2_runtime"
-FREEZE_CUTOFF_DATE = "20261109"
+FREEZE_CUTOFF_DATE = "20261110"
 PROSPECTIVE_POLICY = {
     "policy_id": "EXPANDED_V2_PROSPECTIVE_VALIDATION_V1",
     "freeze_cutoff_date": FREEZE_CUTOFF_DATE,

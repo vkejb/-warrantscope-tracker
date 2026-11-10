@@ -15,7 +15,7 @@ from yuanta_intraday_shadow_v01.collector import canonical_bytes
 from yuanta_intraday_shadow_v01.direction_follow_backtest import SPEC, _tick_size
 
 from .causal_auction import _verified_selected_quotes
-from .scanner import affordable_quantity
+from .scanner import POLICY, affordable_quantity
 from .strict_ablation import load_ledger
 from .strict_replay import (
     DEFAULT_PAPER_DIR, DEFAULT_RESULTS_DIR, DEFAULT_RUNS_DIR,
@@ -27,7 +27,7 @@ SOURCE_CONFIG = load_config()
 SOURCE_CONFIG_HASH = hashlib.sha256(canonical_bytes(SOURCE_CONFIG)).hexdigest()
 VOLUME_POLICY = {
     "policy_id": "EXPANDED_FROZEN_VOLUME_ACCELERATION_V2",
-    "frozen_at_taipei": "2026-11-10T00:00:00+08:00",
+    "frozen_at_taipei": "2026-11-10T12:06:25+08:00",
     "mode": "SHADOW_ONLY_KNOWN_ARCHIVE_CAUSAL_ACCOUNT_REPLAY",
     "source_policy": "V2_RECENT_VOLUME_ACCELERATION",
     "source_config_hash": SOURCE_CONFIG_HASH,
@@ -85,28 +85,40 @@ def select_candidate(rows: list[dict[str, Any]], candidates: dict[str, dict],
     return None, diagnostics
 
 
-def entry_fill(row: dict[str, Any], data: dict[str, Any], scenario: str) -> dict[str, Any] | None:
+def entry_fill_with_reason(
+    row: dict[str, Any], data: dict[str, Any], scenario: str,
+) -> tuple[dict[str, Any] | None, str | None]:
     if scenario == "BASE":
         at = row["signal_time"]
         price = float(row["original_entry_price"])
     elif scenario == "STRESS":
         target = row["signal_time"] + timedelta(seconds=5)
         tick = next((item for item in data["ticks"] if item["time"] >= target), None)
-        if tick is None or not 0 <= (tick["time"] - target).total_seconds() <= float(
-            SPEC["maximum_tick_staleness_seconds"]
-        ):
-            return None
+        if tick is None:
+            return None, "NO_TICK_AT_OR_AFTER_DELAY"
+        tick_age = (tick["time"] - target).total_seconds()
+        if not 0 <= tick_age <= float(SPEC["maximum_tick_staleness_seconds"]):
+            return None, "TICK_STALE_AFTER_DELAY"
         at = tick["time"]
         price = float(tick["ask"])
         price += _tick_size(price)
         price += _tick_size(price)
     else:
         raise ValueError(f"unknown scenario: {scenario}")
+    if price > float(POLICY["maximum_entry_price_twd"]) + 1e-12:
+        return None, "ENTRY_PRICE_ABOVE_190_CAP"
     quantity, fee, cash = affordable_quantity(price)
     if quantity < 1000:
-        return None
-    return {"entry_time": at, "entry_price": price, "quantity": quantity,
-            "entry_fee_twd": fee, "cash_required_twd": cash}
+        return None, "BOARD_LOT_UNAFFORDABLE"
+    return ({"entry_time": at, "entry_price": price, "quantity": quantity,
+             "entry_fee_twd": fee, "cash_required_twd": cash}, None)
+
+
+def entry_fill(row: dict[str, Any], data: dict[str, Any],
+               scenario: str) -> dict[str, Any] | None:
+    """Compatibility wrapper retaining the frozen fill decision."""
+    fill, _reason = entry_fill_with_reason(row, data, scenario)
+    return fill
 
 
 def _metrics(variant: str, scenario: str, selections: int,
@@ -155,13 +167,16 @@ def replay_volume_day(day: str, rows: list[dict[str, Any]],
         symbol = str(selected["stock_id"])
         for scenario in scenarios:
             selections[(variant, scenario)] += 1
-            fill = entry_fill(selected, candidates[symbol], scenario)
+            fill, unfilled_reason = entry_fill_with_reason(
+                selected, candidates[symbol], scenario
+            )
             if fill is None:
                 trades.append({
                     "session_date": day, "variant": variant, "scenario": scenario,
                     "stock_id": symbol, "stock_name": selected["stock_name"],
                     "signal_time": selected["signal_time"],
                     "status": "UNFILLED_ENTRY_QUOTE_OR_CAP",
+                    "unfilled_reason": unfilled_reason,
                     "net_pnl": None, "actual_orders": 0, "actual_fills": 0,
                     "broker_order_calls": 0,
                 })

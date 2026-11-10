@@ -4,7 +4,7 @@
 
 After a new expanded-universe full-session paper replay succeeds, the existing
 automatic shadow runner calls `publish_prospective_v2`. The publisher rejects
-all session dates through 2026-11-09, verifies the sealed source artifacts,
+all session dates through 2026-11-10, verifies the sealed source artifacts,
 rebuilds the current-engine full-day candidate ledger, and replays the frozen
 V2 BASE and five-second delayed tracks.
 
@@ -38,9 +38,20 @@ worst-day concentration, net P&L after removing the best day, positive-day
 rate, and daily mark-to-market maximum drawdown. These are diagnostics only;
 they do not add gates or change the frozen entry policy after seeing outcomes.
 
+Future unfilled trade rows retain the frozen generic status and also record an
+`unfilled_reason` that distinguishes missing or stale delayed ticks, the TWD
+190 price cap, and an unaffordable board lot. This is an observability-only
+field and does not change whether the simulated order fills.
+
 ## Current initialized state
 
-As of 2026-11-10, no post-freeze full session has been published:
+The expanded V2 application code was committed at 2026-11-10 12:06:25 Asia/Taipei.
+The 2026-11-10 signal and exit occurred before that timestamp, so that sealed
+day is retained only as `NON_PROSPECTIVE_FREEZE_DAY_DIAGNOSTIC` and is excluded
+from the prospective sample. Strict prospective counting begins with sessions
+after 2026-11-10.
+
+As of the freeze, no qualifying post-freeze full session has been published:
 
 - status: `PENDING_MINIMUM_NEW_SAMPLE`
 - prospective sessions: 0

@@ -21,3 +21,8 @@ combination, or execution scenario is searched.
 The parameters predate this expanded-universe outcome study, reducing but not
 eliminating selection bias. The 16 archives are still known data; new-date
 validation is required for promotion.
+
+The expanded-universe application and selection policy was committed at
+2026-11-10 12:06:25 Asia/Taipei. Consequently 2026-11-10 is a freeze-day
+diagnostic, not a strict prospective session; prospective counting starts only
+with later sessions.
