@@ -79,3 +79,22 @@ The package and tests now have side-effect-free `__init__.py` files, so the
 repository's full unittest discovery also includes the isolated audit tests.
 See [offline_preparation_20261003.md](offline_preparation_20261003.md) for the
 additional account-lock fix, final results and remaining authorization boundary.
+
+## Read-only broker UAT boundary
+
+`uat_preflight` resolves the installed LaunchAgent binding, hashes the bound
+runtime baseline, and opens the order ledger with SQLite `mode=ro`. It also
+verifies that the separate broker evidence probe contains only the four
+allowlisted inventory/report queries and no known order mutation method.
+
+```sh
+python -m trading_safety_audit_v01.uat_preflight \
+  --launch-agent "$HOME/Library/LaunchAgents/com.linyunyan.warrantscope.trading-bot.plist"
+```
+
+The output is local UAT evidence, not a LIVE approval. The optional
+`readonly_broker_probe` may log in only to query reports and positions; it
+stores the account evidence in a mode-0600 temporary file and never commits it.
+Broker-backed partial fill, cancel/replace, and forced-flat behavior remain
+`UNKNOWN` until separately authorized evidence exists. See
+`BROKER_UAT_BOUNDARY.md` for the full boundary.

@@ -331,6 +331,18 @@ class CollectorContractTests(unittest.TestCase):
             with gzip.open(run.tick_path, "rt", encoding="utf-8") as handle:
                 self.assertEqual(__import__("json").loads(handle.readline())["stock_id"], "1001")
 
+    def test_registered_run_local_artifact_is_sealed(self):
+        seal, stocks = self._fixture()
+        with tempfile.TemporaryDirectory() as temp:
+            run = AppendOnlyRun(Path(temp), seal, stocks, {})
+            observer = run.run_dir / "observer-summary.json"
+            observer.write_text('{"actual_orders":0}\n', encoding="utf-8")
+            run.register_artifact(observer)
+            manifest = run.finalize(status="COMPLETE", started_at="a", ended_at="b")
+            self.assertIn(observer.name, manifest["artifacts"])
+            with self.assertRaisesRegex(ValueError, "run-local"):
+                run.register_artifact(Path(temp) / "outside.json")
+
     def test_snapshot_contains_no_credentials(self):
         seal, stocks = self._fixture()
         with tempfile.TemporaryDirectory() as temp:

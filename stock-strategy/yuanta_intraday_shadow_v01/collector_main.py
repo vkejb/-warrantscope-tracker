@@ -218,6 +218,7 @@ def run(
     progress_callback=None,
     compress: bool = False,
     expanded_universe: tuple[dict, list] | None = None,
+    realtime_observer=None,
 ) -> int:
     seal, items, provenance = load_stage_a_watchlist()
     print(f"Stage A seal：{seal['signal_date']}｜{seal['seal_hash'][:12]}｜30檔")
@@ -253,6 +254,16 @@ def run(
         runtime_dir, seal, items, provenance, compress=compress,
         expanded_seal=expanded_seal, expanded_items=expanded_items,
     )
+    if realtime_observer is not None:
+        try:
+            realtime_observer.start(
+                run_dir=artifact.run_dir,
+                run_id=artifact.run_id,
+                expanded_items=expanded_items,
+            )
+        except Exception as exc:
+            print(f"即時擴大池影子觀察器未啟動：{type(exc).__name__}")
+            realtime_observer = None
     meta = {x.stock_id: x for x in items}
     expanded_meta = {x.stock_id: x for x in expanded_items}
     context_meta = {x.stock_id: x for x in market_context_items()}
@@ -337,18 +348,24 @@ def run(
                     })
                 if expanded_item is not None:
                     callback_phase = "STOCK_TICK_EXPANDED_SHADOW_APPEND"
-                    artifact.append("expanded_ticks", {
+                    expanded_event = {
                         **base_for(expanded_item, role="EXPANDED_SHADOW_CANDIDATE"),
                         "expanded_rank": expanded_item.rank,
                         "industry": expanded_item.industry,
                         "industry_code": expanded_item.industry_code,
                         **payload,
-                    })
+                    }
+                    artifact.append("expanded_ticks", expanded_event)
+                    if realtime_observer is not None:
+                        realtime_observer.offer("expanded_ticks", expanded_event)
                 if context_item is not None:
                     callback_phase = "STOCK_TICK_MARKET_CONTEXT_APPEND"
-                    artifact.append("market_context_ticks", {
+                    context_event = {
                         **base_for(context_item, role="MARKET_BENCHMARK"), **payload,
-                    })
+                    }
+                    artifact.append("market_context_ticks", context_event)
+                    if realtime_observer is not None:
+                        realtime_observer.offer("market_context_ticks", context_event)
             elif name == "SubscribeFiveTickA":
                 callback_phase = "FIVE_LEVEL_PAYLOAD"
                 payload = {"event_type": "FIVE_LEVEL", **_book_payload(value)}
@@ -359,18 +376,24 @@ def run(
                     })
                 if expanded_item is not None:
                     callback_phase = "FIVE_LEVEL_EXPANDED_SHADOW_APPEND"
-                    artifact.append("expanded_books", {
+                    expanded_event = {
                         **base_for(expanded_item, role="EXPANDED_SHADOW_CANDIDATE"),
                         "expanded_rank": expanded_item.rank,
                         "industry": expanded_item.industry,
                         "industry_code": expanded_item.industry_code,
                         **payload,
-                    })
+                    }
+                    artifact.append("expanded_books", expanded_event)
+                    if realtime_observer is not None:
+                        realtime_observer.offer("expanded_books", expanded_event)
                 if context_item is not None:
                     callback_phase = "FIVE_LEVEL_MARKET_CONTEXT_APPEND"
-                    artifact.append("market_context_books", {
+                    context_event = {
                         **base_for(context_item, role="MARKET_BENCHMARK"), **payload,
-                    })
+                    }
+                    artifact.append("market_context_books", context_event)
+                    if realtime_observer is not None:
+                        realtime_observer.offer("market_context_books", context_event)
         except Exception as exc:
             artifact.callback_error(
                 type(exc).__name__,
@@ -456,6 +479,14 @@ def run(
         accepting_callbacks = False
         pfx_password = trading_password = ""
         try:
+            if realtime_observer is not None:
+                try:
+                    for observer_path in realtime_observer.close():
+                        artifact.register_artifact(observer_path)
+                except Exception:
+                    # The optional research observer is isolated from the raw
+                    # quote archive and must never make collection untruthful.
+                    pass
             manifest = artifact.finalize(status=final_status, started_at=started_at, ended_at=utc_now(), error_type=error_type)
             print(json.dumps(manifest, ensure_ascii=False, indent=2))
             if progress_callback:

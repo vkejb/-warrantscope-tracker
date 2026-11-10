@@ -75,6 +75,24 @@ and even a passing result is only eligible for a separate UAT review.
 
 Operational and review-state details are in `PROSPECTIVE_V2_AUTOMATION.md`.
 
+## Realtime expanded-universe observer
+
+The existing 08:50 quote collector now feeds the same expanded-universe and
+0050 callbacks to an in-process shadow observer. It does not create a second
+login or subscription and has no broker/order object. Observer failure is
+isolated from raw quote archival.
+
+For each full-session run it seals
+`realtime_expanded_shadow_events.jsonl` and
+`realtime_expanded_shadow_summary.json` into the source run manifest. The
+frozen policy records the first V2 volume-gated signal, the fixed five-minute
+relative-strength challenger, and a three-minute after-cost continuation
+check. The continuation gate uses the adverse-tick executable proxy; the raw
+best bid is retained as a diagnostic mark and cannot promote a signal.
+
+These artifacts remain `SHADOW_ONLY_NO_BROKER_NO_ORDER`. A passing observation
+does not enable live execution.
+
 ## Flow-reversal breakeven exit diagnostic
 
 `FLOW_BREAKEVEN_EXIT_SPEC.md` freezes a paired, cost-aware exit study on the

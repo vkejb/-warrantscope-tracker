@@ -29,6 +29,9 @@ from expanded_shadow_universe_v01.paper import publish_expanded_paper
 from expanded_shadow_universe_v01.universe import load_or_build_universe
 from dynamic_market_scanner_shadow_v01.scanner import publish_dynamic_scan
 from dynamic_market_scanner_shadow_v01.prospective_v2 import publish_prospective_v2
+from dynamic_market_scanner_shadow_v01.realtime_expanded_shadow import (
+    RealtimeExpandedShadow,
+)
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -162,6 +165,9 @@ def main() -> int:
                 raise RuntimeError("invalid automatic full-session duration")
             caffeinate = subprocess.Popen(["/usr/bin/caffeinate", "-dimsu", "-w", str(os.getpid())], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             holder: dict[str, str] = {}
+            realtime_observer = (
+                RealtimeExpandedShadow() if expanded_universe is not None else None
+            )
             def progress(event: dict):
                 if event.get("type") == "FINAL": holder["run_dir"] = event["run_dir"]
             try:
@@ -170,6 +176,7 @@ def main() -> int:
                     runtime_dir=DEFAULT_RUNTIME_DIR, credentials=credentials,
                     progress_callback=progress, compress=True,
                     expanded_universe=expanded_universe,
+                    realtime_observer=realtime_observer,
                 )
             finally:
                 credentials.clear()
@@ -257,6 +264,11 @@ def main() -> int:
                 "prospective_v2_run_id": (
                     prospective_v2["prospective_run_id"]
                     if prospective_v2 is not None else None
+                ),
+                "realtime_expanded_shadow": (
+                    run_manifest.get("artifacts", {}).get(
+                        "realtime_expanded_shadow_summary.json"
+                    )
                 ),
                 "prospective_v2_validation_status": (
                     prospective_v2["validation_status"]

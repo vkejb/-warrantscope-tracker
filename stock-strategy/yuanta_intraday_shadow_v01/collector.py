@@ -241,6 +241,7 @@ class AppendOnlyRun:
             "x", encoding="utf-8", buffering=1,
         )
         self._lock = threading.Lock()
+        self._extra_artifacts: set[str] = set()
         self.counts = {
             "ticks": 0,
             "books": 0,
@@ -295,6 +296,14 @@ class AppendOnlyRun:
                 "mode": "SHADOW_ONLY_READ_ONLY_QUOTES_AND_POST_SESSION_PAPER",
             }
         (self.run_dir / "watchlist.json").write_bytes(canonical_bytes(self.snapshot) + b"\n")
+
+    def register_artifact(self, path: Path) -> None:
+        """Include a closed, run-local observer artifact in the final seal."""
+        resolved = Path(path).resolve()
+        if resolved.parent != self.run_dir.resolve() or not resolved.is_file():
+            raise ValueError("extra artifact must be an existing run-local file")
+        with self._lock:
+            self._extra_artifacts.add(resolved.name)
 
     def append(self, kind: str, event: dict) -> None:
         if kind not in {
@@ -491,6 +500,8 @@ class AppendOnlyRun:
                 self.expanded_tick_path.name: sha256_file(self.expanded_tick_path),
                 self.expanded_book_path.name: sha256_file(self.expanded_book_path),
             })
+        for name in sorted(self._extra_artifacts):
+            manifest["artifacts"][name] = sha256_file(self.run_dir / name)
         manifest["manifest_hash"] = hashlib.sha256(canonical_bytes(manifest)).hexdigest()
         (self.run_dir / "run_manifest.json").write_bytes(canonical_bytes(manifest) + b"\n")
         return manifest
