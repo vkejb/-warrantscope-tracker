@@ -37,6 +37,10 @@ SUPERVISOR_STARTUP_GRACE_SECONDS = 15.0
 SUPERVISOR_HEARTBEAT_STALE_SECONDS = 45.0
 
 
+class TelegramAPIError(RuntimeError):
+    """Sanitized Telegram failure safe to emit without bot credentials."""
+
+
 def _read_json(path: Path) -> dict[str, Any] | None:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -508,10 +512,24 @@ def _telegram_json(
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             value = json.load(response)
+    except urllib.error.HTTPError as exc:
+        description = ""
+        try:
+            payload_value = json.loads(exc.read().decode("utf-8", errors="replace"))
+            if isinstance(payload_value, dict):
+                description = str(payload_value.get("description") or "")
+        except Exception:
+            description = ""
+        # Telegram descriptions do not contain the request URL/token.  Keep a
+        # bounded, single-line diagnostic so 409 poll conflicts and 401 token
+        # failures are distinguishable without ever logging credentials.
+        description = " ".join(description.split())[:240]
+        suffix = f": {description}" if description else ""
+        raise TelegramAPIError(f"Telegram API HTTP {int(exc.code)}{suffix}") from None
     except (urllib.error.URLError, TimeoutError, ValueError, OSError) as exc:
-        raise RuntimeError(f"Telegram API unavailable: {type(exc).__name__}") from None
+        raise TelegramAPIError(f"Telegram API unavailable: {type(exc).__name__}") from None
     if not isinstance(value, dict) or value.get("ok") is not True:
-        raise RuntimeError("Telegram API returned failure")
+        raise TelegramAPIError("Telegram API returned failure")
     return value
 
 
@@ -1513,8 +1531,12 @@ def serve(runtime_dir: Path, *, poll_timeout: int = 25,
                 force_flat_thread.join(timeout=1)
             return 0
         except Exception as exc:
+            detail = (
+                str(exc) if isinstance(exc, TelegramAPIError)
+                else type(exc).__name__
+            )
             print(
-                f"Trading Bot polling warning: {type(exc).__name__}",
+                f"Trading Bot polling warning: {detail}",
                 flush=True,
             )
             time.sleep(5)

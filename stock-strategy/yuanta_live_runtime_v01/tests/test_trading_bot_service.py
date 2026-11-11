@@ -4,11 +4,13 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+from io import BytesIO
 import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+import urllib.error
 
 from yuanta_live_runtime_v01.trading_bot_service import (
     _RemoteControl,
@@ -17,6 +19,8 @@ from yuanta_live_runtime_v01.trading_bot_service import (
     _launch_runtime_start,
     _run_start_preflight,
     _sync_position_baseline,
+    _telegram_json,
+    TelegramAPIError,
     build_status,
     render_status,
     serve,
@@ -24,6 +28,25 @@ from yuanta_live_runtime_v01.trading_bot_service import (
 
 
 class TradingBotStatusTests(unittest.TestCase):
+    def test_telegram_http_error_keeps_safe_code_and_description(self):
+        error = urllib.error.HTTPError(
+            "https://api.telegram.org/redacted", 409, "Conflict", {},
+            BytesIO(json.dumps({
+                "ok": False,
+                "error_code": 409,
+                "description": "Conflict: another getUpdates request is active",
+            }).encode("utf-8")),
+        )
+        with patch(
+            "yuanta_live_runtime_v01.trading_bot_service.urllib.request.urlopen",
+            side_effect=error,
+        ):
+            with self.assertRaisesRegex(
+                TelegramAPIError,
+                "HTTP 409: Conflict: another getUpdates request is active",
+            ):
+                _telegram_json("SECRET_MUST_NOT_APPEAR", "getUpdates")
+
     def test_live_status_is_compact_and_private(self):
         with tempfile.TemporaryDirectory() as tmp:
             runtime = Path(tmp)
