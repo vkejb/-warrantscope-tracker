@@ -23,6 +23,7 @@ from yuanta_intraday_shadow_v01.collector import canonical_bytes, sha256_file, u
 from yuanta_intraday_shadow_v01.direction_follow_backtest import (
     SPEC, _archived_exchange_time, _exit_quote, _projected_net_pnl,
 )
+from yuanta_intraday_shadow_v01.exploratory_backtest import _tick_size
 from yuanta_live_runtime_v01.strategy import (
     LONG_MARKET_REGIME_POLICY, LiveDirectionEngine,
 )
@@ -39,6 +40,9 @@ POLICY = {
     "challenger_relative_strength_5m_minimum": 0.01,
     "challenger_continuation_seconds": 180,
     "challenger_continuation_net_pnl": "GREATER_THAN_ZERO_AFTER_COSTS",
+    "manual_review_expiry_seconds": 60,
+    "manual_review_price_cap_twd": 190,
+    "manual_review_stop_loss_net_twd": int(SPEC["stop_loss_net_twd"]),
     "capital_twd": 190_000,
     "decision_interval_seconds": int(SPEC["decision_interval_seconds"]),
     "entry_start": str(SPEC["entry_start"]),
@@ -74,10 +78,22 @@ def _clock(day, value: str) -> datetime:
     )
 
 
+def _reference_stop_price(entry_price: float, quantity: int) -> float:
+    """First lower legal tick whose modelled net loss reaches the frozen cap."""
+    price = float(entry_price)
+    for _ in range(100_000):
+        tick = _tick_size(max(price - 1e-9, 0.01))
+        price = round(max(tick, price - tick), 2)
+        net = float(_projected_net_pnl("LONG", entry_price, price, quantity)[3])
+        if net <= -float(POLICY["manual_review_stop_loss_net_twd"]):
+            return price
+    raise RuntimeError("unable to derive reference stop price")
+
+
 class RealtimeExpandedShadow:
     """Bounded worker that cannot interfere with raw quote persistence."""
 
-    def __init__(self, *, queue_size: int = 200_000):
+    def __init__(self, *, queue_size: int = 200_000, manual_review_callback=None):
         self.queue_size = int(queue_size)
         if self.queue_size <= 0:
             raise ValueError("queue_size must be positive")
@@ -101,6 +117,8 @@ class RealtimeExpandedShadow:
         self._continuation: dict[str, Any] | None = None
         self._next_decision: datetime | None = None
         self._last_event_at: datetime | None = None
+        self._manual_review_callback = manual_review_callback
+        self._manual_review_notification: dict[str, Any] | None = None
 
     def start(self, *, run_dir: Path, run_id: str, expanded_items: list) -> None:
         if self._started:
@@ -356,10 +374,69 @@ class RealtimeExpandedShadow:
                         int(self._selected["quantity"]),
                     )[3]
                 )
+                best_ask = (
+                    float(book["sell_prices"][0])
+                    if book["sell_prices"] and float(book["sell_prices"][0]) > 0
+                    else None
+                )
+                manual_entry = (
+                    round(best_ask + _tick_size(best_ask), 2)
+                    if best_ask is not None else None
+                )
+                quantity = (
+                    math.floor(float(POLICY["capital_twd"]) / (manual_entry * 1000)) * 1000
+                    if manual_entry is not None and manual_entry > 0 else 0
+                )
+                ready = bool(
+                    self._selected.get("rs_challenger_passed")
+                    and self._continuation["passed"]
+                    and manual_entry is not None
+                    and manual_entry <= float(POLICY["manual_review_price_cap_twd"])
+                    and quantity > 0
+                )
+                self._continuation.update({
+                    "manual_review_ready": ready,
+                    "manual_entry_reference_price": manual_entry,
+                    "manual_reference_quantity": quantity,
+                    "manual_reference_stop_price": (
+                        _reference_stop_price(manual_entry, quantity) if ready else None
+                    ),
+                    "manual_review_expires_at": (
+                        decision + timedelta(
+                            seconds=int(POLICY["manual_review_expiry_seconds"])
+                        )
+                    ) if ready else None,
+                })
             else:
                 self._continuation["best_bid_price"] = None
                 self._continuation["best_bid_net_pnl_twd"] = None
+                self._continuation["manual_review_ready"] = False
         self._write("THREE_MINUTE_CONTINUATION", **self._continuation)
+        if self._continuation.get("manual_review_ready"):
+            payload = {
+                **self._selected, **self._continuation,
+                "signal_decision_time": self._selected["decision_time"],
+                "review_decision_time": self._continuation["decision_time"],
+                "mode": "NOTIFICATION_ONLY_MANUAL_ORDER",
+                "policy_hash": POLICY_HASH,
+                "actual_orders": 0, "actual_fills": 0,
+                "broker_order_calls": 0,
+            }
+            if self._manual_review_callback is None:
+                self._manual_review_notification = {"status": "NO_CALLBACK_CONFIGURED"}
+            else:
+                try:
+                    result = self._manual_review_callback(_jsonable(payload))
+                    self._manual_review_notification = {
+                        "status": "ATTEMPTED", "delivery": _jsonable(result),
+                    }
+                except Exception as exc:
+                    self._manual_review_notification = {
+                        "status": "FAILED", "error_type": type(exc).__name__,
+                    }
+            self._write(
+                "MANUAL_REVIEW_NOTIFICATION", **self._manual_review_notification,
+            )
 
     def close(self, *, timeout: float = 30.0) -> list[Path]:
         if not self._started or self._closed:
@@ -394,6 +471,7 @@ class RealtimeExpandedShadow:
             "decision_count": self._decisions,
             "selected_signal": _jsonable(self._selected),
             "three_minute_continuation": _jsonable(self._continuation),
+            "manual_review_notification": _jsonable(self._manual_review_notification),
             "events_sha256": sha256_file(self._run_dir / EVENTS_NAME),
             "actual_orders": 0, "actual_fills": 0,
             "broker_order_calls": 0, "live_enabled": False,

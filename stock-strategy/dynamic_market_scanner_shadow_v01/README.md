@@ -93,6 +93,16 @@ best bid is retained as a diagnostic mark and cannot promote a signal.
 These artifacts remain `SHADOW_ONLY_NO_BROKER_NO_ORDER`. A passing observation
 does not enable live execution.
 
+When the relative-strength challenger and conservative three-minute
+continuation gate both pass, a fresh book still permits an entry reference at
+or below TWD 190, and one whole board lot remains affordable, the observer sends
+one `MANUAL_ORDER_REVIEW` notification through the existing Telegram/macOS
+notifier. The message expires after 60 seconds and includes the current
+adverse-tick entry reference, research quantity, and a reference stop derived
+from the frozen after-cost TWD 5,000 loss cap. The user must inspect the broker
+and place any order manually. Notification delivery has no broker dependency,
+does not create an order, and never records a fill.
+
 ## Flow-reversal breakeven exit diagnostic
 
 `FLOW_BREAKEVEN_EXIT_SPEC.md` freezes a paired, cost-aware exit study on the

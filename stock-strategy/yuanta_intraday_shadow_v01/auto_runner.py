@@ -32,6 +32,9 @@ from dynamic_market_scanner_shadow_v01.prospective_v2 import publish_prospective
 from dynamic_market_scanner_shadow_v01.realtime_expanded_shadow import (
     RealtimeExpandedShadow,
 )
+from dynamic_market_scanner_shadow_v01.manual_review_notification import (
+    deliver_manual_review,
+)
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -166,7 +169,8 @@ def main() -> int:
             caffeinate = subprocess.Popen(["/usr/bin/caffeinate", "-dimsu", "-w", str(os.getpid())], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             holder: dict[str, str] = {}
             realtime_observer = (
-                RealtimeExpandedShadow() if expanded_universe is not None else None
+                RealtimeExpandedShadow(manual_review_callback=deliver_manual_review)
+                if expanded_universe is not None else None
             )
             def progress(event: dict):
                 if event.get("type") == "FINAL": holder["run_dir"] = event["run_dir"]
