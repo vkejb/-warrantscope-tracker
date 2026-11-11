@@ -1950,6 +1950,8 @@ def _expanded_v2_live_signal(
         raise RuntimeError("EXPANDED_V2_CANDIDATE_NOT_READY")
     if payload.get("passed") is not True or payload.get("rs_challenger_passed") is not True:
         raise RuntimeError("EXPANDED_V2_CONFIRMATION_MISSING")
+    if payload.get("side") != "LONG":
+        raise RuntimeError("EXPANDED_V2_DIRECTION_INVALID")
 
     decision = datetime.fromisoformat(
         str(payload["review_decision_time"]).replace("Z", "+00:00")
@@ -1957,7 +1959,14 @@ def _expanded_v2_live_signal(
     expires = datetime.fromisoformat(
         str(payload["manual_review_expires_at"]).replace("Z", "+00:00")
     ).astimezone(TAIPEI)
-    if now.date() != decision.date() or now > expires or expires <= decision:
+    if (
+        now.date() != decision.date()
+        or now < decision
+        or now > expires
+        or expires <= decision
+        or not time_from_text(SPEC["entry_start"]) <= decision.time().replace(tzinfo=None)
+        <= time_from_text(SPEC["last_entry_time"])
+    ):
         raise RuntimeError("EXPANDED_V2_CANDIDATE_EXPIRED")
 
     price = float(payload["manual_entry_reference_price"])
@@ -2915,6 +2924,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                                         candidate = _expanded_v2_live_signal(
                                             candidate_payload, now=now,
                                         )
+                                        if candidate.stock_id not in strategy_symbols:
+                                            raise RuntimeError(
+                                                "EXPANDED_V2_SYMBOL_OUTSIDE_SEALED_UNIVERSE"
+                                            )
                                         diagnostics.update({
                                             "decision": "MATURE_CANDIDATE_ADMITTED",
                                             "candidate_payload": candidate_payload,

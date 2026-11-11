@@ -22,6 +22,7 @@ def _payload() -> dict:
         "manual_reference_quantity": 3000,
         "stock_id": "1234",
         "stock_name": "測試股票",
+        "side": "LONG",
         "score": 2.5,
         "volume_delta": 0.55,
         "large_trade_delta": 0.45,
