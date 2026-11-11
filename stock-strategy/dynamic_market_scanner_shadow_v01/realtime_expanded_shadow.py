@@ -7,7 +7,7 @@ Its only side effects are append-only evidence files inside the quote run.
 
 from __future__ import annotations
 
-from collections import deque
+from collections import Counter, deque
 from datetime import datetime, timedelta
 import hashlib
 import json
@@ -25,7 +25,7 @@ from yuanta_intraday_shadow_v01.direction_follow_backtest import (
 )
 from yuanta_intraday_shadow_v01.exploratory_backtest import _tick_size
 from yuanta_live_runtime_v01.strategy import (
-    LONG_MARKET_REGIME_POLICY, LiveDirectionEngine,
+    ANTI_CHASE_ENTRY_POLICY, LONG_MARKET_REGIME_POLICY, LiveDirectionEngine,
 )
 
 from .strict_replay import PASS_REASONS
@@ -47,6 +47,20 @@ POLICY = {
     "decision_interval_seconds": int(SPEC["decision_interval_seconds"]),
     "entry_start": str(SPEC["entry_start"]),
     "last_entry_time": str(SPEC["last_entry_time"]),
+    "early_observation": {
+        "mode": "TELEMETRY_ONLY_NO_NOTIFICATION_NO_ORDER",
+        "full_universe_interval_seconds": int(SPEC["decision_interval_seconds"]),
+        "armed_event_throttle_seconds": 5,
+        "maximum_full_feature_symbols_per_interval": 40,
+        "full_feature_prefilter": (
+            "FRESH_PRICE_CAP_ABOVE_VWAP_EXISTING_ANTI_CHASE_AND_MARKET_RS"
+        ),
+        "prewatch_minimum_exact_base_checks": 3,
+        "armed_minimum_exact_base_checks": 4,
+        "entry_ready_requires_all_exact_base_checks": True,
+        "entry_ready_requires_unchanged_v2_gate": True,
+        "market_relative_strength_and_existing_anti_chase_required": True,
+    },
     "actual_orders": 0,
     "actual_fills": 0,
     "broker_order_calls": 0,
@@ -55,6 +69,7 @@ POLICY = {
 POLICY_HASH = hashlib.sha256(canonical_bytes(POLICY)).hexdigest()
 EVENTS_NAME = "realtime_expanded_shadow_events.jsonl"
 SUMMARY_NAME = "realtime_expanded_shadow_summary.json"
+EARLY_STATES = ("NONE", "PREWATCH", "ARMED", "EARLY_ENTRY_READY_OBSERVED")
 
 
 def _stamp(value: object) -> datetime:
@@ -119,6 +134,12 @@ class RealtimeExpandedShadow:
         self._last_event_at: datetime | None = None
         self._manual_review_callback = manual_review_callback
         self._manual_review_notification: dict[str, Any] | None = None
+        self._early: dict[str, dict[str, Any]] = {}
+        self._early_last_eval: dict[str, datetime] = {}
+        self._early_prefilter_runs = 0
+        self._early_prefilter_max_selected = 0
+        self._early_market_cache_at: datetime | None = None
+        self._early_market_cache: dict[str, Any] | None = None
 
     def start(self, *, run_dir: Path, run_id: str, expanded_items: list) -> None:
         if self._started:
@@ -138,8 +159,21 @@ class RealtimeExpandedShadow:
             benchmark_symbol=benchmark,
         )
         self._data = {
-            symbol: {"ticks": deque(), "books": deque()}
+            symbol: {
+                "ticks": deque(), "books": deque(), "cumulative_volume": 0.0,
+                "cumulative_pv": 0.0, "opening_price": None,
+                "opening_time": None,
+            }
             for symbol in self._names
+        }
+        self._early = {
+            symbol: {
+                "state": "NONE", "first_prewatch_at": None,
+                "first_armed_at": None, "first_early_ready_at": None,
+                "official_candidate_seen_at": None,
+                "official_selected_at": None,
+            }
+            for symbol in candidates
         }
         self._events = (self._run_dir / EVENTS_NAME).open(
             "x", encoding="utf-8", buffering=1,
@@ -251,9 +285,26 @@ class RealtimeExpandedShadow:
             )
             if outcome.accepted:
                 data["ticks"].append(row)
+                data["cumulative_volume"] += row["volume"]
+                data["cumulative_pv"] += row["price"] * row["volume"]
+                if data["opening_price"] is None:
+                    data["opening_price"] = row["price"]
+                    data["opening_time"] = row["time"]
+                if symbol == str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"]):
+                    self._early_market_cache_at = None
+                    self._early_market_cache = None
                 cutoff = stamp - timedelta(seconds=360)
                 while data["ticks"] and data["ticks"][0]["time"] < cutoff:
                     data["ticks"].popleft()
+                if symbol in self._early and self._early[symbol]["state"] in {
+                    "ARMED", "EARLY_ENTRY_READY_OBSERVED",
+                }:
+                    prior = self._early_last_eval.get(symbol)
+                    throttle = int(
+                        POLICY["early_observation"]["armed_event_throttle_seconds"]
+                    )
+                    if prior is None or (stamp - prior).total_seconds() >= throttle:
+                        self._observe_early(symbol, stamp, source="EVENT_DRIVEN_TICK")
         elif kind.endswith("books"):
             required = ("buy_prices", "buy_volumes", "sell_prices", "sell_volumes")
             if all(key in event for key in required):
@@ -282,6 +333,276 @@ class RealtimeExpandedShadow:
     def _gate_data(self, symbol: str) -> dict[str, Any]:
         return {"ticks": list(self._data[symbol]["ticks"])}
 
+    @staticmethod
+    def _signed_volume(row: dict[str, Any]) -> float:
+        if str(row.get("flag", "")) == "1":
+            return float(row["volume"])
+        if str(row.get("flag", "")) == "0":
+            return -float(row["volume"])
+        midpoint = (float(row["bid"]) + float(row["ask"])) / 2
+        return float(row["volume"]) if float(row["price"]) >= midpoint else -float(row["volume"])
+
+    @staticmethod
+    def _return_over(rows: list[dict[str, Any]], at: datetime, seconds: int) -> float | None:
+        cutoff = at - timedelta(seconds=seconds)
+        earlier = [row for row in rows if row["time"] <= cutoff]
+        latest = [row for row in rows if row["time"] <= at]
+        if not earlier or not latest or float(earlier[-1]["price"]) <= 0:
+            return None
+        return float(latest[-1]["price"]) / float(earlier[-1]["price"]) - 1
+
+    def _early_market(self, at: datetime) -> dict[str, Any] | None:
+        if self._early_market_cache_at == at:
+            return self._early_market_cache
+        self._early_market_cache_at = at
+        self._early_market_cache = None
+        benchmark = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
+        data = self._data.get(benchmark)
+        if data is None:
+            return None
+        rows = [row for row in data["ticks"] if row["time"] <= at]
+        if not rows:
+            return None
+        age = (at - rows[-1]["time"]).total_seconds()
+        if not 0 <= age <= float(LONG_MARKET_REGIME_POLICY["maximum_staleness_seconds"]):
+            return None
+        benchmark_return = self._return_over(
+            rows, at, int(LONG_MARKET_REGIME_POLICY["lookback_seconds"]),
+        )
+        total = float(data["cumulative_volume"])
+        if benchmark_return is None or total <= 0:
+            return None
+        vwap = float(data["cumulative_pv"]) / total
+        gap = float(rows[-1]["price"]) / vwap - 1
+        regime = (
+            "BULLISH" if gap > 0 and benchmark_return >= 0
+            else "BEARISH" if gap < 0 and benchmark_return < 0
+            else "NEUTRAL"
+        )
+        result = {
+            "market_regime": regime, "benchmark_return_5m": benchmark_return,
+            "benchmark_vwap_gap": gap, "benchmark_quote_age_seconds": age,
+        }
+        self._early_market_cache = result
+        return result
+
+    def _early_features(self, symbol: str, at: datetime) -> dict[str, Any] | None:
+        data = self._data[symbol]
+        rows = [row for row in data["ticks"] if row["time"] <= at]
+        direction_start = at - timedelta(seconds=int(SPEC["direction_window_seconds"]))
+        window = [row for row in rows if row["time"] >= direction_start]
+        minimum = int(SPEC["minimum_ticks_in_direction_window"])
+        if len(window) < minimum:
+            return None
+        tick_age = (at - window[-1]["time"]).total_seconds()
+        if not 0 <= tick_age <= float(SPEC["maximum_tick_staleness_seconds"]):
+            return None
+        books = [row for row in data["books"] if row["time"] <= at]
+        if not books:
+            return None
+        book = books[-1]
+        book_age = (at - book["time"]).total_seconds()
+        if not 0 <= book_age <= float(SPEC["maximum_book_staleness_seconds"]):
+            return None
+        bid, ask = float(book["buy_prices"][0]), float(book["sell_prices"][0])
+        midpoint = (bid + ask) / 2
+        spread_bps = (ask - bid) / midpoint * 10_000 if midpoint > 0 else math.inf
+        if spread_bps < 0 or spread_bps > float(SPEC["maximum_spread_bps"]):
+            return None
+        buy_volume = sum(float(value) for value in book["buy_volumes"])
+        sell_volume = sum(float(value) for value in book["sell_volumes"])
+        if buy_volume + sell_volume <= 0:
+            return None
+        book_imbalance = (buy_volume - sell_volume) / (buy_volume + sell_volume)
+        total = sum(float(row["volume"]) for row in window)
+        if total <= 0:
+            return None
+        volume_delta = sum(self._signed_volume(row) for row in window) / total
+        ref_start = at - timedelta(seconds=int(SPEC["large_trade_reference_seconds"]))
+        reference = [row for row in rows if row["time"] >= ref_start]
+        if len(reference) < minimum:
+            return None
+        ordered = sorted(float(row["volume"]) for row in reference)
+        percentile_index = max(
+            0, math.ceil(float(SPEC["large_trade_percentile"]) * len(ordered)) - 1,
+        )
+        large_threshold = ordered[percentile_index]
+        large = [row for row in window if float(row["volume"]) >= large_threshold]
+        large_total = sum(float(row["volume"]) for row in large)
+        if large_total <= 0 or float(data["cumulative_volume"]) <= 0:
+            return None
+        large_delta = sum(self._signed_volume(row) for row in large) / large_total
+        vwap = float(data["cumulative_pv"]) / float(data["cumulative_volume"])
+        current = float(window[-1]["price"])
+        vwap_gap = current / vwap - 1
+        breakout_start = at - timedelta(seconds=int(SPEC["breakout_lookback_seconds"]))
+        breakout_end = at - timedelta(seconds=int(SPEC["breakout_excludes_latest_seconds"]))
+        prior = [row for row in rows if breakout_start <= row["time"] <= breakout_end]
+        opening = data.get("opening_price")
+        opening_time = data.get("opening_time")
+        stock_return = self._return_over(
+            rows, at, int(LONG_MARKET_REGIME_POLICY["lookback_seconds"]),
+        )
+        market = self._early_market(at)
+        if (
+            not prior or opening is None or opening_time is None
+            or opening_time > _clock(at.date(), str(POLICY["entry_start"]))
+            or stock_return is None or market is None
+        ):
+            return None
+        relative_strength = stock_return - float(market["benchmark_return_5m"])
+        minimum_rs = float(LONG_MARKET_REGIME_POLICY[
+            f'{str(market["market_regime"]).lower()}_min_relative_strength'
+        ])
+        opening_extension = current / float(opening) - 1
+        entry_price = ask + _tick_size(ask)
+        checks = {
+            "volume_delta": volume_delta >= float(SPEC["volume_delta_threshold"]),
+            "large_trade_delta": large_delta >= float(SPEC["large_trade_delta_threshold"]),
+            "above_vwap": vwap_gap > 0,
+            "book_imbalance": book_imbalance >= float(SPEC["book_imbalance_threshold"]),
+            "breakout": current > max(float(row["price"]) for row in prior),
+        }
+        market_passed = relative_strength >= minimum_rs
+        anti_chase_passed = bool(
+            opening_extension <= float(
+                ANTI_CHASE_ENTRY_POLICY["maximum_directional_opening_extension"]
+            ) + 1e-12
+            and vwap_gap <= float(
+                ANTI_CHASE_ENTRY_POLICY["maximum_directional_vwap_extension"]
+            ) + 1e-12
+            and entry_price <= float(POLICY["manual_review_price_cap_twd"]) + 1e-12
+        )
+        gate = evaluate_volume_gate(
+            self._gate_data(symbol), at, "V2_RECENT_VOLUME_ACCELERATION", VOLUME_CONFIG,
+        )
+        return {
+            "stock_id": symbol, "stock_name": self._names.get(symbol, symbol),
+            "observed_at": at, "source_check_count": sum(checks.values()),
+            "source_checks": checks, "volume_delta": volume_delta,
+            "large_trade_delta": large_delta, "vwap_gap": vwap_gap,
+            "book_imbalance": book_imbalance, "spread_bps": spread_bps,
+            "relative_strength_5m": relative_strength,
+            "minimum_relative_strength": minimum_rs,
+            "market_regime": market["market_regime"],
+            "market_passed": market_passed, "anti_chase_passed": anti_chase_passed,
+            "entry_price": entry_price, "tick_age_seconds": tick_age,
+            "book_age_seconds": book_age, "volume_gate_passed": gate["passed"],
+            "volume_gate_reason": gate["reason"],
+            "recent_to_previous_volume_ratio": gate.get("recent_to_previous_volume_ratio"),
+        }
+
+    def _early_prefilter_score(self, symbol: str, at: datetime) -> float | None:
+        data = self._data[symbol]
+        rows = [row for row in data["ticks"] if row["time"] <= at]
+        market = self._early_market(at)
+        if not rows or market is None or float(data["cumulative_volume"]) <= 0:
+            return None
+        age = (at - rows[-1]["time"]).total_seconds()
+        if not 0 <= age <= float(SPEC["maximum_tick_staleness_seconds"]):
+            return None
+        opening = data.get("opening_price")
+        opening_time = data.get("opening_time")
+        stock_return = self._return_over(
+            rows, at, int(LONG_MARKET_REGIME_POLICY["lookback_seconds"]),
+        )
+        if (
+            opening is None or opening_time is None
+            or opening_time > _clock(at.date(), str(POLICY["entry_start"]))
+            or stock_return is None
+        ):
+            return None
+        current = float(rows[-1]["price"])
+        ask = float(rows[-1]["ask"])
+        entry_price = ask + _tick_size(ask)
+        vwap = float(data["cumulative_pv"]) / float(data["cumulative_volume"])
+        vwap_gap = current / vwap - 1
+        opening_extension = current / float(opening) - 1
+        relative_strength = stock_return - float(market["benchmark_return_5m"])
+        minimum_rs = float(LONG_MARKET_REGIME_POLICY[
+            f'{str(market["market_regime"]).lower()}_min_relative_strength'
+        ])
+        if (
+            vwap_gap <= 0
+            or relative_strength < minimum_rs
+            or opening_extension > float(
+                ANTI_CHASE_ENTRY_POLICY["maximum_directional_opening_extension"]
+            ) + 1e-12
+            or vwap_gap > float(
+                ANTI_CHASE_ENTRY_POLICY["maximum_directional_vwap_extension"]
+            ) + 1e-12
+            or entry_price > float(POLICY["manual_review_price_cap_twd"]) + 1e-12
+        ):
+            return None
+        return relative_strength
+
+    def _observe_early(self, symbol: str, at: datetime, *, source: str) -> None:
+        if not (
+            _clock(at.date(), str(POLICY["entry_start"]))
+            <= at
+            <= _clock(at.date(), str(POLICY["last_entry_time"]))
+        ):
+            return
+        self._early_last_eval[symbol] = at
+        features = self._early_features(symbol, at)
+        if features is None or not features["market_passed"] or not features["anti_chase_passed"]:
+            return
+        count = int(features["source_check_count"])
+        target = "NONE"
+        if count >= int(POLICY["early_observation"]["prewatch_minimum_exact_base_checks"]):
+            target = "PREWATCH"
+        if count >= int(POLICY["early_observation"]["armed_minimum_exact_base_checks"]):
+            target = "ARMED"
+        if count == len(features["source_checks"]) and features["volume_gate_passed"]:
+            target = "EARLY_ENTRY_READY_OBSERVED"
+        timeline = self._early[symbol]
+        current = str(timeline["state"])
+        if EARLY_STATES.index(target) <= EARLY_STATES.index(current):
+            return
+        if timeline["first_prewatch_at"] is None:
+            timeline["first_prewatch_at"] = at
+        if EARLY_STATES.index(target) >= EARLY_STATES.index("ARMED") and timeline["first_armed_at"] is None:
+            timeline["first_armed_at"] = at
+        if target == "EARLY_ENTRY_READY_OBSERVED" and timeline["first_early_ready_at"] is None:
+            timeline["first_early_ready_at"] = at
+        timeline["state"] = target
+        self._write(
+            "EARLY_STATE_TRANSITION", previous_state=current, state=target,
+            observation_source=source, **features,
+        )
+
+    def _observe_all_early(self, decision: datetime) -> None:
+        ranked = []
+        for symbol in self._early:
+            score = self._early_prefilter_score(symbol, decision)
+            if score is not None:
+                ranked.append((float(score), symbol))
+        ranked.sort(key=lambda item: (-item[0], item[1]))
+        limit = int(
+            POLICY["early_observation"]["maximum_full_feature_symbols_per_interval"]
+        )
+        selected = [symbol for _score, symbol in ranked[:limit]]
+        self._early_prefilter_runs += 1
+        self._early_prefilter_max_selected = max(
+            self._early_prefilter_max_selected, len(selected),
+        )
+        for symbol in selected:
+            self._observe_early(symbol, decision, source="FULL_UNIVERSE_INTERVAL")
+
+    def _official_timeline(self, symbol: str, at: datetime, field: str) -> dict[str, Any]:
+        timeline = self._early.get(symbol)
+        if timeline is None:
+            return {}
+        if timeline.get(field) is None:
+            timeline[field] = at
+        ready = timeline.get("first_early_ready_at")
+        return {
+            **timeline,
+            "early_ready_lead_seconds": (
+                (at - ready).total_seconds() if ready is not None else None
+            ),
+        }
+
     def _decide(self, decision: datetime) -> None:
         assert self._engine is not None
         final = _clock(decision.date(), str(POLICY["last_entry_time"]))
@@ -289,6 +610,7 @@ class RealtimeExpandedShadow:
             self._check_continuation(decision)
             return
         self._decisions += 1
+        self._observe_all_early(decision)
         self._engine.choose_entry(decision, allow_short=False)
         diagnostics = self._engine.last_entry_diagnostics or {}
         newly_passed: list[dict[str, Any]] = []
@@ -313,6 +635,9 @@ class RealtimeExpandedShadow:
                 **{key: value for key, value in gate.items()
                    if key not in {"evaluable", "passed", "reason"}},
             }
+            row["early_timeline"] = self._official_timeline(
+                symbol, decision, "official_candidate_seen_at",
+            )
             self._write("CANDIDATE_SEEN", **row)
             if gate["passed"]:
                 newly_passed.append({**candidate, **row})
@@ -331,6 +656,9 @@ class RealtimeExpandedShadow:
                 seconds=int(POLICY["challenger_continuation_seconds"]),
             )
             self._selected = selected
+            selected["early_timeline"] = self._official_timeline(
+                str(selected["stock_id"]), decision, "official_selected_at",
+            )
             self._write("SHADOW_SIGNAL_SELECTED", **selected)
         self._check_continuation(decision)
 
@@ -472,6 +800,20 @@ class RealtimeExpandedShadow:
             "selected_signal": _jsonable(self._selected),
             "three_minute_continuation": _jsonable(self._continuation),
             "manual_review_notification": _jsonable(self._manual_review_notification),
+            "early_observation": {
+                "policy": POLICY["early_observation"],
+                "state_counts": dict(Counter(
+                    str(row["state"]) for row in self._early.values()
+                )),
+                "timelines": _jsonable({
+                    symbol: row for symbol, row in self._early.items()
+                    if row["state"] != "NONE"
+                }),
+                "notification_enabled": False,
+                "order_enabled": False,
+                "prefilter_runs": self._early_prefilter_runs,
+                "prefilter_max_selected": self._early_prefilter_max_selected,
+            },
             "events_sha256": sha256_file(self._run_dir / EVENTS_NAME),
             "actual_orders": 0, "actual_fills": 0,
             "broker_order_calls": 0, "live_enabled": False,
