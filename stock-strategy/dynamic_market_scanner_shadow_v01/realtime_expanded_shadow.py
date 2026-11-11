@@ -108,7 +108,13 @@ def _reference_stop_price(entry_price: float, quantity: int) -> float:
 class RealtimeExpandedShadow:
     """Bounded worker that cannot interfere with raw quote persistence."""
 
-    def __init__(self, *, queue_size: int = 200_000, manual_review_callback=None):
+    def __init__(
+        self,
+        *,
+        queue_size: int = 200_000,
+        manual_review_callback=None,
+        candidate_ready_callback=None,
+    ):
         self.queue_size = int(queue_size)
         if self.queue_size <= 0:
             raise ValueError("queue_size must be positive")
@@ -133,7 +139,9 @@ class RealtimeExpandedShadow:
         self._next_decision: datetime | None = None
         self._last_event_at: datetime | None = None
         self._manual_review_callback = manual_review_callback
+        self._candidate_ready_callback = candidate_ready_callback
         self._manual_review_notification: dict[str, Any] | None = None
+        self._candidate_ready_delivery: dict[str, Any] | None = None
         self._early: dict[str, dict[str, Any]] = {}
         self._early_last_eval: dict[str, datetime] = {}
         self._early_prefilter_runs = 0
@@ -201,6 +209,37 @@ class RealtimeExpandedShadow:
         except Exception as exc:  # pragma: no cover - defensive callback fence
             self._errors.append(type(exc).__name__)
             return False
+
+    def health_snapshot(self) -> dict[str, Any]:
+        """Return the worker state used by a separate fail-closed consumer.
+
+        The shadow observer still has no broker capability.  A caller that
+        chooses to consume its mature-candidate callback must independently
+        refuse admission whenever this evidence pipeline is incomplete.
+        """
+        thread_alive = bool(self._thread is not None and self._thread.is_alive())
+        return {
+            "started": self._started,
+            "closed": self._closed,
+            "thread_alive": thread_alive,
+            "offered": self._offered,
+            "processed": self._processed,
+            "dropped": self._dropped,
+            "errors": list(self._errors),
+            "healthy": bool(
+                self._started
+                and not self._closed
+                and thread_alive
+                and self._dropped == 0
+                and not self._errors
+            ),
+        }
+
+    def invalidate(self, reason: str) -> None:
+        """Permanently fail closed after an upstream persistence failure."""
+        code = str(reason).strip() or "UPSTREAM_EVIDENCE_INVALID"
+        if code not in self._errors:
+            self._errors.append(code)
 
     def _write(self, event: str, **details: Any) -> None:
         assert self._events is not None
@@ -750,6 +789,27 @@ class RealtimeExpandedShadow:
                 "actual_orders": 0, "actual_fills": 0,
                 "broker_order_calls": 0,
             }
+            if self._candidate_ready_callback is not None:
+                try:
+                    candidate_payload = {
+                        **payload,
+                        "mode": "EXPANDED_V2_MATURE_CANDIDATE",
+                        "source_observer_live_enabled": False,
+                    }
+                    result = self._candidate_ready_callback(
+                        _jsonable(candidate_payload)
+                    )
+                    self._candidate_ready_delivery = {
+                        "status": "ATTEMPTED", "delivery": _jsonable(result),
+                    }
+                except Exception as exc:
+                    self._candidate_ready_delivery = {
+                        "status": "FAILED", "error_type": type(exc).__name__,
+                    }
+                self._write(
+                    "MATURE_CANDIDATE_CALLBACK",
+                    **self._candidate_ready_delivery,
+                )
             if self._manual_review_callback is None:
                 self._manual_review_notification = {"status": "NO_CALLBACK_CONFIGURED"}
             else:
@@ -800,6 +860,7 @@ class RealtimeExpandedShadow:
             "selected_signal": _jsonable(self._selected),
             "three_minute_continuation": _jsonable(self._continuation),
             "manual_review_notification": _jsonable(self._manual_review_notification),
+            "candidate_ready_delivery": _jsonable(self._candidate_ready_delivery),
             "early_observation": {
                 "policy": POLICY["early_observation"],
                 "state_counts": dict(Counter(

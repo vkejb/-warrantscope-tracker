@@ -92,6 +92,42 @@ class ManualReviewNotificationTests(unittest.TestCase):
         self.assertEqual(captured[0]["actual_orders"], 0)
         self.assertEqual(summary["manual_review_notification"]["status"], "ATTEMPTED")
 
+    def test_mature_candidate_callback_is_separate_from_manual_delivery(self):
+        captured = []
+        with tempfile.TemporaryDirectory() as folder:
+            observer = RealtimeExpandedShadow(
+                queue_size=10,
+                candidate_ready_callback=lambda row: captured.append(row) or {
+                    "status": "ENQUEUED"
+                },
+            )
+            observer.start(run_dir=Path(folder), run_id="candidate", expanded_items=[Item()])
+            decision = datetime(2026, 11, 11, 9, 8, tzinfo=TAIPEI)
+            observer._selected = {
+                "stock_id": "1234", "stock_name": "測試股票", "side": "LONG",
+                "decision_time": decision - timedelta(minutes=3),
+                "entry_price": 50.0, "quantity": 3000, "score": 1.0,
+                "volume_delta": 0.5, "large_trade_delta": 0.4,
+                "vwap_gap": 0.01, "book_imbalance": 0.3, "spread_bps": 5.0,
+                "relative_strength_5m": 0.012, "rs_challenger_passed": True,
+                "continuation_due_at": decision,
+            }
+            observer._data["1234"]["ticks"].append({
+                "time": decision, "bid": 51.0, "ask": 51.1,
+            })
+            observer._data["1234"]["books"].append({
+                "time": decision, "buy_prices": [51.0], "buy_volumes": [10],
+                "sell_prices": [51.1], "sell_volumes": [10],
+            })
+            observer._check_continuation(decision)
+            observer.close()
+            summary = json.loads((Path(folder) / SUMMARY_NAME).read_text())
+        self.assertEqual(len(captured), 1)
+        self.assertEqual(captured[0]["mode"], "EXPANDED_V2_MATURE_CANDIDATE")
+        self.assertEqual(captured[0]["actual_orders"], 0)
+        self.assertEqual(summary["candidate_ready_delivery"]["status"], "ATTEMPTED")
+        self.assertEqual(summary["manual_review_notification"]["status"], "NO_CALLBACK_CONFIGURED")
+
     def test_reference_stop_reaches_frozen_net_loss(self):
         stop = _reference_stop_price(51.2, 3000)
         self.assertLess(stop, 51.2)

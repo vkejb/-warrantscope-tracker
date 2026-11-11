@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Guarded realtime runner for the Yuanta SPARK broker adapter.
 
-This is the runtime layer between the sealed Stage A Top30, the frozen
+This is the runtime layer between the sealed candidate universe, the frozen
 direction-following rule, and ``yuanta_broker_execution_v01``.  The expanded
-universe remains quote collection and post-session paper replay only.
+universe remains observation-only unless the explicit PROD V2 canary flag is
+present; that flag admits only its mature three-minute-confirmed candidate.
 Production sends are impossible unless the broker adapter's existing three-way LIVE
 gate is authorized and startup reconciliation has passed.
 """
@@ -20,6 +21,7 @@ import json
 import math
 import os
 from pathlib import Path
+from queue import Empty, Full, Queue
 import signal
 import sys
 import threading
@@ -65,6 +67,7 @@ from .strategy import (
     LONG_MARKET_REGIME_POLICY,
     ExitDecision,
     LiveDirectionEngine,
+    LiveSignal,
     ManagedPosition,
     SPEC,
 )
@@ -73,6 +76,11 @@ from .account_lock import acquire_account_lock, release_account_lock
 from .late_start import warm_start_from_collector
 from expanded_shadow_universe_v01.subscriptions import batches, deduplicate_items
 from expanded_shadow_universe_v01.universe import load_universe
+from dynamic_market_scanner_shadow_v01.realtime_expanded_shadow import (
+    POLICY as EXPANDED_V2_POLICY,
+    POLICY_HASH as EXPANDED_V2_POLICY_HASH,
+    RealtimeExpandedShadow,
+)
 
 TAIPEI = ZoneInfo("Asia/Taipei")
 MODULE_DIR = Path(__file__).resolve().parent
@@ -575,14 +583,15 @@ def _validate_watchlist_day(signal_date: str) -> None:
 
 
 def _load_live_intraday_universe() -> tuple[dict, list, dict, dict | None, list]:
-    """Load Stage A as LIVE candidates and expanded as paper-only quotes.
+    """Load Stage A and the independently sealed expanded quote universe.
 
     Stage A remains a mandatory, fail-closed LIVE prerequisite.  The expanded
     universe is an optional observation-only input: when its seal is missing
-    or invalid, LIVE still subscribes the sealed Stage A candidates and the
-    benchmark, while expanded quote collection is disabled for that session.
-    A valid expanded seal must share the Stage A prior-session date and is
-    never passed to the LIVE entry engine.
+    or invalid, normal LIVE still subscribes the sealed Stage A candidates and
+    the benchmark, while expanded quote collection is disabled for that
+    session.  The explicit V2 canary adds a separate hard requirement after
+    this loader returns; it never silently falls back to Stage A.  A valid
+    expanded seal must share the Stage A prior-session date.
     """
     stage_a_seal, stage_a_items, provenance = load_stage_a_watchlist()
     signal_date = str(stage_a_seal["signal_date"])
@@ -640,6 +649,7 @@ class _Session:
         archive_expanded_items: dict[str, Any] | None = None,
         non_archive_symbols: set[str] | None = None,
         strategy_symbols: set[str] | None = None,
+        expanded_v2_observer: RealtimeExpandedShadow | None = None,
     ):
         self.api_types = api_types
         self.environment = environment
@@ -658,6 +668,7 @@ class _Session:
             None if strategy_symbols is None
             else {str(symbol) for symbol in strategy_symbols}
         )
+        self.expanded_v2_observer = expanded_v2_observer
         self.login_event = threading.Event()
         self.login_ok = False
         self.login_code = ""
@@ -673,6 +684,7 @@ class _Session:
         self._ingest_lock = threading.Lock()
         self._raw_quote_status: dict[str, dict[str, Any]] = {}
         self.archive_strategy_identity: dict[str, Any] = {}
+        self.archive_candidate_universe_kind = "STAGE_A_TOP30"
 
     def _archive_quote(
         self,
@@ -775,9 +787,7 @@ class _Session:
                         "STAGE_A": "ticks",
                         "EXPANDED_SHADOW": "expanded_ticks",
                     }[route]
-                    self.archive.append(
-                        stream,
-                        {
+                    normalized_event = {
                             **base,
                             "event_type": "STOCK_TICK",
                             "quote_time": _quote_time(
@@ -804,8 +814,20 @@ class _Session:
                             "tick_type": _safe_text(
                                 getattr(value, "Type", "")
                             ),
-                        },
-                    )
+                        }
+                    self.archive.append(stream, normalized_event)
+                    if (
+                        self.expanded_v2_observer is not None
+                        and route in {"MARKET_CONTEXT", "EXPANDED_SHADOW"}
+                        and not self.expanded_v2_observer.offer(
+                            stream, normalized_event
+                        )
+                    ):
+                        self.logger(
+                            "EXPANDED_V2_OBSERVER_OFFER_FAILED",
+                            stock_id=symbol,
+                            quote_kind=kind,
+                        )
                     continue
 
                 if kind == "books":
@@ -814,14 +836,24 @@ class _Session:
                         "STAGE_A": "books",
                         "EXPANDED_SHADOW": "expanded_books",
                     }[route]
-                    self.archive.append(
-                        stream,
-                        {
+                    normalized_event = {
                             **base,
                             "event_type": "FIVE_LEVEL",
                             **dict(payload or {}),
-                        },
-                    )
+                        }
+                    self.archive.append(stream, normalized_event)
+                    if (
+                        self.expanded_v2_observer is not None
+                        and route in {"MARKET_CONTEXT", "EXPANDED_SHADOW"}
+                        and not self.expanded_v2_observer.offer(
+                            stream, normalized_event
+                        )
+                    ):
+                        self.logger(
+                            "EXPANDED_V2_OBSERVER_OFFER_FAILED",
+                            stock_id=symbol,
+                            quote_kind=kind,
+                        )
                     continue
 
                 raise ValueError(
@@ -829,6 +861,10 @@ class _Session:
                 )
 
         except Exception as exc:
+            if self.expanded_v2_observer is not None:
+                self.expanded_v2_observer.invalidate(
+                    "ARCHIVE_QUOTE_WRITE_FAILED"
+                )
             try:
                 if hasattr(self.archive, "observation_failure"):
                     self.archive.observation_failure(
@@ -896,9 +932,15 @@ class _Session:
                     "stage_a_seal_hash": self.archive.snapshot["stage_a_seal_hash"],
                 },
                 "candidate_universe_identity": {
-                    "kind": "STAGE_A_TOP30",
+                    "kind": self.archive_candidate_universe_kind,
                     "signal_date": self.archive.snapshot["signal_date"],
-                    "seal_hash": self.archive.snapshot["stage_a_seal_hash"],
+                    "seal_hash": (
+                        self.archive.snapshot.get("expanded_shadow_universe", {}).get(
+                            "seal_hash"
+                        )
+                        if self.archive_candidate_universe_kind == "EXPANDED_V2_3M_CANARY"
+                        else self.archive.snapshot["stage_a_seal_hash"]
+                    ),
                 },
                 "expanded_shadow_universe_identity": {
                     "kind": "PAPER_ONLY",
@@ -1889,6 +1931,96 @@ def _signal_identifier(signal_date: str, candidate) -> str:
     )
 
 
+def _expanded_v2_live_signal(
+    payload: dict[str, Any], *, now: datetime | None = None,
+) -> LiveSignal:
+    """Validate one mature V2 observer event before normal LIVE admission.
+
+    The observer cannot submit an order.  This conversion is the explicit
+    trust boundary that turns its frozen, three-minute-confirmed candidate
+    into the same ``LiveSignal`` consumed by the existing risk and execution
+    lifecycle.
+    """
+    now = datetime.now(TAIPEI) if now is None else now.astimezone(TAIPEI)
+    if payload.get("mode") != "EXPANDED_V2_MATURE_CANDIDATE":
+        raise RuntimeError("EXPANDED_V2_CANDIDATE_MODE_INVALID")
+    if payload.get("policy_hash") != EXPANDED_V2_POLICY_HASH:
+        raise RuntimeError("EXPANDED_V2_POLICY_HASH_MISMATCH")
+    if payload.get("manual_review_ready") is not True:
+        raise RuntimeError("EXPANDED_V2_CANDIDATE_NOT_READY")
+    if payload.get("passed") is not True or payload.get("rs_challenger_passed") is not True:
+        raise RuntimeError("EXPANDED_V2_CONFIRMATION_MISSING")
+
+    decision = datetime.fromisoformat(
+        str(payload["review_decision_time"]).replace("Z", "+00:00")
+    ).astimezone(TAIPEI)
+    expires = datetime.fromisoformat(
+        str(payload["manual_review_expires_at"]).replace("Z", "+00:00")
+    ).astimezone(TAIPEI)
+    if now.date() != decision.date() or now > expires or expires <= decision:
+        raise RuntimeError("EXPANDED_V2_CANDIDATE_EXPIRED")
+
+    price = float(payload["manual_entry_reference_price"])
+    quantity = int(payload["manual_reference_quantity"])
+    if (
+        not math.isfinite(price)
+        or price <= 0
+        or price > float(EXPANDED_V2_POLICY["manual_review_price_cap_twd"])
+        or quantity <= 0
+        or quantity % 1000
+        or price * quantity > float(EXPANDED_V2_POLICY["capital_twd"]) + 1e-9
+    ):
+        raise RuntimeError("EXPANDED_V2_ORDER_SHAPE_INVALID")
+
+    numeric_fields = {
+        name: float(payload[name])
+        for name in (
+            "score", "volume_delta", "large_trade_delta", "vwap_gap",
+            "book_imbalance", "spread_bps", "relative_strength_5m",
+        )
+    }
+    if not all(math.isfinite(value) for value in numeric_fields.values()):
+        raise RuntimeError("EXPANDED_V2_FEATURE_INVALID")
+
+    return LiveSignal(
+        stock_id=str(payload["stock_id"]),
+        stock_name=str(payload["stock_name"]),
+        side="LONG",
+        decision_time=decision,
+        score=numeric_fields["score"],
+        volume_delta=numeric_fields["volume_delta"],
+        large_trade_delta=numeric_fields["large_trade_delta"],
+        vwap_gap=numeric_fields["vwap_gap"],
+        book_imbalance=numeric_fields["book_imbalance"],
+        spread_bps=numeric_fields["spread_bps"],
+        entry_price=price,
+        quantity=quantity,
+        market_regime=(
+            None if payload.get("market_regime") is None
+            else str(payload["market_regime"])
+        ),
+        benchmark_vwap_gap=(
+            None if payload.get("benchmark_vwap_gap") is None
+            else float(payload["benchmark_vwap_gap"])
+        ),
+        benchmark_return_5m=(
+            None if payload.get("benchmark_return_5m") is None
+            else float(payload["benchmark_return_5m"])
+        ),
+        relative_strength_5m=numeric_fields["relative_strength_5m"],
+        required_confirmations=int(payload.get("required_confirmations", 1)),
+        directional_opening_extension=float(
+            payload.get("directional_opening_extension", 0.0)
+        ),
+        directional_vwap_extension=float(
+            payload.get("directional_vwap_extension", 0.0)
+        ),
+        breakout_boundary_price=float(
+            payload.get("breakout_boundary_price", 0.0)
+        ),
+    )
+
+
 def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     _validate_runtime_intervals(args)
     runtime_dir = args.runtime_dir.resolve()
@@ -1999,11 +2131,39 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         seal, items, provenance, expanded_seal, expanded_items = (
             _load_live_intraday_universe()
         )
-    strategy_quote_items = _quote_universe(items)
+    expanded_v2_live = bool(
+        getattr(args, "expanded_v2_live_canary", False)
+    )
+    if expanded_v2_live:
+        if not submit_live or environment != "PROD" or recovery_only:
+            raise RuntimeError("EXPANDED_V2_LIVE_REQUIRES_NORMAL_PROD_LIVE")
+        if expanded_seal is None or not expanded_items:
+            raise RuntimeError("EXPANDED_V2_LIVE_UNIVERSE_NOT_READY")
+        if not getattr(args, "allow_preopen", False):
+            raise RuntimeError("EXPANDED_V2_LIVE_REQUIRES_ALLOW_PREOPEN")
+        if datetime.now(TAIPEI).time().replace(tzinfo=None) >= datetime_time(9, 0):
+            raise RuntimeError("EXPANDED_V2_LIVE_REQUIRES_START_BEFORE_0900")
+        if (
+            int(args.capital) != int(EXPANDED_V2_POLICY["capital_twd"])
+            or int(args.max_trades_per_day) != 1
+            or int(args.max_concurrent_positions) != 1
+            or args.short_entry_order_type is not None
+            or args.short_cover_order_type is not None
+        ):
+            raise RuntimeError("EXPANDED_V2_LIVE_CANARY_LIMITS_CHANGED")
+
+    strategy_quote_items = _quote_universe(
+        expanded_items if expanded_v2_live else items
+    )
     quote_items = _quote_subscription_universe(items, expanded_items)
     metadata = {item.stock_id: item.stock_name for item in quote_items}
     benchmark_symbol = str(LONG_MARKET_REGIME_POLICY["benchmark_symbol"])
-    strategy_symbols = {str(item.stock_id) for item in items if str(item.stock_id) != benchmark_symbol}
+    strategy_symbols = {
+        str(item.stock_id)
+        for item in (expanded_items if expanded_v2_live else items)
+        if str(item.stock_id) != benchmark_symbol
+    }
+    live_candidate_count = len(expanded_items if expanded_v2_live else items)
     engine = _strategy_engine(
         items,
         monitored_items=quote_items,
@@ -2040,6 +2200,14 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         None if baseline_meta is None else str(baseline_meta["captured_at"])
     )
     stop_event = threading.Event()
+    expanded_v2_candidates: Queue = Queue(maxsize=4)
+
+    def enqueue_expanded_v2_candidate(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            expanded_v2_candidates.put_nowait(dict(payload))
+        except Full as exc:
+            raise RuntimeError("EXPANDED_V2_CANDIDATE_QUEUE_FULL") from exc
+        return {"status": "ENQUEUED_FOR_GUARDED_LIVE_ADMISSION"}
 
     def stop_handler(_signum, _frame):
         stop_event.set()
@@ -2080,6 +2248,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     market_cutoff_alerted = False
     clean_shutdown = False
     archive = None
+    expanded_v2_observer = None
     archive_started_at = ""
     archive_error_type = ""
     broker_flat_confirmed_at: str | None = None
@@ -2097,7 +2266,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
         deadline = datetime.now(TAIPEI) + timedelta(seconds=min(90.0, max(1.0, budget_seconds)))
         beat(
             "STARTING", environment=environment, submit_live=submit_live,
-            signal_date=seal["signal_date"], watchlist_count=len(items),
+            signal_date=seal["signal_date"], watchlist_count=live_candidate_count,
             entry_start=SPEC["entry_start"], gate=gate.public_snapshot(),
             startup_stage=stage, startup_deadline_at=deadline.isoformat(),
             runtime_instance_id=runtime_instance_id,
@@ -2159,11 +2328,28 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             item.stock_id: item
             for item in expanded_items
         }
+        if expanded_v2_live:
+            if archive is None:
+                raise RuntimeError("EXPANDED_V2_LIVE_ARCHIVE_REQUIRED")
+            expanded_v2_observer = RealtimeExpandedShadow(
+                candidate_ready_callback=enqueue_expanded_v2_candidate,
+            )
+            expanded_v2_observer.start(
+                run_dir=archive.run_dir,
+                run_id=archive.run_id,
+                expanded_items=expanded_items,
+            )
+            session.expanded_v2_observer = expanded_v2_observer
+            session.archive_candidate_universe_kind = "EXPANDED_V2_3M_CANARY"
         strategy_identity_payload = {
             "entry_spec": SPEC,
             "market_regime_policy": LONG_MARKET_REGIME_POLICY,
             "anti_chase_policy": ANTI_CHASE_ENTRY_POLICY,
             "exit_policy": LIVE_EXIT_POLICY,
+            "expanded_v2_live_canary": expanded_v2_live,
+            "expanded_v2_policy_hash": (
+                EXPANDED_V2_POLICY_HASH if expanded_v2_live else None
+            ),
         }
         session.archive_strategy_identity = {
             "entry_policy_id": LONG_MARKET_REGIME_POLICY["policy_id"],
@@ -2180,8 +2366,9 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 run_id=archive.run_id,
                 mode=archive.mode,
                 run_dir=str(archive.run_dir),
-                live_candidate_count=len(items),
+                live_candidate_count=live_candidate_count,
                 expanded_shadow_count=len(expanded_items),
+                expanded_v2_live_canary=expanded_v2_live,
             )
 
         startup_progress("BROKER_CONNECT")
@@ -2334,7 +2521,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         environment=environment,
                         submit_live=submit_live,
                         signal_date=seal["signal_date"],
-                        watchlist_count=len(items),
+                        watchlist_count=live_candidate_count,
                         entry_start=SPEC["entry_start"],
                         trade_attempted=trade_attempted,
                         last_quote_at=session.last_quote_at,
@@ -2397,9 +2584,14 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             environment=environment,
             submit_live=submit_live,
             signal_date=seal["signal_date"],
-            watchlist_count=len(items),
-            candidate_universe="STAGE_A_TOP30",
+            watchlist_count=live_candidate_count,
+            candidate_universe=(
+                "EXPANDED_V2_3M_CANARY" if expanded_v2_live else "STAGE_A_TOP30"
+            ),
             expanded_shadow_count=len(expanded_items),
+            expanded_v2_policy_hash=(
+                EXPANDED_V2_POLICY_HASH if expanded_v2_live else None
+            ),
             quote_subscription_count=len(quote_items),
             capital=args.capital,
             short_enabled=allow_short,
@@ -2421,9 +2613,15 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             environment=environment,
             submit_live=submit_live,
             signal_date=seal["signal_date"],
-            watchlist_count=len(items),
+            watchlist_count=live_candidate_count,
             entry_start=SPEC["entry_start"],
             entry_policy=LONG_MARKET_REGIME_POLICY,
+            candidate_universe=(
+                "EXPANDED_V2_3M_CANARY" if expanded_v2_live else "STAGE_A_TOP30"
+            ),
+            expanded_v2_policy_hash=(
+                EXPANDED_V2_POLICY_HASH if expanded_v2_live else None
+            ),
             entry_location_policy=ANTI_CHASE_ENTRY_POLICY,
             exit_policy=LIVE_EXIT_POLICY,
             late_start_warmup=(
@@ -2480,7 +2678,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     environment=environment,
                     submit_live=submit_live,
                     signal_date=seal["signal_date"],
-                    watchlist_count=len(items),
+                    watchlist_count=live_candidate_count,
                     entry_start=SPEC["entry_start"],
                     trade_attempted=trade_attempted,
                     last_quote_at=session.last_quote_at,
@@ -2690,10 +2888,53 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                         and pending_exit_reason is None
                         and entry_order_id is None
                     ):
-                        candidate = engine.choose_entry(
-                            decision,
-                            allow_short=allow_short,
-                        )
+                        candidate = None
+                        if expanded_v2_live:
+                            engine.last_decision = decision
+                            health = expanded_v2_observer.health_snapshot()
+                            diagnostics = {
+                                "policy_id": "EXPANDED_V2_3M_LIVE_CANARY_V1",
+                                "expanded_v2_policy_hash": EXPANDED_V2_POLICY_HASH,
+                                "decision_time": decision,
+                                "observer_health": health,
+                                "decision": "NO_MATURE_CANDIDATE",
+                            }
+                            if not health["healthy"]:
+                                observer_failure(
+                                    "EXPANDED_V2_OBSERVER_UNHEALTHY",
+                                    RuntimeError("expanded V2 evidence pipeline is incomplete"),
+                                )
+                                diagnostics["decision"] = "ENTRY_DISABLED"
+                            else:
+                                try:
+                                    candidate_payload = expanded_v2_candidates.get_nowait()
+                                except Empty:
+                                    candidate_payload = None
+                                if candidate_payload is not None:
+                                    try:
+                                        candidate = _expanded_v2_live_signal(
+                                            candidate_payload, now=now,
+                                        )
+                                        diagnostics.update({
+                                            "decision": "MATURE_CANDIDATE_ADMITTED",
+                                            "candidate_payload": candidate_payload,
+                                        })
+                                    except Exception as exc:
+                                        diagnostics.update({
+                                            "decision": "MATURE_CANDIDATE_REJECTED",
+                                            "reason": str(exc),
+                                        })
+                                        log(
+                                            "SIGNAL_SKIPPED",
+                                            candidate=candidate_payload,
+                                            reason=str(exc),
+                                        )
+                            engine.last_entry_diagnostics = diagnostics
+                        else:
+                            candidate = engine.choose_entry(
+                                decision,
+                                allow_short=allow_short,
+                            )
 
                         if engine.last_entry_diagnostics:
                             log(
@@ -3668,6 +3909,17 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                     pass
 
         session.close()
+        if expanded_v2_observer is not None:
+            try:
+                expanded_v2_observer.close(timeout=30.0)
+            except Exception as exc:
+                try:
+                    log(
+                        "EXPANDED_V2_OBSERVER_CLOSE_ERROR",
+                        error=f"{type(exc).__name__}: {exc}",
+                    )
+                except Exception:
+                    pass
         _release_account_session_lock(session)
 
         if archive is not None:
@@ -4289,6 +4541,15 @@ def _start_options(parser: argparse.ArgumentParser) -> None:
         ),
     )
     parser.add_argument("--live", action="store_true", help="required together with EXECUTION_MODE=LIVE and ENABLE_LIVE_TRADING=YES")
+    parser.add_argument(
+        "--expanded-v2-live-canary",
+        action="store_true",
+        help=(
+            "PROD-only supervised canary: replace Stage A entry selection with "
+            "the frozen expanded V2 gate plus three-minute continuation; the "
+            "existing risk, order, exit, and force-flat lifecycle is unchanged"
+        ),
+    )
     parser.add_argument(
         "--allow-preopen",
         action="store_true",

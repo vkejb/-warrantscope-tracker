@@ -716,6 +716,13 @@ def _run_start_preflight(runtime_dir: Path) -> tuple[bool, str]:
             or '"status":"READY"' in stdout
         )
     )
+    expanded_ready = (
+        '"expanded_shadow_status": "READY"' in stdout
+        or '"expanded_shadow_status":"READY"' in stdout
+    )
+
+    if (ready or preopen_ready) and not expanded_ready:
+        return False, "EXPANDED_V2_UNIVERSE_NOT_READY"
 
     if ready:
         return True, "START_PREFLIGHT_READY"
@@ -789,6 +796,7 @@ def _launch_runtime_start(runtime_dir: Path) -> tuple[bool, str]:
         "yuanta_live_runtime_v01.main",
         "start-prod",
         "--live",
+        "--expanded-v2-live-canary",
         "--runtime-dir",
         str(runtime_dir),
         "--baseline",
@@ -1056,16 +1064,17 @@ class _RemoteControl:
                 detail = (
                     "PROD 登入、今日庫存 baseline、券商對帳與行情訂閱要求已通過。"
                     "目前尚未有開盤行情；確認後 Runtime 會保持禁止下單並等待，"
-                    "只有 0050 與每一批候選都收到有效逐筆及五檔資料後，"
-                    "才會自動轉為正常 LIVE。"
+                    "只有 0050 與擴大池每一批候選都收到有效逐筆及五檔資料後，"
+                    "才會轉為 V2 實盤 canary；候選仍須通過成交量加速、相對強勢"
+                    "與三分鐘延續確認。"
                 )
             else:
                 title = "啟動 LIVE Runtime"
                 detail = (
                     "PROD preflight 已通過。確認後 Bot 只會替這一次 runtime 子程序"
                     "注入 EXECUTION_MODE=LIVE、ENABLE_LIVE_TRADING=YES，並呼叫 "
-                    "start-prod --live；不會永久修改系統環境。"
-                    "Runtime 仍會再次驗證交易日、Stage A Top30、singleton lock、"
+                    "start-prod --live --expanded-v2-live-canary；不會永久修改系統環境。"
+                    "Runtime 仍會再次驗證交易日、擴大池 V2 seal、singleton lock、"
                     "reconciliation、STOP/HALT 與 LIVE gate。"
                 )
         elif action == "stop":

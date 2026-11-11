@@ -42,6 +42,18 @@ class RealtimeExpandedShadowTests(unittest.TestCase):
             observer.close()
             self.assertFalse(observer.offer("expanded_ticks", {}))
 
+    def test_upstream_invalidation_makes_live_consumer_health_fail_closed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            observer = RealtimeExpandedShadow(queue_size=10)
+            observer.start(
+                run_dir=Path(folder), run_id="run-invalid", expanded_items=[Item()],
+            )
+            observer.invalidate("ARCHIVE_QUOTE_WRITE_FAILED")
+            health = observer.health_snapshot()
+            observer.close()
+        self.assertFalse(health["healthy"])
+        self.assertIn("ARCHIVE_QUOTE_WRITE_FAILED", health["errors"])
+
     def test_policy_has_no_live_switch(self):
         with tempfile.TemporaryDirectory() as folder:
             observer = RealtimeExpandedShadow(queue_size=10)

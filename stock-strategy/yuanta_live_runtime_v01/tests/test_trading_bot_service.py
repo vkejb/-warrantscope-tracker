@@ -705,7 +705,7 @@ class TradingBotRemoteControlTests(unittest.TestCase):
 
             completed = SimpleNamespace(
                 returncode=0,
-                stdout='{"status":"READY"}',
+                stdout='{"status":"READY","expanded_shadow_status":"READY"}',
                 stderr="",
             )
 
@@ -753,7 +753,7 @@ class TradingBotRemoteControlTests(unittest.TestCase):
             )
             completed = SimpleNamespace(
                 returncode=0,
-                stdout='{"status":"PREOPEN_READY"}',
+                stdout='{"status":"PREOPEN_READY","expanded_shadow_status":"READY"}',
                 stderr="",
             )
             with patch(
@@ -767,6 +767,26 @@ class TradingBotRemoteControlTests(unittest.TestCase):
 
             self.assertTrue(ok)
             self.assertEqual(status, "START_PREFLIGHT_PREOPEN_READY")
+
+    def test_start_preflight_rejects_missing_expanded_v2_universe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            completed = SimpleNamespace(
+                returncode=0,
+                stdout='{"status":"PREOPEN_READY","expanded_shadow_status":"UNAVAILABLE_OPTIONAL"}',
+                stderr="",
+            )
+            with patch(
+                "yuanta_live_runtime_v01.trading_bot_service._ensure_daily_position_baseline",
+                return_value=(True, "AUTO_BASELINE_READY"),
+            ), patch(
+                "yuanta_live_runtime_v01.trading_bot_service.subprocess.run",
+                return_value=completed,
+            ):
+                ok, status = _run_start_preflight(runtime)
+
+            self.assertFalse(ok)
+            self.assertEqual(status, "EXPANDED_V2_UNIVERSE_NOT_READY")
 
     def test_start_launcher_confirms_healthy_preopen_wait(self):
         class FakeProcess:
@@ -838,6 +858,7 @@ class TradingBotRemoteControlTests(unittest.TestCase):
 
             self.assertIn("start-prod", command)
             self.assertIn("--live", command)
+            self.assertIn("--expanded-v2-live-canary", command)
             self.assertIn("--runtime-dir", command)
             self.assertIn("--baseline", command)
 

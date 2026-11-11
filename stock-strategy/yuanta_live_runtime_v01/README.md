@@ -189,6 +189,25 @@ EXECUTION_MODE=LIVE ENABLE_LIVE_TRADING=YES \
 python3 -m yuanta_live_runtime_v01.main start-prod --live
 ```
 
+### 擴大池 V2 supervised LIVE canary
+
+V2 canary 只在明確加入下列旗標時啟用；它以封存的擴大池取代 Stage A
+作為進場候選，但不改動既有風控、委託追蹤、停損、部分成交處理與
+13:20 強制平倉。候選必須依序通過原方向訊號、V2 近期成交量加速、
+相對 0050 強勢及三分鐘成本後延續確認。EARLY telemetry 不會送單。
+
+```bash
+EXECUTION_MODE=LIVE ENABLE_LIVE_TRADING=YES \
+python3 -m yuanta_live_runtime_v01.main start-prod --live \
+  --expanded-v2-live-canary --allow-preopen
+```
+
+此 canary 固定為 19 萬元、每日最多一筆／一倉、只做 LONG、整張交易，
+進場參考價不得高於 190 元。為保證 09:00 起的完整暖機，runtime 必須在
+09:00 前啟動；擴大池 seal、行情封存或 V2 observer 任一缺失時都會
+fail closed。Trading Bot 的 `/start` 已固定使用此模式，仍需 `/confirm`
+才會啟動當次 LIVE 子程序。
+
 如果要允許 SHORT，必須明確指定經帳戶資格確認過的元大委託種類；runtime 不會猜：
 
 ```bash
