@@ -22,6 +22,17 @@ class Item:
 
 
 class RealtimeExpandedShadowTests(unittest.TestCase):
+    @staticmethod
+    def tick(at: datetime, serial: int) -> dict:
+        return {
+            "event_type": "STOCK_TICK", "stock_id": "1234",
+            "quote_time": at.strftime("%H:%M:%S.%f")[:-3],
+            "received_at": at.isoformat(), "deal_price": "50",
+            "deal_volume": "1", "buy_price": "49.9",
+            "sell_price": "50.0", "serial_no": serial,
+            "in_out_flag": "1",
+        }
+
     def test_empty_observer_closes_with_zero_order_evidence(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -45,6 +56,33 @@ class RealtimeExpandedShadowTests(unittest.TestCase):
             )
             observer.close()
             self.assertFalse(observer.offer("expanded_ticks", {}))
+
+    def test_live_callbacks_are_buffered_behind_history_restore(self):
+        with tempfile.TemporaryDirectory() as folder:
+            observer = RealtimeExpandedShadow(queue_size=10)
+            observer.start(
+                run_dir=Path(folder), run_id="run-buffered", expanded_items=[Item()],
+            )
+            historical_at = datetime(2026, 11, 12, 9, 0, 1, tzinfo=TAIPEI)
+            live_at = historical_at + timedelta(seconds=1)
+
+            def start_live():
+                self.assertTrue(observer.offer(
+                    "expanded_ticks", self.tick(live_at, 2),
+                ))
+
+            result = observer.restore_from_events(
+                [("expanded_ticks", self.tick(historical_at, 1))],
+                source_run_id="source",
+                start_live_callback=start_live,
+            )
+            health = observer.health_snapshot()
+            observer.close()
+        self.assertEqual(result["restored_events"], 1)
+        self.assertEqual(health["offered"], 2)
+        self.assertEqual(health["processed"], 2)
+        self.assertTrue(health["healthy"])
+        self.assertEqual(observer._last_event_at, live_at)
 
     def test_upstream_invalidation_makes_live_consumer_health_fail_closed(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -124,6 +162,44 @@ class RealtimeExpandedShadowTests(unittest.TestCase):
             self.assertIsNone(observer._selected)
             self.assertIsNone(observer._continuation)
             self.assertEqual(len(observer._continuation_attempts), 1)
+            observer.close()
+
+    def test_history_restore_consumes_mature_candidate_without_delivery(self):
+        with tempfile.TemporaryDirectory() as folder:
+            delivered = []
+            observer = RealtimeExpandedShadow(
+                queue_size=10,
+                candidate_ready_callback=lambda payload: delivered.append(payload),
+            )
+            observer.start(
+                run_dir=Path(folder), run_id="run-historical-mature",
+                expanded_items=[Item()],
+            )
+            decision = datetime(2026, 11, 12, 9, 15, 30, tzinfo=TAIPEI)
+            observer._selected = {
+                "stock_id": "1234", "stock_name": "測試股票", "side": "LONG",
+                "decision_time": decision - timedelta(minutes=3),
+                "entry_price": 50.0, "quantity": 3000,
+                "relative_strength_5m": 0.02, "rs_challenger_passed": True,
+                "continuation_due_at": decision,
+            }
+            observer._data["1234"]["ticks"].append({
+                "time": decision, "bid": 51.0, "ask": 51.1,
+            })
+            observer._data["1234"]["books"].append({
+                "time": decision, "buy_prices": [51.0], "buy_volumes": [10],
+                "sell_prices": [51.1], "sell_volumes": [10],
+            })
+            observer._restoring_history = True
+            observer._check_continuation(decision)
+            observer._restoring_history = False
+            self.assertEqual(delivered, [])
+            self.assertTrue(observer._mature_candidate_emitted)
+            self.assertEqual(observer._restored_mature_candidate_count, 1)
+            self.assertEqual(
+                observer._manual_review_notification["status"],
+                "SUPPRESSED_DURING_HISTORY_RESTORE",
+            )
             observer.close()
 
     def test_policy_has_no_live_switch(self):

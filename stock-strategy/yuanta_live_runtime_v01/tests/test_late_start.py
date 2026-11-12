@@ -9,10 +9,15 @@ import unittest
 from zoneinfo import ZoneInfo
 
 from yuanta_live_runtime_v01.late_start import (
+    expanded_observer_warmup_required,
+    warm_start_expanded_observer_from_collector,
     warm_start_from_collector,
     warmup_required,
 )
 from yuanta_live_runtime_v01.strategy import LiveDirectionEngine
+from dynamic_market_scanner_shadow_v01.realtime_expanded_shadow import (
+    RealtimeExpandedShadow,
+)
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -93,12 +98,40 @@ class LateStartWarmupTests(unittest.TestCase):
             if truncate_gzip_footer:
                 payload = path.read_bytes()
                 path.write_bytes(payload[:-8])
+        if expanded:
+            for filename, symbol in (
+                ("expanded_books.jsonl.gz", "2330"),
+                ("market_context_books.jsonl.gz", "0050"),
+            ):
+                with gzip.open(run / filename, "wt", encoding="utf-8") as handle:
+                    for row in rows(symbol):
+                        price = float(row["deal_price"])
+                        handle.write(json.dumps({
+                            "event_type": "STOCK_BOOK_COMBINED",
+                            "stock_id": symbol,
+                            "received_at": row["received_at"],
+                            "buy_prices": [price - 0.05] * 5,
+                            "buy_volumes": [10] * 5,
+                            "sell_prices": [price + 0.05] * 5,
+                            "sell_volumes": [10] * 5,
+                        }) + "\n")
         return run
 
     def test_warmup_is_only_required_after_opening_deadline(self):
         self.assertFalse(warmup_required(datetime(2026, 10, 5, 9, 5, tzinfo=TAIPEI)))
         self.assertTrue(warmup_required(datetime(2026, 10, 5, 9, 5, 1, tzinfo=TAIPEI)))
         self.assertFalse(warmup_required(datetime(2026, 10, 5, 13, 11, tzinfo=TAIPEI)))
+
+    def test_expanded_observer_warmup_is_required_from_market_open(self):
+        self.assertFalse(expanded_observer_warmup_required(
+            datetime(2026, 10, 5, 8, 59, 59, tzinfo=TAIPEI)
+        ))
+        self.assertTrue(expanded_observer_warmup_required(
+            datetime(2026, 10, 5, 9, 0, tzinfo=TAIPEI)
+        ))
+        self.assertFalse(expanded_observer_warmup_required(
+            datetime(2026, 10, 5, 13, 11, 1, tzinfo=TAIPEI)
+        ))
 
     def test_verified_collector_history_warms_all_symbols(self):
         with TemporaryDirectory() as tmp:
@@ -156,6 +189,72 @@ class LateStartWarmupTests(unittest.TestCase):
             )
             self.assertEqual(result.status, "READY")
             self.assertEqual(result.symbols_warmed, 2)
+
+    def test_expanded_partial_warmup_does_not_relabel_late_first_trade_as_open(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            now = datetime(2026, 10, 5, 9, 10, tzinfo=TAIPEI)
+            run = self.write_run(
+                root, latest=now - timedelta(seconds=5), expanded=True,
+            )
+            tick_path = run / "expanded_ticks.jsonl.gz"
+            with gzip.open(tick_path, "rt", encoding="utf-8") as handle:
+                rows = [json.loads(line) for line in handle]
+            with gzip.open(tick_path, "wt", encoding="utf-8") as handle:
+                for row in rows:
+                    if row["quote_time"] >= "09:06:00.000":
+                        handle.write(json.dumps(row) + "\n")
+            result = warm_start_from_collector(
+                self.engine(), runtime_dir=root, now=now,
+                signal_date="20261002", seal_hash="expanded-seal",
+                required_symbols={"2330", "0050"},
+                universe_kind="expanded", allow_partial_symbols=True,
+            )
+            self.assertEqual(result.status, "READY")
+            self.assertEqual(result.symbols_required, 2)
+            self.assertEqual(result.symbols_warmed, 1)
+
+    def test_expanded_observer_replays_ticks_and_books_without_live_callback(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            now = datetime(2026, 10, 5, 9, 10, tzinfo=TAIPEI)
+            source = self.write_run(
+                root, latest=now - timedelta(seconds=5), expanded=True,
+            )
+            delivered = []
+            observer = RealtimeExpandedShadow(
+                candidate_ready_callback=lambda payload: delivered.append(payload),
+            )
+            target = root / "target"
+            target.mkdir()
+            observer.start(
+                run_dir=target,
+                run_id="restored",
+                expanded_items=[type("Item", (), {
+                    "stock_id": "2330", "stock_name": "台積電",
+                })()],
+            )
+            try:
+                result = warm_start_expanded_observer_from_collector(
+                    observer,
+                    runtime_dir=root,
+                    now=now,
+                    signal_date="20261002",
+                    seal_hash="expanded-seal",
+                    required_symbols={"2330", "0050"},
+                )
+                self.assertEqual(result.status, "READY")
+                self.assertEqual(result.source_run_id, source.name)
+                self.assertGreater(result.restored_ticks, 0)
+                self.assertGreater(result.restored_books, 0)
+                self.assertEqual(result.symbols_with_ticks, 2)
+                self.assertEqual(result.symbols_with_books, 2)
+                self.assertEqual(delivered, [])
+                health = observer.health_snapshot()
+                self.assertTrue(health["healthy"])
+                self.assertFalse(health["restoring_history"])
+            finally:
+                observer.close()
 
     def test_stale_collector_fails_closed(self):
         with TemporaryDirectory() as tmp:

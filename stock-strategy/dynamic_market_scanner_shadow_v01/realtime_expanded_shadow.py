@@ -150,6 +150,10 @@ class RealtimeExpandedShadow:
         self._candidate_ready_callback = candidate_ready_callback
         self._manual_review_notification: dict[str, Any] | None = None
         self._candidate_ready_delivery: dict[str, Any] | None = None
+        self._restoring_history = False
+        self._restored_mature_candidate_count = 0
+        self._restore_lock = threading.Lock()
+        self._restore_live_buffer: list[tuple[str, dict[str, Any]]] = []
         self._early: dict[str, dict[str, Any]] = {}
         self._early_last_eval: dict[str, datetime] = {}
         self._early_prefilter_runs = 0
@@ -208,6 +212,14 @@ class RealtimeExpandedShadow:
         if not self._started or self._closed:
             return False
         try:
+            with self._restore_lock:
+                if self._restoring_history:
+                    if len(self._restore_live_buffer) >= self.queue_size:
+                        self._dropped += 1
+                        return False
+                    self._restore_live_buffer.append((str(kind), dict(event)))
+                    self._offered += 1
+                    return True
             self._queue.put_nowait((str(kind), dict(event)))
             self._offered += 1
             return True
@@ -241,6 +253,77 @@ class RealtimeExpandedShadow:
                 and self._dropped == 0
                 and not self._errors
             ),
+            "restoring_history": self._restoring_history,
+            "restored_mature_candidate_count": self._restored_mature_candidate_count,
+        }
+
+    def restore_from_events(
+        self,
+        events,
+        *,
+        source_run_id: str,
+        progress_callback=None,
+        start_live_callback=None,
+    ) -> dict[str, Any]:
+        """Causally rebuild a fresh observer before live subscription starts.
+
+        Historical events deliberately exercise the normal state machine, but
+        a mature historical candidate is consumed without invoking either the
+        live-admission or manual-notification callback.  A restart must never
+        turn an expired signal into a new order opportunity.
+        """
+        if not self._started or self._closed or self._thread is None:
+            raise RuntimeError("observer must be running before history restore")
+        if self._offered or self._processed or self._last_event_at is not None:
+            raise RuntimeError("history restore requires a fresh observer")
+        with self._restore_lock:
+            self._restoring_history = True
+        restored = 0
+        self._write(
+            "OBSERVER_HISTORY_RESTORE_STARTED",
+            source_run_id=str(source_run_id),
+        )
+        try:
+            if start_live_callback is not None:
+                start_live_callback()
+            for kind, event in events:
+                self._queue.put((str(kind), dict(event)))
+                with self._restore_lock:
+                    self._offered += 1
+                restored += 1
+                if progress_callback is not None and restored % 10_000 == 0:
+                    progress_callback(restored)
+            self._queue.join()
+            while True:
+                with self._restore_lock:
+                    buffered = self._restore_live_buffer
+                    self._restore_live_buffer = []
+                    if not buffered:
+                        self._restoring_history = False
+                        break
+                buffered.sort(key=lambda item: _stamp(item[1]["received_at"]))
+                for item in buffered:
+                    self._queue.put(item)
+                self._queue.join()
+            if self._dropped or self._errors or self._processed != self._offered:
+                raise RuntimeError("expanded V2 history restore is incomplete")
+        finally:
+            with self._restore_lock:
+                self._restoring_history = False
+        self._write(
+            "OBSERVER_HISTORY_RESTORE_COMPLETED",
+            source_run_id=str(source_run_id),
+            restored_events=restored,
+            last_event_at=self._last_event_at,
+            restored_mature_candidate_count=self._restored_mature_candidate_count,
+        )
+        return {
+            "source_run_id": str(source_run_id),
+            "restored_events": restored,
+            "last_event_at": (
+                None if self._last_event_at is None else self._last_event_at.isoformat()
+            ),
+            "restored_mature_candidate_count": self._restored_mature_candidate_count,
         }
 
     def invalidate(self, reason: str) -> None:
@@ -826,6 +909,20 @@ class RealtimeExpandedShadow:
                 "actual_orders": 0, "actual_fills": 0,
                 "broker_order_calls": 0,
             }
+            if self._restoring_history:
+                if not self._mature_candidate_emitted:
+                    self._mature_candidate_emitted = True
+                    self._restored_mature_candidate_count += 1
+                    self._write(
+                        "HISTORICAL_MATURE_CANDIDATE_CONSUMED",
+                        stock_id=str(self._selected["stock_id"]),
+                        review_decision_time=self._continuation["decision_time"],
+                        reason="RESTART_REPLAY_NEVER_DELIVERS_EXPIRED_SIGNAL",
+                    )
+                self._manual_review_notification = {
+                    "status": "SUPPRESSED_DURING_HISTORY_RESTORE",
+                }
+                return
             if (
                 self._candidate_ready_callback is not None
                 and not self._mature_candidate_emitted
@@ -919,6 +1016,9 @@ class RealtimeExpandedShadow:
             "continuation_attempts": _jsonable(self._continuation_attempts),
             "manual_review_notification": _jsonable(self._manual_review_notification),
             "candidate_ready_delivery": _jsonable(self._candidate_ready_delivery),
+            "history_restore": {
+                "restored_mature_candidate_count": self._restored_mature_candidate_count,
+            },
             "early_observation": {
                 "policy": POLICY["early_observation"],
                 "state_counts": dict(Counter(

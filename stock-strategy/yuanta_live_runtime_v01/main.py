@@ -73,7 +73,10 @@ from .strategy import (
 )
 from .watchdog import Heartbeat, monitor as watchdog_monitor
 from .account_lock import acquire_account_lock, release_account_lock
-from .late_start import warm_start_from_collector
+from .late_start import (
+    warm_start_expanded_observer_from_collector,
+    warm_start_from_collector,
+)
 from expanded_shadow_universe_v01.subscriptions import batches, deduplicate_items
 from expanded_shadow_universe_v01.universe import load_universe
 from dynamic_market_scanner_shadow_v01.realtime_expanded_shadow import (
@@ -2150,8 +2153,6 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             raise RuntimeError("EXPANDED_V2_LIVE_UNIVERSE_NOT_READY")
         if not getattr(args, "allow_preopen", False):
             raise RuntimeError("EXPANDED_V2_LIVE_REQUIRES_ALLOW_PREOPEN")
-        if datetime.now(TAIPEI).time().replace(tzinfo=None) >= datetime_time(9, 0):
-            raise RuntimeError("EXPANDED_V2_LIVE_REQUIRES_START_BEFORE_0900")
         if (
             int(args.capital) != int(EXPANDED_V2_POLICY["capital_twd"])
             or int(args.max_trades_per_day) != 1
@@ -2266,6 +2267,8 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
     startup_stage = "LOCAL_SETUP"
     archive_counter_baseline = _store_archive_counters(store)
     late_start_warmup = None
+    expanded_v2_state_warmup = None
+    quotes_subscribed = False
 
     def startup_progress(stage: str, budget_seconds: float = 30.0) -> None:
         nonlocal startup_stage
@@ -2472,18 +2475,23 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
             and not trade_attempted
         ):
             startup_progress("LATE_START_WARMUP", 30)
+            warmup_now = datetime.now(TAIPEI)
+            warmup_seal = expanded_seal if expanded_v2_live else seal
+            warmup_universe_kind = "expanded" if expanded_v2_live else "stage_a"
+            assert warmup_seal is not None
             late_start_warmup = warm_start_from_collector(
                 engine,
                 runtime_dir=getattr(
                     args, "warmup_runtime_dir", DEFAULT_ARCHIVE_RUNTIME_DIR
                 ).resolve(),
-                now=datetime.now(TAIPEI),
-                signal_date=str(seal["signal_date"]),
-                seal_hash=str(seal.get("seal_hash", "")),
+                now=warmup_now,
+                signal_date=str(warmup_seal["signal_date"]),
+                seal_hash=str(warmup_seal.get("seal_hash", "")),
                 required_symbols={
                     str(item.stock_id) for item in strategy_quote_items
                 },
-                universe_kind="stage_a",
+                universe_kind=warmup_universe_kind,
+                allow_partial_symbols=expanded_v2_live,
             )
             log(
                 "LATE_START_WARMUP",
@@ -2494,9 +2502,63 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 raise RuntimeError(
                     f"late-start market history is unavailable: {late_start_warmup.status}"
                 )
+            if expanded_v2_live:
+                assert expanded_v2_observer is not None
+                last_restore_progress = [0.0]
+
+                def expanded_restore_progress(restored_events: int) -> None:
+                    monotonic_now = time.monotonic()
+                    if monotonic_now - last_restore_progress[0] < 5.0:
+                        return
+                    last_restore_progress[0] = monotonic_now
+                    startup_progress("EXPANDED_V2_STATE_WARMUP", 30)
+                    log(
+                        "EXPANDED_V2_STATE_WARMUP_PROGRESS",
+                        restored_events=int(restored_events),
+                    )
+
+                startup_progress("EXPANDED_V2_STATE_WARMUP", 30)
+
+                def subscribe_during_expanded_restore() -> None:
+                    nonlocal quotes_subscribed
+                    startup_progress("QUOTE_SUBSCRIPTION_FOR_V2_RESTORE", 30)
+                    session.subscribe(quote_items)
+                    quotes_subscribed = True
+
+                expanded_v2_state_warmup = (
+                    warm_start_expanded_observer_from_collector(
+                        expanded_v2_observer,
+                        runtime_dir=getattr(
+                            args, "warmup_runtime_dir", DEFAULT_ARCHIVE_RUNTIME_DIR
+                        ).resolve(),
+                        now=datetime.now(TAIPEI),
+                        signal_date=str(expanded_seal["signal_date"]),
+                        seal_hash=str(expanded_seal.get("seal_hash", "")),
+                        required_symbols={
+                            str(item.stock_id) for item in strategy_quote_items
+                        },
+                        progress_callback=expanded_restore_progress,
+                        start_live_callback=subscribe_during_expanded_restore,
+                    )
+                )
+                log(
+                    "EXPANDED_V2_STATE_WARMUP",
+                    result=expanded_v2_state_warmup.public_snapshot(),
+                )
+                if (
+                    expanded_v2_state_warmup.required
+                    and expanded_v2_state_warmup.status != "READY"
+                ):
+                    failure_code = "EXPANDED_V2_STATE_WARMUP_FAILED"
+                    raise RuntimeError(
+                        "expanded V2 state history is unavailable: "
+                        f"{expanded_v2_state_warmup.status}"
+                    )
         startup_progress("QUOTE_SUBSCRIPTION")
         try:
-            session.subscribe(quote_items)
+            if not quotes_subscribed:
+                session.subscribe(quote_items)
+                quotes_subscribed = True
         except Exception:
             if not (recovery_only or operational_exit_only or position is not None or entry_order_id is not None or exit_order_id is not None):
                 raise

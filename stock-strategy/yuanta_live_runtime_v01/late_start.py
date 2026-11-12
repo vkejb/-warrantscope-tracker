@@ -14,6 +14,7 @@ from collections import deque
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 import gzip
+import heapq
 import json
 import math
 from pathlib import Path
@@ -49,6 +50,28 @@ class LateStartWarmupResult:
         return asdict(self)
 
 
+@dataclass(frozen=True, slots=True)
+class ExpandedObserverWarmupResult:
+    required: bool
+    status: str
+    source_run_id: str | None
+    source_mode: str | None
+    trading_date: str
+    signal_date: str
+    restored_events: int
+    restored_ticks: int
+    restored_books: int
+    symbols_with_ticks: int
+    symbols_with_books: int
+    first_received_at: str | None
+    latest_received_at: str | None
+    incomplete_gzip_tail_ignored: bool
+    restored_mature_candidate_count: int
+
+    def public_snapshot(self) -> dict:
+        return asdict(self)
+
+
 @dataclass(slots=True)
 class _SymbolHistory:
     opening_price: float | None = None
@@ -72,6 +95,13 @@ def warmup_required(now: datetime) -> bool:
     ).time()
     entry_close = datetime.strptime(str(SPEC["last_entry_time"]), "%H:%M").time()
     return opening_deadline < local <= entry_close
+
+
+def expanded_observer_warmup_required(now: datetime) -> bool:
+    local = now.astimezone(TAIPEI).time().replace(tzinfo=None)
+    market_open = datetime.strptime("09:00", "%H:%M").time()
+    entry_close = datetime.strptime(str(SPEC["last_entry_time"]), "%H:%M").time()
+    return market_open <= local <= entry_close
 
 
 def _parse_stamp(value: object) -> datetime:
@@ -270,6 +300,7 @@ def warm_start_from_collector(
     required_symbols: set[str],
     max_source_age_seconds: float = 30.0,
     universe_kind: str = "stage_a",
+    allow_partial_symbols: bool = False,
 ) -> LateStartWarmupResult:
     """Load the earliest valid pre-open collector run into a fresh engine."""
 
@@ -340,8 +371,13 @@ def warm_start_from_collector(
             or history.accepted <= 0
             or not history.retained
         ]
-        if missing:
+        if missing and not allow_partial_symbols:
             last_error = "OPENING_COVERAGE_INCOMPLETE"
+            continue
+        eligible = set(required_symbols) - set(missing)
+        benchmark = str(getattr(engine, "benchmark_symbol", ""))
+        if allow_partial_symbols and (not eligible or benchmark not in eligible):
+            last_error = "BENCHMARK_OPENING_COVERAGE_INCOMPLETE"
             continue
         if latest_received is None:
             last_error = "NO_VALID_TICKS"
@@ -351,7 +387,7 @@ def warm_start_from_collector(
             last_error = "SOURCE_STALE"
             continue
 
-        for symbol in sorted(required_symbols):
+        for symbol in sorted(eligible):
             history = histories[symbol]
             outcome = engine.seed_session_history(
                 symbol,
@@ -377,7 +413,7 @@ def warm_start_from_collector(
             trading_date=now.date().isoformat(),
             signal_date=str(signal_date),
             symbols_required=len(required_symbols),
-            symbols_warmed=len(required_symbols),
+            symbols_warmed=len(eligible),
             accepted_ticks=totals[0],
             rejected_ticks=totals[1],
             first_exchange_time=first_exchange.isoformat() if first_exchange else None,
@@ -391,4 +427,172 @@ def warm_start_from_collector(
             **empty.public_snapshot(),
             "status": last_error,
         }
+    )
+
+
+def warm_start_expanded_observer_from_collector(
+    observer,
+    *,
+    runtime_dir: Path,
+    now: datetime,
+    signal_date: str,
+    seal_hash: str,
+    required_symbols: set[str],
+    max_source_age_seconds: float = 30.0,
+    progress_callback=None,
+    start_live_callback=None,
+) -> ExpandedObserverWarmupResult:
+    """Replay the four archived expanded quote channels into a fresh V2 observer.
+
+    The source must be the same day's pre-open, read-only collector with the
+    exact sealed expanded universe.  Events are merged by receive time and are
+    cut off at ``now`` so callbacks arriving while replay runs cannot leak into
+    the historical prefix.
+    """
+    now = now.astimezone(TAIPEI)
+    required = expanded_observer_warmup_required(now)
+    empty = ExpandedObserverWarmupResult(
+        required=required,
+        status="NOT_REQUIRED" if not required else "SOURCE_NOT_FOUND",
+        source_run_id=None,
+        source_mode=None,
+        trading_date=now.date().isoformat(),
+        signal_date=str(signal_date),
+        restored_events=0,
+        restored_ticks=0,
+        restored_books=0,
+        symbols_with_ticks=0,
+        symbols_with_books=0,
+        first_received_at=None,
+        latest_received_at=None,
+        incomplete_gzip_tail_ignored=False,
+        restored_mature_candidate_count=0,
+    )
+    if not required:
+        return empty
+
+    metadata = _candidate_metadata(
+        runtime_dir,
+        now=now,
+        signal_date=str(signal_date),
+        seal_hash=str(seal_hash),
+        required_symbols=set(required_symbols),
+        universe_kind="expanded",
+    )
+    stream_names = (
+        ("expanded_ticks.jsonl.gz", "expanded_ticks", "tick"),
+        ("market_context_ticks.jsonl.gz", "market_context_ticks", "tick"),
+        ("expanded_books.jsonl.gz", "expanded_books", "book"),
+        ("market_context_books.jsonl.gz", "market_context_books", "book"),
+    )
+    last_error = "SOURCE_NOT_FOUND"
+    for created, run_dir, watch in reversed(metadata):
+        if created.time().replace(tzinfo=None) >= datetime.strptime("09:00", "%H:%M").time():
+            last_error = "SOURCE_DID_NOT_START_BEFORE_OPEN"
+            continue
+        if any(not (run_dir / name).is_file() for name, _kind, _group in stream_names):
+            last_error = "REQUIRED_STREAM_MISSING"
+            continue
+
+        stats: dict[str, object] = {
+            "events": 0,
+            "ticks": 0,
+            "books": 0,
+            "tick_symbols": set(),
+            "book_symbols": set(),
+            "first": None,
+            "latest": None,
+        }
+        incomplete_flags: list[list[bool]] = []
+        streams = []
+        try:
+            for priority, (name, kind, group) in enumerate(stream_names):
+                rows, incomplete = _iter_jsonl(run_dir / name)
+                incomplete_flags.append(incomplete)
+
+                def timed(source=rows, source_kind=kind, source_group=group,
+                          source_priority=priority):
+                    previous = None
+                    for sequence, row in enumerate(source):
+                        try:
+                            stamp = _parse_stamp(row["received_at"])
+                        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+                            raise RuntimeError(
+                                f"invalid receive timestamp in {source_kind}"
+                            ) from exc
+                        if previous is not None and stamp < previous:
+                            raise RuntimeError(
+                                f"receive-time regression in {source_kind}"
+                            )
+                        previous = stamp
+                        yield (
+                            stamp, source_priority, sequence,
+                            source_kind, source_group, row,
+                        )
+
+                streams.append(timed())
+
+            def merged():
+                for stamp, _priority, _sequence, kind, group, row in heapq.merge(*streams):
+                    if stamp > now:
+                        break
+                    symbol = str(row.get("stock_id", ""))
+                    if symbol not in required_symbols:
+                        raise RuntimeError("archive contains symbol outside sealed universe")
+                    stats["events"] = int(stats["events"]) + 1
+                    stats[group + "s"] = int(stats[group + "s"]) + 1
+                    symbols = stats[group + "_symbols"]
+                    assert isinstance(symbols, set)
+                    symbols.add(symbol)
+                    stats["first"] = stamp if stats["first"] is None else min(stats["first"], stamp)
+                    stats["latest"] = stamp if stats["latest"] is None else max(stats["latest"], stamp)
+                    yield kind, row
+
+                if int(stats["ticks"]) <= 0 or int(stats["books"]) <= 0:
+                    raise RuntimeError("expanded V2 restore source has an empty quote channel")
+                latest = stats["latest"]
+                if latest is None:
+                    raise RuntimeError("expanded V2 restore source has no valid events")
+                source_age = (now - latest).total_seconds()
+                if source_age < -0.5 or source_age > float(max_source_age_seconds):
+                    raise RuntimeError("expanded V2 restore source is stale")
+
+            restored = observer.restore_from_events(
+                merged(),
+                source_run_id=run_dir.name,
+                progress_callback=progress_callback,
+                start_live_callback=start_live_callback,
+            )
+        except RuntimeError as exc:
+            return ExpandedObserverWarmupResult(
+                **{**empty.public_snapshot(), "status": str(exc)},
+            )
+
+        first = stats["first"]
+        latest = stats["latest"]
+        tick_symbols = stats["tick_symbols"]
+        book_symbols = stats["book_symbols"]
+        assert isinstance(tick_symbols, set) and isinstance(book_symbols, set)
+        return ExpandedObserverWarmupResult(
+            required=True,
+            status="READY",
+            source_run_id=run_dir.name,
+            source_mode=str(watch.get("mode")),
+            trading_date=now.date().isoformat(),
+            signal_date=str(signal_date),
+            restored_events=int(restored["restored_events"]),
+            restored_ticks=int(stats["ticks"]),
+            restored_books=int(stats["books"]),
+            symbols_with_ticks=len(tick_symbols),
+            symbols_with_books=len(book_symbols),
+            first_received_at=first.isoformat() if first is not None else None,
+            latest_received_at=latest.isoformat() if latest is not None else None,
+            incomplete_gzip_tail_ignored=any(flag[0] for flag in incomplete_flags),
+            restored_mature_candidate_count=int(
+                restored["restored_mature_candidate_count"]
+            ),
+        )
+
+    return ExpandedObserverWarmupResult(
+        **{**empty.public_snapshot(), "status": last_error},
     )
