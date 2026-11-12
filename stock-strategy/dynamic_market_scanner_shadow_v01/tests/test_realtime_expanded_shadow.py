@@ -4,11 +4,15 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from dynamic_market_scanner_shadow_v01.realtime_expanded_shadow import (
     EVENTS_NAME, POLICY_HASH, SUMMARY_NAME, RealtimeExpandedShadow,
 )
+
+
+TAIPEI = ZoneInfo("Asia/Taipei")
 
 
 @dataclass(frozen=True)
@@ -53,6 +57,74 @@ class RealtimeExpandedShadowTests(unittest.TestCase):
             observer.close()
         self.assertFalse(health["healthy"])
         self.assertIn("ARCHIVE_QUOTE_WRITE_FAILED", health["errors"])
+
+    def test_weak_candidate_does_not_reserve_slot_before_strong_candidate(self):
+        with tempfile.TemporaryDirectory() as folder:
+            observer = RealtimeExpandedShadow(queue_size=10)
+            observer.start(
+                run_dir=Path(folder), run_id="run-rearm",
+                expanded_items=[
+                    Item(stock_id="1234", stock_name="弱候選"),
+                    Item(stock_id="5678", stock_name="強候選"),
+                ],
+            )
+            observer._observe_all_early = lambda _decision: None
+            observer._engine.choose_entry = lambda _decision, allow_short: None
+            observer._engine.last_entry_diagnostics = {
+                "candidates": [
+                    {
+                        "stock_id": "1234", "gate_reason": "MARKET_GATE_PASSED",
+                        "score": 0.9, "relative_strength_5m": 0.005,
+                        "entry_price": 50.0, "quantity": 3000,
+                    },
+                    {
+                        "stock_id": "5678", "gate_reason": "MARKET_GATE_PASSED",
+                        "score": 0.8, "relative_strength_5m": 0.02,
+                        "entry_price": 40.0, "quantity": 4000,
+                    },
+                ],
+            }
+            decision = datetime(2026, 11, 12, 9, 12, 30, tzinfo=TAIPEI)
+            gate = {
+                "evaluable": True, "passed": True,
+                "reason": "VOLUME_GATE_PASSED",
+            }
+            with patch(
+                "dynamic_market_scanner_shadow_v01.realtime_expanded_shadow.evaluate_volume_gate",
+                return_value=gate,
+            ):
+                observer._decide(decision)
+            selected = dict(observer._selected)
+            observer.close()
+        self.assertEqual(selected["stock_id"], "5678")
+        self.assertIn("1234", observer._seen)
+
+    def test_failed_continuation_releases_selection_for_later_candidates(self):
+        with tempfile.TemporaryDirectory() as folder:
+            observer = RealtimeExpandedShadow(queue_size=10)
+            observer.start(
+                run_dir=Path(folder), run_id="run-release", expanded_items=[Item()],
+            )
+            decision = datetime(2026, 11, 12, 9, 15, 30, tzinfo=TAIPEI)
+            observer._selected = {
+                "stock_id": "1234", "stock_name": "測試股票", "side": "LONG",
+                "decision_time": decision - timedelta(minutes=3),
+                "entry_price": 50.0, "quantity": 3000,
+                "relative_strength_5m": 0.02, "rs_challenger_passed": True,
+                "continuation_due_at": decision,
+            }
+            observer._data["1234"]["ticks"].append({
+                "time": decision, "bid": 49.0, "ask": 49.1,
+            })
+            observer._data["1234"]["books"].append({
+                "time": decision, "buy_prices": [49.0], "buy_volumes": [10],
+                "sell_prices": [49.1], "sell_volumes": [10],
+            })
+            observer._check_continuation(decision)
+            self.assertIsNone(observer._selected)
+            self.assertIsNone(observer._continuation)
+            self.assertEqual(len(observer._continuation_attempts), 1)
+            observer.close()
 
     def test_policy_has_no_live_switch(self):
         with tempfile.TemporaryDirectory() as folder:

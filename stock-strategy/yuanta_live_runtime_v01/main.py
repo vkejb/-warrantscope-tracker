@@ -2902,7 +2902,7 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                             engine.last_decision = decision
                             health = expanded_v2_observer.health_snapshot()
                             diagnostics = {
-                                "policy_id": "EXPANDED_V2_3M_LIVE_CANARY_V1",
+                                "policy_id": "EXPANDED_V2_3M_LIVE_CANARY_V2_REARM",
                                 "expanded_v2_policy_hash": EXPANDED_V2_POLICY_HASH,
                                 "decision_time": decision,
                                 "observer_health": health,

@@ -34,7 +34,7 @@ from .strict_replay import PASS_REASONS
 TAIPEI = ZoneInfo("Asia/Taipei")
 VOLUME_CONFIG = load_config()
 POLICY = {
-    "policy_id": "REALTIME_EXPANDED_SHADOW_V1",
+    "policy_id": "REALTIME_EXPANDED_SHADOW_V2_REARM",
     "mode": "SHADOW_ONLY_NO_BROKER_NO_ORDER",
     "candidate_gate": "V2_RECENT_VOLUME_ACCELERATION",
     "challenger_relative_strength_5m_minimum": 0.01,
@@ -43,6 +43,10 @@ POLICY = {
     "manual_review_expiry_seconds": 60,
     "manual_review_price_cap_twd": 190,
     "manual_review_stop_loss_net_twd": int(SPEC["stop_loss_net_twd"]),
+    "selection_state_machine": (
+        "RS_BEFORE_RESERVATION_RELEASE_AFTER_FAILED_CONTINUATION"
+    ),
+    "maximum_mature_candidate_callbacks": 1,
     "capital_twd": 190_000,
     "decision_interval_seconds": int(SPEC["decision_interval_seconds"]),
     "entry_start": str(SPEC["entry_start"]),
@@ -134,8 +138,12 @@ class RealtimeExpandedShadow:
         self._data: dict[str, dict[str, Any]] = {}
         self._names: dict[str, str] = {}
         self._seen: set[str] = set()
+        self._reported: set[str] = set()
         self._selected: dict[str, Any] | None = None
         self._continuation: dict[str, Any] | None = None
+        self._selection_attempts: list[dict[str, Any]] = []
+        self._continuation_attempts: list[dict[str, Any]] = []
+        self._mature_candidate_emitted = False
         self._next_decision: datetime | None = None
         self._last_event_at: datetime | None = None
         self._manual_review_callback = manual_review_callback
@@ -657,7 +665,6 @@ class RealtimeExpandedShadow:
             symbol = str(candidate["stock_id"])
             if symbol in self._seen or str(candidate.get("gate_reason")) not in PASS_REASONS:
                 continue
-            self._seen.add(symbol)
             gate = evaluate_volume_gate(
                 self._gate_data(symbol), decision,
                 "V2_RECENT_VOLUME_ACCELERATION", VOLUME_CONFIG,
@@ -674,23 +681,36 @@ class RealtimeExpandedShadow:
                 **{key: value for key, value in gate.items()
                    if key not in {"evaluable", "passed", "reason"}},
             }
-            row["early_timeline"] = self._official_timeline(
-                symbol, decision, "official_candidate_seen_at",
+            if symbol not in self._reported:
+                self._reported.add(symbol)
+                row["early_timeline"] = self._official_timeline(
+                    symbol, decision, "official_candidate_seen_at",
+                )
+                self._write("CANDIDATE_SEEN", **row)
+            if not gate["passed"]:
+                self._seen.add(symbol)
+                continue
+            combined = {**candidate, **row}
+            rs = combined.get("relative_strength_5m")
+            combined["rs_challenger_passed"] = bool(
+                rs is not None and float(rs) >= float(
+                    POLICY["challenger_relative_strength_5m_minimum"]
+                )
             )
-            self._write("CANDIDATE_SEEN", **row)
-            if gate["passed"]:
-                newly_passed.append({**candidate, **row})
+            if not combined["rs_challenger_passed"]:
+                self._seen.add(symbol)
+                self._write(
+                    "CANDIDATE_REJECTED_RELATIVE_STRENGTH",
+                    **combined,
+                )
+                continue
+            newly_passed.append(combined)
         if self._selected is None and newly_passed:
             newly_passed.sort(
                 key=lambda row: (-float(row.get("score") or 0), str(row["stock_id"])),
             )
             selected = newly_passed[0]
-            rs = selected.get("relative_strength_5m")
-            selected["rs_challenger_passed"] = bool(
-                rs is not None and float(rs) >= float(
-                    POLICY["challenger_relative_strength_5m_minimum"]
-                )
-            )
+            self._seen.add(str(selected["stock_id"]))
             selected["continuation_due_at"] = decision + timedelta(
                 seconds=int(POLICY["challenger_continuation_seconds"]),
             )
@@ -698,7 +718,15 @@ class RealtimeExpandedShadow:
             selected["early_timeline"] = self._official_timeline(
                 str(selected["stock_id"]), decision, "official_selected_at",
             )
+            self._selection_attempts.append(dict(selected))
             self._write("SHADOW_SIGNAL_SELECTED", **selected)
+        elif self._selected is not None:
+            for deferred in newly_passed:
+                self._write(
+                    "CANDIDATE_DEFERRED_ACTIVE_CONTINUATION",
+                    active_stock_id=str(self._selected["stock_id"]),
+                    **deferred,
+                )
         self._check_continuation(decision)
 
     def _check_continuation(self, decision: datetime) -> None:
@@ -778,7 +806,16 @@ class RealtimeExpandedShadow:
                 self._continuation["best_bid_price"] = None
                 self._continuation["best_bid_net_pnl_twd"] = None
                 self._continuation["manual_review_ready"] = False
-        self._write("THREE_MINUTE_CONTINUATION", **self._continuation)
+        continuation_record = {
+            "stock_id": str(self._selected["stock_id"]),
+            "stock_name": str(self._selected["stock_name"]),
+            "signal_decision_time": self._selected["decision_time"],
+            **self._continuation,
+        }
+        self._continuation_attempts.append({
+            **dict(self._selected), **dict(self._continuation),
+        })
+        self._write("THREE_MINUTE_CONTINUATION", **continuation_record)
         if self._continuation.get("manual_review_ready"):
             payload = {
                 **self._selected, **self._continuation,
@@ -789,7 +826,10 @@ class RealtimeExpandedShadow:
                 "actual_orders": 0, "actual_fills": 0,
                 "broker_order_calls": 0,
             }
-            if self._candidate_ready_callback is not None:
+            if (
+                self._candidate_ready_callback is not None
+                and not self._mature_candidate_emitted
+            ):
                 try:
                     candidate_payload = {
                         **payload,
@@ -810,6 +850,7 @@ class RealtimeExpandedShadow:
                     "MATURE_CANDIDATE_CALLBACK",
                     **self._candidate_ready_delivery,
                 )
+                self._mature_candidate_emitted = True
             if self._manual_review_callback is None:
                 self._manual_review_notification = {"status": "NO_CALLBACK_CONFIGURED"}
             else:
@@ -825,6 +866,21 @@ class RealtimeExpandedShadow:
             self._write(
                 "MANUAL_REVIEW_NOTIFICATION", **self._manual_review_notification,
             )
+            return
+
+        released = dict(self._selected)
+        self._write(
+            "SHADOW_SELECTION_RELEASED",
+            stock_id=str(released["stock_id"]),
+            stock_name=str(released["stock_name"]),
+            reason=(
+                "CONTINUATION_DATA_INSUFFICIENT"
+                if self._continuation.get("status") != "EVALUATED"
+                else "CONTINUATION_OR_EXECUTION_GATE_FAILED"
+            ),
+        )
+        self._selected = None
+        self._continuation = None
 
     def close(self, *, timeout: float = 30.0) -> list[Path]:
         if not self._started or self._closed:
@@ -859,6 +915,8 @@ class RealtimeExpandedShadow:
             "decision_count": self._decisions,
             "selected_signal": _jsonable(self._selected),
             "three_minute_continuation": _jsonable(self._continuation),
+            "selection_attempts": _jsonable(self._selection_attempts),
+            "continuation_attempts": _jsonable(self._continuation_attempts),
             "manual_review_notification": _jsonable(self._manual_review_notification),
             "candidate_ready_delivery": _jsonable(self._candidate_ready_delivery),
             "early_observation": {

@@ -208,6 +208,10 @@ python3 -m yuanta_live_runtime_v01.main start-prod --live \
 fail closed。Trading Bot 的 `/start` 已固定使用此模式，仍需 `/confirm`
 才會啟動當次 LIVE 子程序。
 
+V2 re-arm 狀態機會先檢查相對強勢才占用三分鐘確認名額；確認失敗或
+資料不足時會釋放名額，後續仍然有效的新候選可繼續接受確認。這不會
+放寬每日一筆實際交易限制，也不會重複交易同一個已淘汰候選。
+
 如果要允許 SHORT，必須明確指定經帳戶資格確認過的元大委託種類；runtime 不會猜：
 
 ```bash
