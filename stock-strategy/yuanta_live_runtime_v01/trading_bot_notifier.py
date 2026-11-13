@@ -23,6 +23,7 @@ NORMAL_EVENTS = {
     "QUOTE_RECONNECT_FAILED",
     "SIGNAL_DETECTED",
     "SIGNAL_SKIPPED",
+    "EXPANDED_V2_CANDIDATE_NOT_BOUGHT",
     "ENTRY_SUBMITTED",
     "ENTRY_CANCEL_SENT",
     "ENTRY_NOT_FILLED",
@@ -311,6 +312,48 @@ def format_runtime_event(event: str, row: dict[str, Any]) -> str | None:
                 reason_text(value) for value in reasons
             )
 
+        return text
+
+    if event == "EXPANDED_V2_CANDIDATE_NOT_BOUGHT":
+        candidate = row.get("candidate_status")
+        if not isinstance(candidate, dict):
+            return None
+        reason = str(candidate.get("reason") or "UNKNOWN")
+        reason_label = {
+            "RELATIVE_STRENGTH_BELOW_THRESHOLD": "相對大盤強度未達門檻",
+            "CONTINUATION_DATA_INSUFFICIENT": "3 分鐘確認時行情不足或過期",
+            "CONTINUATION_NOT_PROFITABLE_AFTER_COSTS": "3 分鐘後扣除成本仍未轉正",
+            "EXECUTABLE_ASK_UNAVAILABLE": "缺少可用賣價，無法形成可執行進場價",
+            "PRICE_CAP_EXCEEDED": "可執行進場價超過 190 元上限",
+            "INSUFFICIENT_CAPITAL_FOR_BOARD_LOT": "19 萬元不足以買進一整張",
+            "CONTINUATION_OR_EXECUTION_GATE_FAILED": "3 分鐘延續或執行條件未通過",
+        }.get(reason, f"未確認原因（原始代碼：{reason}）")
+        decision_time = (
+            candidate.get("signal_decision_time")
+            or candidate.get("decision_time")
+            or "-"
+        )
+        text = (
+            "【WarrantScope｜擴大池候選未買入】\n"
+            f"股票：{candidate.get('stock_id', '-')} "
+            f"{candidate.get('stock_name', '')}\n"
+            f"入選時間：{decision_time}\n"
+            f"原因：{reason_label}"
+        )
+        if reason == "RELATIVE_STRENGTH_BELOW_THRESHOLD":
+            actual = candidate.get("relative_strength_5m")
+            required = candidate.get("required_relative_strength_5m")
+            if actual is not None and required is not None:
+                text += (
+                    f"\n5 分鐘相對強度：{float(actual) * 100:.2f}%"
+                    f"（門檻 {float(required) * 100:.2f}%）"
+                )
+        elif candidate.get("conservative_net_pnl_twd") is not None:
+            text += (
+                "\n3 分鐘保守估算淨損益："
+                f"{float(candidate['conservative_net_pnl_twd']):.0f} 元"
+            )
+        text += "\n結果：未送單、未成交"
         return text
 
     if event == "ENTRY_SUBMITTED":

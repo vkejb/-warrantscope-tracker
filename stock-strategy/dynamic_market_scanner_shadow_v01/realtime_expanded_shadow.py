@@ -118,6 +118,7 @@ class RealtimeExpandedShadow:
         queue_size: int = 200_000,
         manual_review_callback=None,
         candidate_ready_callback=None,
+        candidate_status_callback=None,
     ):
         self.queue_size = int(queue_size)
         if self.queue_size <= 0:
@@ -148,8 +149,10 @@ class RealtimeExpandedShadow:
         self._last_event_at: datetime | None = None
         self._manual_review_callback = manual_review_callback
         self._candidate_ready_callback = candidate_ready_callback
+        self._candidate_status_callback = candidate_status_callback
         self._manual_review_notification: dict[str, Any] | None = None
         self._candidate_ready_delivery: dict[str, Any] | None = None
+        self._candidate_status_deliveries: list[dict[str, Any]] = []
         self._restoring_history = False
         self._restored_mature_candidate_count = 0
         self._restore_lock = threading.Lock()
@@ -160,6 +163,31 @@ class RealtimeExpandedShadow:
         self._early_prefilter_max_selected = 0
         self._early_market_cache_at: datetime | None = None
         self._early_market_cache: dict[str, Any] | None = None
+
+    def _deliver_candidate_status(self, payload: dict[str, Any]) -> None:
+        """Deliver non-trading candidate telemetry without replaying old alerts."""
+        if self._restoring_history:
+            return
+        delivery: dict[str, Any] = {
+            "stock_id": str(payload.get("stock_id", "")),
+            "reason": str(payload.get("reason", "UNKNOWN")),
+        }
+        if self._candidate_status_callback is None:
+            delivery["status"] = "NO_CALLBACK_CONFIGURED"
+        else:
+            try:
+                result = self._candidate_status_callback(_jsonable(payload))
+                delivery.update({
+                    "status": "ATTEMPTED",
+                    "delivery": _jsonable(result),
+                })
+            except Exception as exc:
+                delivery.update({
+                    "status": "FAILED",
+                    "error_type": type(exc).__name__,
+                })
+        self._candidate_status_deliveries.append(delivery)
+        self._write("CANDIDATE_STATUS_CALLBACK", **delivery)
 
     def start(self, *, run_dir: Path, run_id: str, expanded_items: list) -> None:
         if self._started:
@@ -786,6 +814,18 @@ class RealtimeExpandedShadow:
                     "CANDIDATE_REJECTED_RELATIVE_STRENGTH",
                     **combined,
                 )
+                self._deliver_candidate_status({
+                    **combined,
+                    "status": "NOT_BOUGHT",
+                    "stage": "RELATIVE_STRENGTH",
+                    "reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+                    "required_relative_strength_5m": float(
+                        POLICY["challenger_relative_strength_5m_minimum"]
+                    ),
+                    "actual_orders": 0,
+                    "actual_fills": 0,
+                    "broker_order_calls": 0,
+                })
                 continue
             newly_passed.append(combined)
         if self._selected is None and newly_passed:
@@ -966,15 +1006,36 @@ class RealtimeExpandedShadow:
             return
 
         released = dict(self._selected)
+        if self._continuation.get("status") != "EVALUATED":
+            release_reason = "CONTINUATION_DATA_INSUFFICIENT"
+        elif not self._continuation.get("passed"):
+            release_reason = "CONTINUATION_NOT_PROFITABLE_AFTER_COSTS"
+        elif self._continuation.get("manual_entry_reference_price") is None:
+            release_reason = "EXECUTABLE_ASK_UNAVAILABLE"
+        elif float(self._continuation["manual_entry_reference_price"]) > float(
+            POLICY["manual_review_price_cap_twd"]
+        ):
+            release_reason = "PRICE_CAP_EXCEEDED"
+        elif int(self._continuation.get("manual_reference_quantity") or 0) <= 0:
+            release_reason = "INSUFFICIENT_CAPITAL_FOR_BOARD_LOT"
+        else:
+            release_reason = "CONTINUATION_OR_EXECUTION_GATE_FAILED"
+        self._deliver_candidate_status({
+            **released,
+            **self._continuation,
+            "status": "NOT_BOUGHT",
+            "stage": "THREE_MINUTE_CONTINUATION",
+            "reason": release_reason,
+            "signal_decision_time": released["decision_time"],
+            "actual_orders": 0,
+            "actual_fills": 0,
+            "broker_order_calls": 0,
+        })
         self._write(
             "SHADOW_SELECTION_RELEASED",
             stock_id=str(released["stock_id"]),
             stock_name=str(released["stock_name"]),
-            reason=(
-                "CONTINUATION_DATA_INSUFFICIENT"
-                if self._continuation.get("status") != "EVALUATED"
-                else "CONTINUATION_OR_EXECUTION_GATE_FAILED"
-            ),
+            reason=release_reason,
         )
         self._selected = None
         self._continuation = None
@@ -1016,6 +1077,9 @@ class RealtimeExpandedShadow:
             "continuation_attempts": _jsonable(self._continuation_attempts),
             "manual_review_notification": _jsonable(self._manual_review_notification),
             "candidate_ready_delivery": _jsonable(self._candidate_ready_delivery),
+            "candidate_status_deliveries": _jsonable(
+                self._candidate_status_deliveries
+            ),
             "history_restore": {
                 "restored_mature_candidate_count": self._restored_mature_candidate_count,
             },

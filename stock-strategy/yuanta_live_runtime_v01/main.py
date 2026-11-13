@@ -2345,6 +2345,10 @@ def _run_realtime(args, *, environment: str, submit_live: bool) -> int:
                 raise RuntimeError("EXPANDED_V2_LIVE_ARCHIVE_REQUIRED")
             expanded_v2_observer = RealtimeExpandedShadow(
                 candidate_ready_callback=enqueue_expanded_v2_candidate,
+                candidate_status_callback=lambda payload: log(
+                    "EXPANDED_V2_CANDIDATE_NOT_BOUGHT",
+                    candidate_status=payload,
+                ),
             )
             expanded_v2_observer.start(
                 run_dir=archive.run_dir,

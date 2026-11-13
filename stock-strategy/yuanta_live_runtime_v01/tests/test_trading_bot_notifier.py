@@ -92,6 +92,43 @@ class TradingBotNotifierTests(unittest.TestCase):
             message,
         )
 
+    def test_expanded_candidate_rejection_shows_actual_threshold_and_no_order(self):
+        message = format_runtime_event(
+            "EXPANDED_V2_CANDIDATE_NOT_BOUGHT",
+            {
+                "candidate_status": {
+                    "stock_id": "9933",
+                    "stock_name": "中鼎",
+                    "decision_time": "2026-11-13T09:07:00+08:00",
+                    "reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+                    "relative_strength_5m": 0.003127856,
+                    "required_relative_strength_5m": 0.01,
+                    "account": "MUST_NOT_RENDER",
+                },
+            },
+        )
+        self.assertIn("擴大池候選未買入", message)
+        self.assertIn("9933 中鼎", message)
+        self.assertIn("0.31%（門檻 1.00%）", message)
+        self.assertIn("未送單、未成交", message)
+        self.assertNotIn("MUST_NOT_RENDER", message)
+
+    def test_expanded_continuation_rejection_shows_estimated_net_pnl(self):
+        message = format_runtime_event(
+            "EXPANDED_V2_CANDIDATE_NOT_BOUGHT",
+            {
+                "candidate_status": {
+                    "stock_id": "1234",
+                    "stock_name": "測試",
+                    "signal_decision_time": "2026-11-13T09:10:00+08:00",
+                    "reason": "CONTINUATION_NOT_PROFITABLE_AFTER_COSTS",
+                    "conservative_net_pnl_twd": -321.4,
+                },
+            },
+        )
+        self.assertIn("3 分鐘後扣除成本仍未轉正", message)
+        self.assertIn("-321 元", message)
+
     def test_current_session_complete_event_is_rendered(self):
         message = format_runtime_event(
             "SESSION_COMPLETE",

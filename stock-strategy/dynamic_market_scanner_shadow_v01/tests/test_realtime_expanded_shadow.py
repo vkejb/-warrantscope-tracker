@@ -98,7 +98,11 @@ class RealtimeExpandedShadowTests(unittest.TestCase):
 
     def test_weak_candidate_does_not_reserve_slot_before_strong_candidate(self):
         with tempfile.TemporaryDirectory() as folder:
-            observer = RealtimeExpandedShadow(queue_size=10)
+            statuses = []
+            observer = RealtimeExpandedShadow(
+                queue_size=10,
+                candidate_status_callback=lambda payload: statuses.append(payload),
+            )
             observer.start(
                 run_dir=Path(folder), run_id="run-rearm",
                 expanded_items=[
@@ -136,10 +140,20 @@ class RealtimeExpandedShadowTests(unittest.TestCase):
             observer.close()
         self.assertEqual(selected["stock_id"], "5678")
         self.assertIn("1234", observer._seen)
+        self.assertEqual(len(statuses), 1)
+        self.assertEqual(statuses[0]["stock_id"], "1234")
+        self.assertEqual(
+            statuses[0]["reason"], "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+        )
+        self.assertEqual(statuses[0]["actual_orders"], 0)
 
     def test_failed_continuation_releases_selection_for_later_candidates(self):
         with tempfile.TemporaryDirectory() as folder:
-            observer = RealtimeExpandedShadow(queue_size=10)
+            statuses = []
+            observer = RealtimeExpandedShadow(
+                queue_size=10,
+                candidate_status_callback=lambda payload: statuses.append(payload),
+            )
             observer.start(
                 run_dir=Path(folder), run_id="run-release", expanded_items=[Item()],
             )
@@ -162,7 +176,25 @@ class RealtimeExpandedShadowTests(unittest.TestCase):
             self.assertIsNone(observer._selected)
             self.assertIsNone(observer._continuation)
             self.assertEqual(len(observer._continuation_attempts), 1)
+            self.assertEqual(len(statuses), 1)
+            self.assertEqual(
+                statuses[0]["reason"],
+                "CONTINUATION_NOT_PROFITABLE_AFTER_COSTS",
+            )
             observer.close()
+
+    def test_history_restore_suppresses_candidate_status_notifications(self):
+        delivered = []
+        observer = RealtimeExpandedShadow(
+            candidate_status_callback=lambda payload: delivered.append(payload),
+        )
+        observer._restoring_history = True
+        observer._deliver_candidate_status({
+            "stock_id": "1234",
+            "reason": "RELATIVE_STRENGTH_BELOW_THRESHOLD",
+        })
+        self.assertEqual(delivered, [])
+        self.assertEqual(observer._candidate_status_deliveries, [])
 
     def test_history_restore_consumes_mature_candidate_without_delivery(self):
         with tempfile.TemporaryDirectory() as folder:
