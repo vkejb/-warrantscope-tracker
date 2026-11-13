@@ -103,6 +103,16 @@ never represented as executable account performance.
 python3 -m dynamic_market_scanner_shadow_v01.signal_selection_quality
 ```
 
+`SIGNAL_SELECTION_RULE_IMPACT_SPEC.md` freezes the follow-up P&L comparison
+between the current 1% relative-strength/180-second confirmation and the
+bounded 30/60/90-second volume-persistence rescue. The known-archive result in
+`SIGNAL_SELECTION_RULE_IMPACT_REPORT.md` rejects the rescue rule and does not
+change the production strategy.
+
+```bash
+python3 -m dynamic_market_scanner_shadow_v01.signal_selection_rule_impact
+```
+
 When the relative-strength challenger and conservative three-minute
 continuation gate both pass, a fresh book still permits an entry reference at
 or below TWD 190, and one whole board lot remains affordable, the observer sends

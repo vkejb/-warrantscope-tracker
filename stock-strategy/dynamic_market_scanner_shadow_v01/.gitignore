@@ -1,6 +1,7 @@
 runtime/
 results*/
 signal_selection_quality_results/
+signal_selection_rule_impact_results/
 __pycache__/
 *.py[cod]
 *.zip
