@@ -93,6 +93,16 @@ best bid is retained as a diagnostic mark and cannot promote a signal.
 These artifacts remain `SHADOW_ONLY_NO_BROKER_NO_ORDER`. A passing observation
 does not enable live execution.
 
+`SIGNAL_SELECTION_QUALITY_SPEC.md` and `SIGNAL_SELECTION_QUALITY_REPORT.md`
+separately evaluate every archived early-ready candidate as an independent
+quality label. This diagnostic intentionally ignores the daily account slot so
+rejected and later candidates are not discarded; overlapping signal P&L is
+never represented as executable account performance.
+
+```bash
+python3 -m dynamic_market_scanner_shadow_v01.signal_selection_quality
+```
+
 When the relative-strength challenger and conservative three-minute
 continuation gate both pass, a fresh book still permits an entry reference at
 or below TWD 190, and one whole board lot remains affordable, the observer sends
