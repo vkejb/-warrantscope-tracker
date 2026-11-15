@@ -316,6 +316,32 @@ def main() -> int:
                 "paper_dual_track_hash": dual_track["report_hash"],
                 "paper_dual_track_output": dual_track["output_path"],
             })
+            # The forward A/B study consumes this already sealed feed only.
+            # It is non-blocking for the existing collector/paper run and has
+            # no broker client, order adapter, or additional subscription.
+            if expanded_universe is None:
+                _append({"at": utc_now(), "date": day,
+                         "status": "AB_FORWARD_UNAVAILABLE",
+                         "reason": "EXPANDED_UNIVERSE_DISABLED",
+                         "actual_orders": 0, "broker_order_calls": 0})
+            else:
+                try:
+                    from dynamic_market_scanner_shadow_v01.v2_gate_exit_diagnostic.forward_shadow import (
+                        publish_forward_day,
+                    )
+                    forward = publish_forward_day(run_dir, session)
+                    _append({"at": utc_now(), "date": day,
+                             "status": "AB_FORWARD_COMPLETE",
+                             "run_id": session["source_run_id"],
+                             "config_hash": forward["activation_config_hash"],
+                             "a_net_twd": forward["a"]["net_twd"],
+                             "b_net_twd": forward["b"]["net_twd"],
+                             "actual_orders": 0, "broker_order_calls": 0})
+                except Exception as exc:
+                    _append({"at": utc_now(), "date": day,
+                             "status": "AB_FORWARD_FAILED",
+                             "reason": f"{type(exc).__name__}: {exc}",
+                             "actual_orders": 0, "broker_order_calls": 0})
             return 0
         except Exception as exc:
             reason = f"{type(exc).__name__}: {exc}"

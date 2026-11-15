@@ -193,12 +193,14 @@ def candidate_diagnostic(day: str, row: dict, data: dict,
                                        fill["entry_price"], fill["quantity"])}
 
 
-def run(output: Path, days_filter: set[str] | None = None) -> dict:
+def run(output: Path, days_filter: set[str] | None = None,
+        source_map: dict[str, Path] | None = None) -> dict:
     if output.exists():
         raise FileExistsError(f"output exists: {output}")
     output.mkdir(parents=True)
     audited, candidate_rows, diagnostics, account_trades, daily = [], [], [], [], []
-    selected_sources = {day: run_dir for day, run_dir in sources().items()
+    selected_sources = {day: run_dir for day, run_dir in
+                        (source_map if source_map is not None else sources()).items()
                         if days_filter is None or day in days_filter}
     for day, run_dir in selected_sources.items():
         audit, manifest = audit_source(day, run_dir)
