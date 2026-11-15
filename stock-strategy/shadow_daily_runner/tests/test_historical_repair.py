@@ -181,7 +181,7 @@ class FixtureOfficialClient:
             for day in ("20260907", "20260908")
         }
 
-    def calendar(self) -> SourceSnapshot:
+    def calendar(self, *, year: int | None = None) -> SourceSnapshot:
         return self._calendar
 
     def twse_news(self, *, refresh: bool = True) -> SourceSnapshot:

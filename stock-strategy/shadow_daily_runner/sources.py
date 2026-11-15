@@ -328,9 +328,21 @@ class OfficialSourceClient:
             cache_validator=cache_validator,
         )
 
-    def calendar(self) -> SourceSnapshot:
+    def calendar(self, *, year: int | None = None) -> SourceSnapshot:
+        def requested_year(snapshot: SourceSnapshot) -> bool:
+            payload = decode_json(snapshot)
+            return (
+                isinstance(payload, list)
+                and any(
+                    isinstance(row, dict)
+                    and str(row.get("Date", ""))[:3] == f"{year - 1911:03d}"
+                    for row in payload
+                )
+            )
+
         return self._get(
-            "twse_calendar", self.cfg.twse_calendar_url, expected_kind="json"
+            "twse_calendar", self.cfg.twse_calendar_url, expected_kind="json",
+            cache_validator=requested_year if year is not None else None,
         )
 
     def twse_news(self, *, refresh: bool = True) -> SourceSnapshot:

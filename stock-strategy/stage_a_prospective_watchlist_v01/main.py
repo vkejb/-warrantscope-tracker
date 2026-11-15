@@ -19,6 +19,13 @@ def main(argv: list[str] | None = None) -> int:
         "--recovery-reason",
         choices=("SCHEDULED_LAUNCHER_FAILURE_RECOVERY",),
     )
+    prior = commands.add_parser(
+        "seal-preopen-prior",
+        help="recover only the verified preceding session's Stage A before 08:50",
+    )
+    prior.add_argument("--archives", nargs="+", type=Path, required=True)
+    prior.add_argument("--trading-calendar", type=Path, required=True)
+    prior.add_argument("--expected-input-hash", required=True)
     commands.add_parser("status")
     args = parser.parse_args(argv)
     try:
@@ -30,6 +37,13 @@ def main(argv: list[str] | None = None) -> int:
                 expected_input_hash=args.expected_input_hash,
                 allow_same_day_recovery=args.same_day_recovery,
                 recovery_reason=args.recovery_reason,
+            )
+        elif args.command == "seal-preopen-prior":
+            from .watchlist import seal_preopen_prior
+            result = seal_preopen_prior(
+                args.archives,
+                args.trading_calendar,
+                expected_input_hash=args.expected_input_hash,
             )
         else:
             result = {"latest_seal": latest_seal()}

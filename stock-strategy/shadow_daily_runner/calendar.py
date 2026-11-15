@@ -62,6 +62,12 @@ def build_trading_calendar(
             }
         )
 
+    # The undated OpenAPI endpoint can switch to next year's schedule before
+    # the current year's last session. A non-empty response for the wrong year
+    # is not evidence that every weekday of the requested year traded.
+    if not source_rows:
+        raise RuntimeError(f"official TWSE holiday schedule has no rows for {year}")
+
     closure_rows: list[dict] = []
     for item in ad_hoc_closures:
         if not isinstance(item, dict):

@@ -146,3 +146,63 @@ def seal_current(
     if recovery_mode:
         result["same_day_recovery"] = payload["same_day_recovery"]
     return result
+
+
+def seal_preopen_prior(
+    archives: list[Path],
+    calendar: Path,
+    *,
+    expected_input_hash: str,
+    now: datetime | None = None,
+    runtime_dir: Path = RUNTIME_DIR,
+) -> dict:
+    """Explicit recovery of yesterday's EOD pool before the next open.
+
+    This is never a retrospective strategy performance observation: the
+    immutable seal records its actual creation time and recovery provenance.
+    Only the immediately preceding calendar session can be recovered.
+    """
+    local = (now or datetime.now(ZoneInfo("Asia/Taipei"))).astimezone(ZoneInfo("Asia/Taipei"))
+    if not "05:00" <= local.strftime("%H:%M") < "08:50":
+        raise RuntimeError("prior-session Stage A recovery is pre-open only")
+    from shadow_daily_runner.calendar import read_sessions
+
+    sessions = [day for day in read_sessions(calendar.read_bytes())
+                if day < local.date().isoformat()]
+    if not sessions:
+        raise RuntimeError("no prior trading session in verified calendar")
+    target = sessions[-1].replace("-", "")
+    snapshot = ExistingDailyDataProvider(archives, trading_calendar_path=calendar).load_through(target)
+    if snapshot.input_manifest_hash != expected_input_hash:
+        raise RuntimeError("recovery input differs from prepared official input")
+    content = build_watchlist(snapshot, target)
+    seal_hash = _digest(_canonical(content))
+    path = runtime_dir / "seals" / f"{target}.json"
+    payload = {**content, "created_at": local.isoformat(), "seal_hash": seal_hash,
+               "status": "SEALED", "actual_orders": 0, "actual_fills": 0,
+               "broker_connections": 0,
+               "preopen_prior_recovery": {
+                   "reason": "PRIOR_EOD_READY_AFTER_DAILY_CALENDAR_FAILURE",
+                   "executed_at_local": local.isoformat(),
+                   "historical_date_override": False,
+                   "source_session_date": target,
+               }}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        existing = json.loads(path.read_text(encoding="utf-8"))
+        old = {key: existing[key] for key in content}
+        if _digest(_canonical(old)) != existing.get("seal_hash") or old != content:
+            raise RuntimeError("existing prior Stage A seal conflicts with recovery input")
+        return {"status": "ALREADY_SEALED", "signal_date": target,
+                "seal_hash": existing["seal_hash"], "input_hash": existing["input_hash"],
+                "count": len(existing["stocks"]), "path": str(path),
+                "actual_orders": 0}
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, sort_keys=True, allow_nan=False)
+        handle.flush()
+        os.fsync(handle.fileno())
+    return {"status": "SEALED_PREOPEN_PRIOR_RECOVERY", "signal_date": target,
+            "seal_hash": seal_hash, "input_hash": content["input_hash"],
+            "count": TOP_K, "path": str(path), "actual_orders": 0}

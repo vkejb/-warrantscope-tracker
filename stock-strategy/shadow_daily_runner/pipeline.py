@@ -545,7 +545,7 @@ def prepare_inputs(
         "actual_fills": 0,
     }
     try:
-        calendar_snapshot = source_client.calendar()
+        calendar_snapshot = source_client.calendar(year=local.year)
         news_snapshot = source_client.twse_news(refresh=True)
         ad_hoc_closures = collect_ad_hoc_closures(
             news_snapshot,

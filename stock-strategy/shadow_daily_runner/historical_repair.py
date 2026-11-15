@@ -381,7 +381,7 @@ def repair_history(
     cfg.clean_dir.mkdir(parents=True, exist_ok=True)
     ledgers_before = _ledger_hashes(cfg)
 
-    calendar_snapshot = source_client.calendar()
+    calendar_snapshot = source_client.calendar(year=int(through[:4]))
     news_snapshot = source_client.twse_news(refresh=True)
     closures = collect_ad_hoc_closures(
         news_snapshot,

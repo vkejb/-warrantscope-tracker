@@ -12,7 +12,7 @@ import numpy as np
 
 from winner_coverage_taxonomy_v01.config import FEATURE_NAMES as TAXONOMY_FEATURE_NAMES
 
-from stage_a_prospective_watchlist_v01.watchlist import build_watchlist, frozen_model, seal_current
+from stage_a_prospective_watchlist_v01.watchlist import build_watchlist, frozen_model, seal_current, seal_preopen_prior
 
 
 class WatchlistTests(unittest.TestCase):
@@ -97,6 +97,27 @@ class WatchlistTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "conflicts"):
                 seal_current([Path("unused")], Path("unused"), now=now, runtime_dir=root, expected_input_hash="i")
             self.assertEqual(path.read_bytes(), before)
+
+    def test_preopen_prior_recovery_uses_only_previous_session_and_records_time(self):
+        now = datetime(2026, 11, 16, 8, 0, tzinfo=ZoneInfo("Asia/Taipei"))
+        content = {"schema_version": "1", "signal_date": "20261113", "setup": "FROZEN_STAGE_A_TOP30", "mode": "SHADOW_ONLY", "stocks": [{"rank": i, "stock_id": str(i), "stock_name": "測試", "score": 0.1} for i in range(1, 31)], "model_hash": "m", "model_spec_hash": "s", "config_hash": "c", "input_hash": "i", "eligible_stock_count": 40}
+        fake_provider = type("Provider", (), {"load_through": lambda self, date: type("Snapshot", (), {"input_manifest_hash": "i"})()})
+        with tempfile.TemporaryDirectory() as directory, patch("stage_a_prospective_watchlist_v01.watchlist.ExistingDailyDataProvider", return_value=fake_provider()), patch("stage_a_prospective_watchlist_v01.watchlist.build_watchlist", return_value=content) as build:
+            root = Path(directory)
+            calendar = root / "calendar.csv"
+            calendar.write_text("date\n2026-11-12\n2026-11-13\n2026-11-16\n")
+            with self.assertRaisesRegex(RuntimeError, "pre-open"):
+                seal_preopen_prior([], calendar, expected_input_hash="i", now=now.replace(hour=9), runtime_dir=root)
+            with self.assertRaisesRegex(RuntimeError, "input differs"):
+                seal_preopen_prior([], calendar, expected_input_hash="wrong", now=now, runtime_dir=root)
+            result = seal_preopen_prior([], calendar, expected_input_hash="i", now=now, runtime_dir=root)
+            sealed = json.loads((root / "seals" / "20261113.json").read_text())
+            build.assert_called_once()
+            self.assertEqual(build.call_args.args[1], "20261113")
+            self.assertEqual(result["count"], 30)
+            self.assertEqual(sealed["created_at"], now.isoformat())
+            self.assertFalse(sealed["preopen_prior_recovery"]["historical_date_override"])
+            self.assertEqual(seal_preopen_prior([], calendar, expected_input_hash="i", now=now, runtime_dir=root)["status"], "ALREADY_SEALED")
 
 
 if __name__ == "__main__":
